@@ -1,10 +1,11 @@
 # Feature: Stock Management
 
-**Version**: 0.1.0 (draft)
-**Status**: PARTIAL
+**Version**: 1.0.0
+**Status**: COMPLETE (MVP)
 **Owner**: TBD
 **Last Updated**: 2025-12-05
-**Dependencies**: [backend_proxy.md](./backend_proxy.md), [validation_guardrails.md](./validation_guardrails.md), [operations_safety.md](./operations_safety.md), [mvp_scope.md](./mvp_scope.md)
+**Dependencies**: None (MVP complete)
+**MVP Scope**: [mvp_scope_lean.md](./mvp_scope_lean.md)
 
 As a store employee
 I want to adjust stock levels (IN/OUT)
@@ -32,7 +33,37 @@ Scenario: Viewing stock history
     Then I should see the calculated total stock (Rollup)
     And I should see a list of recent stock movements (if implemented in UI)
 
+## Implementation Status
+
+**All scenarios are implemented and working:**
+- ✅ Add stock (IN) with optimistic UI updates
+- ✅ Remove stock (OUT) with optimistic UI updates
+- ✅ View stock history (last 10 movements)
+- ✅ Current stock display via Airtable rollup
+- ✅ Adjustable quantity input
+- ✅ Large quantity safety confirmation (50+ items)
+- ✅ Error rollback on API failure
+
+**Implementation notes:**
+- Stock mutations: `src/components/product/ProductDetail.tsx` (handleStockChange)
+- API layer: `src/lib/api.ts` (addStockMovement, getStockMovements)
+- React Query integration: Optimistic updates with automatic rollback
+- Quantity signing: Automatic conversion (OUT = negative, IN = positive)
+- Safety threshold: Confirms quantities over 50 items
+
+**Post-MVP enhancements (deferred):**
+- Server-side validation of stock movements
+- Backend proxy for Airtable security
+- Advanced audit logging
+- Bulk stock operations
+
 ## Changelog
 
+### 1.0.0 (2025-12-05)
+- Updated status to COMPLETE (MVP) - all critical scenarios implemented
+- Removed dependencies on backend_proxy, validation_guardrails, operations_safety (post-MVP)
+- Added implementation status section with file references
+- Noted safety confirmation feature (50+ items)
+
 ### 0.1.0 (2025-12-05)
-- Initial draft of stock management scenarios and dependencies.
+- Initial draft of stock management scenarios and dependencies

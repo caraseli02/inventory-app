@@ -1,10 +1,13 @@
 # Operations and Safety Guidance
 
-**Version**: 0.1.0 (draft)
-**Status**: NOT_STARTED
+**Version**: 0.2.0 (draft)
+**Status**: POST_MVP (DEFERRED)
 **Owner**: TBD
 **Last Updated**: 2025-12-05
-**Dependencies**: [backend_proxy.md](./backend_proxy.md), [validation_guardrails.md](./validation_guardrails.md), [observability.md](./observability.md), [mvp_scope.md](./mvp_scope.md)
+**Dependencies**: [backend_proxy.md](./backend_proxy.md) (POST_MVP), [observability.md](./observability.md) (POST_MVP)
+**MVP Scope**: [mvp_scope_lean.md](./mvp_scope_lean.md)
+
+**⚠️ DEFERRED TO POST-MVP**: Comprehensive operational runbooks are not required for MVP. LAUNCH_CHECKLIST.md provides sufficient guidance for initial deployment with 2-3 testers. Implement comprehensive operations documentation after validating product-market fit.
 
 ## Objective
 Document operational safeguards to prevent accidental data exposure, clarify secret handling, and align testing/monitoring expectations.
@@ -12,10 +15,50 @@ Document operational safeguards to prevent accidental data exposure, clarify sec
 ## Scope
 - Deployment, secrets management, and runtime safety practices for the inventory app and its Airtable backend proxy.
 
+## MVP Operations (Currently Sufficient)
+
+**What you need for week 1 validation:**
+- ✅ **LAUNCH_CHECKLIST.md** - Step-by-step deployment guide (already created)
+- ✅ **README.md** - Basic setup and env var documentation
+- ✅ **.env.example** - Template with placeholders
+- ✅ **Vercel deployment** - Password protection enabled
+- ✅ **Basic monitoring** - Check Vercel logs and Airtable API usage
+
+**Security posture for MVP:**
+- Credentials in .gitignore (prevents commits)
+- URL shared only with 2-3 trusted testers
+- Vercel password protection enabled
+- Ability to rotate Airtable token if URL leaks
+- No production customer data
+
+**Emergency response for MVP:**
+- If URL leaks → Rotate Airtable token (5 minutes)
+- If app breaks → Check Vercel logs, rollback deployment
+- If tester locked out → Share new password
+
+## Why Deferred to Post-MVP
+
+**Launch-planner rationale:**
+1. **Does it serve the core user loop?** No - comprehensive runbooks don't help users track inventory
+2. **Can you validate the idea without it?** Yes - LAUNCH_CHECKLIST.md covers MVP needs
+3. **Is there a simpler version?** Yes - basic README + launch checklist (already done)
+
+**The trap we're avoiding:** Writing 20 pages of runbooks for an app with zero validated users.
+
+**When to implement comprehensive operations:**
+- **Trigger**: App validated + planning to scale beyond 5 users OR onboarding new team members
+- **Timeline**: Week 4-6 after validation
+- **Estimated effort**: 1-2 days (runbooks + CI/CD setup)
+
 ## Changelog
 
+### 0.2.0 (2025-12-05)
+- Updated status to POST_MVP with deferral rationale
+- Added MVP operations section referencing LAUNCH_CHECKLIST.md
+- Clarified that basic documentation is sufficient for validation phase
+
 ### 0.1.0 (2025-12-05)
-- Initial draft covering operational safety scope and dependencies.
+- Initial draft covering operational safety scope and dependencies
 
 ## Requirements
 - Secrets (Airtable, proxy tokens) are injected via environment variables and never committed or exposed to clients.

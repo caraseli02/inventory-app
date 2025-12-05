@@ -1,50 +1,84 @@
 # Grocery Inventory App
 
-A tablet-first React + TypeScript application for scanning grocery items, syncing inventory to Airtable, and providing a clean UI for stock management. The project is built with Vite, TailwindCSS, and shadcn/ui components.
+**Quick grocery inventory management via barcode scanning.** Scan products, manage stock, sync to Airtable. Built for tablets/phones.
 
-## Prerequisites
-- Node.js 20+
-- pnpm (recommended) or npm
+**🚀 Ready to launch?** See [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) for step-by-step deployment guide.
 
-## Installation
-1. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-2. Create your environment file by copying the template:
-   ```bash
-   cp .env.example .env
-   ```
-3. Fill in the required values in `.env` (see below). **Never commit real credentials.**
+## Quick Start
 
-## Environment Configuration
-The app relies on Airtable for data storage. Configure the following variables in `.env`:
+**1. Install dependencies:**
+```bash
+pnpm install
+```
 
-- `VITE_AIRTABLE_API_KEY`: Personal access token with read/write access to your Airtable base.
-- `VITE_AIRTABLE_BASE_ID`: The Base ID for the inventory workspace.
-- (Optional) `VITE_BACKEND_PROXY_URL` and `VITE_PROXY_AUTH_TOKEN`: Use when a backend proxy is available to avoid exposing Airtable credentials in the client.
+**2. Set up environment:**
+```bash
+cp .env.example .env
+# Edit .env and add your Airtable credentials
+```
 
-See `.env.example` for placeholder values and security reminders.
+**3. Run locally:**
+```bash
+pnpm dev
+```
 
-## Usage
-- Start the development server:
-  ```bash
-  pnpm dev
-  ```
-- Build for production:
-  ```bash
-  pnpm build
-  ```
-- Preview the production build locally:
-  ```bash
-  pnpm preview
-  ```
+**4. Deploy to production:**
+```bash
+pnpm build                    # Test build
+vercel                        # Deploy (see LAUNCH_CHECKLIST.md)
+```
+
+## Environment Variables
+
+Required for both local and production:
+- `VITE_AIRTABLE_API_KEY` - Your Airtable personal access token
+- `VITE_AIRTABLE_BASE_ID` - Your Airtable base ID
+
+**Never commit `.env` files.** They're gitignored by default.
+
+## What This Does
+
+1. **Scan** - Point camera at grocery barcode
+2. **Lookup** - Auto-fetch product details from Airtable or AI
+3. **Stock** - Add/remove inventory with IN/OUT buttons
+4. **Track** - View current stock and movement history
+
+## Tech Stack
+
+- React 19 + TypeScript + Vite
+- TailwindCSS v4
+- Airtable (backend)
+- html5-qrcode (scanner)
+- React Query (data)
+- PWA ready
 
 ## Documentation
-- Docs Home: [`docs/README.md`](docs/README.md)
-- Project architecture and folder structure: [`docs/project_architecture_structure.md`](docs/project_architecture_structure.md)
-- Full documentation set is located in the [`docs/`](docs/) directory.
 
-## Security & Limitations
-- Airtable access currently happens directly from the client. Use a backend proxy when available to avoid exposing tokens.
-- Keep `.env` files out of version control; only commit `.env.example`.
+- **[Launch Checklist](LAUNCH_CHECKLIST.md)** - Deploy to Vercel in 30 minutes
+- **[Lean MVP Scope](docs/specs/mvp_scope_lean.md)** - What ships this week
+- **[Full Docs](docs/README.md)** - Architecture, specs, guides
+- **[CLAUDE.md](CLAUDE.md)** - Instructions for AI assistants
+
+## MVP Status
+
+✅ **Ready to ship** - All core features implemented:
+- Barcode scanning with camera
+- Product lookup and creation
+- AI auto-fill (OpenFoodFacts)
+- Stock IN/OUT management
+- Movement history
+- PWA support
+
+🚧 **Post-MVP** (after validation):
+- Backend proxy for Airtable security
+- User authentication
+- Offline PWA support
+- Advanced observability
+
+## Security Notice
+
+**Current MVP approach:** Airtable credentials are in the client bundle. This is acceptable for initial validation with trusted testers.
+
+**For production use:** Implement the backend proxy (see `docs/specs/backend_proxy.md`) before sharing widely.
+
+Use Vercel's password protection feature to secure your deployment during MVP testing.

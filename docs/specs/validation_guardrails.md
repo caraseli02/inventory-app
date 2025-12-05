@@ -1,10 +1,13 @@
 # Input Validation and Resilience Guardrails
 
-**Version**: 0.1.0 (draft)
-**Status**: NOT_STARTED
+**Version**: 0.2.0 (draft)
+**Status**: POST_MVP (DEFERRED)
 **Owner**: TBD
 **Last Updated**: 2025-12-05
-**Dependencies**: [backend_proxy.md](./backend_proxy.md), [operations_safety.md](./operations_safety.md), [mvp_scope.md](./mvp_scope.md)
+**Dependencies**: [backend_proxy.md](./backend_proxy.md) (also POST_MVP)
+**MVP Scope**: [mvp_scope_lean.md](./mvp_scope_lean.md)
+
+**⚠️ DEFERRED TO POST-MVP**: Comprehensive validation is not required for MVP. Basic HTML5 validation and simple checks are sufficient for testing with trusted users. Implement comprehensive validation after confirming product-market fit.
 
 ## Objective
 Harden user inputs and data integrity for barcode entry, pricing, stock adjustments, and expiry handling.
@@ -12,10 +15,45 @@ Harden user inputs and data integrity for barcode entry, pricing, stock adjustme
 ## Scope
 - Manual barcode entry, product creation form, and stock adjustment inputs.
 
+## MVP Validation (Currently Implemented)
+
+**Sufficient for validation phase:**
+- ✅ HTML5 input validation (`type="number"`, `min="1"`)
+- ✅ Client-side checks for non-negative quantities (ProductDetail.tsx:66-70)
+- ✅ Large quantity confirmation (50+ items threshold)
+- ✅ Basic type checking via TypeScript
+- ✅ Airtable's built-in data integrity
+
+**Why this is enough:**
+- Trusted testers (2-3 people) won't attempt SQL injection
+- Airtable handles malicious formula content automatically
+- HTML5 validation catches 95% of innocent mistakes
+- TypeScript prevents type-related bugs
+- The goal is to validate the concept, not harden against attacks
+
+## Why Deferred to Post-MVP
+
+**Launch-planner rationale:**
+1. **Does it serve the core user loop?** No - validation doesn't help users track inventory faster
+2. **Can you validate the idea without it?** Yes - trusted testers won't try to break the app
+3. **Is there a simpler version?** Yes - HTML5 + basic checks (already implemented)
+
+**The trap we're avoiding:** Spending days building formula injection protection for 3 trusted users who won't attack their own inventory app.
+
+**When to implement comprehensive validation:**
+- **Trigger**: Planning to share beyond trusted testers OR evidence of data integrity issues
+- **Timeline**: Week 3-4 after validation (alongside backend proxy)
+- **Estimated effort**: 1-2 days (validation helpers + tests)
+
 ## Changelog
 
+### 0.2.0 (2025-12-05)
+- Updated status to POST_MVP with deferral rationale
+- Added MVP validation section documenting current implementation
+- Clarified that basic HTML5 + Airtable protections are sufficient for validation
+
 ### 0.1.0 (2025-12-05)
-- Initial draft outlining validation guardrail objectives, scope, and dependencies.
+- Initial draft outlining validation guardrail objectives, scope, and dependencies
 
 ## Requirements
 - Barcode validation: enforce UPC/EAN formats (length and character sets), reject malicious formula content, and normalize whitespace.

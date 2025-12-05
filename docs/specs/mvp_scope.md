@@ -1,10 +1,28 @@
 # MVP Scope and Prioritization
 
 **Version**: 0.1.0 (draft)
-**Status**: IN_PROGRESS
+**Status**: SUPERSEDED
 **Owner**: TBD
 **Last Updated**: 2025-12-05
 **Dependencies**: None
+
+**⚠️ THIS SPEC HAS BEEN SUPERSEDED**
+
+This document represented the original MVP scope that was blocking launch on infrastructure concerns. It has been replaced by:
+
+**Active MVP Scope:** [mvp_scope_lean.md](./mvp_scope_lean.md)
+
+**Why it was superseded:**
+- Original scope blocked launch on backend proxy, comprehensive validation, and extensive documentation
+- Launch-planner analysis revealed these are infrastructure concerns, not validation requirements
+- All core features are already complete and working
+- New lean scope focuses on shipping by Friday and validating with real users
+
+**Refer to mvp_scope_lean.md for current priorities and launch plan.**
+
+---
+
+# Original Content (Historical Reference)
 
 ## Objective
 Clarify which open specs are mandatory to ship a safe, testable MVP versus which can be deferred to post-MVP hardening.
@@ -17,8 +35,14 @@ Clarify which open specs are mandatory to ship a safe, testable MVP versus which
 
 ## Changelog
 
-### 0.1.0 (2025-12-05)
-- Initial draft defining MVP scope, priorities, and critical dependencies.
+### 0.1.0 (2025-12-05) - SUPERSEDED
+- Status changed to SUPERSEDED - replaced by mvp_scope_lean.md
+- Original scope blocked launch on infrastructure (backend proxy, validation, observability)
+- Launch-planner analysis revealed core features are complete and ready to ship
+- Document retained for historical reference
+
+### 0.1.0 (2025-12-05) - Original
+- Initial draft defining MVP scope, priorities, and critical dependencies
 
 ## Nice-to-have for MVP (scope if time allows)
 - **Docs home/onboarding polish** – Helpful to reduce friction, but the MVP can launch with a lean README + links to the critical specs above.

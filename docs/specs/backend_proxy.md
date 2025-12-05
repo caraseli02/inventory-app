@@ -1,10 +1,13 @@
 # Backend Proxy for Airtable Security
 
 **Version**: 0.1.0 (draft)
-**Status**: NOT_STARTED
+**Status**: POST_MVP (DEFERRED)
 **Owner**: TBD
 **Last Updated**: 2025-12-05
-**Dependencies**: [validation_guardrails.md](./validation_guardrails.md), [operations_safety.md](./operations_safety.md), [mvp_scope.md](./mvp_scope.md)
+**Dependencies**: [validation_guardrails.md](./validation_guardrails.md), [operations_safety.md](./operations_safety.md)
+**MVP Scope**: [mvp_scope_lean.md](./mvp_scope_lean.md)
+
+**⚠️ DEFERRED TO POST-MVP**: This feature is not required for validation. Client-side Airtable integration is acceptable for testing with 2-3 trusted users. Implement this only after confirming that users actually want and use the product.
 
 ## Objective
 Move Airtable authentication and query logic from the browser to a trusted backend proxy to eliminate secret exposure, add authorization, and sanitize input before hitting Airtable.
@@ -32,7 +35,48 @@ Move Airtable authentication and query logic from the browser to a trusted backe
 - Barcode lookup path rejects malformed/injected formulas and logs the attempt server-side.
 - Documentation updated with environment variables and API surface for the proxy.
 
+## Why Deferred to Post-MVP
+
+**Launch-planner rationale:**
+1. **Does it serve the core user loop?** No - scanning and stocking work fine with client-side Airtable
+2. **Can you validate the idea without it?** Yes - with 2-3 testers, client-side credentials are acceptable
+3. **Is there a simpler version?** Yes - use Vercel password protection and only share with trusted testers
+
+**The trap we're avoiding:** Building enterprise security infrastructure for a product with zero validated users.
+
+**MVP approach:**
+- Deploy with client-side Airtable (current implementation)
+- Use Vercel's password protection feature
+- Share only with 2-3 trusted testers
+- Monitor usage for 1 week
+
+**When to implement this:**
+- **Trigger**: At least 1 user uses the app for 3+ consecutive days
+- **Timeline**: Week 2-3 after validation
+- **Estimated effort**: 2-3 days (serverless functions + migration)
+
+## Current MVP Mitigation
+
+**Security measures for MVP validation:**
+1. ✅ `.env` files in `.gitignore` - credentials never committed
+2. ✅ Deploy to Vercel with password protection
+3. ✅ Share URL only with trusted testers (max 5 people)
+4. ✅ Monitor Airtable API usage for unexpected activity
+5. ✅ Rotate Airtable token after validation period if needed
+
+**Acceptable risks:**
+- Airtable credentials visible in browser DevTools → Acceptable for closed testing
+- No user authentication → Acceptable when sharing with known individuals
+- No rate limiting → Acceptable with <5 users
+
+**Non-negotiable:**
+- Never share the URL publicly without implementing this proxy
+- Never use production customer data without this proxy
+- Rotate credentials if URL leaks
+
 ## Changelog
 
 ### 0.1.0 (2025-12-05)
-- Initial draft with objectives, scope, and acceptance criteria.
+- Initial draft with objectives, scope, and acceptance criteria
+- Updated status to POST_MVP with clear deferral rationale
+- Added MVP mitigation section for validation phase security

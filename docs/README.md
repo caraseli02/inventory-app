@@ -4,8 +4,9 @@ Central index for the Grocery Inventory App documentation. Start here to find au
 
 ## Quick Start
 - [Project README](../README.md) — onboarding, setup, and run commands.
+- [Launch Checklist](../LAUNCH_CHECKLIST.md) — **ship to production this week** (step-by-step guide).
+- [Lean MVP Scope](specs/mvp_scope_lean.md) — **ACTIVE** - what ships this week.
 - [Environment Configuration](../.env.example) — required variables and safety reminders.
-- [MVP Scope & Prioritization](specs/mvp_scope.md) — feature prioritization and launch blockers.
 
 ## Documentation Index
 | Document | Purpose | Status | Owner | Last Reviewed | Authority |
@@ -22,16 +23,17 @@ Central index for the Grocery Inventory App documentation. Start here to find au
 ## Specifications (Authoritative)
 | Spec | Version | Status | Owner | Last Updated | Notes |
 | --- | --- | --- | --- | --- | --- |
-| [Backend Proxy](specs/backend_proxy.md) | 0.1.0 (draft) | NOT_STARTED | TBD | 2025-12-05 | Protect Airtable credentials via proxy |
-| [Validation Guardrails](specs/validation_guardrails.md) | 0.1.0 (draft) | NOT_STARTED | TBD | 2025-12-05 | Input sanitization requirements |
-| [Scanner Error Handling](specs/scanner_error_handling.md) | 0.1.0 (draft) | PARTIAL | TBD | 2025-12-05 | Needs telemetry and UX edge cases |
-| [Operations & Safety](specs/operations_safety.md) | 0.1.0 (draft) | NOT_STARTED | TBD | 2025-12-05 | Deployment/runbook details pending |
-| [Observability](specs/observability.md) | 0.1.0 (draft) | NOT_STARTED | TBD | 2025-12-05 | Logging/metrics tracing guidance |
-| [PWA Offline](specs/pwa_offline.md) | 0.1.0 (draft) | PARTIAL | TBD | 2025-12-05 | Manifest exists; caching strategy pending |
-| [Scanner](specs/scanner.md) | 0.1.0 (draft) | PARTIAL | TBD | 2025-12-05 | BDD scenarios; implementation incomplete |
-| [Product Management](specs/product_management.md) | 0.1.0 (draft) | PARTIAL | TBD | 2025-12-05 | BDD scenarios; implementation incomplete |
-| [Stock Management](specs/stock_management.md) | 0.1.0 (draft) | PARTIAL | TBD | 2025-12-05 | BDD scenarios; implementation incomplete |
-| [MVP Scope](specs/mvp_scope.md) | 0.1.0 (draft) | IN_PROGRESS | TBD | 2025-12-05 | Prioritization and launch criteria |
+| [**Lean MVP Scope**](specs/mvp_scope_lean.md) | **1.0.0** | **ACTIVE** | TBD | 2025-12-05 | **Ship this week - launch-ready scope** |
+| [MVP Scope (original)](specs/mvp_scope.md) | 0.1.0 (draft) | SUPERSEDED | TBD | 2025-12-05 | Replaced by lean MVP scope |
+| [Scanner](specs/scanner.md) | 0.1.0 (draft) | COMPLETE | TBD | 2025-12-05 | Implemented and working |
+| [Product Management](specs/product_management.md) | 0.1.0 (draft) | COMPLETE | TBD | 2025-12-05 | Implemented and working |
+| [Stock Management](specs/stock_management.md) | 0.1.0 (draft) | COMPLETE | TBD | 2025-12-05 | Implemented and working |
+| [Backend Proxy](specs/backend_proxy.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Deferred until post-validation |
+| [Validation Guardrails](specs/validation_guardrails.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Basic validation sufficient for MVP |
+| [Scanner Error Handling](specs/scanner_error_handling.md) | 0.1.0 (draft) | COMPLETE | TBD | 2025-12-05 | Basic error handling implemented |
+| [Operations & Safety](specs/operations_safety.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Launch checklist covers MVP needs |
+| [Observability](specs/observability.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Console logging sufficient for MVP |
+| [PWA Offline](specs/pwa_offline.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Online-only for MVP validation |
 
 Versioning uses semantic versions for specs: `0.x` indicates drafts or partial implementations; `1.0.0` will mark fully implemented, validated specs.
 

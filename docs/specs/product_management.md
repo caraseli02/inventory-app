@@ -1,10 +1,11 @@
 # Feature: Product Management
 
-**Version**: 0.1.0 (draft)
-**Status**: PARTIAL
+**Version**: 1.0.0
+**Status**: COMPLETE (MVP)
 **Owner**: TBD
 **Last Updated**: 2025-12-05
-**Dependencies**: [backend_proxy.md](./backend_proxy.md), [validation_guardrails.md](./validation_guardrails.md), [operations_safety.md](./operations_safety.md), [mvp_scope.md](./mvp_scope.md)
+**Dependencies**: None (MVP complete)
+**MVP Scope**: [mvp_scope_lean.md](./mvp_scope_lean.md)
 
 As a store employee
 I want to manage product details in the system
@@ -41,7 +42,35 @@ Scenario: Successfully creating a product
     And an initial stock 'IN' movement should be created (if specified)
     And I should be redirected to the "Product Detail" page for the new product
 
+## Implementation Status
+
+**All scenarios are implemented and working:**
+- ✅ Lookup existing products by barcode from Airtable
+- ✅ Create new products with form validation
+- ✅ AI auto-fill from OpenFoodFacts (name, category, image)
+- ✅ Visual loading indicator for AI data fetching
+- ✅ Image preview in create form
+- ✅ Initial stock movement creation on product creation
+- ✅ Redirect to Product Detail page after creation
+
+**Implementation notes:**
+- API layer: `src/lib/api.ts` (getProductByBarcode, createProduct)
+- Create form: `src/components/product/CreateProductForm.tsx`
+- Detail view: `src/components/product/ProductDetail.tsx`
+- Product lookup hook: `src/hooks/useProductLookup.ts`
+- AI integration: `src/lib/ai/openFoodFacts.ts`
+
+**Post-MVP enhancements (deferred):**
+- Server-side validation (basic HTML5 validation sufficient for MVP)
+- Backend proxy for Airtable (client-side OK for validation phase)
+- Advanced error recovery (basic error messages sufficient)
+
 ## Changelog
 
+### 1.0.0 (2025-12-05)
+- Updated status to COMPLETE (MVP) - all critical scenarios implemented
+- Removed dependencies on backend_proxy, validation_guardrails, operations_safety (post-MVP)
+- Added implementation status section with file references
+
 ### 0.1.0 (2025-12-05)
-- Initial draft of product management scenarios and dependencies.
+- Initial draft of product management scenarios and dependencies

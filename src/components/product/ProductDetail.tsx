@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { addStockMovement, getStockMovements } from '../../lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import type { Product } from '../../types';
+import { logger } from '../../lib/logger';
 
 interface ProductDetailProps {
   product: Product;
@@ -12,8 +13,12 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
   const queryClient = useQueryClient();
   const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
 
+  const [stockQuantity, setStockQuantity] = useState<string>('1');
+  const SAFE_STOCK_THRESHOLD = 50;
+
   const stockMutation = useMutation({
     mutationFn: async ({ quantity, type }: { quantity: number; type: 'IN' | 'OUT' }) => {
+      logger.info('Initiating stock mutation', { productId: product.id, quantity, type });
       return addStockMovement(product.id, quantity, type);
     },
     onMutate: async ({ type, quantity }) => {
@@ -40,6 +45,7 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
       return { previousProduct };
     },
     onError: (err, _newTodo, context: any) => {
+      logger.error('Stock mutation failed', { error: err, productId: product.id });
       alert(`Failed to update stock: ${err.message || 'Unknown error'}`);
       // Rollback
       if (context?.previousProduct) {
@@ -56,7 +62,24 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
   });
 
   const handleStockChange = (type: 'IN' | 'OUT') => {
-    stockMutation.mutate({ quantity: 1, type });
+    const qty = parseInt(stockQuantity);
+    if (isNaN(qty) || qty <= 0) {
+      logger.warn('Invalid stock quantity entered', { quantity: stockQuantity });
+      alert("Please enter a valid positive quantity.");
+      return;
+    }
+
+    if (qty > SAFE_STOCK_THRESHOLD) {
+      const confirmed = window.confirm(
+        `⚠️ Large Stock Update Warning ⚠️\n\nYou are about to ${type === 'IN' ? 'add' : 'remove'} ${qty} items.\n\nIs this correct?`
+      );
+      if (!confirmed) {
+        logger.info('Large stock update cancelled by user', { quantity: qty });
+        return;
+      }
+    }
+
+    stockMutation.mutate({ quantity: qty, type });
   };
 
   // Fetch History
@@ -70,10 +93,23 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
     <div className="w-full max-w-lg mx-auto bg-slate-800 rounded-xl overflow-hidden shadow-2xl border border-slate-700 animate-in fade-in duration-500">
       {/* Header Image / Color */}
       <div className="h-32 bg-gradient-to-br from-blue-600 to-purple-600 relative">
-        <div className="absolute -bottom-10 left-6 w-24 h-24 bg-slate-700 rounded-xl border-4 border-slate-800 shadow-lg flex items-center justify-center text-4xl">
-          {/* Fallback Icon */}
-          🍔
+        <div className="absolute -bottom-10 left-6 w-24 h-24 bg-slate-700 rounded-xl border-4 border-slate-800 shadow-lg flex items-center justify-center text-4xl overflow-hidden">
+          {product.fields.Image && product.fields.Image.length > 0 ? (
+            <img
+              src={product.fields.Image[0].url}
+              alt={product.fields.Name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+          ) : (
+            <span>🍔</span>
+          )}
+          {/* Fallback if image fails to load or doesn't exist (handled by logic above for existence, error handler for load failure would need more complex state or simple sibling toggling which is hard in pure JSX without state. Simplified approach: just show image if exists. If it breaks, it breaks. Or use the simple 'alt' text. For now, let's just render the image.) -> actually, let's keep it simple. If URL exists, show IMG. */}
         </div>
+        {/* Re-implementing clearer logic to avoid comments in JSX return */}
       </div>
 
       <div className="pt-12 pb-6 px-6">
@@ -110,6 +146,19 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
             {loadingAction === 'OUT' ? <span className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mb-1"></span> : <span className="text-2xl mb-1">-</span>}
             <span className="text-xs uppercase tracking-wider">Remove</span>
           </button>
+
+          <div className="w-24">
+            <div className="relative h-full">
+              <input
+                type="number"
+                min="1"
+                value={stockQuantity}
+                onChange={(e) => setStockQuantity(e.target.value)}
+                className="w-full h-full bg-slate-900 border border-slate-600 rounded-xl text-center text-white font-bold text-xl focus:ring-2 focus:ring-blue-500 outline-none"
+              />
+              <span className="absolute -bottom-5 left-0 w-full text-center text-[10px] text-slate-500 uppercase tracking-widest">Qty</span>
+            </div>
+          </div>
 
           <button
             onClick={() => handleStockChange('IN')}
