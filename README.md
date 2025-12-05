@@ -1,73 +1,50 @@
-# React + TypeScript + Vite
+# Grocery Inventory App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A tablet-first React + TypeScript application for scanning grocery items, syncing inventory to Airtable, and providing a clean UI for stock management. The project is built with Vite, TailwindCSS, and shadcn/ui components.
 
-Currently, two official plugins are available:
+## Prerequisites
+- Node.js 20+
+- pnpm (recommended) or npm
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Installation
+1. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+2. Create your environment file by copying the template:
+   ```bash
+   cp .env.example .env
+   ```
+3. Fill in the required values in `.env` (see below). **Never commit real credentials.**
 
-## React Compiler
+## Environment Configuration
+The app relies on Airtable for data storage. Configure the following variables in `.env`:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `VITE_AIRTABLE_API_KEY`: Personal access token with read/write access to your Airtable base.
+- `VITE_AIRTABLE_BASE_ID`: The Base ID for the inventory workspace.
+- (Optional) `VITE_BACKEND_PROXY_URL` and `VITE_PROXY_AUTH_TOKEN`: Use when a backend proxy is available to avoid exposing Airtable credentials in the client.
 
-## Expanding the ESLint configuration
+See `.env.example` for placeholder values and security reminders.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Usage
+- Start the development server:
+  ```bash
+  pnpm dev
+  ```
+- Build for production:
+  ```bash
+  pnpm build
+  ```
+- Preview the production build locally:
+  ```bash
+  pnpm preview
+  ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Documentation
+- Docs Home: [`docs/README.md`](docs/README.md)
+- Project architecture and folder structure: [`docs/project_architecture_structure.md`](docs/project_architecture_structure.md)
+- Full documentation set is located in the [`docs/`](docs/) directory.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Security & Limitations
+- Airtable access currently happens directly from the client. Use a backend proxy when available to avoid exposing tokens.
+- Keep `.env` files out of version control; only commit `.env.example`.

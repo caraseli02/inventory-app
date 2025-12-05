@@ -1,5 +1,7 @@
 # TailwindCSS v4 + Shadcn Setup (Updated 2025 Workflow)
 
+> **Status**: Archived (historical setup notes kept for reference only).
+
 This is the correct, copy‑ready setup for using **TailwindCSS v4** and **Shadcn UI** in a modern React/Vite project.
 
 ---

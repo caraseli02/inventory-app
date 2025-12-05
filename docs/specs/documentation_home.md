@@ -1,5 +1,13 @@
 # Documentation Home and Onboarding Upgrade
 
+**Version**: 0.1.0 (draft)
+**Status**: IN_PROGRESS
+**Owner**: TBD
+**Last Updated**: 2025-12-05
+**Dependencies**: [mvp_scope.md](./mvp_scope.md), [operations_safety.md](./operations_safety.md)
+
+> **Note**: This file is the specification for the Docs Home. The implemented Docs Home lives at [`docs/README.md`](../README.md) and should reflect these requirements.
+
 ## Objective
 Provide a single, authoritative entry point for contributors with accurate setup, environment, and navigation guidance to reduce fragmentation.
 
@@ -12,6 +20,11 @@ Provide a single, authoritative entry point for contributors with accurate setup
 - Cross-links from existing specs/reviews back to Docs Home for discoverability, including the MVP scope/prioritization doc.
 - Walkthrough updated to reference real test/build commands or clearly mark pending steps.
 - Operational/Safety guidance (Airtable exposure, secrets handling, testing expectations) linked from onboarding.
+
+## Changelog
+
+### 0.1.0 (2025-12-05)
+- Initial draft defining documentation home objectives, scope, and requirements.
 
 ## Implementation Notes
 - Use concise tables for docs index (title, purpose, owner, last reviewed, authoritative/draft).

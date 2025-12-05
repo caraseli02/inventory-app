@@ -1,5 +1,11 @@
 # Scanner and API Error Experience
 
+**Version**: 0.1.0 (draft)
+**Status**: PARTIAL
+**Owner**: TBD
+**Last Updated**: 2025-12-05
+**Dependencies**: [observability.md](./observability.md), [backend_proxy.md](./backend_proxy.md), [validation_guardrails.md](./validation_guardrails.md), [mvp_scope.md](./mvp_scope.md)
+
 ## Objective
 Deliver resilient, user-friendly error handling for camera access, barcode scanning, network failures, and stock/product mutations.
 
@@ -24,3 +30,8 @@ Deliver resilient, user-friendly error handling for camera access, barcode scann
 - Camera-denied state is visible and tested; manual entry remains available.
 - Users see clear, context-specific errors for lookup and stock mutations with retry guidance.
 - Telemetry/logging records scanner and API errors with correlation IDs or timestamps.
+
+## Changelog
+
+### 0.1.0 (2025-12-05)
+- Initial draft summarizing scanner error handling requirements and acceptance criteria.

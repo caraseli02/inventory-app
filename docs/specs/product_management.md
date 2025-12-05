@@ -1,5 +1,11 @@
 # Feature: Product Management
 
+**Version**: 0.1.0 (draft)
+**Status**: PARTIAL
+**Owner**: TBD
+**Last Updated**: 2025-12-05
+**Dependencies**: [backend_proxy.md](./backend_proxy.md), [validation_guardrails.md](./validation_guardrails.md), [operations_safety.md](./operations_safety.md), [mvp_scope.md](./mvp_scope.md)
+
 As a store employee
 I want to manage product details in the system
 So that the inventory is accurate and searchable
@@ -26,3 +32,8 @@ Scenario: Successfully creating a product
     Then the product should be saved to Airtable
     And an initial stock 'IN' movement should be created (if specified)
     And I should be redirected to the "Product Detail" page for the new product
+
+## Changelog
+
+### 0.1.0 (2025-12-05)
+- Initial draft of product management scenarios and dependencies.
