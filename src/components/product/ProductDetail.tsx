@@ -27,7 +27,7 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
       // Optimistically update
       queryClient.setQueryData(['product', product.fields.Barcode], (old: any) => {
         if (!old) return old;
-        const change = type === 'OUT' ? -1 : 1;
+        const change = type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity);
         return {
           ...old,
           fields: {
@@ -83,7 +83,7 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
             <span className="text-slate-400 text-sm">{product.fields.Category}</span>
           </div>
           <div className="text-right">
-            <div className="text-xl font-mono font-bold text- emerald-400">
+            <div className="text-xl font-mono font-bold text-emerald-400">
               {product.fields['Current Stock'] ?? 0}
             </div>
             <div className="text-xs text-slate-500 uppercase tracking-widest">In Stock</div>
