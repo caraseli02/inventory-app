@@ -26,18 +26,26 @@ export interface CreateProductDTO {
   Category?: string;
   Price?: number;
   'Expiry Date'?: string;
+  Image?: string; // URL string
 }
 
 export const createProduct = async (data: CreateProductDTO): Promise<Product> => {
+  const fields: any = {
+    Name: data.Name,
+    Barcode: data.Barcode,
+    Category: data.Category,
+    Price: data.Price,
+    'Expiry Date': data['Expiry Date'],
+  };
+
+  // Airtable requires attachments as array of objects with url
+  if (data.Image) {
+    fields.Image = [{ url: data.Image }];
+  }
+
   const records = await base(TABLES.PRODUCTS).create([
     {
-      fields: {
-        Name: data.Name,
-        Barcode: data.Barcode,
-        Category: data.Category,
-        Price: data.Price,
-        'Expiry Date': data['Expiry Date'],
-      },
+      fields: fields,
     },
   ], { typecast: true });
 
