@@ -1,0 +1,156 @@
+import { useState } from 'react';
+import { addStockMovement, getStockMovements } from '../../lib/api';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import type { Product } from '../../types';
+
+interface ProductDetailProps {
+  product: Product;
+  onScanNew: () => void;
+}
+
+const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
+  const queryClient = useQueryClient();
+  const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
+
+  const stockMutation = useMutation({
+    mutationFn: async ({ quantity, type }: { quantity: number; type: 'IN' | 'OUT' }) => {
+      return addStockMovement(product.id, quantity, type);
+    },
+    onMutate: async ({ type, quantity }) => {
+      setLoadingAction(type);
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['product', product.fields.Barcode] });
+
+      // Snapshot previous value
+      const previousProduct = queryClient.getQueryData(['product', product.fields.Barcode]);
+
+      // Optimistically update
+      queryClient.setQueryData(['product', product.fields.Barcode], (old: any) => {
+        if (!old) return old;
+        const change = type === 'OUT' ? -1 : 1;
+        return {
+          ...old,
+          fields: {
+            ...old.fields,
+            'Current Stock': (old.fields['Current Stock'] || 0) + change,
+          },
+        };
+      });
+
+      return { previousProduct };
+    },
+    onError: (err, _newTodo, context: any) => {
+      alert(`Failed to update stock: ${err.message || 'Unknown error'}`);
+      // Rollback
+      if (context?.previousProduct) {
+        queryClient.setQueryData(['product', product.fields.Barcode], context.previousProduct);
+      }
+    },
+    onSettled: () => {
+      setLoadingAction(null);
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['product', product.fields.Barcode] });
+      // Also refetch history
+      queryClient.invalidateQueries({ queryKey: ['history', product.id] });
+    },
+  });
+
+  const handleStockChange = (type: 'IN' | 'OUT') => {
+    stockMutation.mutate({ quantity: 1, type });
+  };
+
+  // Fetch History
+  const { data: history } = useQuery({
+    queryKey: ['history', product.id],
+    queryFn: () => getStockMovements(product.id),
+    enabled: !!product.id,
+  });
+
+  return (
+    <div className="w-full max-w-lg mx-auto bg-slate-800 rounded-xl overflow-hidden shadow-2xl border border-slate-700 animate-in fade-in duration-500">
+      {/* Header Image / Color */}
+      <div className="h-32 bg-gradient-to-br from-blue-600 to-purple-600 relative">
+        <div className="absolute -bottom-10 left-6 w-24 h-24 bg-slate-700 rounded-xl border-4 border-slate-800 shadow-lg flex items-center justify-center text-4xl">
+          {/* Fallback Icon */}
+          🍔
+        </div>
+      </div>
+
+      <div className="pt-12 pb-6 px-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white leading-tight">{product.fields.Name}</h2>
+            <span className="text-slate-400 text-sm">{product.fields.Category}</span>
+          </div>
+          <div className="text-right">
+            <div className="text-xl font-mono font-bold text- emerald-400">
+              {product.fields['Current Stock'] ?? 0}
+            </div>
+            <div className="text-xs text-slate-500 uppercase tracking-widest">In Stock</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+            <div className="text-xs text-slate-500 mb-1">Price</div>
+            <div className="text-white font-medium">${product.fields.Price?.toFixed(2) ?? '0.00'}</div>
+          </div>
+          <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
+            <div className="text-xs text-slate-500 mb-1">Expires</div>
+            <div className="text-white font-medium">{product.fields['Expiry Date'] ?? 'N/A'}</div>
+          </div>
+        </div>
+
+        <div className="flex gap-4 mb-8">
+          <button
+            onClick={() => handleStockChange('OUT')}
+            disabled={loadingAction !== null}
+            className="flex-1 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-xl font-bold transition-all active:scale-95 flex flex-col items-center justify-center"
+          >
+            {loadingAction === 'OUT' ? <span className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mb-1"></span> : <span className="text-2xl mb-1">-</span>}
+            <span className="text-xs uppercase tracking-wider">Remove</span>
+          </button>
+
+          <button
+            onClick={() => handleStockChange('IN')}
+            disabled={loadingAction !== null}
+            className="flex-1 py-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/50 rounded-xl font-bold transition-all active:scale-95 flex flex-col items-center justify-center"
+          >
+            {loadingAction === 'IN' ? <span className="animate-spin h-5 w-5 border-2 border-emerald-500 border-t-transparent rounded-full mb-1"></span> : <span className="text-2xl mb-1">+</span>}
+            <span className="text-xs uppercase tracking-wider">Add Stock</span>
+          </button>
+        </div>
+
+        {/* Recent Activity Section */}
+        <div className="border-t border-slate-700 pt-6">
+          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+            <span>Recent Activity</span>
+            <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded-full">Last 10</span>
+          </h3>
+          <div className="space-y-3">
+            {history?.map((move) => (
+              <div key={move.id} className="flex justify-between items-center text-sm p-3 bg-slate-900/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <span className={`w-2 h-2 rounded-full ${move.fields.Type === 'IN' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                  <span className="text-slate-300">{move.fields.Date}</span>
+                </div>
+                <div className={`font-mono font-bold ${move.fields.Type === 'IN' ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {move.fields.Type === 'IN' ? '+' : '-'}{Math.abs(move.fields.Quantity)}
+                </div>
+              </div>
+            ))}
+            {!history?.length && <div className="text-slate-500 text-sm text-center italic">No recent movements</div>}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-slate-900 p-4 border-t border-slate-700 flex justify-center">
+        <button onClick={onScanNew} className="text-slate-400 hover:text-white text-sm font-medium transition-colors">
+          Scan Another Product
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ProductDetail;
