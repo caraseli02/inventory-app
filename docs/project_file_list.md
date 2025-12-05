@@ -34,6 +34,10 @@ src/
  ├─ pages/
  │    └─ ScanPage.tsx
  ├─ lib/
+ │    ├─ ai/
+ │    │    ├─ index.ts
+ │    │    ├─ openFoodFacts.ts
+ │    │    └─ types.ts
  │    ├─ api.ts
  │    └─ airtable.ts
  ├─ hooks/

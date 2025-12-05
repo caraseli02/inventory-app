@@ -24,6 +24,14 @@ Scenario: Create new product
     And I should be taken to the "Create Product" form
     And the barcode field should be pre-filled with "987654321"
 
+Scenario: AI Auto-Fill and Image Fetching
+    Given I scan a barcode that exists in OpenFoodFacts (e.g. "5449000000996")
+    When the "Create Product" form loads
+    Then the "Product Name" should automatically populate (e.g. "Coca-Cola")
+    And the "Category" should automatically populate (e.g. "Beverages")
+    And a product image preview should appear if available
+    And I should see a visual indicator that AI is fetching data
+
 Scenario: Successfully creating a product
     Given I am on the "Create Product" form for barcode "987654321"
     When I enter "New Chips" as Name and "2.99" as Price
