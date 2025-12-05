@@ -1,5 +1,11 @@
 # Feature: Stock Management
 
+**Version**: 0.1.0 (draft)
+**Status**: PARTIAL
+**Owner**: TBD
+**Last Updated**: 2025-12-05
+**Dependencies**: [backend_proxy.md](./backend_proxy.md), [validation_guardrails.md](./validation_guardrails.md), [operations_safety.md](./operations_safety.md), [mvp_scope.md](./mvp_scope.md)
+
 As a store employee
 I want to adjust stock levels (IN/OUT)
 So that I can track inventory flow and current availability
@@ -25,3 +31,8 @@ Scenario: Viewing stock history
     When I view the "Product Detail" page
     Then I should see the calculated total stock (Rollup)
     And I should see a list of recent stock movements (if implemented in UI)
+
+## Changelog
+
+### 0.1.0 (2025-12-05)
+- Initial draft of stock management scenarios and dependencies.

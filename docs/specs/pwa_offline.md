@@ -1,10 +1,21 @@
 # PWA Offline and Caching Strategy
 
+**Version**: 0.1.0 (draft)
+**Status**: PARTIAL
+**Owner**: TBD
+**Last Updated**: 2025-12-05
+**Dependencies**: [backend_proxy.md](./backend_proxy.md), [mvp_scope.md](./mvp_scope.md)
+
 ## Objective
 Extend the existing PWA setup with caching strategies that support offline resilience for the scanner flow and static assets.
 
 ## Scope
 - Service worker configuration, asset caching, and offline UX for scan/create/update flows.
+
+## Changelog
+
+### 0.1.0 (2025-12-05)
+- Initial draft describing PWA offline objectives, scope, and dependencies.
 
 ## Requirements
 - Precache core static assets (HTML, JS, CSS, manifest, icons) with versioned cache naming.

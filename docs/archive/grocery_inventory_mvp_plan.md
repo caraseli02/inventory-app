@@ -1,5 +1,7 @@
 # Grocery Inventory App MVP – Detailed Checklist & Plan
 
+> **Status**: Archived (superseded by `docs/README.md` and the specs in `docs/specs/`). Keep for historical reference only.
+
 ## 🎯 Goal: A tablet-friendly PWA that scans barcodes, checks/creates products in Airtable, and manages stock IN/OUT.
 
 ---

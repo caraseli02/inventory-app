@@ -1,5 +1,11 @@
 # Backend Proxy for Airtable Security
 
+**Version**: 0.1.0 (draft)
+**Status**: NOT_STARTED
+**Owner**: TBD
+**Last Updated**: 2025-12-05
+**Dependencies**: [validation_guardrails.md](./validation_guardrails.md), [operations_safety.md](./operations_safety.md), [mvp_scope.md](./mvp_scope.md)
+
 ## Objective
 Move Airtable authentication and query logic from the browser to a trusted backend proxy to eliminate secret exposure, add authorization, and sanitize input before hitting Airtable.
 
@@ -25,3 +31,8 @@ Move Airtable authentication and query logic from the browser to a trusted backe
 - All frontend Airtable calls are replaced with calls to the backend proxy.
 - Barcode lookup path rejects malformed/injected formulas and logs the attempt server-side.
 - Documentation updated with environment variables and API surface for the proxy.
+
+## Changelog
+
+### 0.1.0 (2025-12-05)
+- Initial draft with objectives, scope, and acceptance criteria.

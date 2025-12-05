@@ -1,5 +1,7 @@
 # Full TailwindCSS v4 + Shadcn Setup (with Corresponding Descriptions)
 
+> **Status**: Archived (historical design exploration; superseded by current specs and implementation).
+
 This document consolidates the complete setup instructions for TailwindCSS v4 and Shadcn UI in a modern React/Vite project, including descriptive explanations for each step.
 
 ---
