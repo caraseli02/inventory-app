@@ -72,7 +72,7 @@ export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Produ
 
   // Normalize Image field from Airtable's Attachment format to our format
   const normalizedImage = record.fields.Image && Array.isArray(record.fields.Image)
-    ? (record.fields.Image as Array<{ url: string }>).map(att => ({ url: (att as any).url || '' }))
+    ? (record.fields.Image as Attachment[]).map(att => ({ url: att.url ?? '' }))
     : undefined;
 
   return {
@@ -242,7 +242,9 @@ export const addStockMovement = async (productId: string, quantity: number, type
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorCode = (error as any)?.response?.status || (error as any)?.code || 'UNKNOWN';
+    type AirtableError = { response?: { status?: number }; code?: string };
+    const airtableError = error as AirtableError | undefined;
+    const errorCode = airtableError?.response?.status ?? airtableError?.code ?? 'UNKNOWN';
 
     logger.error('Failed to add stock movement', {
       productId,
