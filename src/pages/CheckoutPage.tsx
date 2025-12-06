@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
-import { addStockMovement } from '../lib/api';
+import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
 import type { CartItem } from '../types';
 import { logger } from '../lib/logger';
 
@@ -17,6 +17,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [lookupRequested, setLookupRequested] = useState(false);
+  const [lookupError, setLookupError] = useState<string | null>(null);
   const [statusSummary, setStatusSummary] = useState<{
     successes: number;
     failures: number;
@@ -54,6 +55,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       setStatusSummary(null);
       setCheckoutComplete(false);
+      setLookupError(null);  // Clear any previous lookup errors
       playSound('success');
 
       // Reset scan state immediately to allow rapid scanning
@@ -71,24 +73,23 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         barcode: scannedCode,
         errorMessage,
         errorType: error instanceof Error ? error.constructor.name : typeof error,
+        timestamp: new Date().toISOString(),
       });
 
-      // Show user-facing error feedback (MVP: using alert as fallback)
-      const isNetworkError = errorMessage.toLowerCase().includes('network') ||
-                             errorMessage.toLowerCase().includes('fetch') ||
-                             errorMessage.toLowerCase().includes('timeout');
-      const errorFeedback = isNetworkError
-        ? 'Network error. Check your connection and try again.'
-        : 'Product not found or system error. Check barcode and retry.';
+      // Classify error and show user-facing feedback
+      let userMessage = 'Product not found. Check barcode and retry.';
+      if (errorMessage.toLowerCase().includes('network') ||
+          errorMessage.toLowerCase().includes('fetch') ||
+          errorMessage.toLowerCase().includes('timeout')) {
+        userMessage = 'Network error. Check your connection and try again.';
+      } else if (errorMessage.toLowerCase().includes('unauthorized') ||
+                 errorMessage.toLowerCase().includes('authentication')) {
+        userMessage = 'Authentication failed. Check API credentials.';
+      }
 
-      // Delay to allow user to see feedback
-      const timer = setTimeout(() => {
-        alert(errorFeedback);
-        setScannedCode(null);
-        setLookupRequested(false);
-      }, 500);
-
-      return () => clearTimeout(timer);
+      setLookupError(userMessage);
+      setScannedCode(null);
+      setLookupRequested(false);
     }
   }, [error, playSound, product, scannedCode]);
 
@@ -155,8 +156,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     const { total, missingPrices } = calculateTotals();
     const totalLabel = `$${total.toFixed(2)}`;
     const confirmMessage = missingPrices
-      ? `Complete checkout for ${cart.length} items? Priced subtotal: ${totalLabel}. ${missingPrices} item${missingPrices > 1 ? 's are' : ' is'} missing price data and will be processed without totals.`
-      : `Complete checkout for ${cart.length} items? Total: ${totalLabel}`;
+      ? `Complete checkout for ${pendingItems.length} items? Priced subtotal: ${totalLabel}. ${missingPrices} item${missingPrices > 1 ? 's are' : ' is'} missing price data and will be processed without totals.`
+      : `Complete checkout for ${pendingItems.length} items? Total: ${totalLabel}`;
 
     const confirm = window.confirm(confirmMessage);
     if (!confirm) return;
@@ -183,23 +184,13 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       } catch (err) {
         failures += 1;
 
-        // Classify error type for user-facing message
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        const isValidationError = errorMessage.toLowerCase().includes('stock') ||
-                                  errorMessage.toLowerCase().includes('negative') ||
-                                  errorMessage.toLowerCase().includes('constraint');
-        const isNetworkError = errorMessage.toLowerCase().includes('network') ||
-                              errorMessage.toLowerCase().includes('fetch') ||
-                              errorMessage.toLowerCase().includes('timeout');
-        const isAuthError = errorMessage.toLowerCase().includes('unauthorized') ||
-                           errorMessage.toLowerCase().includes('invalid');
-
         let userMessage = 'Unknown error. Please try again.';
-        if (isValidationError) {
+
+        if (err instanceof ValidationError) {
           userMessage = 'Cannot reduce stock below zero. Adjust quantity and retry.';
-        } else if (isNetworkError) {
+        } else if (err instanceof NetworkError) {
           userMessage = 'Network error. Check connection and retry.';
-        } else if (isAuthError) {
+        } else if (err instanceof AuthorizationError) {
           userMessage = 'Authorization failed. Contact support.';
         } else if (err instanceof Error) {
           userMessage = err.message;
@@ -212,11 +203,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           productId: item.product.id,
           productName: item.product.fields.Name,
           quantity: item.quantity,
-          errorMessage,
+          errorMessage: err instanceof Error ? err.message : String(err),
           errorType: err instanceof Error ? err.constructor.name : typeof err,
-          isValidationError,
-          isNetworkError,
-          isAuthError,
+          errorStack: err instanceof Error ? err.stack : undefined,
           timestamp: new Date().toISOString(),
         });
       }
@@ -286,6 +275,25 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             ← Exit
           </button>
         </div>
+
+        {/* Error Message - Inline display */}
+        {lookupError && (
+          <div className="bg-red-900/20 border border-red-500/50 text-red-200 p-3 rounded-lg text-sm animate-in fade-in duration-200">
+            <div className="flex items-start gap-2">
+              <span className="text-lg mt-0.5">⚠️</span>
+              <div>
+                <p className="font-semibold">Lookup Failed</p>
+                <p className="text-red-300/80 text-xs mt-1">{lookupError}</p>
+              </div>
+              <button
+                onClick={() => setLookupError(null)}
+                className="ml-auto text-red-300 hover:text-red-100 text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Mobile: Scanner takes less space or is collapsible? For now, keep it visible but simpler */}
         <div className={`transition-all duration-300 ${!showScanner && 'opacity-50'}`}>

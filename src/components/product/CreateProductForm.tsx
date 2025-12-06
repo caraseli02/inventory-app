@@ -2,6 +2,7 @@ import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
 import { createProduct, addStockMovement } from '../../lib/api';
 import { suggestProductDetails } from '../../lib/ai';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { logger } from '../../lib/logger';
 
 interface CreateProductFormProps {
   barcode: string;
@@ -37,7 +38,13 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
           }));
         }
       } catch (err) {
-        console.error("AI Auto-fill failed", err);
+        logger.warn('AI auto-fill failed during product creation', {
+          barcode,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorType: err instanceof Error ? err.constructor.name : typeof err,
+          timestamp: new Date().toISOString(),
+        });
+        // AI failure is non-critical - user can manually enter product details
       } finally {
         setAiLoading(false);
       }
@@ -63,7 +70,22 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
       // Step 2: Add Initial Stock (if > 0)
       const initialQty = parseInt(data.initialStock);
       if (initialQty > 0) {
-        await addStockMovement(newProduct.id, initialQty, 'IN');
+        try {
+          await addStockMovement(newProduct.id, initialQty, 'IN');
+        } catch (stockError) {
+          logger.error('Failed to create initial stock movement after product creation', {
+            productId: newProduct.id,
+            productName: newProduct.fields.Name,
+            initialQty,
+            barcode,
+            errorMessage: stockError instanceof Error ? stockError.message : String(stockError),
+            errorStack: stockError instanceof Error ? stockError.stack : undefined,
+            timestamp: new Date().toISOString(),
+          });
+          throw new Error(
+            `Product created (${newProduct.fields.Name}) but initial stock failed. Please add stock manually or contact support.`
+          );
+        }
       }
 
       return newProduct;
@@ -72,6 +94,14 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['product', barcode] });
       onSuccess();
+    },
+    onError: (error) => {
+      logger.error('Product creation mutation failed', {
+        barcode,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString(),
+      });
     },
   });
 
