@@ -25,7 +25,11 @@ export interface StockMovement {
   };
 }
 
+export type CartItemStatus = 'idle' | 'processing' | 'success' | 'failed';
+
 export interface CartItem {
   product: Product;
   quantity: number;
+  status?: CartItemStatus;
+  statusMessage?: string;
 }
