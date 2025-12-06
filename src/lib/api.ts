@@ -53,10 +53,6 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
     Barcode: data.Barcode,
     Category: data.Category ?? '',
     Price: data.Price ?? 0,
-    'Current Stock': 0,
-    'Ideal Stock': 0,
-    'Min Stock Level': 0,
-    Supplier: '',
     'Expiry Date': data['Expiry Date'] ?? '',
   };
 
