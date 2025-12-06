@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
 import { createProduct, addStockMovement } from '../../lib/api';
 import { suggestProductDetails } from '../../lib/ai';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -72,12 +72,12 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     mutation.mutate(formData);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
