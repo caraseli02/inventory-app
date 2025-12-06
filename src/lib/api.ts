@@ -8,7 +8,7 @@ const productsTable = base<ProductFields>(TABLES.PRODUCTS);
 const getCreatedTime = <TFields extends FieldSet>(record: AirtableRecord<TFields>): string =>
   (record._rawJson as { createdTime?: string } | undefined)?.createdTime ?? '';
 
-const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Product => ({
+export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Product => ({
   id: record.id,
   createdTime: getCreatedTime(record),
   fields: record.fields,

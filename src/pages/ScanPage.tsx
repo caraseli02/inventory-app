@@ -34,6 +34,8 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
 
   const handleReset = () => {
     setScannedCode(null);
+    setManualCode('');
+    setShowScanner(true);
   };
 
   const getStatusContent = () => {
