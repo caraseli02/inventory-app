@@ -3,6 +3,12 @@ import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
+import {
+  ArrowLeftIcon,
+  PencilIcon,
+  SearchIcon,
+  ShoppingCartIcon,
+} from '../components/ui/Icons';
 
 type ScanMode = 'add' | 'remove';
 
@@ -68,7 +74,8 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
             onClick={handleReset}
             className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
           >
-            ← Back
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back
           </button>
           <div className="flex items-center gap-2">
             <div className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border-2 ${getModeBadgeStyles()}`}>
@@ -100,7 +107,8 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
             onClick={handleReset}
             className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
           >
-            ← Back
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back
           </button>
           <div className="flex items-center gap-2">
             <div className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border-2 ${getModeBadgeStyles()}`}>
@@ -123,26 +131,28 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
   return (
     <div className="w-full max-w-3xl mx-auto p-4 flex flex-col items-center min-h-[520px]">
       {/* Header Bar - Clean 3-zone layout */}
-      <div className="w-full flex items-center justify-between mb-8 gap-4">
+      <div className="w-full flex items-center justify-between mb-6 gap-4">
         {/* Left: Navigation */}
         <div className="flex-shrink-0">
           {isTablet && (
-            <button
-              onClick={onBack}
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-            >
-              ← Back
-            </button>
-          )}
-          {!isTablet && onCheckout && (
-            <button
-              onClick={onCheckout}
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-            >
-              🛒 Checkout
-            </button>
-          )}
-        </div>
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back
+          </button>
+        )}
+        {!isTablet && onCheckout && (
+          <button
+            onClick={onCheckout}
+            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+          >
+            <ShoppingCartIcon className="h-4 w-4" />
+            Checkout
+          </button>
+        )}
+      </div>
 
         {/* Center: Mode Indicator */}
         <div className="flex items-center gap-3">
@@ -162,6 +172,7 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
             onClick={handleModeToggle}
             className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
           >
+            <ArrowLeftIcon className="h-4 w-4 rotate-180" />
             Switch {mode === 'add' ? 'to Remove' : 'to Add'}
           </button>
         </div>
@@ -203,7 +214,7 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
               className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white transition"
               title="Quick checkout"
             >
-              🛒
+              <ShoppingCartIcon className="h-4 w-4" />
             </button>
           )}
         </div>
@@ -212,14 +223,15 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
       {!scannedCode && (
         <div className="w-full max-w-2xl animate-in fade-in duration-500">
           {showScanner ? (
-            <div className={`relative rounded-2xl overflow-hidden border-2 border-gray-200 bg-black shadow-lg`}>
+            <div className={`relative rounded-2xl overflow-hidden border-2 border-gray-200 bg-black shadow-md aspect-[4/3]`}>
               <Scanner onScanSuccess={handleScanSuccess} />
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/40 to-transparent p-6 flex justify-center">
                 <button
                   onClick={() => setShowScanner(false)}
                   className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white/95 px-5 py-3 text-sm font-semibold text-gray-900 transition hover:bg-white shadow-sm"
                 >
-                  ✏️ Enter manually
+                  <PencilIcon className="h-4 w-4" />
+                  Enter manually
                 </button>
               </div>
             </div>
@@ -244,14 +256,16 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
                     disabled={manualCode.trim().length < 3}
                     className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-5 py-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${mode === 'add' ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-md hover:shadow-lg'}`}
                   >
-                    🔍 Lookup
+                    <SearchIcon className="h-4 w-4" />
+                    Lookup
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowScanner(true)}
                     className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-5 py-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
                   >
-                    ← Camera
+                    <ArrowLeftIcon className="h-4 w-4" />
+                    Camera
                   </button>
                 </div>
               </form>

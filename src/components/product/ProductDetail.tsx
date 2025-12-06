@@ -3,6 +3,7 @@ import { addStockMovement, getStockMovements } from '../../lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import type { Product } from '../../types';
 import { logger } from '../../lib/logger';
+import { ArrowLeftIcon, BoxIcon, MinusIcon, PlusIcon } from '../ui/Icons';
 
 interface ProductDetailProps {
   product: Product;
@@ -77,7 +78,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
 
     if (qty > SAFE_STOCK_THRESHOLD) {
       const confirmed = window.confirm(
-        `⚠️ Large Stock Update Warning ⚠️\n\nYou are about to ${type === 'IN' ? 'add' : 'remove'} ${qty} items.\n\nIs this correct?`
+        `Large Stock Update Warning\n\nYou are about to ${type === 'IN' ? 'add' : 'remove'} ${qty} items.\n\nIs this correct?`
       );
       if (!confirmed) {
         logger.info('Large stock update cancelled by user', { quantity: qty });
@@ -96,13 +97,13 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   });
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white rounded-lg overflow-hidden border-2 border-gray-200 animate-in fade-in duration-500">
+    <div className="w-full max-w-lg mx-auto bg-white rounded-xl overflow-hidden border-2 border-gray-200 animate-in fade-in duration-500">
       {/* Header */}
       <div className="bg-gray-50 border-b-2 border-gray-200 px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-3xl overflow-hidden flex-shrink-0">
+              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-gray-200">
                 {product.fields.Image && product.fields.Image.length > 0 ? (
                   <img
                     src={product.fields.Image[0].url}
@@ -114,7 +115,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
                     }}
                   />
                 ) : (
-                  <span>🍔</span>
+                  <BoxIcon className="h-7 w-7 text-gray-400" />
                 )}
               </div>
               <div>
@@ -133,25 +134,29 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
       </div>
 
       <div className="px-6 py-6">
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
             <div className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">Price</div>
             <div className="text-gray-900 font-medium">{displayPrice}</div>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
+          <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
             <div className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">Expiry</div>
             <div className="text-gray-900 font-medium text-sm">{expiryDisplay}</div>
           </div>
         </div>
 
-        <div className="flex gap-3 mb-8">
+        <div className="flex gap-3 mb-6">
           {mode === 'remove' && (
             <button
               onClick={() => handleStockChange('OUT')}
               disabled={loadingAction !== null}
               className="flex-1 py-4 bg-red-50 hover:bg-red-100 text-red-700 border-2 border-red-200 rounded-lg font-semibold transition-colors active:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loadingAction === 'OUT' ? <span className="animate-spin h-4 w-4 border-2 border-red-700 border-t-transparent rounded-full"></span> : <span className="text-lg">−</span>}
+              {loadingAction === 'OUT' ? (
+                <span className="animate-spin h-4 w-4 border-2 border-red-700 border-t-transparent rounded-full"></span>
+              ) : (
+                <MinusIcon className="h-4 w-4" />
+              )}
               <span className="hidden sm:inline text-sm">Remove</span>
             </button>
           )}
@@ -172,7 +177,11 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
               disabled={loadingAction !== null}
               className="flex-1 py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-2 border-emerald-200 rounded-lg font-semibold transition-colors active:bg-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {loadingAction === 'IN' ? <span className="animate-spin h-4 w-4 border-2 border-emerald-700 border-t-transparent rounded-full"></span> : <span className="text-lg">+</span>}
+              {loadingAction === 'IN' ? (
+                <span className="animate-spin h-4 w-4 border-2 border-emerald-700 border-t-transparent rounded-full"></span>
+              ) : (
+                <PlusIcon className="h-4 w-4" />
+              )}
               <span className="hidden sm:inline text-sm">Add</span>
             </button>
           )}
@@ -199,8 +208,9 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
       </div>
 
       <div className="bg-gray-50 p-4 border-t-2 border-gray-200 flex justify-center">
-        <button onClick={onScanNew} className="text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors">
-          ← Scan Another Product
+        <button onClick={onScanNew} className="text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors inline-flex items-center gap-2">
+          <ArrowLeftIcon className="h-4 w-4" />
+          Scan Another Product
         </button>
       </div>
     </div>

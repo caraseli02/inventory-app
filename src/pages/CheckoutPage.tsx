@@ -4,6 +4,16 @@ import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
 import type { CartItem } from '../types';
 import { logger } from '../lib/logger';
+import {
+  ArrowLeftIcon,
+  BoxIcon,
+  CheckCircleIcon,
+  CloseIcon,
+  MinusIcon,
+  PlusIcon,
+  ShoppingCartIcon,
+  WarningIcon,
+} from '../components/ui/Icons';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -241,7 +251,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] text-center animate-in fade-in zoom-in duration-500">
         <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
-          <span className="text-5xl">✓</span>
+          <CheckCircleIcon className="h-12 w-12 text-emerald-700" />
         </div>
         <h2 className="text-3xl font-semibold text-gray-900 mb-2">Checkout Complete</h2>
         <p className="text-gray-600 mb-8">Stock has been updated for all items.</p>
@@ -272,7 +282,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       <div className="w-full lg:w-[45%] flex flex-col gap-3 lg:gap-5 shrink-0">
         <div className="flex justify-between items-center px-1">
           <button onClick={onBack} className="text-gray-700 hover:text-gray-900 flex items-center gap-2 text-sm bg-white border-2 border-gray-300 px-3 py-3 rounded-lg hover:bg-gray-50">
-            ← Back
+            <ArrowLeftIcon className="h-4 w-4" />
+            Back
           </button>
         </div>
 
@@ -280,7 +291,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         {lookupError && (
           <div className="bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm animate-in fade-in duration-200">
             <div className="flex items-start gap-2">
-              <span className="text-lg mt-0.5">⚠️</span>
+              <WarningIcon className="h-5 w-5 mt-0.5 text-red-600" />
               <div>
                 <p className="font-semibold">Not Found</p>
                 <p className="text-red-800 text-xs mt-1">{lookupError}</p>
@@ -289,7 +300,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 onClick={() => setLookupError(null)}
                 className="ml-auto text-red-600 hover:text-red-900 text-lg leading-none"
               >
-                ✕
+                <CloseIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -342,7 +353,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       </div>
 
       {/* Right Column: Cart List - 55% on desktop */}
-      <div className="flex-1 bg-white rounded-t-2xl lg:rounded-2xl border-2 border-gray-200 flex flex-col overflow-hidden relative lg:shadow-md">
+      <div className="flex-1 bg-white rounded-t-2xl lg:rounded-2xl border-2 border-gray-200 flex flex-col overflow-hidden relative lg:shadow-sm">
         {/* Cart Header */}
         <div className="p-6 border-b-2 border-gray-200 bg-gray-50 sticky top-0 z-20">
           <h2 className="text-lg font-bold text-gray-900 flex justify-between items-center gap-4">
@@ -360,25 +371,27 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         <div className="flex-1 overflow-y-auto p-5 space-y-3 pb-28 lg:pb-5 lg:space-y-2.5">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-3 min-h-[150px]">
-              <div className="text-6xl opacity-20">🛒</div>
+              <ShoppingCartIcon className="h-12 w-12 opacity-20" />
               <p className="text-sm">Cart is empty</p>
             </div>
           ) : (
             cart.map((item, index) => (
               <div key={`${item.product.id}-${index}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
                 {/* Image Thumb */}
-                <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden shrink-0 border-2 border-gray-300">
+                <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border-2 border-gray-300">
                   {item.product.fields.Image?.[0]?.url ? (
                     <img src={item.product.fields.Image[0].url} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-lg">📦</div>
+                    <div className="w-full h-full flex items-center justify-center text-lg text-gray-400">
+                      <BoxIcon className="h-5 w-5" />
+                    </div>
                   )}
                 </div>
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate text-sm">{item.product.fields.Name}</h3>
-                  <p className="text-gray-500 text-xs">
+                  <h3 className="font-semibold text-gray-900 truncate text-base">{item.product.fields.Name}</h3>
+                  <p className="text-gray-600 text-sm font-medium">
                     {item.product.fields.Price != null
                       ? `$${item.product.fields.Price.toFixed(2)}`
                       : 'No price'}
@@ -400,20 +413,20 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center bg-white border-2 border-gray-300 rounded-lg h-11">
                     <button onClick={() => updateQuantity(index, -1)} className="px-2 h-full hover:bg-gray-100 text-gray-700 flex items-center justify-center font-semibold">
-                      <span className="text-lg leading-none">−</span>
+                      <MinusIcon className="h-4 w-4" />
                     </button>
                     <span className="w-6 text-center font-mono font-bold text-gray-900 text-sm">{item.quantity}</span>
                     <button onClick={() => updateQuantity(index, 1)} className="px-2 h-full hover:bg-gray-100 text-gray-700 flex items-center justify-center font-semibold">
-                      <span className="text-lg leading-none">+</span>
+                      <PlusIcon className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="font-mono font-semibold text-gray-900 w-14 text-right text-sm">
+                  <div className="font-mono font-semibold text-gray-900 w-16 text-right text-sm">
                     {item.product.fields.Price != null
                       ? `$${(item.product.fields.Price * item.quantity).toFixed(2)}`
                       : '—'}
                   </div>
-                  <button onClick={() => removeFromCart(index)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">
-                    ✕
+                  <button onClick={() => removeFromCart(index)} className="p-2 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg font-semibold transition-colors" title="Remove item">
+                    <CloseIcon className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -426,8 +439,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           {statusSummary && (
             <div className="mb-5 flex flex-col gap-2 bg-gray-50 border-2 border-gray-200 rounded-lg p-4 text-sm text-gray-900 font-medium">
               <div className="flex flex-wrap items-center gap-4">
-                <span className="text-emerald-700 font-bold text-base">{statusSummary.successes} ✓</span>
-                <span className="text-red-700 font-bold text-base">{statusSummary.failures} ✕</span>
+                <span className="flex items-center gap-2 text-emerald-700 font-bold text-base">
+                  <CheckCircleIcon className="h-5 w-5" />
+                  {statusSummary.successes}
+                </span>
+                <span className="flex items-center gap-2 text-red-700 font-bold text-base">
+                  <CloseIcon className="h-5 w-5" />
+                  {statusSummary.failures}
+                </span>
               </div>
               {statusSummary.failures > 0 ? (
                 <p className="text-gray-700 text-xs">Failed items remain in cart. Adjust and retry.</p>
@@ -450,7 +469,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           <button
             onClick={handleCheckout}
             disabled={pendingItems.length === 0 || isCheckingOut}
-            className="w-full py-4 lg:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors text-sm shadow-md hover:shadow-lg"
+            className="w-full py-4 lg:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors text-sm shadow-sm hover:shadow-md"
           >
             {isCheckingOut ? (
               <>
@@ -466,7 +485,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       {/* Mobile sticky footer */}
       <div className="lg:hidden fixed inset-x-0 bottom-3 px-3 z-30">
-        <div className="mx-auto max-w-3xl rounded-lg border-2 border-gray-200 bg-white shadow-lg backdrop-blur p-4 flex items-center justify-between gap-3">
+        <div className="mx-auto max-w-3xl rounded-lg border-2 border-gray-200 bg-white shadow-md backdrop-blur p-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Total</p>
             <p className="text-2xl font-light text-gray-900">${total.toFixed(2)}</p>

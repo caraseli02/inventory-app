@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import ScanPage from './pages/ScanPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OfflineIndicator from './components/OfflineIndicator';
+import { MinusIcon, PlusIcon, ShoppingCartIcon } from './components/ui/Icons';
 
 type ViewState = 'home' | 'add' | 'remove' | 'checkout';
 
@@ -41,7 +42,6 @@ function App() {
       setIsTablet(isNowTablet);
 
       // When switching to mobile and currently on home, switch to scanner mode
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (!isNowTablet && view === 'home') {
         setView(scannerMode);
       }
@@ -64,19 +64,25 @@ function App() {
     setView(mode);
   };
 
-  const actions = [
+  const actions: Array<{
+    key: Extract<ViewState, 'add' | 'remove'>;
+    title: string;
+    description: string;
+    icon: ReactNode;
+    onClick: () => void;
+  }> = [
     {
       key: 'add' as const,
       title: 'Add Items',
       description: 'Receive inventory into stock',
-      icon: '+',
+      icon: <PlusIcon className="h-6 w-6" />,
       onClick: () => handleScannerModeChange('add'),
     },
     {
       key: 'remove' as const,
       title: 'Remove Items',
       description: 'Deplete inventory that was used',
-      icon: '−',
+      icon: <MinusIcon className="h-6 w-6" />,
       onClick: () => handleScannerModeChange('remove'),
     },
   ];
@@ -96,7 +102,8 @@ function App() {
               onClick={() => setView('checkout')}
               className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
             >
-              🛒 Checkout
+              <ShoppingCartIcon className="h-4 w-4" />
+              Checkout
             </button>
           )}
           {isTablet && (
@@ -119,7 +126,7 @@ function App() {
                 >
                   <div className="flex h-full flex-col justify-between gap-8">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-3xl font-light text-gray-600 group-hover:bg-gray-200 transition">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-gray-600 group-hover:bg-gray-200 transition">
                         {action.icon}
                       </div>
                       <span className="inline-block rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold tracking-wider text-gray-600 uppercase">
@@ -139,8 +146,8 @@ function App() {
               >
                 <div className="flex h-full flex-col justify-between gap-8">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-3xl font-light group-hover:bg-gray-200 transition">
-                      🛒
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-gray-600 group-hover:bg-gray-200 transition">
+                      <ShoppingCartIcon className="h-6 w-6" />
                     </div>
                     <span className="inline-block rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold tracking-wider text-gray-600 uppercase">
                       {isTablet ? 'Tablet' : 'Mobile'}
