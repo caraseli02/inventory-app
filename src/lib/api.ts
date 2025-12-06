@@ -21,6 +21,7 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
   logger.info('Product found', { barcode, productId: records[0].id });
   return {
     id: records[0].id,
+    createdTime: records[0]._rawJson.createdTime,
     fields: records[0].fields as unknown as Product['fields'],
   };
 };
@@ -60,6 +61,7 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
     logger.info('Product created successfully', { productId: records[0].id });
     return {
       id: records[0].id,
+      createdTime: records[0]._rawJson.createdTime,
       fields: records[0].fields as unknown as Product['fields'],
     };
   } catch (error) {
