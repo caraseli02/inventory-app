@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import CreateProductForm from '../components/product/CreateProductForm';
@@ -31,7 +31,7 @@ const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void
   const [showScanner, setShowScanner] = useState(true);
   const [manualCode, setManualCode] = useState('');
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (manualCode.trim().length > 3) {
       handleScanSuccess(manualCode.trim());
