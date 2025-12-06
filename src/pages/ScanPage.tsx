@@ -63,23 +63,23 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
   if (showCreateForm && scannedCode) {
     return (
       <div className="w-full">
-        <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
+        <div className="mb-8 flex items-center justify-between gap-4">
           <button
             onClick={handleReset}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
           >
-            ← Back to scanner
+            ← Back
           </button>
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full ${getModeBadgeStyles()}`}>
-              <span className={`h-2 w-2 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <div className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border-2 ${getModeBadgeStyles()}`}>
+              <span className={`h-2.5 w-2.5 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
               {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
-            </span>
+            </div>
             <button
               onClick={handleModeToggle}
-              className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+              className="text-sm px-4 py-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 font-semibold transition hover:bg-gray-50 hover:border-gray-400"
             >
-              Switch to {mode === 'add' ? 'Remove' : 'Add'}
+              Switch
             </button>
           </div>
         </div>
@@ -95,23 +95,23 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
   if (showDetail && product) {
     return (
       <div className="w-full">
-        <div className="mb-6 flex items-center justify-between gap-3 flex-wrap">
+        <div className="mb-8 flex items-center justify-between gap-4">
           <button
             onClick={handleReset}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
           >
-            ← Back to scanner
+            ← Back
           </button>
           <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center gap-2 px-3 py-1 text-xs font-medium rounded-full ${getModeBadgeStyles()}`}>
-              <span className={`h-2 w-2 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <div className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border-2 ${getModeBadgeStyles()}`}>
+              <span className={`h-2.5 w-2.5 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
               {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
-            </span>
+            </div>
             <button
               onClick={handleModeToggle}
-              className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+              className="text-sm px-4 py-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 font-semibold transition hover:bg-gray-50 hover:border-gray-400"
             >
-              Switch to {mode === 'add' ? 'Remove' : 'Add'}
+              Switch
             </button>
           </div>
         </div>
@@ -122,107 +122,128 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
 
   return (
     <div className="w-full max-w-3xl mx-auto p-4 flex flex-col items-center min-h-[520px]">
-      <div className="w-full flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
-        <div className="flex items-center gap-2">
+      {/* Header Bar - Clean 3-zone layout */}
+      <div className="w-full flex items-center justify-between mb-8 gap-4">
+        {/* Left: Navigation */}
+        <div className="flex-shrink-0">
           {isTablet && (
             <button
               onClick={onBack}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
             >
-              ← Back to Home
+              ← Back
             </button>
           )}
           {!isTablet && onCheckout && (
             <button
               onClick={onCheckout}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
             >
               🛒 Checkout
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 w-full md:w-auto justify-between md:justify-start">
-          <div className="flex items-center gap-2">
-            <span className={`h-2 w-2 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            <p className="text-sm font-medium text-gray-900">{mode === 'add' ? 'Add Mode' : 'Remove Mode'}</p>
+
+        {/* Center: Mode Indicator */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 border border-gray-200">
+            <span className={`h-3 w-3 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <p className="text-sm font-semibold text-gray-900">{mode === 'add' ? 'Add Mode' : 'Remove Mode'}</p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-600 ml-2">
-            <span className="hidden sm:inline">Last:</span>
-            <span className="rounded-full border border-gray-300 bg-white px-2 py-1 font-mono text-gray-700 text-xs">
-              {scannedCode || 'Waiting'}
-            </span>
-          </div>
+        </div>
+
+        {/* Right: Mode Toggle */}
+        <div className="flex-shrink-0">
           <button
             onClick={handleModeToggle}
-            className="ml-2 text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-700 transition hover:bg-gray-100 hover:border-gray-400"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
           >
-            Switch
+            Switch {mode === 'add' ? 'to Remove' : 'to Add'}
           </button>
         </div>
       </div>
 
-      <div className="w-full mb-6 rounded-lg border border-gray-200 bg-gray-50 p-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs tracking-widest text-gray-500 uppercase font-semibold">{scannedCode ? 'Processing' : 'Ready'}</p>
-            <h2 className="text-xl font-light text-gray-900 mt-1">
-              {scannedCode ? getStatusContent() : mode === 'add' ? 'Scan to add inventory' : 'Scan to remove inventory'}
-            </h2>
-            {!isTablet && onCheckout && (
-              <p className="mt-3 inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-600">
-                <span className="text-base">🛒</span>
-                Need to checkout?
-              </p>
-            )}
-          </div>
-          <div className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${getModeBadgeStyles()}`}>
-            <span className={`h-2 w-2 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+      {/* Status Display - Enhanced Prominent Banner */}
+      <div className={`w-full mb-8 rounded-xl border-2 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${
+        scannedCode
+          ? 'bg-blue-50 border-blue-200'
+          : 'bg-white border-gray-200'
+      }`}>
+        <div className="flex-1">
+          <p className="text-xs tracking-widest text-gray-500 uppercase font-bold mb-1">
+            {scannedCode ? 'PROCESSING SCAN' : 'READY TO SCAN'}
+          </p>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {scannedCode ? getStatusContent() : mode === 'add' ? 'Scan to add inventory' : 'Scan to remove inventory'}
+          </h2>
+          {scannedCode && (
+            <p className="text-xs text-gray-600 mt-2 font-mono">Code: {scannedCode}</p>
+          )}
+        </div>
+
+        {/* Status Badge - Right aligned, more prominent */}
+        <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-2 rounded-lg px-4 py-2 border-2 font-semibold text-sm ${
+            mode === 'add'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+              : 'bg-amber-50 border-amber-300 text-amber-700'
+          }`}>
+            <span className={`h-2.5 w-2.5 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
             {mode === 'add' ? 'Receiving' : 'Removing'}
           </div>
+          {!isTablet && onCheckout && !scannedCode && (
+            <button
+              onClick={onCheckout}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white transition"
+              title="Quick checkout"
+            >
+              🛒
+            </button>
+          )}
         </div>
       </div>
 
       {!scannedCode && (
-        <div className="w-full max-w-xl animate-in fade-in duration-500">
+        <div className="w-full max-w-2xl animate-in fade-in duration-500">
           {showScanner ? (
-            <div className={`relative rounded-lg overflow-hidden border bg-black shadow-sm`}>
+            <div className={`relative rounded-2xl overflow-hidden border-2 border-gray-200 bg-black shadow-lg`}>
               <Scanner onScanSuccess={handleScanSuccess} />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/30 to-transparent p-4 flex justify-center">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/40 to-transparent p-6 flex justify-center">
                 <button
                   onClick={() => setShowScanner(false)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white/95 px-4 py-2 text-sm font-medium text-gray-900 transition hover:bg-white"
+                  className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white/95 px-5 py-3 text-sm font-semibold text-gray-900 transition hover:bg-white shadow-lg"
                 >
                   ✏️ Enter manually
                 </button>
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <form onSubmit={handleManualSubmit} className="w-full space-y-5">
-                <div className="space-y-2">
-                  <label className="block text-gray-900 text-sm font-medium">Barcode</label>
+            <div className="rounded-2xl border-2 border-gray-200 bg-white p-8">
+              <form onSubmit={handleManualSubmit} className="w-full space-y-6">
+                <div className="space-y-3">
+                  <label className="block text-gray-900 text-sm font-semibold">Enter Barcode</label>
                   <input
                     type="text"
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
-                    placeholder="e.g. 12345678"
-                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-lg text-gray-900 tracking-widest outline-none transition focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20"
+                    placeholder="e.g. 012345678901"
+                    className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-4 text-lg text-gray-900 tracking-widest font-medium outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10"
                     autoFocus
                   />
-                  <p className="text-xs text-gray-500">Enter a barcode to search for existing products.</p>
+                  <p className="text-xs text-gray-600">Search for existing products or create new ones.</p>
                 </div>
                 <div className="flex gap-3">
                   <button
                     type="submit"
                     disabled={manualCode.trim().length < 3}
-                    className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${mode === 'add' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
+                    className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-5 py-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${mode === 'add' ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-md hover:shadow-lg'}`}
                   >
                     🔍 Lookup
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowScanner(true)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+                    className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-5 py-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
                   >
                     ← Camera
                   </button>
@@ -234,23 +255,25 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
       )}
 
       {scannedCode && !showCreateForm && !showDetail && (
-        <div className="w-full rounded-lg border border-gray-200 bg-white p-8 animate-in zoom-in-95 duration-300">
-          <div className="text-center mb-8">
-            <div className="text-xs text-gray-500 tracking-widest uppercase font-semibold mb-3">Scanned Barcode</div>
-            <div className="text-4xl font-mono text-gray-900 tracking-[0.15em] font-light mb-6">{scannedCode}</div>
+        <div className="w-full rounded-2xl border-2 border-gray-200 bg-white p-10 animate-in zoom-in-95 duration-300 shadow-sm">
+          <div className="text-center mb-10">
+            <div className="text-xs text-gray-500 tracking-widest uppercase font-bold mb-4">Barcode Detected</div>
+            <div className="text-5xl font-mono text-gray-900 tracking-[0.15em] font-semibold mb-8">{scannedCode}</div>
 
-            <div className="animate-pulse flex flex-col items-center">
-              <div className="h-4 w-40 bg-gray-200 rounded mb-2"></div>
-              <div className="h-4 w-32 bg-gray-200 rounded"></div>
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div className="h-full bg-gray-400 rounded-full animate-pulse" style={{width: '60%'}}></div>
+              </div>
+              <p className="text-xs text-gray-500">Looking up product...</p>
             </div>
           </div>
 
           <div className="flex justify-center">
             <button
               onClick={handleReset}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
             >
-              Cancel and rescan
+              Cancel & Rescan
             </button>
           </div>
         </div>

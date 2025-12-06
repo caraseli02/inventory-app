@@ -109,46 +109,46 @@ function App() {
 
       <main className="w-full px-0 lg:px-0 flex-1 flex flex-col items-center">
         {view === 'home' ? (
-          <div className="w-full max-w-4xl space-y-8 animate-in fade-in duration-300">
-            <div className="grid gap-5 sm:grid-cols-2">
+          <div className="w-full max-w-5xl animate-in fade-in duration-300">
+            <div className="grid gap-7 sm:grid-cols-2 lg:gap-8">
               {actions.map((action) => (
                 <button
                   key={action.key}
                   onClick={action.onClick}
-                  className="group relative rounded-xl border border-gray-200 bg-white p-8 text-left transition hover:border-gray-300 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+                  className="group relative rounded-2xl border-2 border-gray-200 bg-white p-10 text-left transition hover:border-gray-300 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
                 >
-                  <div className="flex h-full flex-col justify-between gap-6">
+                  <div className="flex h-full flex-col justify-between gap-8">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-lg font-light text-gray-600">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-3xl font-light text-gray-600 group-hover:bg-gray-200 transition">
                         {action.icon}
                       </div>
-                      <span className="inline-block rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tracking-wide text-gray-600">
+                      <span className="inline-block rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold tracking-wider text-gray-600 uppercase">
                         {action.key === 'add' ? 'Inbound' : 'Outbound'}
                       </span>
                     </div>
-                    <div className="space-y-2">
-                      <h2 className="text-lg font-semibold text-gray-900">{action.title}</h2>
-                      <p className="text-sm text-gray-500">{action.description}</p>
+                    <div className="space-y-3">
+                      <h2 className="text-xl font-bold text-gray-900">{action.title}</h2>
+                      <p className="text-sm text-gray-600">{action.description}</p>
                     </div>
                   </div>
                 </button>
               ))}
               <button
                 onClick={() => setView('checkout')}
-                className="group relative rounded-xl border border-gray-200 bg-white p-8 text-left transition hover:border-gray-300 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+                className="group relative rounded-2xl border-2 border-gray-200 bg-white p-10 text-left transition hover:border-gray-300 hover:shadow-md hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
               >
-                <div className="flex h-full flex-col justify-between gap-6">
+                <div className="flex h-full flex-col justify-between gap-8">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-lg font-light">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gray-100 text-3xl font-light group-hover:bg-gray-200 transition">
                       🛒
                     </div>
-                    <span className="inline-block rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tracking-wide text-gray-600">
+                    <span className="inline-block rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-bold tracking-wider text-gray-600 uppercase">
                       {isTablet ? 'Tablet' : 'Mobile'}
                     </span>
                   </div>
-                  <div className="space-y-2">
-                    <h2 className="text-lg font-semibold text-gray-900">Checkout Mode</h2>
-                    <p className="text-sm text-gray-500">
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-bold text-gray-900">Checkout Mode</h2>
+                    <p className="text-sm text-gray-600">
                       Batch scan for payment with simplified mobile controls.
                     </p>
                   </div>

@@ -259,17 +259,17 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   }
 
   return (
-    <div className="relative w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 h-[calc(100dvh-120px)] lg:h-[calc(100vh-140px)]">
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-xs text-gray-600 lg:hidden">
-        <span className="inline-flex items-center gap-2 font-medium">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+    <div className="relative w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-5 lg:gap-8 h-[calc(100dvh-120px)] lg:h-[calc(100vh-140px)]">
+      <div className="flex items-center justify-between gap-3 rounded-lg border-2 border-gray-200 bg-gray-50 px-5 py-4 text-xs text-gray-600 lg:hidden font-semibold">
+        <span className="inline-flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
           Batch checkout
         </span>
         <span className="text-[11px] text-gray-500">Scan items, then mark paid to update stock.</span>
       </div>
 
-      {/* Left Column: Scanner */}
-      <div className="w-full lg:w-1/3 flex flex-col gap-2 lg:gap-4 shrink-0">
+      {/* Left Column: Scanner - 45% on desktop */}
+      <div className="w-full lg:w-[45%] flex flex-col gap-3 lg:gap-5 shrink-0">
         <div className="flex justify-between items-center px-1">
           <button onClick={onBack} className="text-gray-700 hover:text-gray-900 flex items-center gap-2 text-sm bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">
             ← Back
@@ -341,23 +341,23 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         </div>
       </div>
 
-      {/* Right Column: Cart List */}
-      <div className="flex-1 bg-white rounded-t-2xl lg:rounded-lg border border-gray-200 flex flex-col overflow-hidden relative lg:shadow-sm">
+      {/* Right Column: Cart List - 55% on desktop */}
+      <div className="flex-1 bg-white rounded-t-2xl lg:rounded-2xl border-2 border-gray-200 flex flex-col overflow-hidden relative lg:shadow-md">
         {/* Cart Header */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50 sticky top-0 z-20">
-          <h2 className="text-lg font-semibold text-gray-900 flex justify-between items-center">
-            <span>Cart</span>
+        <div className="p-6 border-b-2 border-gray-200 bg-gray-50 sticky top-0 z-20">
+          <h2 className="text-lg font-bold text-gray-900 flex justify-between items-center gap-4">
+            <span>Shopping Cart</span>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">
+              <span className="text-xs font-bold text-emerald-700 bg-emerald-100 border-2 border-emerald-300 px-3 py-1.5 rounded-lg uppercase">
                 {pendingItems.length} ready
               </span>
-              <span className="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded">{cart.length} total</span>
+              <span className="text-xs font-bold text-gray-700 bg-gray-200 border border-gray-300 px-3 py-1.5 rounded-lg uppercase">{cart.length} total</span>
             </div>
           </h2>
         </div>
 
         {/* Scrollable List */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 pb-24 lg:pb-3">
+        <div className="flex-1 overflow-y-auto p-5 space-y-3 pb-28 lg:pb-5 lg:space-y-2.5">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-3 min-h-[150px]">
               <div className="text-6xl opacity-20">🛒</div>
@@ -422,39 +422,39 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         </div>
 
         {/* Footer - Fixed at bottom of container on Mobile */}
-        <div className="absolute lg:relative bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-gray-50 lg:shadow-none z-20">
+        <div className="absolute lg:relative bottom-0 left-0 right-0 p-5 border-t-2 border-gray-200 bg-gray-50 lg:shadow-none z-20 lg:p-6">
           {statusSummary && (
-            <div className="mb-4 flex flex-col gap-1.5 bg-gray-100 border border-gray-300 rounded-lg p-3 text-sm text-gray-800">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="text-emerald-700 font-semibold">{statusSummary.successes} ✓</span>
-                <span className="text-red-700 font-semibold">{statusSummary.failures} ✕</span>
+            <div className="mb-5 flex flex-col gap-2 bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-sm text-blue-900 font-medium">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="text-emerald-700 font-bold text-base">{statusSummary.successes} ✓</span>
+                <span className="text-red-700 font-bold text-base">{statusSummary.failures} ✕</span>
               </div>
               {statusSummary.failures > 0 ? (
-                <p className="text-gray-700 text-xs">Failed items remain in cart. Adjust and retry.</p>
+                <p className="text-blue-800 text-xs">Failed items remain in cart. Adjust and retry.</p>
               ) : (
-                <p className="text-gray-700 text-xs">All items checked out successfully.</p>
+                <p className="text-blue-800 text-xs">All items checked out successfully.</p>
               )}
             </div>
           )}
-          <div className="flex justify-between items-end mb-4">
-            <span className="text-gray-600 text-sm font-medium">Total</span>
+          <div className="flex justify-between items-end mb-6">
+            <span className="text-gray-600 text-sm font-bold uppercase tracking-wide">Total</span>
             <div className="text-right">
-              <div className="text-3xl lg:text-4xl font-light text-gray-900 tracking-tight">
+              <div className="text-4xl lg:text-5xl font-semibold text-gray-900 tracking-tight">
                 {missingPrices > 0 ? '~' : ''}${total.toFixed(2)}
               </div>
               {missingPrices > 0 && (
-                <div className="text-[11px] text-gray-500">Excludes {missingPrices} unpriced item{missingPrices > 1 ? 's' : ''}</div>
+                <div className="text-[11px] text-gray-500 mt-1">Excludes {missingPrices} unpriced item{missingPrices > 1 ? 's' : ''}</div>
               )}
             </div>
           </div>
           <button
             onClick={handleCheckout}
             disabled={pendingItems.length === 0 || isCheckingOut}
-            className="w-full py-3 lg:py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors text-sm"
+            className="w-full py-4 lg:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors text-sm shadow-md hover:shadow-lg"
           >
             {isCheckingOut ? (
               <>
-                <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
                 Checking out…
               </>
             ) : (
