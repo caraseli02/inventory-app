@@ -11,9 +11,10 @@ type ScanPageProps = {
   onBack: () => void;
   onModeChange: (mode: ScanMode) => void;
   isTablet: boolean;
+  onCheckout?: () => void;
 };
 
-const ScanPage = ({ mode, onBack, onModeChange, isTablet }: ScanPageProps) => {
+const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPageProps) => {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(true);
   const [manualCode, setManualCode] = useState('');
@@ -121,14 +122,24 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet }: ScanPageProps) => {
   return (
     <div className="w-full max-w-3xl mx-auto p-4 flex flex-col items-center min-h-[520px]">
       <div className="w-full flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
-        {isTablet && (
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-1.5 text-sm text-slate-200 shadow-sm transition hover:border-slate-700 hover:text-white"
-          >
-            ← Back to Home
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isTablet && (
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/70 px-3 py-1.5 text-sm text-slate-200 shadow-sm transition hover:border-slate-700 hover:text-white"
+            >
+              ← Back to Home
+            </button>
+          )}
+          {!isTablet && onCheckout && (
+            <button
+              onClick={onCheckout}
+              className="inline-flex items-center gap-2 rounded-lg border border-indigo-500/40 bg-indigo-600/20 px-3 py-1.5 text-xs font-semibold text-indigo-100 shadow-sm transition hover:border-indigo-400/60 hover:text-white"
+            >
+              🛒 Quick checkout
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-3 py-2 shadow-sm w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center gap-2">
             <span className={`h-3 w-3 rounded-full ${mode === 'add' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
@@ -156,6 +167,12 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet }: ScanPageProps) => {
             <h2 className="text-xl font-semibold text-slate-100">
               {scannedCode ? getStatusContent() : mode === 'add' ? 'Scan to add inventory' : 'Scan to remove inventory'}
             </h2>
+            {!isTablet && onCheckout && (
+              <p className="mt-1 inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold text-indigo-100 shadow-inner">
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-300" />
+                Need payment? Jump to mobile checkout.
+              </p>
+            )}
           </div>
           <div className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold shadow-inner ${getModeBadgeStyles()}`}>
             <span className={`h-2 w-2 rounded-full ${mode === 'add' ? 'bg-emerald-400' : 'bg-amber-400'}`} />

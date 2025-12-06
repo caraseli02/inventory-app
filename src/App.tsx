@@ -49,7 +49,7 @@ function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (!isTablet && (view === 'home' || view === 'checkout')) {
+    if (!isTablet && view === 'home') {
       setView(scannerMode);
     }
   }, [isTablet, view, scannerMode]);
@@ -93,11 +93,21 @@ function App() {
           <p className="text-sm text-slate-400">Inventory Ops</p>
           <h1 className="text-3xl font-bold tracking-tight text-slate-50">Grocery Inventory</h1>
         </div>
-        {isTablet && (
-          <div className="rounded-full border border-slate-800 bg-slate-900/70 px-4 py-2 text-sm text-slate-300 shadow-sm">
-            Tablet layout — access Checkout from Home
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {!isTablet && view !== 'checkout' && (
+            <button
+              onClick={() => setView('checkout')}
+              className="inline-flex items-center gap-2 rounded-full border border-indigo-500/50 bg-indigo-600/20 px-4 py-2 text-xs font-semibold text-indigo-100 shadow-sm transition hover:bg-indigo-500/30 hover:text-white"
+            >
+              🛒 Mobile checkout
+            </button>
+          )}
+          {isTablet && (
+            <div className="rounded-full border border-slate-800 bg-slate-900/70 px-4 py-2 text-sm text-slate-300 shadow-sm">
+              Tablet layout — access Checkout from Home
+            </div>
+          )}
+        </div>
       </header>
 
       <main className="w-full px-2 lg:px-0 flex-1 flex flex-col items-center">
@@ -127,38 +137,39 @@ function App() {
                   </div>
                 </button>
               ))}
-              {isTablet && (
-                <button
-                  onClick={() => setView('checkout')}
-                  className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-left transition shadow-sm hover:border-slate-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-900/25 opacity-70 transition group-hover:opacity-100" />
-                  <div className="relative flex h-full flex-col justify-between gap-6">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900/90 text-2xl font-bold text-slate-100 shadow-inner">
-                        🛒
-                      </div>
-                      <span className="rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-xs font-medium text-indigo-100">
-                        Tablet only
-                      </span>
+              <button
+                onClick={() => setView('checkout')}
+                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-left transition shadow-sm hover:border-slate-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-900/25 opacity-70 transition group-hover:opacity-100" />
+                <div className="relative flex h-full flex-col justify-between gap-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900/90 text-2xl font-bold text-slate-100 shadow-inner">
+                      🛒
                     </div>
-                    <div className="space-y-1">
-                      <h2 className="text-xl font-semibold text-slate-50">Checkout Mode</h2>
-                      <p className="text-sm text-slate-300">Batch scan for payment without leaving Home.</p>
-                    </div>
+                    <span className="rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-xs font-medium text-indigo-100">
+                      {isTablet ? 'Tablet ready' : 'Mobile friendly' }
+                    </span>
                   </div>
-                </button>
-              )}
+                  <div className="space-y-1">
+                    <h2 className="text-xl font-semibold text-slate-50">Checkout Mode</h2>
+                    <p className="text-sm text-slate-300">
+                      Batch scan for payment with optimized mobile controls when needed.
+                    </p>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         ) : view === 'checkout' ? (
-          <CheckoutPage onBack={() => setView('home')} />
+          <CheckoutPage onBack={() => setView(isTablet ? 'home' : scannerMode)} />
         ) : (
           <ScanPage
             mode={scannerMode}
             onBack={() => setView('home')}
             onModeChange={handleScannerModeChange}
             isTablet={isTablet}
+            onCheckout={() => setView('checkout')}
           />
         )}
 
@@ -167,4 +178,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
