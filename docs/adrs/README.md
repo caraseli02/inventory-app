@@ -18,3 +18,4 @@ ADRs capture key technical decisions with their context, options, and consequenc
 
 ## Index
 - [ADR-0001: Airtable access via backend proxy](ADR-0001-airtable-proxy.md)
+- [ADR-0002: Product field nullability from Airtable](ADR-0002-product-nullability.md)

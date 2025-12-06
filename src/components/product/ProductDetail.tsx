@@ -17,6 +17,11 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   const [stockQuantity, setStockQuantity] = useState<string>('1');
   const SAFE_STOCK_THRESHOLD = 50;
 
+  const displayCategory = product.fields.Category || 'Uncategorized';
+  const displayPrice =
+    product.fields.Price != null ? `$${product.fields.Price.toFixed(2)}` : 'N/A';
+  const expiryDisplay = product.fields['Expiry Date'] || 'No expiry date';
+
   const stockMutation = useMutation({
     mutationFn: async ({ quantity, type }: { quantity: number; type: 'IN' | 'OUT' }) => {
       logger.info('Initiating stock mutation', { productId: product.id, quantity, type });
@@ -38,7 +43,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
           ...old,
           fields: {
             ...old.fields,
-            'Current Stock': (old.fields['Current Stock'] || 0) + change,
+            'Current Stock': (old.fields?.['Current Stock'] ?? 0) + change,
           },
         };
       });
@@ -118,7 +123,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         <div className="flex justify-between items-start mb-4">
           <div>
             <h2 className="text-2xl font-bold text-white leading-tight">{product.fields.Name}</h2>
-            <span className="text-slate-400 text-sm">{product.fields.Category}</span>
+            <span className="text-slate-400 text-sm">{displayCategory}</span>
           </div>
           <div className="text-right">
             <div className="text-xl font-mono font-bold text-emerald-400">
@@ -131,11 +136,11 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
             <div className="text-xs text-slate-500 mb-1">Price</div>
-            <div className="text-white font-medium">${product.fields.Price?.toFixed(2) ?? '0.00'}</div>
+            <div className="text-white font-medium">{displayPrice}</div>
           </div>
           <div className="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50">
             <div className="text-xs text-slate-500 mb-1">Expires</div>
-            <div className="text-white font-medium">{product.fields['Expiry Date'] ?? 'N/A'}</div>
+            <div className="text-white font-medium">{expiryDisplay}</div>
           </div>
         </div>
 
