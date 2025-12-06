@@ -40,6 +40,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         if (existingItemIndex >= 0) {
           const newCart = [...prevCart];
           newCart[existingItemIndex].quantity += 1;
+          newCart[existingItemIndex].status = undefined;
+          newCart[existingItemIndex].statusMessage = undefined;
           return newCart;
         }
 

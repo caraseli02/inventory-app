@@ -37,22 +37,21 @@ function App() {
 
     const mediaQuery = window.matchMedia('(min-width: 768px)');
     const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
-      setIsTablet(event.matches);
+      const isNowTablet = event.matches;
+      setIsTablet(isNowTablet);
+
+      // When switching to mobile and currently on home, switch to scanner mode
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (!isNowTablet && view === 'home') {
+        setView(scannerMode);
+      }
     };
 
     handleChange(mediaQuery);
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (!isTablet && view === 'home') {
-      setView(scannerMode);
-    }
-  }, [isTablet, view, scannerMode]);
+  }, [scannerMode, view]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -148,7 +147,7 @@ function App() {
                       🛒
                     </div>
                     <span className="rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-xs font-medium text-indigo-100">
-                      {isTablet ? 'Tablet ready' : 'Mobile friendly' }
+                      {isTablet ? 'Tablet ready' : 'Mobile friendly'}
                     </span>
                   </div>
                   <div className="space-y-1">

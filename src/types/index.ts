@@ -32,4 +32,6 @@ export interface StockMovement {
 export interface CartItem {
   product: Product;
   quantity: number;
+  status?: 'idle' | 'processing' | 'success' | 'failed';
+  statusMessage?: string;
 }
