@@ -2,6 +2,12 @@ import base, { TABLES } from './airtable';
 import type { Product, StockMovement } from '../types';
 import { logger } from './logger';
 
+const mapAirtableProduct = (record: any): Product => ({
+  id: record.id,
+  createdTime: record._rawJson.createdTime,
+  fields: record.fields as unknown as Product['fields'],
+});
+
 // Read-only API (Lookup)
 export const getProductByBarcode = async (barcode: string): Promise<Product | null> => {
   logger.debug('Fetching product by barcode', { barcode });
@@ -19,11 +25,7 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
   }
 
   logger.info('Product found', { barcode, productId: records[0].id });
-  return {
-    id: records[0].id,
-    createdTime: records[0]._rawJson.createdTime,
-    fields: records[0].fields as unknown as Product['fields'],
-  };
+  return mapAirtableProduct(records[0]);
 };
 
 // Create Product
@@ -59,11 +61,7 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
     ], { typecast: true });
 
     logger.info('Product created successfully', { productId: records[0].id });
-    return {
-      id: records[0].id,
-      createdTime: records[0]._rawJson.createdTime,
-      fields: records[0].fields as unknown as Product['fields'],
-    };
+    return mapAirtableProduct(records[0]);
   } catch (error) {
     logger.error('Failed to create product', { error, data });
     throw error;
