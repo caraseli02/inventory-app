@@ -5,6 +5,14 @@ import { logger } from './logger';
 
 const productsTable = base<ProductFields>(TABLES.PRODUCTS);
 
+/**
+ * Escapes single quotes in Airtable formula strings to prevent formula injection.
+ * Airtable uses single quotes for string literals in filterByFormula.
+ */
+const escapeAirtableString = (value: string): string => {
+  return value.replace(/'/g, "\\'");
+};
+
 const getCreatedTime = <TFields extends FieldSet>(record: AirtableRecord<TFields>): string =>
   (record._rawJson as { createdTime?: string } | undefined)?.createdTime ?? '';
 
@@ -17,23 +25,36 @@ export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Produ
 // Read-only API (Lookup)
 export const getProductByBarcode = async (barcode: string): Promise<Product | null> => {
   logger.debug('Fetching product by barcode', { barcode });
-  // Use filterByFormula to find the product with valid barcode
-  const records = await productsTable
-    .select({
-      filterByFormula: `{Barcode} = '${barcode}'`,
-      maxRecords: 1,
-    })
-    .firstPage();
 
-  if (records.length === 0) {
-    logger.debug('Product not found', { barcode });
-    return null;
+  try {
+    // Escape barcode to prevent Airtable formula injection
+    const escapedBarcode = escapeAirtableString(barcode);
+
+    // Use filterByFormula to find the product with valid barcode
+    const records = await productsTable
+      .select({
+        filterByFormula: `{Barcode} = '${escapedBarcode}'`,
+        maxRecords: 1,
+      })
+      .firstPage();
+
+    if (records.length === 0) {
+      logger.debug('Product not found', { barcode });
+      return null;
+    }
+
+    const record = records[0];
+
+    logger.info('Product found', { barcode, productId: record.id });
+    return mapAirtableProduct(record);
+  } catch (error) {
+    logger.error('Failed to fetch product by barcode', {
+      barcode,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
   }
-
-  const record = records[0];
-
-  logger.info('Product found', { barcode, productId: record.id });
-  return mapAirtableProduct(record);
 };
 
 // Create Product
@@ -111,16 +132,29 @@ export const addStockMovement = async (productId: string, quantity: number, type
 // Get Stock Movements for a Product
 export const getStockMovements = async (productId: string): Promise<StockMovement[]> => {
   logger.debug('Fetching stock movements', { productId });
-  const records = await base(TABLES.STOCK_MOVEMENTS)
-    .select({
-      filterByFormula: `{Product} = '${productId}'`,
-      sort: [{ field: 'Date', direction: 'desc' }],
-      maxRecords: 10,
-    })
-    .firstPage();
 
-  return records.map(record => ({
-    id: record.id,
-    fields: record.fields as unknown as StockMovement['fields'],
-  }));
+  try {
+    // Escape productId to prevent formula injection
+    const escapedProductId = escapeAirtableString(productId);
+
+    const records = await base(TABLES.STOCK_MOVEMENTS)
+      .select({
+        filterByFormula: `{Product} = '${escapedProductId}'`,
+        sort: [{ field: 'Date', direction: 'desc' }],
+        maxRecords: 10,
+      })
+      .firstPage();
+
+    return records.map(record => ({
+      id: record.id,
+      fields: record.fields as unknown as StockMovement['fields'],
+    }));
+  } catch (error) {
+    logger.error('Failed to fetch stock movements', {
+      productId,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
+  }
 };
