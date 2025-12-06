@@ -11,6 +11,14 @@
 pnpm install
 ```
 
+> **pnpm not installed?** Enable it via `corepack` (recommended) or install globally:
+> ```bash
+> corepack enable pnpm
+> corepack prepare pnpm@latest --activate
+> # or: npm install -g pnpm
+> ```
+> If you can't install pnpm in your environment (e.g., minimal CI runners), use `npm` or `yarn` instead and remove `pnpm-lock.yaml` or generate a matching lockfile to avoid install conflicts.
+
 **2. Set up environment:**
 ```bash
 cp .env.example .env
