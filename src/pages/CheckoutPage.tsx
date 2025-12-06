@@ -84,17 +84,31 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     setCart(newCart);
   };
 
-  const calculateTotal = () => {
-    return cart.reduce((total, item) => {
-      const price = item.product.fields.Price || 0;
-      return total + (price * item.quantity);
-    }, 0);
+  const calculateTotals = () => {
+    return cart.reduce(
+      (result, item) => {
+        const price = item.product.fields.Price;
+        if (price != null) {
+          result.total += price * item.quantity;
+        } else {
+          result.missingPrices += 1;
+        }
+        return result;
+      },
+      { total: 0, missingPrices: 0 }
+    );
   };
 
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    const confirm = window.confirm(`Complete checkout for ${cart.length} items? Total: $${calculateTotal().toFixed(2)}`);
+    const { total, missingPrices } = calculateTotals();
+    const totalLabel = `$${total.toFixed(2)}`;
+    const confirmMessage = missingPrices
+      ? `Complete checkout for ${cart.length} items? Priced subtotal: ${totalLabel}. ${missingPrices} item${missingPrices > 1 ? 's are' : ' is'} missing price data and will be processed without totals.`
+      : `Complete checkout for ${cart.length} items? Total: ${totalLabel}`;
+
+    const confirm = window.confirm(confirmMessage);
     if (!confirm) return;
 
     setIsCheckingOut(true);
@@ -115,6 +129,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       setIsCheckingOut(false);
     }
   };
+
+  const { total, missingPrices } = calculateTotals();
 
   if (checkoutComplete) {
     return (
@@ -218,7 +234,11 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-white truncate text-sm lg:text-base">{item.product.fields.Name}</h3>
-                  <p className="text-slate-400 text-xs">${(item.product.fields.Price || 0).toFixed(2)}</p>
+                  <p className="text-slate-400 text-xs">
+                    {item.product.fields.Price != null
+                      ? `$${item.product.fields.Price.toFixed(2)}`
+                      : 'Price unavailable'}
+                  </p>
                 </div>
 
                 {/* Controls */}
@@ -233,7 +253,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                     </button>
                   </div>
                   <div className="font-mono font-bold text-emerald-400 w-14 lg:w-16 text-right text-sm lg:text-base">
-                    ${((item.product.fields.Price || 0) * item.quantity).toFixed(2)}
+                    {item.product.fields.Price != null
+                      ? `$${(item.product.fields.Price * item.quantity).toFixed(2)}`
+                      : '—'}
                   </div>
                   <button onClick={() => removeFromCart(index)} className="p-2 text-slate-500 hover:text-red-400">
                     ×
@@ -248,7 +270,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         <div className="absolute lg:relative bottom-0 left-0 right-0 p-4 border-t border-slate-700 bg-slate-900 shadow-[0_-4px_10px_rgba(0,0,0,0.3)] lg:shadow-none z-20">
           <div className="flex justify-between items-end mb-4">
             <span className="text-slate-400 text-sm lg:text-base">Total Amount</span>
-            <span className="text-3xl lg:text-4xl font-bold text-white tracking-tight">${calculateTotal().toFixed(2)}</span>
+            <div className="text-right">
+              <div className="text-3xl lg:text-4xl font-bold text-white tracking-tight">
+                {missingPrices > 0 ? '~' : ''}${total.toFixed(2)}
+              </div>
+              {missingPrices > 0 && (
+                <div className="text-[11px] text-amber-300/80">Excludes {missingPrices} item{missingPrices > 1 ? 's' : ''} without price</div>
+              )}
+            </div>
           </div>
           <button
             onClick={handleCheckout}

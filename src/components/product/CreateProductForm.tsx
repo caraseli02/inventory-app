@@ -47,12 +47,15 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      const parsedPrice = data.price.trim() ? parseFloat(data.price) : undefined;
+      const safePrice = Number.isFinite(parsedPrice) ? parsedPrice : undefined;
+
       // Step 1: Create Product
       const newProduct = await createProduct({
         Name: data.name,
         Barcode: barcode,
         Category: data.category,
-        Price: data.price ? parseFloat(data.price) : 0,
+        Price: safePrice,
         'Expiry Date': data.expiryDate || undefined,
         Image: data.imageUrl || undefined,
       });

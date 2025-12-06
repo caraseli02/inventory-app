@@ -37,13 +37,14 @@ export interface CreateProductDTO {
 
 export const createProduct = async (data: CreateProductDTO): Promise<Product> => {
   logger.info('Creating new product', { data });
-  const fields: any = {
+  const fields: Record<string, unknown> = {
     Name: data.Name,
     Barcode: data.Barcode,
-    Category: data.Category,
-    Price: data.Price,
-    'Expiry Date': data['Expiry Date'],
   };
+
+  if (data.Category) fields.Category = data.Category;
+  if (data.Price != null) fields.Price = data.Price;
+  if (data['Expiry Date']) fields['Expiry Date'] = data['Expiry Date'];
 
   // Airtable requires attachments as array of objects with url
   if (data.Image) {
