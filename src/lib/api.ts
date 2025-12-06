@@ -2,6 +2,12 @@ import base, { TABLES } from './airtable';
 import type { Product, StockMovement } from '../types';
 import { logger } from './logger';
 
+const toProduct = (record: { id: string; fields: Product['fields']; _rawJson?: { createdTime?: string }; createdTime?: string }): Product => ({
+  id: record.id,
+  createdTime: record._rawJson?.createdTime ?? record.createdTime ?? '',
+  fields: record.fields,
+});
+
 // Read-only API (Lookup)
 export const getProductByBarcode = async (barcode: string): Promise<Product | null> => {
   logger.debug('Fetching product by barcode', { barcode });
@@ -19,11 +25,12 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
   }
 
   logger.info('Product found', { barcode, productId: records[0].id });
-  return {
+  return toProduct({
     id: records[0].id,
-    createdTime: records[0].createdTime,
+    createdTime: (records[0] as { createdTime?: string }).createdTime,
+    _rawJson: (records[0] as { _rawJson?: { createdTime?: string } })._rawJson,
     fields: records[0].fields as unknown as Product['fields'],
-  };
+  });
 };
 
 // Create Product
@@ -59,11 +66,12 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
     ], { typecast: true });
 
     logger.info('Product created successfully', { productId: records[0].id });
-    return {
+    return toProduct({
       id: records[0].id,
-      createdTime: records[0].createdTime,
+      createdTime: (records[0] as { createdTime?: string }).createdTime,
+      _rawJson: (records[0] as { _rawJson?: { createdTime?: string } })._rawJson,
       fields: records[0].fields as unknown as Product['fields'],
-    };
+    });
   } catch (error) {
     logger.error('Failed to create product', { error, data });
     throw error;
