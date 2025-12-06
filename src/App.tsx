@@ -69,7 +69,6 @@ function App() {
       key: 'add' as const,
       title: 'Add Items',
       description: 'Receive inventory into stock',
-      accent: 'from-emerald-500/20 to-emerald-900/20',
       icon: '+',
       onClick: () => handleScannerModeChange('add'),
     },
@@ -77,83 +76,80 @@ function App() {
       key: 'remove' as const,
       title: 'Remove Items',
       description: 'Deplete inventory that was used',
-      accent: 'from-amber-500/20 to-orange-900/20',
       icon: '−',
       onClick: () => handleScannerModeChange('remove'),
     },
   ];
 
   return (
-    <div className="min-h-dvh bg-slate-950 text-slate-100 p-2 lg:p-6 pb-0 font-inter selection:bg-blue-500/20">
+    <div className="min-h-dvh bg-white text-gray-900 p-4 lg:p-8 pb-0 font-inter selection:bg-gray-200">
       <OfflineIndicator />
 
-      <header className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <header className="mb-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm text-slate-400">Inventory Ops</p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-50">Grocery Inventory</h1>
+          <p className="text-xs tracking-widest text-gray-400 uppercase font-semibold">Inventory Management</p>
+          <h1 className="text-4xl font-light tracking-tight text-gray-900 mt-1">Grocery Inventory</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {!isTablet && view !== 'checkout' && (
             <button
               onClick={() => setView('checkout')}
-              className="inline-flex items-center gap-2 rounded-full border border-indigo-500/50 bg-indigo-600/20 px-4 py-2 text-xs font-semibold text-indigo-100 shadow-sm transition hover:bg-indigo-500/30 hover:text-white"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
             >
-              🛒 Mobile checkout
+              🛒 Checkout
             </button>
           )}
           {isTablet && (
-            <div className="rounded-full border border-slate-800 bg-slate-900/70 px-4 py-2 text-sm text-slate-300 shadow-sm">
-              Tablet layout — access Checkout from Home
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600">
+              Tablet mode
             </div>
           )}
         </div>
       </header>
 
-      <main className="w-full px-2 lg:px-0 flex-1 flex flex-col items-center">
+      <main className="w-full px-0 lg:px-0 flex-1 flex flex-col items-center">
         {view === 'home' ? (
-          <div className="w-full max-w-5xl space-y-6 animate-in slide-in-from-bottom-2 duration-500">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="w-full max-w-4xl space-y-8 animate-in fade-in duration-300">
+            <div className="grid gap-5 sm:grid-cols-2">
               {actions.map((action) => (
                 <button
                   key={action.key}
                   onClick={action.onClick}
-                  className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-left transition shadow-sm hover:border-slate-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                  className="group relative rounded-xl border border-gray-200 bg-white p-8 text-left transition hover:border-gray-300 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${action.accent} opacity-70 transition group-hover:opacity-100`} />
-                  <div className="relative flex h-full flex-col justify-between gap-6">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900/90 text-2xl font-bold text-slate-100 shadow-inner">
+                  <div className="flex h-full flex-col justify-between gap-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-lg font-light text-gray-600">
                         {action.icon}
                       </div>
-                      <span className="rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-xs font-medium text-slate-300">
+                      <span className="inline-block rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tracking-wide text-gray-600">
                         {action.key === 'add' ? 'Inbound' : 'Outbound'}
                       </span>
                     </div>
-                    <div className="space-y-1">
-                      <h2 className="text-xl font-semibold text-slate-50">{action.title}</h2>
-                      <p className="text-sm text-slate-300">{action.description}</p>
+                    <div className="space-y-2">
+                      <h2 className="text-lg font-semibold text-gray-900">{action.title}</h2>
+                      <p className="text-sm text-gray-500">{action.description}</p>
                     </div>
                   </div>
                 </button>
               ))}
               <button
                 onClick={() => setView('checkout')}
-                className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70 p-6 text-left transition shadow-sm hover:border-slate-700 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+                className="group relative rounded-xl border border-gray-200 bg-white p-8 text-left transition hover:border-gray-300 hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-purple-900/25 opacity-70 transition group-hover:opacity-100" />
-                <div className="relative flex h-full flex-col justify-between gap-6">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-900/90 text-2xl font-bold text-slate-100 shadow-inner">
+                <div className="flex h-full flex-col justify-between gap-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-lg font-light">
                       🛒
                     </div>
-                    <span className="rounded-full border border-slate-800 bg-slate-950/80 px-3 py-1 text-xs font-medium text-indigo-100">
-                      {isTablet ? 'Tablet ready' : 'Mobile friendly'}
+                    <span className="inline-block rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium tracking-wide text-gray-600">
+                      {isTablet ? 'Tablet' : 'Mobile'}
                     </span>
                   </div>
-                  <div className="space-y-1">
-                    <h2 className="text-xl font-semibold text-slate-50">Checkout Mode</h2>
-                    <p className="text-sm text-slate-300">
-                      Batch scan for payment with optimized mobile controls when needed.
+                  <div className="space-y-2">
+                    <h2 className="text-lg font-semibold text-gray-900">Checkout Mode</h2>
+                    <p className="text-sm text-gray-500">
+                      Batch scan for payment with simplified mobile controls.
                     </p>
                   </div>
                 </div>
