@@ -8,8 +8,8 @@ const baseProps = {
   strokeWidth: 1.75,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
-  'aria-hidden': 'true',
-};
+  'aria-hidden': true,
+} satisfies Omit<IconProps, 'children'>;
 
 export const ArrowLeftIcon = (props: IconProps) => (
   <svg viewBox="0 0 24 24" {...baseProps} {...props}>
