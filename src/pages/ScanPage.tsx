@@ -3,6 +3,7 @@ import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
+import type { Product } from '../types';
 
 const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void }) => {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
@@ -23,7 +24,7 @@ const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void
   const getStatusContent = () => {
     if (isLoading) return <span className="text-yellow-400">Searching Airtable...</span>;
     if (error) return <span className="text-red-500">Error connecting to DB</span>;
-    if (product) return <span className="text-emerald-400">Found: {product.fields.Name}</span>;
+    if (product) return <span className="text-emerald-400">Found: {(product as Product).fields.Name}</span>;
     return <span className="text-blue-400">Product Not Found</span>;
   };
 
@@ -62,7 +63,7 @@ const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void
         <button onClick={handleReset} className="mb-4 text-slate-400 flex items-center gap-2 hover:text-white">
           ← Back to Scanner
         </button>
-        <ProductDetail product={product} onScanNew={handleReset} mode={mode} />
+        <ProductDetail product={product as Product} onScanNew={handleReset} mode={mode} />
       </div>
     );
   }

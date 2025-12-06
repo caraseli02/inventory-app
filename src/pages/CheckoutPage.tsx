@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement } from '../lib/api';
+import { createPositiveInteger } from '../types';
 import type { CartItem } from '../types';
 import { logger } from '../lib/logger';
 
@@ -21,16 +22,22 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   // Hook for looking up products
   const { data: product, isLoading, error } = useProductLookup(scannedCode);
 
-  // Sound effect helper
-  const playSound = (type: 'success' | 'error') => {
+  // Sound effect helper - memoized to prevent effect re-runs
+  const playSound = useCallback((type: 'success' | 'error') => {
     // Placeholder for sound logic. In a real PWA we'd use Audio()
     if (navigator.vibrate) {
       navigator.vibrate(type === 'success' ? 100 : [100, 50, 100]);
     }
-  };
+  }, []);
 
+  // Effect: Handle product lookup results and add to cart
   useEffect(() => {
     if (!activeScanRef.current) return;
+
+    // Don't process until loading is complete
+    if (isLoading) return;
+
+    let timeoutId: number | undefined;
 
     if (product) {
       setCart((currentCart) => {
@@ -38,11 +45,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
         if (existingItemIndex >= 0) {
           const newCart = [...currentCart];
-          newCart[existingItemIndex].quantity += 1;
+          // Use createPositiveInteger to ensure valid quantity
+          newCart[existingItemIndex].quantity = createPositiveInteger(
+            newCart[existingItemIndex].quantity + 1
+          );
           return newCart;
         }
 
-        return [...currentCart, { product, quantity: 1 }];
+        return [...currentCart, { product: product as any, quantity: createPositiveInteger(1) }];
       });
 
       playSound('success');
@@ -53,17 +63,22 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
     if (error) {
       playSound('error');
-      // maybe show an ephemeral toast error?
-      // For now we just reset so they can try again, but we might want to block briefly.
-      // Let's reset after a small delay to prevent loops if holding code
-      const timeoutId = window.setTimeout(() => {
+      logger.warn('Product lookup error', { error: error instanceof Error ? error.message : String(error) });
+
+      // Reset scan state after a brief delay to prevent rapid re-triggers
+      timeoutId = window.setTimeout(() => {
         setScannedCode(null);
         activeScanRef.current = null;
       }, 1000);
-
-      return () => clearTimeout(timeoutId);
     }
-  }, [product, error]);
+
+    // Cleanup timeout if effect re-runs or component unmounts
+    return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [product, error, isLoading, playSound]);
 
   const handleScanSuccess = (code: string) => {
     if (activeScanRef.current || isLoading) return;
@@ -82,10 +97,16 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   const updateQuantity = (index: number, delta: number) => {
     const newCart = [...cart];
-    newCart[index].quantity += delta;
-    if (newCart[index].quantity <= 0) {
+    const newQuantity = newCart[index].quantity + delta;
+
+    if (newQuantity <= 0) {
+      // Remove item if quantity would be zero or negative
       newCart.splice(index, 1);
+    } else {
+      // Update with valid positive integer
+      newCart[index].quantity = createPositiveInteger(newQuantity);
     }
+
     setCart(newCart);
   };
 
@@ -105,23 +126,104 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    const confirm = window.confirm(`Complete checkout for ${cart.length} items? Total: $${calculateTotal().toFixed(2)}`);
+    const confirm = window.confirm(
+      `Complete checkout for ${cart.length} items? Total: $${calculateTotal().toFixed(2)}\n\nThis will update stock in Airtable.`
+    );
     if (!confirm) return;
 
     setIsCheckingOut(true);
 
+    const results = { succeeded: [] as string[], failed: [] as Array<{ name: string; error: string }> };
+
     try {
       // Process all items sequentially to ensure order
       for (const item of cart) {
-        await addStockMovement(item.product.id, item.quantity, 'OUT');
+        try {
+          await addStockMovement(item.product.id, item.quantity, 'OUT');
+          results.succeeded.push(item.product.fields.Name);
+          logger.info('Stock movement recorded successfully', {
+            productId: item.product.id,
+            productName: item.product.fields.Name,
+            quantity: item.quantity,
+          });
+        } catch (itemError) {
+          const errorMessage = itemError instanceof Error ? itemError.message : 'Unknown error';
+          results.failed.push({
+            name: item.product.fields.Name,
+            error: errorMessage,
+          });
+          logger.error('Failed to record stock movement for item during checkout', {
+            productId: item.product.id,
+            productName: item.product.fields.Name,
+            quantity: item.quantity,
+            error: errorMessage,
+          });
+        }
       }
 
-      setCart([]);
-      setCheckoutComplete(true);
-      playSound('success');
-    } catch (err) {
-      logger.error('Checkout failed', { error: err });
-      alert('Checkout failed partially. Please check connection.');
+      // If all items succeeded
+      if (results.failed.length === 0) {
+        setCart([]);
+        setCheckoutComplete(true);
+        playSound('success');
+        logger.info('Checkout completed successfully', {
+          itemCount: cart.length,
+          total: calculateTotal(),
+        });
+        return;
+      }
+
+      // Partial failure: some items succeeded, some failed
+      if (results.succeeded.length > 0 && results.failed.length > 0) {
+        const failedItemsList = results.failed.map((item) => `• ${item.name}`).join('\n');
+        const message =
+          `Checkout partially completed!\n\n` +
+          `✓ Success (${results.succeeded.length}): ${results.succeeded.join(', ')}\n\n` +
+          `✗ Failed (${results.failed.length}):\n${failedItemsList}\n\n` +
+          `Please contact support for the failed items.`;
+
+        alert(message);
+
+        // Keep only the failed items in cart for user to retry
+        const failedItemNames = new Set(results.failed.map((item) => item.name));
+        setCart(cart.filter((item) => failedItemNames.has(item.product.fields.Name)));
+
+        logger.warn('Partial checkout failure', {
+          succeededCount: results.succeeded.length,
+          failedCount: results.failed.length,
+          failedItems: results.failed.map((item) => item.name),
+        });
+        return;
+      }
+
+      // Complete failure: all items failed
+      const errorList = results.failed.map((item) => `• ${item.name}: ${item.error}`).join('\n');
+      const message =
+        `Checkout failed for all items:\n\n${errorList}\n\n` +
+        (navigator.onLine === false
+          ? `No internet connection detected. Please check your network and try again.`
+          : `Please check your connection and try again, or contact support if the problem persists.`);
+
+      alert(message);
+
+      logger.error('Complete checkout failure', {
+        itemCount: cart.length,
+        failedItems: results.failed.map((item) => item.name),
+      });
+    } catch (unexpectedError) {
+      // Unexpected error not related to individual items
+      const errorMessage = unexpectedError instanceof Error ? unexpectedError.message : 'Unknown error';
+      const userMessage =
+        navigator.onLine === false
+          ? `No internet connection. Please check your network and try again.`
+          : `An unexpected error occurred during checkout. Please try again or contact support.\n\nError: ${errorMessage}`;
+
+      alert(userMessage);
+
+      logger.error('Unexpected error during checkout', {
+        error: errorMessage,
+        stack: unexpectedError instanceof Error ? unexpectedError.stack : undefined,
+      });
     } finally {
       setIsCheckingOut(false);
     }
