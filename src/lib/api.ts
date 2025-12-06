@@ -3,18 +3,16 @@ import base, { TABLES } from './airtable';
 import type { Product, ProductFields, StockMovement } from '../types';
 import { logger } from './logger';
 
-type AirtableRecordWithCreated<TFields extends FieldSet> = AirtableRecord<TFields> & {
-  _rawJson?: { createdTime?: string };
-};
+const productsTable = base<ProductFields>(TABLES.PRODUCTS);
 
-const getCreatedTime = <TFields extends FieldSet>(record: AirtableRecordWithCreated<TFields>): string =>
-  record._rawJson?.createdTime ?? '';
+const getCreatedTime = <TFields extends FieldSet>(record: AirtableRecord<TFields>): string =>
+  (record._rawJson as { createdTime?: string } | undefined)?.createdTime ?? '';
 
 // Read-only API (Lookup)
 export const getProductByBarcode = async (barcode: string): Promise<Product | null> => {
   logger.debug('Fetching product by barcode', { barcode });
   // Use filterByFormula to find the product with valid barcode
-  const records = await base(TABLES.PRODUCTS)
+  const records = await productsTable
     .select({
       filterByFormula: `{Barcode} = '${barcode}'`,
       maxRecords: 1,
@@ -26,13 +24,13 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
     return null;
   }
 
-  const record = records[0] as AirtableRecordWithCreated<ProductFields>;
+  const record = records[0];
 
   logger.info('Product found', { barcode, productId: record.id });
   return {
     id: record.id,
     createdTime: getCreatedTime(record),
-    fields: record.fields as ProductFields,
+    fields: record.fields,
   };
 };
 
@@ -66,19 +64,19 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
   }
 
   try {
-    const records = await base(TABLES.PRODUCTS).create([
+    const records = await productsTable.create([
       {
         fields: fields,
       },
     ], { typecast: true });
 
-    const record = records[0] as AirtableRecordWithCreated<ProductFields>;
+    const record = records[0];
 
     logger.info('Product created successfully', { productId: record.id });
     return {
       id: record.id,
       createdTime: getCreatedTime(record),
-      fields: record.fields as ProductFields,
+      fields: record.fields,
     };
   } catch (error) {
     logger.error('Failed to create product', { error, data });
