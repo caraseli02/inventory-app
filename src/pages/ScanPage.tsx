@@ -4,8 +4,10 @@ import { useProductLookup } from '../hooks/useProductLookup';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
 
-const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void }) => {
+const ScanPage = ({ mode, onBack, onModeChange }: { mode: 'add' | 'remove', onBack: () => void, onModeChange: (mode: 'add' | 'remove') => void }) => {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
+  const [showScanner, setShowScanner] = useState(true);
+  const [manualCode, setManualCode] = useState('');
 
   const handleScanSuccess = (code: string) => {
     setScannedCode(code);
@@ -27,9 +29,17 @@ const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void
     return <span className="text-blue-400">Product Not Found</span>;
   };
 
-  // Determine current view mode
-  const [showScanner, setShowScanner] = useState(true);
-  const [manualCode, setManualCode] = useState('');
+  const handleModeToggle = () => {
+    onModeChange(mode === 'add' ? 'remove' : 'add');
+  };
+
+  const getModeBadgeStyles = () => {
+    if (mode === 'add') {
+      return 'bg-emerald-900/60 text-emerald-200 border border-emerald-700/60 shadow-emerald-500/10';
+    }
+
+    return 'bg-orange-900/60 text-orange-200 border border-orange-700/60 shadow-orange-500/10';
+  };
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,9 +54,22 @@ const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void
   if (showCreateForm && scannedCode) {
     return (
       <div className="w-full">
-        <button onClick={handleReset} className="mb-4 text-slate-400 flex items-center gap-2 hover:text-white">
-          ← Back to Scanner
-        </button>
+        <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+          <button onClick={handleReset} className="text-slate-400 flex items-center gap-2 hover:text-white">
+            ← Back to Scanner
+          </button>
+          <div className="flex items-center gap-2">
+            <span className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${getModeBadgeStyles()}`}>
+              {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
+            </span>
+            <button
+              onClick={handleModeToggle}
+              className="text-xs px-3 py-1 rounded-full bg-slate-800/70 border border-slate-700 text-slate-200 hover:bg-slate-700/80"
+            >
+              Switch to {mode === 'add' ? 'Remove' : 'Add'}
+            </button>
+          </div>
+        </div>
         <CreateProductForm
           barcode={scannedCode}
           onSuccess={() => {/* Query invalidation handles the UI switch automatically */ }}
@@ -59,9 +82,22 @@ const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void
   if (showDetail && product) {
     return (
       <div className="w-full">
-        <button onClick={handleReset} className="mb-4 text-slate-400 flex items-center gap-2 hover:text-white">
-          ← Back to Scanner
-        </button>
+        <div className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+          <button onClick={handleReset} className="text-slate-400 flex items-center gap-2 hover:text-white">
+            ← Back to Scanner
+          </button>
+          <div className="flex items-center gap-2">
+            <span className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${getModeBadgeStyles()}`}>
+              {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
+            </span>
+            <button
+              onClick={handleModeToggle}
+              className="text-xs px-3 py-1 rounded-full bg-slate-800/70 border border-slate-700 text-slate-200 hover:bg-slate-700/80"
+            >
+              Switch to {mode === 'add' ? 'Remove' : 'Add'}
+            </button>
+          </div>
+        </div>
         <ProductDetail product={product} onScanNew={handleReset} mode={mode} />
       </div>
     );
@@ -69,10 +105,21 @@ const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 flex flex-col items-center min-h-[500px]">
-      <div className="w-full flex justify-start mb-4">
+      <div className="w-full flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
         <button onClick={onBack} className="text-slate-400 flex items-center gap-2 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700/50">
           ← Back to Home
         </button>
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1 text-xs font-semibold rounded-full shadow-sm ${getModeBadgeStyles()}`}>
+            {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
+          </span>
+          <button
+            onClick={handleModeToggle}
+            className="text-xs px-3 py-1 rounded-full bg-slate-800/70 border border-slate-700 text-slate-200 hover:bg-slate-700/80"
+          >
+            Switch to {mode === 'add' ? 'Remove' : 'Add'}
+          </button>
+        </div>
       </div>
 
       <div className="w-full text-center mb-6">
