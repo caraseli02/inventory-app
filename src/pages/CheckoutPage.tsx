@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement } from '../lib/api';
@@ -16,6 +16,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   const [manualCode, setManualCode] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
+  const activeScanRef = useRef<string | null>(null);
 
   // Hook for looking up products
   const { data: product, isLoading, error } = useProductLookup(scannedCode);
@@ -28,37 +29,47 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     }
   };
 
-  // Logic to add to cart when product is found
-  if (product && scannedCode) {
-    // Check if already in cart
-    const existingItemIndex = cart.findIndex(item => item.product.id === product.id);
+  useEffect(() => {
+    if (!activeScanRef.current) return;
 
-    if (existingItemIndex >= 0) {
-      // Increment quantity
-      const newCart = [...cart];
-      newCart[existingItemIndex].quantity += 1;
-      setCart(newCart);
+    if (product) {
+      setCart((currentCart) => {
+        const existingItemIndex = currentCart.findIndex((item) => item.product.id === product.id);
+
+        if (existingItemIndex >= 0) {
+          const newCart = [...currentCart];
+          newCart[existingItemIndex].quantity += 1;
+          return newCart;
+        }
+
+        return [...currentCart, { product, quantity: 1 }];
+      });
+
       playSound('success');
-    } else {
-      // Add new item
-      setCart([...cart, { product, quantity: 1 }]);
-      playSound('success');
+      setScannedCode(null);
+      activeScanRef.current = null;
+      return;
     }
 
-    // Reset scan state immediately to allow rapid scanning
-    setScannedCode(null);
-  } else if (error && scannedCode) {
-    playSound('error');
-    // maybe show an ephemeral toast error?
-    // For now we just reset so they can try again, but we might want to block briefly.
-    // Let's reset after a small delay to prevent loops if holding code
-    setTimeout(() => setScannedCode(null), 1000);
-  }
+    if (error) {
+      playSound('error');
+      // maybe show an ephemeral toast error?
+      // For now we just reset so they can try again, but we might want to block briefly.
+      // Let's reset after a small delay to prevent loops if holding code
+      const timeoutId = window.setTimeout(() => {
+        setScannedCode(null);
+        activeScanRef.current = null;
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [product, error]);
 
   const handleScanSuccess = (code: string) => {
-    if (!scannedCode && !isLoading) {
-      setScannedCode(code);
-    }
+    if (activeScanRef.current || isLoading) return;
+
+    setScannedCode(code);
+    activeScanRef.current = code;
   };
 
   const handleManualSubmit = (e: React.FormEvent) => {
