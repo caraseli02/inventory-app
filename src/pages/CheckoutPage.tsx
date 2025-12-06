@@ -94,7 +94,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    const confirm = window.confirm(`Complete checkout for ${cart.length} items? Total: $${calculateTotal().toFixed(2)}`);
+    const confirm = window.confirm(
+      `Mark ${cart.length} item${cart.length === 1 ? '' : 's'} as paid and update stock? Total: $${calculateTotal().toFixed(2)}`
+    );
     if (!confirm) return;
 
     setIsCheckingOut(true);
@@ -124,10 +126,13 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
           <span className="text-5xl">✓</span>
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">Checkout Complete!</h2>
-        <p className="text-slate-400 mb-8">Stock has been updated.</p>
+        <h2 className="text-3xl font-bold text-white mb-2">Marked as Paid</h2>
+        <p className="text-slate-400 mb-8">Stock has been updated for all items.</p>
         <button
-          onClick={() => { setCheckoutComplete(false); onBack(); }}
+          onClick={() => {
+            setCheckoutComplete(false);
+            onBack();
+          }}
           className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-medium transition-colors"
         >
           Back to Home
@@ -143,7 +148,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           <span className="h-2 w-2 rounded-full bg-indigo-400" />
           Mobile-friendly checkout
         </span>
-        <span className="text-[11px] text-slate-400">Trimmed controls, same cart power.</span>
+        <span className="text-[11px] text-slate-400">Payments happen elsewhere—use this to mark paid & update stock.</span>
       </div>
 
       {/* Left Column: Scanner */}
@@ -273,7 +278,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 disabled={cart.length === 0 || isCheckingOut}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition enabled:hover:from-indigo-400 enabled:hover:to-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isCheckingOut ? 'Processing…' : 'Complete Checkout'}
+                {isCheckingOut ? 'Processing…' : 'Mark Paid & Update Stock'}
               </button>
             </div>
           </div>
@@ -294,7 +299,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               disabled={cart.length === 0 || isCheckingOut}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition enabled:hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isCheckingOut ? 'Processing…' : 'Pay & Update'}
+              {isCheckingOut ? 'Processing…' : 'Mark Paid'}
             </button>
             <button
               onClick={onBack}
