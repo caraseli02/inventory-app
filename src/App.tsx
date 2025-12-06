@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import ScanPage from './pages/ScanPage';
+import CheckoutPage from './pages/CheckoutPage';
 import OfflineIndicator from './components/OfflineIndicator';
 
-type ViewState = 'home' | 'add' | 'remove';
+type ViewState = 'home' | 'add' | 'remove' | 'checkout';
 
 function App() {
   const [view, setView] = useState<ViewState>('home');
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 pb-20 font-inter selection:bg-blue-500/30">
+    <div className="min-h-dvh bg-slate-950 text-slate-100 p-2 lg:p-4 pb-0 font-inter selection:bg-blue-500/30">
       <OfflineIndicator />
 
       {/* Header */}
@@ -50,10 +51,26 @@ function App() {
                 <p className="text-red-100/70 text-sm">Check-out used stock</p>
               </div>
             </button>
+
+            <button
+              onClick={() => setView('checkout')}
+              className="w-full aspect-[4/3] bg-gradient-to-br from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 rounded-2xl shadow-2xl border border-purple-500/30 flex flex-col items-center justify-center gap-4 transition-all hover:scale-[1.02] active:scale-95 group"
+            >
+              <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-4xl mb-2 group-hover:scale-110 transition-transform">
+                🛒
+              </div>
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white">Checkout Mode</h2>
+                <p className="text-purple-100/70 text-sm">Scan multiple items & Pay</p>
+              </div>
+            </button>
           </div>
+        ) : view === 'checkout' ? (
+          <CheckoutPage onBack={() => setView('home')} />
         ) : (
           <ScanPage mode={view} onBack={() => setView('home')} />
         )}
+
       </main>
     </div>
   )

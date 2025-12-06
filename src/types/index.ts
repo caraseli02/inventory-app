@@ -1,23 +1,31 @@
 export interface Product {
-  id: string; // Airtable Record ID
+  id: string;
+  createdTime: string;
   fields: {
     Name: string;
     Barcode: string;
-    Category?: string;
-    Price?: number;
-    'Expiry Date'?: string;
+    Category: string;
+    Price: number;
+    'Current Stock': number;
+    'Ideal Stock': number;
+    'Min Stock Level': number;
+    Supplier: string;
+    'Expiry Date': string;
     Image?: Array<{ url: string }>;
-    'Current Stock'?: number; // Rollup field
   };
 }
 
 export interface StockMovement {
   id: string;
   fields: {
-    Product: string[]; // Link to Product (array of IDs)
-    Quantity: number;
+    Product: string[];
     Type: 'IN' | 'OUT';
-    Date?: string;
-    Note?: string;
+    Quantity: number;
+    Date: string;
   };
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
 }
