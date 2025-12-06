@@ -250,7 +250,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             setCheckoutComplete(false);
             onBack();
           }}
-          className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-8 py-3 rounded-lg font-medium transition-colors"
+          className="bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 px-8 py-3 rounded-lg font-medium transition-colors"
         >
           Back to Home
         </button>
@@ -271,14 +271,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       {/* Left Column: Scanner - 45% on desktop */}
       <div className="w-full lg:w-[45%] flex flex-col gap-3 lg:gap-5 shrink-0">
         <div className="flex justify-between items-center px-1">
-          <button onClick={onBack} className="text-gray-700 hover:text-gray-900 flex items-center gap-2 text-sm bg-white border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">
+          <button onClick={onBack} className="text-gray-700 hover:text-gray-900 flex items-center gap-2 text-sm bg-white border-2 border-gray-300 px-3 py-3 rounded-lg hover:bg-gray-50">
             ← Back
           </button>
         </div>
 
         {/* Error Message - Inline display */}
         {lookupError && (
-          <div className="bg-red-50 border border-red-200 text-red-900 p-3 rounded-lg text-sm animate-in fade-in duration-200">
+          <div className="bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm animate-in fade-in duration-200">
             <div className="flex items-start gap-2">
               <span className="text-lg mt-0.5">⚠️</span>
               <div>
@@ -298,7 +298,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         {/* Scanner */}
         <div className={`transition-all duration-300 ${!showScanner && 'opacity-50'}`}>
           {showScanner ? (
-            <div className="relative rounded-lg overflow-hidden border border-gray-300 bg-black aspect-[4/3] lg:aspect-square w-full mx-auto max-w-sm lg:max-w-none shrink-0">
+            <div className="relative rounded-lg overflow-hidden border-2 border-gray-300 bg-black aspect-[4/3] lg:aspect-square w-full mx-auto max-w-sm lg:max-w-none shrink-0">
               <Scanner onScanSuccess={handleScanSuccess} />
               {isPendingLookup && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10 text-center">
@@ -311,20 +311,20 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               <button
                 onClick={() => setShowScanner(false)}
                 disabled={isPendingLookup}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/95 text-gray-900 px-4 py-2 rounded-lg text-xs font-medium border border-gray-300 whitespace-nowrap hover:bg-white"
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/95 text-gray-900 px-4 py-3 rounded-lg text-xs font-medium border-2 border-gray-300 whitespace-nowrap hover:bg-white"
               >
                 {isPendingLookup ? 'Searching…' : 'Type Instead'}
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-lg p-6 border border-gray-200 aspect-[4/3] lg:aspect-square flex flex-col justify-center">
+            <div className="bg-white rounded-lg p-6 border-2 border-gray-200 aspect-[4/3] lg:aspect-square flex flex-col justify-center">
               <form onSubmit={handleManualSubmit} className="space-y-4">
                 <label className="block text-gray-700 text-sm font-medium text-center">Barcode</label>
                 <input
                   type="text"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-gray-900 text-center tracking-widest focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
+                  className="w-full bg-gray-50 border-2 border-gray-300 rounded-lg p-3 text-gray-900 text-center tracking-widest focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
                   autoFocus
                 />
                 <button type="submit" disabled={manualCode.length < 3 || isPendingLookup} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors">
@@ -336,7 +336,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           )}
         </div>
 
-        <div className="hidden lg:block bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+        <div className="hidden lg:block bg-gray-50 p-4 rounded-lg border-2 border-gray-200 text-center">
           <p className="text-sm text-gray-600">Scan items. Duplicates increase quantity.</p>
         </div>
       </div>
@@ -365,9 +365,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             </div>
           ) : (
             cart.map((item, index) => (
-              <div key={`${item.product.id}-${index}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div key={`${item.product.id}-${index}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
                 {/* Image Thumb */}
-                <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden shrink-0 border border-gray-300">
+                <div className="w-12 h-12 bg-gray-100 rounded-md overflow-hidden shrink-0 border-2 border-gray-300">
                   {item.product.fields.Image?.[0]?.url ? (
                     <img src={item.product.fields.Image[0].url} alt="" className="w-full h-full object-cover" />
                   ) : (
@@ -398,7 +398,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
                 {/* Controls */}
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-white border border-gray-300 rounded-lg h-8">
+                  <div className="flex items-center bg-white border-2 border-gray-300 rounded-lg h-11">
                     <button onClick={() => updateQuantity(index, -1)} className="px-2 h-full hover:bg-gray-100 text-gray-700 flex items-center justify-center font-semibold">
                       <span className="text-lg leading-none">−</span>
                     </button>
@@ -424,15 +424,15 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         {/* Footer - Fixed at bottom of container on Mobile */}
         <div className="absolute lg:relative bottom-0 left-0 right-0 p-5 border-t-2 border-gray-200 bg-gray-50 lg:shadow-none z-20 lg:p-6">
           {statusSummary && (
-            <div className="mb-5 flex flex-col gap-2 bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-sm text-blue-900 font-medium">
+            <div className="mb-5 flex flex-col gap-2 bg-gray-50 border-2 border-gray-200 rounded-lg p-4 text-sm text-gray-900 font-medium">
               <div className="flex flex-wrap items-center gap-4">
                 <span className="text-emerald-700 font-bold text-base">{statusSummary.successes} ✓</span>
                 <span className="text-red-700 font-bold text-base">{statusSummary.failures} ✕</span>
               </div>
               {statusSummary.failures > 0 ? (
-                <p className="text-blue-800 text-xs">Failed items remain in cart. Adjust and retry.</p>
+                <p className="text-gray-700 text-xs">Failed items remain in cart. Adjust and retry.</p>
               ) : (
-                <p className="text-blue-800 text-xs">All items checked out successfully.</p>
+                <p className="text-gray-700 text-xs">All items checked out successfully.</p>
               )}
             </div>
           )}
@@ -466,7 +466,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       {/* Mobile sticky footer */}
       <div className="lg:hidden fixed inset-x-0 bottom-3 px-3 z-30">
-        <div className="mx-auto max-w-3xl rounded-lg border border-gray-200 bg-white shadow-lg backdrop-blur p-4 flex items-center justify-between gap-3">
+        <div className="mx-auto max-w-3xl rounded-lg border-2 border-gray-200 bg-white shadow-lg backdrop-blur p-4 flex items-center justify-between gap-3">
           <div>
             <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Total</p>
             <p className="text-2xl font-light text-gray-900">${total.toFixed(2)}</p>

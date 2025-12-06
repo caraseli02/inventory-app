@@ -96,9 +96,9 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   });
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white rounded-lg overflow-hidden border border-gray-200 animate-in fade-in duration-500">
+    <div className="w-full max-w-lg mx-auto bg-white rounded-lg overflow-hidden border-2 border-gray-200 animate-in fade-in duration-500">
       {/* Header */}
-      <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+      <div className="bg-gray-50 border-b-2 border-gray-200 px-6 py-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
@@ -134,11 +134,11 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
 
       <div className="px-6 py-6">
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
             <div className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">Price</div>
             <div className="text-gray-900 font-medium">{displayPrice}</div>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-200">
             <div className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">Expiry</div>
             <div className="text-gray-900 font-medium text-sm">{expiryDisplay}</div>
           </div>
@@ -149,7 +149,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
             <button
               onClick={() => handleStockChange('OUT')}
               disabled={loadingAction !== null}
-              className="flex-1 py-4 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg font-semibold transition-colors active:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-4 bg-red-50 hover:bg-red-100 text-red-700 border-2 border-red-200 rounded-lg font-semibold transition-colors active:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loadingAction === 'OUT' ? <span className="animate-spin h-4 w-4 border-2 border-red-700 border-t-transparent rounded-full"></span> : <span className="text-lg">−</span>}
               <span className="hidden sm:inline text-sm">Remove</span>
@@ -162,7 +162,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
               min="1"
               value={stockQuantity}
               onChange={(e) => setStockQuantity(e.target.value)}
-              className="w-full h-14 bg-gray-50 border border-gray-300 rounded-lg text-center text-gray-900 font-semibold text-lg focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none"
+              className="w-full h-14 bg-gray-50 border-2 border-gray-300 rounded-lg text-center text-gray-900 font-semibold text-lg focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none"
             />
           </div>
 
@@ -170,7 +170,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
             <button
               onClick={() => handleStockChange('IN')}
               disabled={loadingAction !== null}
-              className="flex-1 py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-semibold transition-colors active:bg-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-2 border-emerald-200 rounded-lg font-semibold transition-colors active:bg-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loadingAction === 'IN' ? <span className="animate-spin h-4 w-4 border-2 border-emerald-700 border-t-transparent rounded-full"></span> : <span className="text-lg">+</span>}
               <span className="hidden sm:inline text-sm">Add</span>
@@ -179,7 +179,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         </div>
 
         {/* Recent Activity Section */}
-        <div className="border-t border-gray-200 pt-6">
+        <div className="border-t-2 border-gray-200 pt-6">
           <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Recent Activity</h3>
           <div className="space-y-2">
             {history?.map((move) => (
@@ -198,7 +198,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         </div>
       </div>
 
-      <div className="bg-gray-50 p-4 border-t border-gray-200 flex justify-center">
+      <div className="bg-gray-50 p-4 border-t-2 border-gray-200 flex justify-center">
         <button onClick={onScanNew} className="text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors">
           ← Scan Another Product
         </button>

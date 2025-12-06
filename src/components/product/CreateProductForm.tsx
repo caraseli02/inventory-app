@@ -115,12 +115,12 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
   };
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white rounded-lg p-6 border border-gray-200 animate-in slide-in-from-bottom-5 duration-300">
+    <div className="w-full max-w-lg mx-auto bg-white rounded-lg p-6 border-2 border-gray-200 animate-in slide-in-from-bottom-5 duration-300">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-900">New Product</h2>
         {aiLoading && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium border border-blue-200">
-            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+          <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium border-2 border-amber-200">
+            <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
             Searching...
           </div>
         )}
@@ -130,7 +130,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
         {/* Image Preview */}
         {formData.imageUrl && (
           <div className="flex justify-center mb-4">
-            <div className="w-32 h-32 rounded-lg overflow-hidden border border-gray-300 bg-gray-100 relative">
+            <div className="w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-300 bg-gray-100 relative">
               <img
                 src={formData.imageUrl}
                 alt="Product Preview"
@@ -152,7 +152,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
             type="text"
             value={barcode}
             disabled
-            className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-gray-600 cursor-not-allowed text-sm"
+            className="w-full bg-gray-50 border-2 border-gray-300 rounded-lg p-3 text-gray-600 cursor-not-allowed text-sm"
           />
         </div>
 
@@ -166,7 +166,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
               value={formData.name}
               onChange={handleChange}
               placeholder="e.g. Organic Bananas"
-              className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none transition-all pr-10 text-sm"
+              className="w-full bg-white border-2 border-gray-300 rounded-lg p-3 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none transition-all pr-10 text-sm"
             />
             {!aiLoading && !formData.name && (
               <button
@@ -188,7 +188,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
+              className="w-full bg-white border-2 border-gray-300 rounded-lg p-3 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
             >
               <option value="General">General</option>
               <option value="Produce">Produce</option>
@@ -211,7 +211,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                 value={formData.price}
                 onChange={handleChange}
                 placeholder="0.00"
-                className="w-full bg-white border border-gray-300 rounded-lg p-3 pl-7 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
+                className="w-full bg-white border-2 border-gray-300 rounded-lg p-3 pl-7 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
               />
             </div>
           </div>
@@ -225,7 +225,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
               name="initialStock"
               value={formData.initialStock}
               onChange={handleChange}
-              className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
+              className="w-full bg-white border-2 border-gray-300 rounded-lg p-3 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
             />
           </div>
           <div>
@@ -235,7 +235,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
               name="expiryDate"
               value={formData.expiryDate}
               onChange={handleChange}
-              className="w-full bg-white border border-gray-300 rounded-lg p-3 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
+              className="w-full bg-white border-2 border-gray-300 rounded-lg p-3 text-gray-900 focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
             />
           </div>
         </div>
@@ -247,7 +247,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors text-sm"
+            className="flex-1 py-3 bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors text-sm"
           >
             Cancel
           </button>
@@ -265,7 +265,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
         </div>
 
         {mutation.isError && (
-          <div className="text-red-700 text-sm text-center bg-red-50 p-3 rounded-lg border border-red-200">
+          <div className="text-red-700 text-sm text-center bg-red-50 p-3 rounded-lg border-2 border-red-200">
             {mutation.error.message || 'Failed to create product.'}
           </div>
         )}

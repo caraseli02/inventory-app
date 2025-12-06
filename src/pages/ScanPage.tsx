@@ -129,7 +129,7 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
           {isTablet && (
             <button
               onClick={onBack}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
             >
               ← Back
             </button>
@@ -137,7 +137,7 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
           {!isTablet && onCheckout && (
             <button
               onClick={onCheckout}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
             >
               🛒 Checkout
             </button>
@@ -146,9 +146,13 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
 
         {/* Center: Mode Indicator */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 border border-gray-200">
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-semibold text-sm ${
+            mode === 'add'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : 'bg-amber-50 border-amber-200 text-amber-700'
+          }`}>
             <span className={`h-3 w-3 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            <p className="text-sm font-semibold text-gray-900">{mode === 'add' ? 'Add Mode' : 'Remove Mode'}</p>
+            {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
           </div>
         </div>
 
@@ -156,7 +160,7 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
         <div className="flex-shrink-0">
           <button
             onClick={handleModeToggle}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
+            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
           >
             Switch {mode === 'add' ? 'to Remove' : 'to Add'}
           </button>
@@ -164,9 +168,11 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
       </div>
 
       {/* Status Display - Enhanced Prominent Banner */}
-      <div className={`w-full mb-8 rounded-xl border-2 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${
+      <div className={`w-full mb-6 rounded-lg border-2 p-4 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${
         scannedCode
-          ? 'bg-blue-50 border-blue-200'
+          ? mode === 'add'
+            ? 'bg-emerald-50 border-emerald-200'
+            : 'bg-amber-50 border-amber-200'
           : 'bg-white border-gray-200'
       }`}>
         <div className="flex-1">
@@ -211,7 +217,7 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/40 to-transparent p-6 flex justify-center">
                 <button
                   onClick={() => setShowScanner(false)}
-                  className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white/95 px-5 py-3 text-sm font-semibold text-gray-900 transition hover:bg-white shadow-lg"
+                  className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white/95 px-5 py-3 text-sm font-semibold text-gray-900 transition hover:bg-white shadow-sm"
                 >
                   ✏️ Enter manually
                 </button>
