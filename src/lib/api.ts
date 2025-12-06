@@ -1,18 +1,24 @@
+import type { Attachment, FieldSet, Record as AirtableRecord } from 'airtable';
 import base, { TABLES } from './airtable';
-import type { Product, StockMovement } from '../types';
+import type { Product, ProductFields, StockMovement } from '../types';
 import { logger } from './logger';
 
-const mapAirtableProduct = (record: any): Product => ({
+const productsTable = base<ProductFields>(TABLES.PRODUCTS);
+
+const getCreatedTime = <TFields extends FieldSet>(record: AirtableRecord<TFields>): string =>
+  (record._rawJson as { createdTime?: string } | undefined)?.createdTime ?? '';
+
+const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Product => ({
   id: record.id,
-  createdTime: record._rawJson.createdTime,
-  fields: record.fields as unknown as Product['fields'],
+  createdTime: getCreatedTime(record),
+  fields: record.fields,
 });
 
 // Read-only API (Lookup)
 export const getProductByBarcode = async (barcode: string): Promise<Product | null> => {
   logger.debug('Fetching product by barcode', { barcode });
   // Use filterByFormula to find the product with valid barcode
-  const records = await base(TABLES.PRODUCTS)
+  const records = await productsTable
     .select({
       filterByFormula: `{Barcode} = '${barcode}'`,
       maxRecords: 1,
@@ -24,8 +30,10 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
     return null;
   }
 
-  logger.info('Product found', { barcode, productId: records[0].id });
-  return mapAirtableProduct(records[0]);
+  const record = records[0];
+
+  logger.info('Product found', { barcode, productId: record.id });
+  return mapAirtableProduct(record);
 };
 
 // Create Product
@@ -40,28 +48,34 @@ export interface CreateProductDTO {
 
 export const createProduct = async (data: CreateProductDTO): Promise<Product> => {
   logger.info('Creating new product', { data });
-  const fields: any = {
+  const fields: ProductFields = {
     Name: data.Name,
     Barcode: data.Barcode,
-    Category: data.Category,
-    Price: data.Price,
-    'Expiry Date': data['Expiry Date'],
+    Category: data.Category ?? '',
+    Price: data.Price ?? 0,
+    'Current Stock': 0,
+    'Ideal Stock': 0,
+    'Min Stock Level': 0,
+    Supplier: '',
+    'Expiry Date': data['Expiry Date'] ?? '',
   };
 
   // Airtable requires attachments as array of objects with url
   if (data.Image) {
-    fields.Image = [{ url: data.Image }];
+    fields.Image = [{ url: data.Image } as Attachment];
   }
 
   try {
-    const records = await base(TABLES.PRODUCTS).create([
+    const records = await productsTable.create([
       {
         fields: fields,
       },
     ], { typecast: true });
 
-    logger.info('Product created successfully', { productId: records[0].id });
-    return mapAirtableProduct(records[0]);
+    const record = records[0];
+
+    logger.info('Product created successfully', { productId: record.id });
+    return mapAirtableProduct(record);
   } catch (error) {
     logger.error('Failed to create product', { error, data });
     throw error;

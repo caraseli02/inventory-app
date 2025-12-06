@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement } from '../lib/api';
@@ -61,7 +61,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     }
   };
 
-  const handleManualSubmit = (e: React.FormEvent) => {
+  const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (manualCode.trim().length > 3) {
       handleScanSuccess(manualCode.trim());

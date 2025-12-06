@@ -55,7 +55,7 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
     return 'bg-amber-500/10 text-amber-100 border border-amber-600/50 shadow-amber-500/10';
   };
 
-  const handleManualSubmit = (e: FormEvent) => {
+  const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (manualCode.trim().length > 3) {
       handleScanSuccess(manualCode.trim());
