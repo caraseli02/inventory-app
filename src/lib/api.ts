@@ -124,7 +124,19 @@ export const addStockMovement = async (productId: string, quantity: number, type
       fields: records[0].fields as unknown as StockMovement['fields'],
     };
   } catch (error) {
-    logger.error('Failed to add stock movement', { error, productId });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as any)?.response?.status || (error as any)?.code || 'UNKNOWN';
+
+    logger.error('Failed to add stock movement', {
+      productId,
+      quantity: finalQuantity,
+      type,
+      dateStr,
+      errorMessage,
+      errorCode,
+      errorStack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
     throw error;
   }
 };
