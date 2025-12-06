@@ -49,6 +49,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     if (!scannedCode) return;
 
     if (product) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync cart with latest lookup result
       setCart(prevCart => {
         const existingItemIndex = prevCart.findIndex(item => item.product.id === product.id);
 
@@ -112,6 +113,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   useEffect(() => {
     if (!scannedCode && !isLoading && lookupRequested) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- gate guard reset after lookup completes
       setLookupRequested(false);
     }
   }, [isLoading, lookupRequested, scannedCode]);
