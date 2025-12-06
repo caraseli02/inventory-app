@@ -31,7 +31,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
       const previousProduct = queryClient.getQueryData(['product', product.fields.Barcode]);
 
       // Optimistically update
-      queryClient.setQueryData(['product', product.fields.Barcode], (old: any) => {
+      queryClient.setQueryData(['product', product.fields.Barcode], (old: Product | undefined) => {
         if (!old) return old;
         const change = type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity);
         return {
@@ -45,12 +45,12 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
 
       return { previousProduct };
     },
-    onError: (err, _newTodo, context: any) => {
+    onError: (err, _newTodo, context: unknown) => {
       logger.error('Stock mutation failed', { error: err, productId: product.id });
       alert(`Failed to update stock: ${err.message || 'Unknown error'}`);
       // Rollback
-      if (context?.previousProduct) {
-        queryClient.setQueryData(['product', product.fields.Barcode], context.previousProduct);
+      if ((context as { previousProduct: Product | undefined })?.previousProduct) {
+        queryClient.setQueryData(['product', product.fields.Barcode], (context as { previousProduct: Product | undefined }).previousProduct);
       }
     },
     onSettled: () => {

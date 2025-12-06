@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement } from '../lib/api';
@@ -16,6 +16,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   const [manualCode, setManualCode] = useState('');
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
+  const [lookupRequested, setLookupRequested] = useState(false);
   const [statusSummary, setStatusSummary] = useState<{
     successes: number;
     failures: number;
@@ -23,57 +24,74 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   // Hook for looking up products
   const { data: product, isLoading, error } = useProductLookup(scannedCode);
+  const isPendingLookup = isLoading || lookupRequested;
 
   // Sound effect helper
-  const playSound = (type: 'success' | 'error') => {
+  const playSound = useCallback((type: 'success' | 'error') => {
     // Placeholder for sound logic. In a real PWA we'd use Audio()
     if (navigator.vibrate) {
       navigator.vibrate(type === 'success' ? 100 : [100, 50, 100]);
     }
-  };
+  }, []);
 
-  // Logic to add to cart when product is found
-  if (product && scannedCode) {
-    // Check if already in cart
-    const existingItemIndex = cart.findIndex(item => item.product.id === product.id);
+  useEffect(() => {
+    if (!scannedCode) return;
 
-    if (existingItemIndex >= 0) {
-      // Increment quantity
-      const newCart = [...cart];
-      newCart[existingItemIndex].quantity += 1;
-      newCart[existingItemIndex].status = 'idle';
-      newCart[existingItemIndex].statusMessage = undefined;
-      setCart(newCart);
+    if (product) {
+      setCart(prevCart => {
+        const existingItemIndex = prevCart.findIndex(item => item.product.id === product.id);
+
+        if (existingItemIndex >= 0) {
+          const newCart = [...prevCart];
+          newCart[existingItemIndex].quantity += 1;
+          newCart[existingItemIndex].status = undefined;
+          newCart[existingItemIndex].statusMessage = undefined;
+          return newCart;
+        }
+
+        return [...prevCart, { product, quantity: 1 }];
+      });
+
       setStatusSummary(null);
       setCheckoutComplete(false);
       playSound('success');
-    } else {
-      // Add new item
-      setCart([...cart, { product, quantity: 1, status: 'idle' }]);
-      setStatusSummary(null);
-      setCheckoutComplete(false);
-      playSound('success');
+
+      // Reset scan state immediately to allow rapid scanning
+      setScannedCode(null);
+      setLookupRequested(false);
+      return;
     }
 
-    // Reset scan state immediately to allow rapid scanning
-    setScannedCode(null);
-  } else if (error && scannedCode) {
-    playSound('error');
-    // maybe show an ephemeral toast error?
-    // For now we just reset so they can try again, but we might want to block briefly.
-    // Let's reset after a small delay to prevent loops if holding code
-    setTimeout(() => setScannedCode(null), 1000);
-  }
+    if (error) {
+      playSound('error');
+      // maybe show an ephemeral toast error?
+      // For now we just reset so they can try again, but we might want to block briefly.
+      // Let's reset after a small delay to prevent loops if holding code
+      const timer = setTimeout(() => {
+        setScannedCode(null);
+        setLookupRequested(false);
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [error, playSound, product, scannedCode]);
 
   const handleScanSuccess = (code: string) => {
-    if (!scannedCode && !isLoading) {
+    if (!scannedCode && !isPendingLookup) {
       setScannedCode(code);
+      setLookupRequested(true);
     }
   };
+
+  useEffect(() => {
+    if (!scannedCode && !isLoading && lookupRequested) {
+      setLookupRequested(false);
+    }
+  }, [isLoading, lookupRequested, scannedCode]);
 
   const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (manualCode.trim().length > 3) {
+    if (manualCode.trim().length > 3 && !isPendingLookup) {
       handleScanSuccess(manualCode.trim());
       setManualCode('');
     }
@@ -111,7 +129,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     if (pendingItems.length === 0) return;
 
     const confirm = window.confirm(
-      `Complete checkout for ${pendingItems.length} items? Total: $${calculateTotal().toFixed(2)}`,
+      `Mark ${pendingItems.length} item${pendingItems.length === 1 ? '' : 's'} as paid and update stock? Total: $${calculateTotal().toFixed(2)}`
     );
     if (!confirm) return;
 
@@ -176,16 +194,21 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     setIsCheckingOut(false);
   };
 
+  const total = calculateTotal();
+
   if (checkoutComplete) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] text-center animate-in fade-in zoom-in duration-500">
         <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30">
           <span className="text-5xl">✓</span>
         </div>
-        <h2 className="text-3xl font-bold text-white mb-2">Checkout Complete!</h2>
-        <p className="text-slate-400 mb-8">Stock has been updated.</p>
+        <h2 className="text-3xl font-bold text-white mb-2">Marked as Paid</h2>
+        <p className="text-slate-400 mb-8">Stock has been updated for all items.</p>
         <button
-          onClick={() => { setCheckoutComplete(false); onBack(); }}
+          onClick={() => {
+            setCheckoutComplete(false);
+            onBack();
+          }}
           className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-xl font-medium transition-colors"
         >
           Back to Home
@@ -195,7 +218,15 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 h-[calc(100dvh-120px)] lg:h-[calc(100vh-140px)]">
+    <div className="relative w-full max-w-6xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 h-[calc(100dvh-120px)] lg:h-[calc(100vh-140px)]">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-xs text-slate-200 shadow-sm lg:hidden">
+        <span className="inline-flex items-center gap-2 font-semibold text-indigo-100">
+          <span className="h-2 w-2 rounded-full bg-indigo-400" />
+          Mobile-friendly checkout
+        </span>
+        <span className="text-[11px] text-slate-400">Payments happen elsewhere—use this to mark paid & update stock.</span>
+      </div>
+
       {/* Left Column: Scanner */}
       <div className="w-full lg:w-1/3 flex flex-col gap-2 lg:gap-4 shrink-0">
         <div className="flex justify-between items-center px-1">
@@ -209,16 +240,20 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           {showScanner ? (
             <div className="relative rounded-xl overflow-hidden shadow-2xl border border-purple-500/30 bg-black aspect-[4/3] lg:aspect-square w-full mx-auto max-w-sm lg:max-w-none shrink-0">
               <Scanner onScanSuccess={handleScanSuccess} />
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
-                  <div className="animate-spin h-10 w-10 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+              {isPendingLookup && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin h-10 w-10 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+                    <p className="text-white text-sm">Processing…</p>
+                  </div>
                 </div>
               )}
               <button
                 onClick={() => setShowScanner(false)}
+                disabled={isPendingLookup}
                 className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-800/80 backdrop-blur text-white px-4 py-2 rounded-full text-xs font-medium border border-slate-600/50 whitespace-nowrap"
               >
-                Tap to Type
+                {isPendingLookup ? 'Processing…' : 'Tap to Type'}
               </button>
             </div>
           ) : (
@@ -232,8 +267,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                   className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white text-center tracking-widest focus:ring-2 focus:ring-purple-500 outline-none"
                   autoFocus
                 />
-                <button type="submit" disabled={manualCode.length < 3} className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold">
-                  Add Item
+                <button type="submit" disabled={manualCode.length < 3 || isPendingLookup} className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-bold disabled:opacity-60 disabled:cursor-not-allowed">
+                  {isPendingLookup ? 'Processing…' : 'Add Item'}
                 </button>
               </form>
               <button onClick={() => setShowScanner(true)} className="mt-4 text-slate-400 hover:text-white text-sm text-center">Open Camera</button>
@@ -353,6 +388,32 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               <>Complete Checkout ({pendingItems.length})</>
             )}
           </button>
+        </div>
+      </div>
+
+      {/* Mobile sticky footer */}
+      <div className="lg:hidden fixed inset-x-0 bottom-3 px-3 z-30">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-slate-800 bg-slate-950/80 shadow-xl backdrop-blur p-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Cart total</p>
+            <p className="text-2xl font-bold text-white">${total.toFixed(2)}</p>
+            <p className="text-xs text-slate-400">{cart.length} item{cart.length === 1 ? '' : 's'}</p>
+          </div>
+          <div className="flex flex-col gap-2 w-40">
+            <button
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || isCheckingOut}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition enabled:hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isCheckingOut ? 'Processing…' : 'Mark Paid'}
+            </button>
+            <button
+              onClick={onBack}
+              className="text-xs text-slate-300 underline underline-offset-4 decoration-slate-700 text-center"
+            >
+              Back to scanning
+            </button>
+          </div>
         </div>
       </div>
     </div>

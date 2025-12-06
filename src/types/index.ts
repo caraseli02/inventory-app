@@ -5,11 +5,11 @@ export interface ProductFields extends FieldSet {
   Barcode: string;
   Category: string;
   Price: number;
-  'Current Stock': number;
-  'Ideal Stock': number;
-  'Min Stock Level': number;
-  Supplier: string;
   'Expiry Date': string;
+  'Current Stock'?: number;  // Rollup field (calculated by Airtable)
+  'Ideal Stock'?: number;
+  'Min Stock Level'?: number;
+  Supplier?: string;
   Image?: readonly Attachment[];
 }
 
