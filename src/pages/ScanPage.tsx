@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import CreateProductForm from '../components/product/CreateProductForm';
@@ -18,12 +18,6 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [showScanner, setShowScanner] = useState(true);
   const [manualCode, setManualCode] = useState('');
-
-  useEffect(() => {
-    setScannedCode(null);
-    setManualCode('');
-    setShowScanner(true);
-  }, [mode]);
 
   const handleScanSuccess = (code: string) => {
     setScannedCode(code);
