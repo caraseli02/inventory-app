@@ -64,13 +64,29 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
     if (error) {
       playSound('error');
-      // maybe show an ephemeral toast error?
-      // For now we just reset so they can try again, but we might want to block briefly.
-      // Let's reset after a small delay to prevent loops if holding code
+
+      // Log error with context for debugging
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Product lookup failed', {
+        barcode: scannedCode,
+        errorMessage,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+      });
+
+      // Show user-facing error feedback (MVP: using alert as fallback)
+      const isNetworkError = errorMessage.toLowerCase().includes('network') ||
+                             errorMessage.toLowerCase().includes('fetch') ||
+                             errorMessage.toLowerCase().includes('timeout');
+      const errorFeedback = isNetworkError
+        ? 'Network error. Check your connection and try again.'
+        : 'Product not found or system error. Check barcode and retry.';
+
+      // Delay to allow user to see feedback
       const timer = setTimeout(() => {
+        alert(errorFeedback);
         setScannedCode(null);
         setLookupRequested(false);
-      }, 1000);
+      }, 500);
 
       return () => clearTimeout(timer);
     }
@@ -137,8 +153,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     setCheckoutComplete(false);
     setStatusSummary(null);
 
-    const processingCart = cart.map((item) =>
-      item.status === 'success' ? item : { ...item, status: 'processing', statusMessage: undefined },
+    const processingCart = cart.map((item): CartItem =>
+      item.status === 'success' ? item : { ...item, status: 'processing' as const, statusMessage: undefined },
     );
     setCart(processingCart);
 
@@ -152,27 +168,50 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         await addStockMovement(item.product.id, item.quantity, 'OUT');
         successes += 1;
         results.push({ ...item, status: 'success' });
-        setCart((prev) =>
-          prev.map((cartItem) =>
-            cartItem.product.id === item.product.id ? { ...cartItem, status: 'success' } : cartItem,
-          ),
-        );
       } catch (err) {
         failures += 1;
-        const message = err instanceof Error ? err.message : 'Unknown error. Please try again.';
-        results.push({ ...item, status: 'failed', statusMessage: message });
-        setCart((prev) =>
-          prev.map((cartItem) =>
-            cartItem.product.id === item.product.id
-              ? { ...cartItem, status: 'failed', statusMessage: message }
-              : cartItem,
-          ),
-        );
-        logger.error('Checkout failed for item', { productId: item.product.id, error: err });
+
+        // Classify error type for user-facing message
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        const isValidationError = errorMessage.toLowerCase().includes('stock') ||
+                                  errorMessage.toLowerCase().includes('negative') ||
+                                  errorMessage.toLowerCase().includes('constraint');
+        const isNetworkError = errorMessage.toLowerCase().includes('network') ||
+                              errorMessage.toLowerCase().includes('fetch') ||
+                              errorMessage.toLowerCase().includes('timeout');
+        const isAuthError = errorMessage.toLowerCase().includes('unauthorized') ||
+                           errorMessage.toLowerCase().includes('invalid');
+
+        let userMessage = 'Unknown error. Please try again.';
+        if (isValidationError) {
+          userMessage = 'Cannot reduce stock below zero. Adjust quantity and retry.';
+        } else if (isNetworkError) {
+          userMessage = 'Network error. Check connection and retry.';
+        } else if (isAuthError) {
+          userMessage = 'Authorization failed. Contact support.';
+        } else if (err instanceof Error) {
+          userMessage = err.message;
+        }
+
+        results.push({ ...item, status: 'failed', statusMessage: userMessage });
+
+        // Log with full context for debugging
+        logger.error('Checkout failed for item', {
+          productId: item.product.id,
+          productName: item.product.fields.Name,
+          quantity: item.quantity,
+          errorMessage,
+          errorType: err instanceof Error ? err.constructor.name : typeof err,
+          isValidationError,
+          isNetworkError,
+          isAuthError,
+          timestamp: new Date().toISOString(),
+        });
       }
     }
 
-    const priorSuccesses = cart.filter(
+    // Use processingCart instead of stale cart variable
+    const priorSuccesses = processingCart.filter(
       (item) => item.status === 'success' && !itemsToProcess.find((p) => p.product.id === item.product.id),
     );
     const mergedResults = [...priorSuccesses, ...results];
@@ -180,6 +219,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     const failedItems = mergedResults.filter((item) => item.status === 'failed');
     const totalSuccesses = successes + priorSuccesses.length;
 
+    // Batch all state updates at the end
     setStatusSummary({ successes: totalSuccesses, failures });
     setCheckoutComplete(failedItems.length === 0 && mergedResults.length > 0);
 
@@ -397,12 +437,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           <div>
             <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Cart total</p>
             <p className="text-2xl font-bold text-white">${total.toFixed(2)}</p>
-            <p className="text-xs text-slate-400">{cart.length} item{cart.length === 1 ? '' : 's'}</p>
+            <p className="text-xs text-slate-400">{pendingItems.length} pending{pendingItems.length === 1 ? '' : 's'}</p>
           </div>
           <div className="flex flex-col gap-2 w-40">
             <button
               onClick={handleCheckout}
-              disabled={cart.length === 0 || isCheckingOut}
+              disabled={pendingItems.length === 0 || isCheckingOut}
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 transition enabled:hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isCheckingOut ? 'Processing…' : 'Mark Paid'}
