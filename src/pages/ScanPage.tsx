@@ -4,7 +4,7 @@ import { useProductLookup } from '../hooks/useProductLookup';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
 
-const ScanPage = () => {
+const ScanPage = ({ mode, onBack }: { mode: 'add' | 'remove', onBack: () => void }) => {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
 
   const handleScanSuccess = (code: string) => {
@@ -42,22 +42,43 @@ const ScanPage = () => {
   const showDetail = !isLoading && product && scannedCode;
 
   if (showCreateForm && scannedCode) {
-    return <CreateProductForm
-      barcode={scannedCode}
-      onSuccess={() => {/* Query invalidation handles the UI switch automatically */ }}
-      onCancel={handleReset}
-    />;
+    return (
+      <div className="w-full">
+        <button onClick={handleReset} className="mb-4 text-slate-400 flex items-center gap-2 hover:text-white">
+          ← Back to Scanner
+        </button>
+        <CreateProductForm
+          barcode={scannedCode}
+          onSuccess={() => {/* Query invalidation handles the UI switch automatically */ }}
+          onCancel={handleReset}
+        />
+      </div>
+    );
   }
 
   if (showDetail && product) {
-    return <ProductDetail product={product} onScanNew={handleReset} />;
+    return (
+      <div className="w-full">
+        <button onClick={handleReset} className="mb-4 text-slate-400 flex items-center gap-2 hover:text-white">
+          ← Back to Scanner
+        </button>
+        <ProductDetail product={product} onScanNew={handleReset} mode={mode} />
+      </div>
+    );
   }
 
   return (
     <div className="w-full max-w-2xl mx-auto p-4 flex flex-col items-center min-h-[500px]">
+      <div className="w-full flex justify-start mb-4">
+        <button onClick={onBack} className="text-slate-400 flex items-center gap-2 hover:text-white bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700/50">
+          ← Back to Home
+        </button>
+      </div>
+
       <div className="w-full text-center mb-6">
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-500 bg-clip-text text-transparent">
-          {scannedCode ? 'Processing Scan' : 'Scan Barcode'}
+        <h2 className={`text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r ${mode === 'add' ? 'from-emerald-400 to-teal-500' : 'from-red-400 to-orange-500'
+          }`}>
+          {scannedCode ? 'Processing Scan' : (mode === 'add' ? 'Scan to Add Stock' : 'Scan to Remove Stock')}
         </h2>
         <p className="text-slate-400 text-sm mt-1">
           {scannedCode ? getStatusContent() : 'Point camera at product barcode or enter manually'}
@@ -67,7 +88,7 @@ const ScanPage = () => {
       {!scannedCode && (
         <div className="w-full max-w-md animate-in fade-in duration-500">
           {showScanner ? (
-            <div className="relative rounded-xl overflow-hidden shadow-2xl border border-slate-700 bg-black aspect-square">
+            <div className={`relative rounded-xl overflow-hidden shadow-2xl border ${mode === 'add' ? 'border-emerald-900/50' : 'border-red-900/50'} bg-black aspect-square`}>
               <Scanner onScanSuccess={handleScanSuccess} />
               <button
                 onClick={() => setShowScanner(false)}
@@ -93,7 +114,8 @@ const ScanPage = () => {
                 <button
                   type="submit"
                   disabled={manualCode.length < 3}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`w-full py-4 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${mode === 'add' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-500'
+                    }`}
                 >
                   Lookup Product
                 </button>

@@ -7,9 +7,10 @@ import { logger } from '../../lib/logger';
 interface ProductDetailProps {
   product: Product;
   onScanNew: () => void;
+  mode: 'add' | 'remove';
 }
 
-const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
+const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   const queryClient = useQueryClient();
   const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
 
@@ -92,7 +93,10 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
   return (
     <div className="w-full max-w-lg mx-auto bg-slate-800 rounded-xl overflow-hidden shadow-2xl border border-slate-700 animate-in fade-in duration-500">
       {/* Header Image / Color */}
-      <div className="h-32 bg-gradient-to-br from-blue-600 to-purple-600 relative">
+      <div className={`h-32 relative ${mode === 'add' ? 'bg-gradient-to-br from-emerald-600 to-teal-600' : 'bg-gradient-to-br from-red-600 to-orange-600'}`}>
+        <div className="absolute top-4 right-4 bg-black/30 backdrop-blur px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-white border border-white/20">
+          {mode === 'add' ? 'Check-in Mode' : 'Check-out Mode'}
+        </div>
         <div className="absolute -bottom-10 left-6 w-24 h-24 bg-slate-700 rounded-xl border-4 border-slate-800 shadow-lg flex items-center justify-center text-4xl overflow-hidden">
           {product.fields.Image && product.fields.Image.length > 0 ? (
             <img
@@ -107,9 +111,7 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
           ) : (
             <span>🍔</span>
           )}
-          {/* Fallback if image fails to load or doesn't exist (handled by logic above for existence, error handler for load failure would need more complex state or simple sibling toggling which is hard in pure JSX without state. Simplified approach: just show image if exists. If it breaks, it breaks. Or use the simple 'alt' text. For now, let's just render the image.) -> actually, let's keep it simple. If URL exists, show IMG. */}
         </div>
-        {/* Re-implementing clearer logic to avoid comments in JSX return */}
       </div>
 
       <div className="pt-12 pb-6 px-6">
@@ -138,14 +140,16 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
         </div>
 
         <div className="flex gap-4 mb-8">
-          <button
-            onClick={() => handleStockChange('OUT')}
-            disabled={loadingAction !== null}
-            className="flex-1 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-xl font-bold transition-all active:scale-95 flex flex-col items-center justify-center"
-          >
-            {loadingAction === 'OUT' ? <span className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mb-1"></span> : <span className="text-2xl mb-1">-</span>}
-            <span className="text-xs uppercase tracking-wider">Remove</span>
-          </button>
+          {mode === 'remove' && (
+            <button
+              onClick={() => handleStockChange('OUT')}
+              disabled={loadingAction !== null}
+              className="flex-1 py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/50 rounded-xl font-bold transition-all active:scale-95 flex flex-col items-center justify-center"
+            >
+              {loadingAction === 'OUT' ? <span className="animate-spin h-5 w-5 border-2 border-red-500 border-t-transparent rounded-full mb-1"></span> : <span className="text-2xl mb-1">-</span>}
+              <span className="text-xs uppercase tracking-wider">Remove</span>
+            </button>
+          )}
 
           <div className="w-24">
             <div className="relative h-full">
@@ -160,14 +164,16 @@ const ProductDetail = ({ product, onScanNew }: ProductDetailProps) => {
             </div>
           </div>
 
-          <button
-            onClick={() => handleStockChange('IN')}
-            disabled={loadingAction !== null}
-            className="flex-1 py-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/50 rounded-xl font-bold transition-all active:scale-95 flex flex-col items-center justify-center"
-          >
-            {loadingAction === 'IN' ? <span className="animate-spin h-5 w-5 border-2 border-emerald-500 border-t-transparent rounded-full mb-1"></span> : <span className="text-2xl mb-1">+</span>}
-            <span className="text-xs uppercase tracking-wider">Add Stock</span>
-          </button>
+          {mode === 'add' && (
+            <button
+              onClick={() => handleStockChange('IN')}
+              disabled={loadingAction !== null}
+              className="flex-1 py-4 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/50 rounded-xl font-bold transition-all active:scale-95 flex flex-col items-center justify-center"
+            >
+              {loadingAction === 'IN' ? <span className="animate-spin h-5 w-5 border-2 border-emerald-500 border-t-transparent rounded-full mb-1"></span> : <span className="text-2xl mb-1">+</span>}
+              <span className="text-xs uppercase tracking-wider">Add Stock</span>
+            </button>
+          )}
         </div>
 
         {/* Recent Activity Section */}
