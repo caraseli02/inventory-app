@@ -1,6 +1,14 @@
+import type { FieldSet, Record as AirtableRecord } from 'airtable';
 import base, { TABLES } from './airtable';
 import type { Product, StockMovement } from '../types';
 import { logger } from './logger';
+
+type AirtableRecordWithCreated<TFields extends FieldSet> = AirtableRecord<TFields> & {
+  _rawJson?: { createdTime?: string };
+};
+
+const getCreatedTime = <TFields extends FieldSet>(record: AirtableRecordWithCreated<TFields>): string =>
+  record._rawJson?.createdTime ?? '';
 
 // Read-only API (Lookup)
 export const getProductByBarcode = async (barcode: string): Promise<Product | null> => {
@@ -18,11 +26,13 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
     return null;
   }
 
-  logger.info('Product found', { barcode, productId: records[0].id });
+  const record = records[0] as AirtableRecordWithCreated<Product['fields']>;
+
+  logger.info('Product found', { barcode, productId: record.id });
   return {
-    id: records[0].id,
-    createdTime: records[0].createdTime,
-    fields: records[0].fields as unknown as Product['fields'],
+    id: record.id,
+    createdTime: getCreatedTime(record),
+    fields: record.fields as unknown as Product['fields'],
   };
 };
 
@@ -58,11 +68,13 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
       },
     ], { typecast: true });
 
-    logger.info('Product created successfully', { productId: records[0].id });
+    const record = records[0] as AirtableRecordWithCreated<Product['fields']>;
+
+    logger.info('Product created successfully', { productId: record.id });
     return {
-      id: records[0].id,
-      createdTime: records[0].createdTime,
-      fields: records[0].fields as unknown as Product['fields'],
+      id: record.id,
+      createdTime: getCreatedTime(record),
+      fields: record.fields as unknown as Product['fields'],
     };
   } catch (error) {
     logger.error('Failed to create product', { error, data });
