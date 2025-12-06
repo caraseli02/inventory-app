@@ -1,3 +1,18 @@
+import type { Attachment, FieldSet } from 'airtable';
+
+export interface ProductFields extends FieldSet {
+  Name: string;
+  Barcode: string;
+  Category: string;
+  Price: number;
+  'Expiry Date': string;
+  'Current Stock'?: number;  // Rollup field (calculated by Airtable)
+  'Ideal Stock'?: number;
+  'Min Stock Level'?: number;
+  Supplier?: string;
+  Image?: readonly Attachment[];
+}
+
 export interface Product {
   id: string;
   createdTime: string;
@@ -25,7 +40,11 @@ export interface StockMovement {
   };
 }
 
+export type CartItemStatus = 'idle' | 'processing' | 'success' | 'failed';
+
 export interface CartItem {
   product: Product;
   quantity: number;
+  status?: CartItemStatus;
+  statusMessage?: string;
 }
