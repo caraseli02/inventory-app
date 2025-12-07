@@ -290,6 +290,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   useEffect(() => {
     if (!state.scannedCode) return;
 
+    // Product found successfully
     if (product) {
       dispatch({ type: 'ADD_TO_CART', product });
       playSound('success');
@@ -297,6 +298,18 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       return;
     }
 
+    // Product not found (null returned, no error)
+    if (!isLoading && !product && !error) {
+      playSound('error');
+      logger.warn('Product not found in checkout', {
+        barcode: state.scannedCode,
+        timestamp: new Date().toISOString(),
+      });
+      dispatch({ type: 'LOOKUP_ERROR', error: 'Product not found. Please add it to inventory first.' });
+      return;
+    }
+
+    // Network or API error
     if (error) {
       playSound('error');
 
@@ -322,7 +335,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  }, [error, playSound, product, state.scannedCode]);
+  }, [error, isLoading, playSound, product, state.scannedCode]);
 
   /**
    * Handles successful barcode scan by initiating product lookup

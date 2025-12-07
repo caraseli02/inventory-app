@@ -98,22 +98,23 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
         />
 
         {/* Scanner Section */}
-        <div className={`px-6 pt-4 space-y-4 ${scannedCode ? 'hidden' : ''}`}>
-          {/* Scanner Frame */}
-          <div className="relative mx-auto w-full max-w-lg aspect-square">
-            {/* Corner Brackets */}
-            <div className="absolute inset-0 pointer-events-none z-10">
-              <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
-              <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
-              <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
-              <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
-            </div>
+        {!scannedCode && (
+          <div className="px-6 pt-4 space-y-4">
+            {/* Scanner Frame */}
+            <div className="relative mx-auto w-full max-w-lg aspect-square">
+              {/* Corner Brackets */}
+              <div className="absolute inset-0 pointer-events-none z-10">
+                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
+                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
+                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
+              </div>
 
-            {/* Scanner Area */}
-            <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
-              <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
-            </div>
+              {/* Scanner Area */}
+              <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
+                <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
+              </div>
 
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
@@ -155,7 +156,8 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
               Switch to {mode === 'add' ? 'Remove' : 'Add'} Mode
             </Button>
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Content Panel */}
         <div
@@ -192,20 +194,21 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
         <div className="flex h-[calc(100dvh-64px)] gap-6 p-6">
           {/* Left Column: Scanner (45%) */}
           <div className="w-[45%] flex flex-col gap-6">
-            <div className="relative mx-auto w-full max-w-lg aspect-square">
-              {/* Corner Brackets */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
-                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
-                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
-                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
-              </div>
+            {!scannedCode && (
+              <div className="relative mx-auto w-full max-w-lg aspect-square">
+                {/* Corner Brackets */}
+                <div className="absolute inset-0 pointer-events-none z-10">
+                  <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
+                  <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
+                  <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
+                  <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
+                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
+                </div>
 
-              {/* Scanner Area */}
-              <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
-                <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
-              </div>
+                {/* Scanner Area */}
+                <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
+                  <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
+                </div>
 
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
@@ -215,36 +218,41 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
                   </div>
                 </div>
               )}
-            </div>
+              </div>
+            )}
 
-            {/* Manual Entry */}
-            <form onSubmit={handleManualSubmit} className="flex gap-2">
-              <Input
-                type="text"
-                value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
-                className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
-                placeholder="Enter barcode manually"
-              />
-              <Button
-                type="submit"
-                disabled={manualCode.length < 3}
-                className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
-              >
-                Add
-              </Button>
-            </form>
+            {!scannedCode && (
+              <>
+                {/* Manual Entry */}
+                <form onSubmit={handleManualSubmit} className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value)}
+                    className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                    placeholder="Enter barcode manually"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={manualCode.length < 3}
+                    className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
+                  >
+                    Add
+                  </Button>
+                </form>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
-                onClick={handleModeToggle}
-              >
-                Switch to {mode === 'add' ? 'Remove' : 'Add'} Mode
-              </Button>
-            </div>
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                    onClick={handleModeToggle}
+                  >
+                    Switch to {mode === 'add' ? 'Remove' : 'Add'} Mode
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Right Column: Panel (55%) */}
