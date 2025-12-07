@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addStockMovement } from '../lib/api';
-import { useToast } from './useToast';
+import { toast } from 'sonner';
 import { logger } from '../lib/logger';
 import type { Product } from '../types';
 
@@ -29,7 +29,6 @@ type StockMutationContext = {
  */
 export const useStockMutation = (product: Product) => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
   const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
 
   const stockMutation = useMutation({
@@ -65,21 +64,15 @@ export const useStockMutation = (product: Product) => {
     onSuccess: (_data, { type, quantity }) => {
       const action = type === 'IN' ? 'added to' : 'removed from';
       console.log('[useStockMutation] Stock movement successful, will refetch product');
-      showToast(
-        'success',
-        'Stock updated',
-        `${quantity} item${quantity > 1 ? 's' : ''} ${action} inventory`,
-        3000
-      );
+      toast.success('Stock updated', {
+        description: `${quantity} item${quantity > 1 ? 's' : ''} ${action} inventory`,
+      });
     },
     onError: (err, _variables, context: StockMutationContext | undefined) => {
       logger.error('Stock mutation failed', { error: err, productId: product.id });
-      showToast(
-        'error',
-        'Failed to update stock',
-        err instanceof Error ? err.message : 'Unknown error occurred. Please try again.',
-        4000
-      );
+      toast.error('Failed to update stock', {
+        description: err instanceof Error ? err.message : 'Unknown error occurred. Please try again.',
+      });
       // Rollback
       if (context?.previousProduct) {
         queryClient.setQueryData(['product', product.fields.Barcode], context.previousProduct);
@@ -102,7 +95,9 @@ export const useStockMutation = (product: Product) => {
   const handleStockChange = (quantity: number, type: 'IN' | 'OUT') => {
     if (isNaN(quantity) || quantity <= 0) {
       logger.warn('Invalid stock quantity', { quantity });
-      showToast('warning', 'Invalid quantity', 'Please enter a valid positive quantity', 3000);
+      toast.warning('Invalid quantity', {
+        description: 'Please enter a valid positive quantity',
+      });
       return;
     }
 
