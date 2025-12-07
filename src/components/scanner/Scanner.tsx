@@ -10,6 +10,13 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const regionId = scannerId;
+  const lastScanRef = useRef<{ code: string; timestamp: number } | null>(null);
+  const onScanSuccessRef = useRef(onScanSuccess);
+
+  // Keep callback ref up to date without triggering useEffect
+  useEffect(() => {
+    onScanSuccessRef.current = onScanSuccess;
+  }, [onScanSuccess]);
 
   useEffect(() => {
     // strict mode safety check: if already initialized, don't re-init
@@ -38,10 +45,18 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
           { facingMode: 'environment' },
           config,
           (decodedText) => {
-            // Success callback
-            onScanSuccess(decodedText);
-            // Stop scanning immediately after success to prevent multiple reads
-            scanner.stop().catch((err) => console.error('Failed to stop scanner', err));
+            // Prevent duplicate scans within 2 seconds
+            const now = Date.now();
+            if (
+              lastScanRef.current &&
+              lastScanRef.current.code === decodedText &&
+              now - lastScanRef.current.timestamp < 2000
+            ) {
+              return; // Ignore duplicate scan
+            }
+
+            lastScanRef.current = { code: decodedText, timestamp: now };
+            onScanSuccessRef.current(decodedText);
           },
           () => {
             // parse error, ignore specific errors like "no QR code found" to avoid log spam
@@ -75,7 +90,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
         }
       }
     };
-  }, [onScanSuccess]);
+  }, [regionId]);
 
   return (
     <div className="w-full h-full overflow-hidden bg-black relative">

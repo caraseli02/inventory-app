@@ -31,6 +31,25 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
 
   const { data: product, isLoading, error } = useProductLookup(scannedCode);
 
+  // Handle lookup errors (network, auth, etc.)
+  useEffect(() => {
+    if (error && scannedCode) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showToast(
+        'error',
+        'Lookup failed',
+        errorMessage || 'Failed to lookup product. Please try again.',
+        5000
+      );
+      // Reset after showing error
+      const timer = setTimeout(() => {
+        setScannedCode(null);
+        setManualCode('');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, scannedCode, showToast]);
+
   // Handle product not found in remove mode
   useEffect(() => {
     if (!isLoading && !product && !error && scannedCode && mode === 'remove') {
