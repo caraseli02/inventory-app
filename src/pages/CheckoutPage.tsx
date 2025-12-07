@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import Scanner from '../components/scanner/Scanner';
+import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
 import type { CartItem } from '../types';
@@ -12,7 +12,6 @@ import {
   MinusIcon,
   PlusIcon,
   ShoppingCartIcon,
-  WarningIcon,
 } from '../components/ui/Icons';
 import { Button } from '../components/ui/button';
 import { ChevronUp, ChevronDown } from 'lucide-react';
@@ -102,6 +101,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     }
   }, [error, playSound, product, scannedCode]);
 
+  /**
+   * Handles successful barcode scan by initiating product lookup
+   * - Only processes if no scan is currently in progress
+   * - Sets scan code and requests lookup via useProductLookup hook
+   * @param code - Scanned barcode value
+   */
   const handleScanSuccess = (code: string) => {
     if (!scannedCode && !isPendingLookup) {
       setScannedCode(code);
@@ -124,6 +129,13 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     }
   };
 
+  /**
+   * Updates quantity for a cart item by the given delta
+   * - Removes item if quantity reaches zero
+   * - Resets item status to 'idle' to allow re-checkout
+   * @param index - Cart item index
+   * @param delta - Quantity change (+1 or -1)
+   */
   const updateQuantity = (index: number, delta: number) => {
     const newCart = [...cart];
     newCart[index].quantity += delta;
@@ -138,6 +150,10 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   const pendingItems = cart.filter((item) => item.status !== 'success');
 
+  /**
+   * Calculates cart totals by summing prices of all items with valid pricing
+   * @returns Object containing total price and count of items missing price data
+   */
   const calculateTotals = () => {
     return pendingItems.reduce(
       (result, item) => {
@@ -153,11 +169,19 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     );
   };
 
+  /**
+   * Processes checkout by creating stock movements for all cart items
+   * - Prompts user for confirmation with total price
+   * - Processes each item sequentially to create OUT stock movements
+   * - Handles errors with user-friendly messages and detailed logging
+   * - Updates cart status for each item (success/failed)
+   * - Clears cart on complete success or shows status summary on partial failure
+   */
   const handleCheckout = async () => {
     if (pendingItems.length === 0) return;
 
     const { total, missingPrices } = calculateTotals();
-    const totalLabel = `$${total.toFixed(2)}`;
+    const totalLabel = `€${total.toFixed(2)}`;
     const confirmMessage = missingPrices
       ? `Complete checkout for ${pendingItems.length} items? Priced subtotal: ${totalLabel}. ${missingPrices} item${missingPrices > 1 ? 's are' : ' is'} missing price data and will be processed without totals.`
       : `Complete checkout for ${pendingItems.length} items? Total: ${totalLabel}`;
@@ -288,83 +312,18 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
         {/* Scanner Section */}
         <div className="px-6 pt-4">
-
-          {/* Scanner Frame */}
-          <div className="relative mx-auto w-full max-w-lg aspect-square">
-            {/* Corner Brackets */}
-            <div className="absolute inset-0 pointer-events-none z-10">
-              {/* Top Left */}
-              <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-slate-700" />
-              {/* Top Right */}
-              <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-slate-700" />
-              {/* Bottom Left */}
-              <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-slate-700" />
-              {/* Bottom Right */}
-              <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-slate-700" />
-
-              {/* Scan Line */}
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-700 shadow-lg" />
-            </div>
-
-            {/* Scanner or Barcode Area */}
-            <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
-              {showScanner ? (
-                <Scanner onScanSuccess={handleScanSuccess} scannerId="mobile-reader" />
-              ) : (
-                <div className="flex items-center justify-center h-full bg-stone-900">
-                  <div className="text-center px-4 w-full max-w-xs">
-                    <form onSubmit={handleManualSubmit} className="space-y-4">
-                      <input
-                        type="text"
-                        value={manualCode}
-                        onChange={(e) => setManualCode(e.target.value)}
-                        className="w-full bg-white border-2 border-stone-300 rounded-lg p-3 text-stone-900 text-center tracking-widest focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 outline-none"
-                        placeholder="Enter barcode"
-                        autoFocus
-                      />
-                      <Button
-                        type="submit"
-                        disabled={manualCode.length < 3 || isPendingLookup}
-                        className="w-full bg-white hover:bg-stone-100 text-stone-900"
-                      >
-                        {isPendingLookup ? 'Searching…' : 'Add Item'}
-                      </Button>
-                    </form>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setShowScanner(true)}
-                      className="mt-4 text-white hover:text-white hover:bg-white/10"
-                    >
-                      Use Camera
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {isPendingLookup && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="animate-spin h-10 w-10 border-4 border-slate-200 border-t-slate-700 rounded-full" />
-                  <p className="text-slate-900 text-sm font-medium">Searching…</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Error Message */}
-          {lookupError && (
-            <div className="mt-4 bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm flex items-start gap-2">
-              <WarningIcon className="h-5 w-5 shrink-0 mt-0.5 text-red-600" />
-              <div className="flex-1">
-                <p className="font-semibold">Not Found</p>
-                <p className="text-red-800 text-xs mt-1">{lookupError}</p>
-              </div>
-              <button onClick={() => setLookupError(null)} className="text-red-600 hover:text-red-900">
-                <CloseIcon className="h-5 w-5" />
-              </button>
-            </div>
-          )}
+          <ScannerFrame
+            scannerId="mobile-reader"
+            onScanSuccess={handleScanSuccess}
+            showScanner={showScanner}
+            onToggleScanner={setShowScanner}
+            manualCode={manualCode}
+            onManualCodeChange={setManualCode}
+            onManualSubmit={handleManualSubmit}
+            isPending={isPendingLookup}
+            error={lookupError}
+            onClearError={() => setLookupError(null)}
+          />
         </div>
 
         {/* Cart Toggle/Collapse */}
@@ -553,83 +512,19 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         <div className="flex flex-row gap-6 h-[calc(100vh-72px)] px-6 py-6">
           {/* Left Column: Scanner */}
           <div className="w-[45%] flex flex-col gap-4">
-
-            {/* Scanner Frame */}
-            <div className="relative w-full aspect-square">
-              {/* Corner Brackets */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                {/* Top Left */}
-                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-slate-700" />
-                {/* Top Right */}
-                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-slate-700" />
-                {/* Bottom Left */}
-                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-slate-700" />
-                {/* Bottom Right */}
-                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-slate-700" />
-
-                {/* Scan Line */}
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-700 shadow-lg" />
-              </div>
-
-              {/* Scanner or Barcode Area */}
-              <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
-                {showScanner ? (
-                  <Scanner onScanSuccess={handleScanSuccess} scannerId="desktop-reader" />
-                ) : (
-                  <div className="flex items-center justify-center h-full bg-stone-900">
-                    <div className="text-center px-4 w-full max-w-xs">
-                      <form onSubmit={handleManualSubmit} className="space-y-4">
-                        <input
-                          type="text"
-                          value={manualCode}
-                          onChange={(e) => setManualCode(e.target.value)}
-                          className="w-full bg-white border-2 border-stone-300 rounded-lg p-3 text-stone-900 text-center tracking-widest focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 outline-none text-sm"
-                          placeholder="Enter barcode"
-                          autoFocus
-                        />
-                        <Button
-                          type="submit"
-                          disabled={manualCode.length < 3 || isPendingLookup}
-                          className="w-full bg-white hover:bg-stone-100 text-stone-900 text-sm"
-                        >
-                          {isPendingLookup ? 'Searching…' : 'Add Item'}
-                        </Button>
-                      </form>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setShowScanner(true)}
-                        className="mt-4 text-white hover:text-white hover:bg-white/10 text-sm"
-                      >
-                        Use Camera
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {isPendingLookup && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin h-10 w-10 border-4 border-slate-200 border-t-slate-700 rounded-full" />
-                    <p className="text-slate-900 text-sm font-medium">Searching…</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Error Message */}
-            {lookupError && (
-              <div className="bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm flex items-start gap-2 max-w-md w-full">
-                <WarningIcon className="h-5 w-5 shrink-0 mt-0.5 text-red-600" />
-                <div className="flex-1">
-                  <p className="font-semibold">Not Found</p>
-                  <p className="text-red-800 text-xs mt-1">{lookupError}</p>
-                </div>
-                <button onClick={() => setLookupError(null)} className="text-red-600 hover:text-red-900">
-                  <CloseIcon className="h-5 w-5" />
-                </button>
-              </div>
-            )}
+            <ScannerFrame
+              scannerId="desktop-reader"
+              onScanSuccess={handleScanSuccess}
+              showScanner={showScanner}
+              onToggleScanner={setShowScanner}
+              manualCode={manualCode}
+              onManualCodeChange={setManualCode}
+              onManualSubmit={handleManualSubmit}
+              isPending={isPendingLookup}
+              error={lookupError}
+              onClearError={() => setLookupError(null)}
+              size="small"
+            />
           </div>
 
           {/* Right Column: Cart */}

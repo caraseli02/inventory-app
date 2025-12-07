@@ -134,7 +134,10 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   alt="Product Preview"
                   className="w-full h-full object-contain"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
+                    const img = e.target;
+                    if (img instanceof HTMLImageElement) {
+                      img.style.display = 'none';
+                    }
                   }}
                 />
                 <div className="absolute bottom-0 w-full bg-stone-900/60 text-white text-[10px] text-center py-1 font-medium">
@@ -233,8 +236,6 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
               />
             </div>
           </div>
-
-          <input type="hidden" name="imageUrl" value={formData.imageUrl} />
         </form>
 
         {mutation.isError && (

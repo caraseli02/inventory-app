@@ -30,6 +30,7 @@ cp .env.example .env  # Create environment file
 - **Modular AI layer**: AI helpers in `lib/ai/` imported only when needed
 - **PWA-first**: Optimized for tablet/mobile fullscreen experience
 - **Design consistency**: Follow the "Fresh Precision" aesthetic with CSS variables, gradients, and organic rounded corners
+- **Currency standard**: All prices are displayed in EUR (€). Use `€${price.toFixed(2)}` format throughout the application
 
 ### Directory Structure
 ```

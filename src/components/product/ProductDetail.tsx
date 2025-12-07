@@ -15,6 +15,10 @@ interface ProductDetailProps {
   mode: 'add' | 'remove';
 }
 
+type StockMutationContext = {
+  previousProduct: Product | undefined;
+};
+
 const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   const queryClient = useQueryClient();
   const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
@@ -32,13 +36,13 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
       logger.info('Initiating stock mutation', { productId: product.id, quantity, type });
       return addStockMovement(product.id, quantity, type);
     },
-    onMutate: async ({ type, quantity }) => {
+    onMutate: async ({ type, quantity }): Promise<StockMutationContext> => {
       setLoadingAction(type);
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['product', product.fields.Barcode] });
 
       // Snapshot previous value
-      const previousProduct = queryClient.getQueryData(['product', product.fields.Barcode]);
+      const previousProduct = queryClient.getQueryData<Product>(['product', product.fields.Barcode]);
 
       // Optimistically update
       queryClient.setQueryData(['product', product.fields.Barcode], (old: Product | undefined) => {
@@ -55,12 +59,12 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
 
       return { previousProduct };
     },
-    onError: (err, _newTodo, context: unknown) => {
+    onError: (err, _variables, context: StockMutationContext | undefined) => {
       logger.error('Stock mutation failed', { error: err, productId: product.id });
       alert(`Failed to update stock: ${err.message || 'Unknown error'}`);
       // Rollback
-      if ((context as { previousProduct: Product | undefined })?.previousProduct) {
-        queryClient.setQueryData(['product', product.fields.Barcode], (context as { previousProduct: Product | undefined }).previousProduct);
+      if (context?.previousProduct) {
+        queryClient.setQueryData(['product', product.fields.Barcode], context.previousProduct);
       }
     },
     onSettled: () => {
@@ -113,8 +117,11 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
                     alt={product.fields.Name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                      const img = e.target;
+                      if (img instanceof HTMLImageElement) {
+                        img.style.display = 'none';
+                        img.nextElementSibling?.classList.remove('hidden');
+                      }
                     }}
                   />
                 ) : (
