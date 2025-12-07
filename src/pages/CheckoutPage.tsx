@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
-import type { CartItem } from '../types';
+import type { CartItem, Product } from '../types';
 import { logger } from '../lib/logger';
 import {
   CheckCircleIcon,
@@ -17,20 +17,239 @@ interface CheckoutPageProps {
   onBack: () => void;
 }
 
+/**
+ * CheckoutPage state managed by useReducer
+ */
+interface CheckoutState {
+  // Cart state
+  cart: CartItem[];
+  isCheckingOut: boolean;
+  checkoutComplete: boolean;
+
+  // Scanner state
+  scannedCode: string | null;
+  showScanner: boolean;
+  manualCode: string;
+
+  // Lookup state
+  lookupRequested: boolean;
+  lookupError: string | null;
+
+  // UI state
+  isCartExpanded: boolean;
+}
+
+/**
+ * Actions for CheckoutPage reducer
+ */
+type CheckoutAction =
+  // Cart actions
+  | { type: 'ADD_TO_CART'; product: Product }
+  | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number }
+  | { type: 'SET_CART'; cart: CartItem[] }
+  | { type: 'CLEAR_CART' }
+  | { type: 'START_CHECKOUT' }
+  | { type: 'COMPLETE_CHECKOUT' }
+  | { type: 'CANCEL_CHECKOUT' }
+
+  // Scanner actions
+  | { type: 'SET_SCANNED_CODE'; code: string | null }
+  | { type: 'SET_MANUAL_CODE'; code: string }
+  | { type: 'TOGGLE_SCANNER' }
+  | { type: 'SET_SHOW_SCANNER'; show: boolean }
+
+  // Lookup actions
+  | { type: 'REQUEST_LOOKUP' }
+  | { type: 'LOOKUP_SUCCESS' }
+  | { type: 'LOOKUP_ERROR'; error: string }
+  | { type: 'CLEAR_LOOKUP_ERROR' }
+  | { type: 'RESET_LOOKUP' }
+
+  // UI actions
+  | { type: 'TOGGLE_CART_EXPANDED' }
+  | { type: 'SET_CART_EXPANDED'; expanded: boolean };
+
+/**
+ * Initial state for CheckoutPage
+ */
+const initialState: CheckoutState = {
+  cart: [],
+  isCheckingOut: false,
+  checkoutComplete: false,
+  scannedCode: null,
+  showScanner: true,
+  manualCode: '',
+  lookupRequested: false,
+  lookupError: null,
+  isCartExpanded: false,
+};
+
+/**
+ * Reducer for CheckoutPage state management
+ *
+ * Centralizes all state transitions for better predictability and testability.
+ * Handles cart operations, scanner state, product lookup, and UI interactions.
+ */
+function checkoutReducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
+  switch (action.type) {
+    // Cart actions
+    case 'ADD_TO_CART': {
+      const existingItemIndex = state.cart.findIndex(item => item.product.id === action.product.id);
+
+      if (existingItemIndex >= 0) {
+        const newCart = [...state.cart];
+        newCart[existingItemIndex].quantity += 1;
+        newCart[existingItemIndex].status = undefined;
+        newCart[existingItemIndex].statusMessage = undefined;
+        return {
+          ...state,
+          cart: newCart,
+          checkoutComplete: false,
+        };
+      }
+
+      return {
+        ...state,
+        cart: [...state.cart, { product: action.product, quantity: 1 }],
+        checkoutComplete: false,
+      };
+    }
+
+    case 'UPDATE_CART_ITEM_QUANTITY': {
+      const newCart = [...state.cart];
+      newCart[action.index].quantity += action.delta;
+      newCart[action.index].status = 'idle';
+      newCart[action.index].statusMessage = undefined;
+
+      if (newCart[action.index].quantity <= 0) {
+        newCart.splice(action.index, 1);
+      }
+
+      return {
+        ...state,
+        cart: newCart,
+      };
+    }
+
+    case 'SET_CART':
+      return {
+        ...state,
+        cart: action.cart,
+      };
+
+    case 'CLEAR_CART':
+      return {
+        ...state,
+        cart: [],
+      };
+
+    case 'START_CHECKOUT':
+      return {
+        ...state,
+        isCheckingOut: true,
+        checkoutComplete: false,
+      };
+
+    case 'COMPLETE_CHECKOUT':
+      return {
+        ...state,
+        isCheckingOut: false,
+        checkoutComplete: true,
+        cart: [],
+      };
+
+    case 'CANCEL_CHECKOUT':
+      return {
+        ...state,
+        isCheckingOut: false,
+      };
+
+    // Scanner actions
+    case 'SET_SCANNED_CODE':
+      return {
+        ...state,
+        scannedCode: action.code,
+      };
+
+    case 'SET_MANUAL_CODE':
+      return {
+        ...state,
+        manualCode: action.code,
+      };
+
+    case 'TOGGLE_SCANNER':
+      return {
+        ...state,
+        showScanner: !state.showScanner,
+      };
+
+    case 'SET_SHOW_SCANNER':
+      return {
+        ...state,
+        showScanner: action.show,
+      };
+
+    // Lookup actions
+    case 'REQUEST_LOOKUP':
+      return {
+        ...state,
+        lookupRequested: true,
+        lookupError: null,
+      };
+
+    case 'LOOKUP_SUCCESS':
+      return {
+        ...state,
+        scannedCode: null,
+        lookupRequested: false,
+        lookupError: null,
+        manualCode: '',
+      };
+
+    case 'LOOKUP_ERROR':
+      return {
+        ...state,
+        scannedCode: null,
+        lookupRequested: false,
+        lookupError: action.error,
+      };
+
+    case 'CLEAR_LOOKUP_ERROR':
+      return {
+        ...state,
+        lookupError: null,
+      };
+
+    case 'RESET_LOOKUP':
+      return {
+        ...state,
+        lookupRequested: false,
+      };
+
+    // UI actions
+    case 'TOGGLE_CART_EXPANDED':
+      return {
+        ...state,
+        isCartExpanded: !state.isCartExpanded,
+      };
+
+    case 'SET_CART_EXPANDED':
+      return {
+        ...state,
+        isCartExpanded: action.expanded,
+      };
+
+    default:
+      return state;
+  }
+}
+
 const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [scannedCode, setScannedCode] = useState<string | null>(null);
-  const [showScanner, setShowScanner] = useState(true);
-  const [manualCode, setManualCode] = useState('');
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [checkoutComplete, setCheckoutComplete] = useState(false);
-  const [lookupRequested, setLookupRequested] = useState(false);
-  const [lookupError, setLookupError] = useState<string | null>(null);
-  const [isCartExpanded, setIsCartExpanded] = useState(false);
+  const [state, dispatch] = useReducer(checkoutReducer, initialState);
 
   // Hook for looking up products
-  const { data: product, isLoading, error } = useProductLookup(scannedCode);
-  const isPendingLookup = isLoading || lookupRequested;
+  const { data: product, isLoading, error } = useProductLookup(state.scannedCode);
+  const isPendingLookup = isLoading || state.lookupRequested;
 
   // Sound effect helper
   const playSound = useCallback((type: 'success' | 'error') => {
@@ -41,31 +260,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   }, []);
 
   useEffect(() => {
-    if (!scannedCode) return;
+    if (!state.scannedCode) return;
 
     if (product) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync cart with latest lookup result
-      setCart(prevCart => {
-        const existingItemIndex = prevCart.findIndex(item => item.product.id === product.id);
-
-        if (existingItemIndex >= 0) {
-          const newCart = [...prevCart];
-          newCart[existingItemIndex].quantity += 1;
-          newCart[existingItemIndex].status = undefined;
-          newCart[existingItemIndex].statusMessage = undefined;
-          return newCart;
-        }
-
-        return [...prevCart, { product, quantity: 1 }];
-      });
-
-        setCheckoutComplete(false);
-      setLookupError(null);  // Clear any previous lookup errors
+      dispatch({ type: 'ADD_TO_CART', product });
       playSound('success');
-
-      // Reset scan state immediately to allow rapid scanning
-      setScannedCode(null);
-      setLookupRequested(false);
+      dispatch({ type: 'LOOKUP_SUCCESS' });
       return;
     }
 
@@ -75,7 +275,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       // Log error with context for debugging
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Product lookup failed', {
-        barcode: scannedCode,
+        barcode: state.scannedCode,
         errorMessage,
         errorType: error instanceof Error ? error.constructor.name : typeof error,
         timestamp: new Date().toISOString(),
@@ -92,11 +292,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         userMessage = 'Authentication failed. Check API credentials.';
       }
 
-      setLookupError(userMessage);
-      setScannedCode(null);
-      setLookupRequested(false);
+      dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  }, [error, playSound, product, scannedCode]);
+  }, [error, playSound, product, state.scannedCode]);
 
   /**
    * Handles successful barcode scan by initiating product lookup
@@ -105,24 +303,23 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
    * @param code - Scanned barcode value
    */
   const handleScanSuccess = (code: string) => {
-    if (!scannedCode && !isPendingLookup) {
-      setScannedCode(code);
-      setLookupRequested(true);
+    if (!state.scannedCode && !isPendingLookup) {
+      dispatch({ type: 'SET_SCANNED_CODE', code });
+      dispatch({ type: 'REQUEST_LOOKUP' });
     }
   };
 
   useEffect(() => {
-    if (!scannedCode && !isLoading && lookupRequested) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- gate guard reset after lookup completes
-      setLookupRequested(false);
+    if (!state.scannedCode && !isLoading && state.lookupRequested) {
+      dispatch({ type: 'RESET_LOOKUP' });
     }
-  }, [isLoading, lookupRequested, scannedCode]);
+  }, [isLoading, state.lookupRequested, state.scannedCode]);
 
   const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (manualCode.trim().length > 3 && !isPendingLookup) {
-      handleScanSuccess(manualCode.trim());
-      setManualCode('');
+    if (state.manualCode.trim().length > 3 && !isPendingLookup) {
+      handleScanSuccess(state.manualCode.trim());
+      dispatch({ type: 'SET_MANUAL_CODE', code: '' });
     }
   };
 
@@ -134,18 +331,11 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
    * @param delta - Quantity change (+1 or -1)
    */
   const updateQuantity = (index: number, delta: number) => {
-    const newCart = [...cart];
-    newCart[index].quantity += delta;
-    newCart[index].status = 'idle';
-    newCart[index].statusMessage = undefined;
-    if (newCart[index].quantity <= 0) {
-      newCart.splice(index, 1);
-    }
-    setCart(newCart);
+    dispatch({ type: 'UPDATE_CART_ITEM_QUANTITY', index, delta });
   };
 
 
-  const pendingItems = cart.filter((item) => item.status !== 'success');
+  const pendingItems = state.cart.filter((item) => item.status !== 'success');
 
   /**
    * Calculates cart totals by summing prices of all items with valid pricing
@@ -186,13 +376,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     const confirm = window.confirm(confirmMessage);
     if (!confirm) return;
 
-    setIsCheckingOut(true);
-    setCheckoutComplete(false);
+    dispatch({ type: 'START_CHECKOUT' });
 
-    const processingCart = cart.map((item): CartItem =>
+    const processingCart = state.cart.map((item): CartItem =>
       item.status === 'success' ? item : { ...item, status: 'processing' as const, statusMessage: undefined },
     );
-    setCart(processingCart);
+    dispatch({ type: 'SET_CART', cart: processingCart });
 
     const results: CartItem[] = [];
     const itemsToProcess = processingCart.filter((item) => item.status === 'processing');
@@ -238,22 +427,19 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     const failedItems = mergedResults.filter((item) => item.status === 'failed');
 
     // Batch all state updates at the end
-    setCheckoutComplete(failedItems.length === 0 && mergedResults.length > 0);
-
     if (failedItems.length === 0 && mergedResults.length > 0) {
-      setCart([]);
+      dispatch({ type: 'COMPLETE_CHECKOUT' });
       playSound('success');
     } else {
-      setCart(mergedResults);
+      dispatch({ type: 'SET_CART', cart: mergedResults });
+      dispatch({ type: 'CANCEL_CHECKOUT' });
       playSound('error');
     }
-
-    setIsCheckingOut(false);
   };
 
   const { total } = calculateTotals();
 
-  if (checkoutComplete) {
+  if (state.checkoutComplete) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] text-center animate-in fade-in zoom-in duration-500">
         <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
@@ -262,10 +448,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         <h2 className="text-3xl font-semibold text-gray-900 mb-2">Checkout Complete</h2>
         <p className="text-gray-600 mb-8">Stock has been updated for all items.</p>
         <Button
-          onClick={() => {
-            setCheckoutComplete(false);
-            onBack();
-          }}
+          onClick={onBack}
           variant="outline"
           className="px-8 py-3"
         >
@@ -290,42 +473,42 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           <ScannerFrame
             scannerId="mobile-reader"
             onScanSuccess={handleScanSuccess}
-            showScanner={showScanner}
-            onToggleScanner={setShowScanner}
-            manualCode={manualCode}
-            onManualCodeChange={setManualCode}
+            showScanner={state.showScanner}
+            onToggleScanner={() => dispatch({ type: 'TOGGLE_SCANNER' })}
+            manualCode={state.manualCode}
+            onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
             onManualSubmit={handleManualSubmit}
             isPending={isPendingLookup}
-            error={lookupError}
-            onClearError={() => setLookupError(null)}
+            error={state.lookupError}
+            onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
           />
         </div>
 
         {/* Cart Toggle/Collapse */}
         <div
           className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out z-20 ${
-            isCartExpanded ? 'h-[80dvh] max-h-[calc(100dvh-120px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
+            state.isCartExpanded ? 'h-[80dvh] max-h-[calc(100dvh-120px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
           }`}
         >
           {/* Toggle Button */}
           <div className="absolute -top-6 left-1/2 -translate-x-1/2">
             <Button
-              onClick={() => setIsCartExpanded(!isCartExpanded)}
+              onClick={() => dispatch({ type: 'TOGGLE_CART_EXPANDED' })}
               size="icon"
               className="h-12 w-12 rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg"
             >
-              {isCartExpanded ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
+              {state.isCartExpanded ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
             </Button>
           </div>
 
           {/* Collapsed Cart Summary */}
-          {!isCartExpanded && (
-            <div className="p-6 flex items-center justify-between cursor-pointer" onClick={() => setIsCartExpanded(true)}>
+          {!state.isCartExpanded && (
+            <div className="p-6 flex items-center justify-between cursor-pointer" onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: true })}>
               <div className="flex items-center gap-3">
                 <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
-                  <p className="text-sm text-gray-600">{cart.length} items</p>
+                  <p className="text-sm text-gray-600">{state.cart.length} items</p>
                 </div>
               </div>
               <div className="text-2xl font-bold text-stone-900">
@@ -335,12 +518,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           )}
 
           {/* Expanded Cart */}
-          {isCartExpanded && (
+          {state.isCartExpanded && (
             <div className="h-full flex flex-col">
               <Cart
-                cart={cart}
+                cart={state.cart}
                 total={total}
-                isCheckingOut={isCheckingOut}
+                isCheckingOut={state.isCheckingOut}
                 onUpdateQuantity={updateQuantity}
                 customFooter={
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
@@ -355,7 +538,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                       <Button
                         variant="outline"
                         className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
-                        onClick={() => setIsCartExpanded(false)}
+                        onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: false })}
                       >
                         Next Product
                       </Button>
@@ -363,9 +546,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                       <Button
                         className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
                         onClick={handleCheckout}
-                        disabled={pendingItems.length === 0 || isCheckingOut}
+                        disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
-                        {isCheckingOut ? 'Processing...' : 'Finish'}
+                        {state.isCheckingOut ? 'Processing...' : 'Finish'}
                       </Button>
                     </div>
                   </div>
@@ -391,14 +574,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             <ScannerFrame
               scannerId="desktop-reader"
               onScanSuccess={handleScanSuccess}
-              showScanner={showScanner}
-              onToggleScanner={setShowScanner}
-              manualCode={manualCode}
-              onManualCodeChange={setManualCode}
+              showScanner={state.showScanner}
+              onToggleScanner={() => dispatch({ type: 'TOGGLE_SCANNER' })}
+              manualCode={state.manualCode}
+              onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
               onManualSubmit={handleManualSubmit}
               isPending={isPendingLookup}
-              error={lookupError}
-              onClearError={() => setLookupError(null)}
+              error={state.lookupError}
+              onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
               size="small"
             />
           </div>
@@ -406,9 +589,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           {/* Right Column: Cart */}
           <div className="w-[55%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
             <Cart
-              cart={cart}
+              cart={state.cart}
               total={total}
-              isCheckingOut={isCheckingOut}
+              isCheckingOut={state.isCheckingOut}
               onUpdateQuantity={updateQuantity}
               customFooter={
                 <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
@@ -423,7 +606,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                     <Button
                       variant="outline"
                       className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
-                      onClick={() => setShowScanner(true)}
+                      onClick={() => dispatch({ type: 'SET_SHOW_SCANNER', show: true })}
                     >
                       Next Product
                     </Button>
@@ -431,9 +614,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                     <Button
                       className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
                       onClick={handleCheckout}
-                      disabled={pendingItems.length === 0 || isCheckingOut}
+                      disabled={pendingItems.length === 0 || state.isCheckingOut}
                     >
-                      {isCheckingOut ? 'Processing...' : 'Finish'}
+                      {state.isCheckingOut ? 'Processing...' : 'Finish'}
                     </Button>
                   </div>
                 </div>
