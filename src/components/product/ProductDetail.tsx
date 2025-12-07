@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { getStockMovements } from '../../lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useStockMutation } from '../../hooks/useStockMutation';
-import type { Product } from '../../types';
+import { useProductLookup } from '../../hooks/useProductLookup';
 import { BoxIcon } from '../ui/Icons';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
@@ -10,12 +10,28 @@ import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 
 interface ProductDetailProps {
-  product: Product;
+  barcode: string;
   onScanNew: () => void;
   mode: 'add' | 'remove';
 }
 
-const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
+const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
+  // Fetch product reactively - this ensures we always show fresh data from cache
+  const { data: product, isLoading } = useProductLookup(barcode);
+
+  // Show loading state while fetching
+  if (isLoading || !product) {
+    return (
+      <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200">
+        <CardContent className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-2">
+            <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
+            <p className="text-stone-900 text-sm font-medium">Loading product...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
   const [stockQuantity, setStockQuantity] = useState<string>('1');
   const { handleStockChange, loadingAction } = useStockMutation(product);
 

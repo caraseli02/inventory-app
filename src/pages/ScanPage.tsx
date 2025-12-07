@@ -176,7 +176,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
           ) : (
             /* Content - Full screen without border/shadow */
             <div className="h-full overflow-y-auto">
-              {showDetail && product && <ProductDetail product={product} onScanNew={handleReset} mode={mode} />}
+              {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} mode={mode} />}
               {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
             </div>
           )}
@@ -266,7 +266,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
             ) : (
               /* Content - Full height without footer */
               <div className="flex-1 overflow-y-auto">
-                {showDetail && product && <ProductDetail product={product} onScanNew={handleReset} mode={mode} />}
+                {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} mode={mode} />}
                 {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
               </div>
             )}
