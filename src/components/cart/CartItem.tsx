@@ -21,13 +21,13 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
   return (
     <div className="bg-white border-2 border-stone-200 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg lg:hover:-translate-y-1">
       <div className="flex gap-0 h-full">
-        {/* Product Image - Full height on left */}
-        <div className="w-20 lg:w-24 bg-stone-100 flex items-center justify-center shrink-0 overflow-hidden">
+        {/* Product Image - Full height on left with max 120px */}
+        <div className="w-20 lg:w-24 max-h-[120px] bg-stone-100 flex items-center justify-center shrink-0 overflow-hidden">
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={item.product.fields.Name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             <BoxIcon className="h-8 w-8 text-stone-400" />
