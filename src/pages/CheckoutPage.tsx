@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
+import { QuickAddSection } from '../components/cart/QuickAddSection';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
@@ -38,6 +39,7 @@ interface CheckoutState {
   scannedCode: string | null;
   showScanner: boolean;
   manualCode: string;
+  barcodeSource: 'scanner' | 'quick-add' | null;
 
   // Lookup state
   lookupRequested: boolean;
@@ -63,7 +65,7 @@ type CheckoutAction =
   | { type: 'CANCEL_CHECKOUT' }
 
   // Scanner actions
-  | { type: 'SET_SCANNED_CODE'; code: string | null }
+  | { type: 'SET_SCANNED_CODE'; code: string | null; source?: 'scanner' | 'quick-add' }
   | { type: 'SET_MANUAL_CODE'; code: string }
   | { type: 'TOGGLE_SCANNER' }
   | { type: 'SET_SHOW_SCANNER'; show: boolean }
@@ -91,6 +93,7 @@ const initialState: CheckoutState = {
   scannedCode: null,
   showScanner: true,
   manualCode: '',
+  barcodeSource: null,
   lookupRequested: false,
   lookupError: null,
   isCartExpanded: false,
@@ -183,6 +186,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       return {
         ...state,
         scannedCode: action.code,
+        barcodeSource: action.source || null,
       };
 
     case 'SET_MANUAL_CODE':
@@ -295,8 +299,10 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       dispatch({ type: 'ADD_TO_CART', product });
       playSound('success');
       dispatch({ type: 'LOOKUP_SUCCESS' });
-      // Auto-collapse cart on mobile to prepare for next scan
-      dispatch({ type: 'SET_CART_EXPANDED', expanded: false });
+      // Auto-collapse cart on mobile ONLY if barcode came from scanner, not QuickAdd
+      if (state.barcodeSource === 'scanner') {
+        dispatch({ type: 'SET_CART_EXPANDED', expanded: false });
+      }
       return;
     }
 
@@ -337,17 +343,18 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  }, [error, isLoading, playSound, product, state.scannedCode]);
+  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource]);
 
   /**
    * Handles successful barcode scan by initiating product lookup
    * - Only processes if no scan is currently in progress
    * - Sets scan code and requests lookup via useProductLookup hook
    * @param code - Scanned barcode value
+   * @param source - Where the barcode came from ('scanner' or 'quick-add')
    */
-  const handleScanSuccess = (code: string) => {
+  const handleScanSuccess = (code: string, source: 'scanner' | 'quick-add' = 'scanner') => {
     if (!state.scannedCode && !isPendingLookup) {
-      dispatch({ type: 'SET_SCANNED_CODE', code });
+      dispatch({ type: 'SET_SCANNED_CODE', code, source });
       dispatch({ type: 'REQUEST_LOOKUP' });
     }
   };
@@ -522,8 +529,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             <ScannerFrame
               scannerId="mobile-reader"
               onScanSuccess={handleScanSuccess}
-              showScanner={state.showScanner}
-              onToggleScanner={() => dispatch({ type: 'TOGGLE_SCANNER' })}
               manualCode={state.manualCode}
               onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
               onManualSubmit={handleManualSubmit}
@@ -537,7 +542,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         {/* Cart Toggle/Collapse */}
         <div
           className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out z-20 ${
-            state.isCartExpanded ? 'h-[80dvh] max-h-[calc(100dvh-120px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
+            state.isCartExpanded ? 'h-[calc(100dvh-73px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
           }`}
         >
           {/* Toggle Button */}
@@ -577,6 +582,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 onUpdateQuantity={updateQuantity}
                 customFooter={
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
+                    {/* Quick Add Section */}
+                    <QuickAddSection
+                      onAddItem={(code) => handleScanSuccess(code, 'quick-add')}
+                      isPending={isPendingLookup}
+                    />
+
                     {/* Total */}
                     <div className="flex items-center justify-between pb-2">
                       <span className="text-lg font-semibold text-gray-700">Total</span>
@@ -587,14 +598,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                     <div className="space-y-3">
                       <Button
                         variant="outline"
-                        className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                        className="w-full h-10 text-base font-medium border-2 hover:bg-gray-50"
                         onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: false })}
                       >
                         Next Product
                       </Button>
 
                       <Button
-                        className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                        className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
                         onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
@@ -624,8 +635,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             <ScannerFrame
               scannerId="desktop-reader"
               onScanSuccess={handleScanSuccess}
-              showScanner={state.showScanner}
-              onToggleScanner={() => dispatch({ type: 'TOGGLE_SCANNER' })}
               manualCode={state.manualCode}
               onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
               onManualSubmit={handleManualSubmit}
@@ -655,14 +664,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                   <div className="space-y-3">
                     <Button
                       variant="outline"
-                      className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                      className="w-full h-10 text-base font-medium border-2 hover:bg-gray-50"
                       onClick={() => dispatch({ type: 'SET_SHOW_SCANNER', show: true })}
                     >
                       Next Product
                     </Button>
 
                     <Button
-                      className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                      className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
                       onClick={handleCheckoutClick}
                       disabled={pendingItems.length === 0 || state.isCheckingOut}
                     >
