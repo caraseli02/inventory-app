@@ -67,10 +67,7 @@ export const ScannerFrame = ({
 
       {/* Always-visible Manual Input Section */}
       <div className="mt-4">
-        <div
-          className="bg-gradient-to-br from-stone-50 to-stone-100 border-2 rounded-lg p-4"
-          style={{ borderColor: 'var(--color-lavender)' }}
-        >
+        <div className="bg-gradient-to-br from-stone-50 to-stone-100 border-2 border-stone-200 rounded-lg p-4">
           <label className={`text-stone-700 font-semibold mb-2 block ${textSize}`}>
             Or enter barcode manually:
           </label>
@@ -79,7 +76,7 @@ export const ScannerFrame = ({
               type="text"
               value={manualCode}
               onChange={(e) => onManualCodeChange(e.target.value)}
-              className={`flex-1 font-mono tracking-wider border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] ${textSize}`}
+              className={`flex-1 font-mono tracking-wider border-2 border-stone-300 focus-visible:ring-stone-400 ${textSize}`}
               placeholder="1234567890"
               disabled={isPending}
             />

@@ -542,7 +542,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         {/* Cart Toggle/Collapse */}
         <div
           className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out z-20 ${
-            state.isCartExpanded ? 'h-[80dvh] max-h-[calc(100dvh-120px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
+            state.isCartExpanded ? 'h-[calc(100dvh-73px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
           }`}
         >
           {/* Toggle Button */}
@@ -598,14 +598,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                     <div className="space-y-3">
                       <Button
                         variant="outline"
-                        className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                        className="w-full h-10 text-base font-medium border-2 hover:bg-gray-50"
                         onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: false })}
                       >
                         Next Product
                       </Button>
 
                       <Button
-                        className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                        className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
                         onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
@@ -664,14 +664,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                   <div className="space-y-3">
                     <Button
                       variant="outline"
-                      className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                      className="w-full h-10 text-base font-medium border-2 hover:bg-gray-50"
                       onClick={() => dispatch({ type: 'SET_SHOW_SCANNER', show: true })}
                     >
                       Next Product
                     </Button>
 
                     <Button
-                      className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                      className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
                       onClick={handleCheckoutClick}
                       disabled={pendingItems.length === 0 || state.isCheckingOut}
                     >
