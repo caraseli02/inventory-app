@@ -62,6 +62,7 @@ export const useStockMutation = (product: Product) => {
     },
     onSuccess: (_data, { type, quantity }) => {
       const action = type === 'IN' ? 'added to' : 'removed from';
+      console.log('[useStockMutation] Stock movement successful, will refetch product');
       showToast(
         'success',
         'Stock updated',

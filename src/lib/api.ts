@@ -141,7 +141,12 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
 
     const record = records[0];
 
-    logger.info('Product found', { barcode, productId: record.id });
+    logger.info('Product found', { barcode, productId: record.id, currentStock: record.fields['Current Stock'] });
+    console.log('[getProductByBarcode] Fetched product:', {
+      id: record.id,
+      name: record.fields.Name,
+      currentStock: record.fields['Current Stock']
+    });
     return mapAirtableProduct(record);
   } catch (error) {
     logger.error('Failed to fetch product by barcode', {

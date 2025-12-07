@@ -19,7 +19,22 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
   // Fetch product reactively - this ensures we always show fresh data from cache
   const { data: product, isLoading } = useProductLookup(barcode);
 
-  // Show loading state while fetching
+  // Initialize hooks unconditionally (Rules of Hooks)
+  const [stockQuantity, setStockQuantity] = useState<string>('1');
+
+  // Fetch History - needs product ID
+  const { data: history } = useQuery({
+    queryKey: ['history', product?.id],
+    queryFn: () => getStockMovements(product!.id),
+    enabled: !!product?.id,
+  });
+
+  // Only initialize mutation hook when product exists
+  // Pass a dummy product during loading to satisfy hooks rule
+  const dummyProduct = { id: '', fields: { Name: '', Barcode: barcode, 'Current Stock': 0 } } as any;
+  const { handleStockChange, loadingAction } = useStockMutation(product || dummyProduct);
+
+  // Show loading state
   if (isLoading || !product) {
     return (
       <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200">
@@ -32,8 +47,6 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
       </Card>
     );
   }
-  const [stockQuantity, setStockQuantity] = useState<string>('1');
-  const { handleStockChange, loadingAction } = useStockMutation(product);
 
   const displayCategory = product.fields.Category || 'Uncategorized';
   const displayPrice =
@@ -42,15 +55,12 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
 
   const handleStockButton = (type: 'IN' | 'OUT') => {
     const qty = parseInt(stockQuantity);
+    console.log('[ProductDetail] Initiating stock change:', { qty, type, currentStock: product.fields['Current Stock'] });
     handleStockChange(qty, type);
   };
 
-  // Fetch History
-  const { data: history } = useQuery({
-    queryKey: ['history', product.id],
-    queryFn: () => getStockMovements(product.id),
-    enabled: !!product.id,
-  });
+  // Debug: Log current stock value
+  console.log('[ProductDetail] Rendering with stock:', product.fields['Current Stock'], 'Product ID:', product.id);
 
   return (
     <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200 relative">
