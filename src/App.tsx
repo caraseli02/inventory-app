@@ -6,6 +6,7 @@ import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Spinner } from './components/ui/spinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ToastProvider } from './hooks/useToast';
 
 // Route-based code splitting: lazy load pages with retry on failure
 const retryLazyImport = (
@@ -112,10 +113,11 @@ function App() {
   ];
 
   return (
-    <>
-      <Toaster position="top-center" richColors closeButton expand={false} />
-      <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
-        <OfflineIndicator />
+    <ToastProvider>
+      <>
+        <Toaster position="top-center" richColors closeButton expand={false} />
+        <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
+          <OfflineIndicator />
 
       <header className="mb-6 lg:mb-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -217,6 +219,7 @@ function App() {
       </main>
       </div>
     </>
+    </ToastProvider>
   );
 }
 
