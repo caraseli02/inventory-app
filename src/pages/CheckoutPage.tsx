@@ -12,6 +12,14 @@ import {
 } from '../components/ui/Icons';
 import { Button } from '../components/ui/button';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -37,6 +45,8 @@ interface CheckoutState {
 
   // UI state
   isCartExpanded: boolean;
+  showConfirmDialog: boolean;
+  confirmDialogMessage: string;
 }
 
 /**
@@ -67,7 +77,9 @@ type CheckoutAction =
 
   // UI actions
   | { type: 'TOGGLE_CART_EXPANDED' }
-  | { type: 'SET_CART_EXPANDED'; expanded: boolean };
+  | { type: 'SET_CART_EXPANDED'; expanded: boolean }
+  | { type: 'SHOW_CONFIRM_DIALOG'; message: string }
+  | { type: 'HIDE_CONFIRM_DIALOG' };
 
 /**
  * Initial state for CheckoutPage
@@ -82,6 +94,8 @@ const initialState: CheckoutState = {
   lookupRequested: false,
   lookupError: null,
   isCartExpanded: false,
+  showConfirmDialog: false,
+  confirmDialogMessage: '',
 };
 
 /**
@@ -239,6 +253,20 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         isCartExpanded: action.expanded,
       };
 
+    case 'SHOW_CONFIRM_DIALOG':
+      return {
+        ...state,
+        showConfirmDialog: true,
+        confirmDialogMessage: action.message,
+      };
+
+    case 'HIDE_CONFIRM_DIALOG':
+      return {
+        ...state,
+        showConfirmDialog: false,
+        confirmDialogMessage: '',
+      };
+
     default:
       return state;
   }
@@ -357,14 +385,10 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   };
 
   /**
-   * Processes checkout by creating stock movements for all cart items
-   * - Prompts user for confirmation with total price
-   * - Processes each item sequentially to create OUT stock movements
-   * - Handles errors with user-friendly messages and detailed logging
-   * - Updates cart status for each item (success/failed)
-   * - Clears cart on complete success or shows status summary on partial failure
+   * Shows confirmation dialog before processing checkout
+   * Calculates total and formats confirmation message
    */
-  const handleCheckout = async () => {
+  const handleCheckoutClick = () => {
     if (pendingItems.length === 0) return;
 
     const { total, missingPrices } = calculateTotals();
@@ -373,9 +397,18 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       ? `Complete checkout for ${pendingItems.length} items? Priced subtotal: ${totalLabel}. ${missingPrices} item${missingPrices > 1 ? 's are' : ' is'} missing price data and will be processed without totals.`
       : `Complete checkout for ${pendingItems.length} items? Total: ${totalLabel}`;
 
-    const confirm = window.confirm(confirmMessage);
-    if (!confirm) return;
+    dispatch({ type: 'SHOW_CONFIRM_DIALOG', message: confirmMessage });
+  };
 
+  /**
+   * Processes checkout by creating stock movements for all cart items
+   * - Processes each item sequentially to create OUT stock movements
+   * - Handles errors with user-friendly messages and detailed logging
+   * - Updates cart status for each item (success/failed)
+   * - Clears cart on complete success or shows status summary on partial failure
+   */
+  const handleCheckoutConfirm = async () => {
+    dispatch({ type: 'HIDE_CONFIRM_DIALOG' });
     dispatch({ type: 'START_CHECKOUT' });
 
     const processingCart = state.cart.map((item): CartItem =>
@@ -545,7 +578,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
                       <Button
                         className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
-                        onClick={handleCheckout}
+                        onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
                         {state.isCheckingOut ? 'Processing...' : 'Finish'}
@@ -613,7 +646,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
                     <Button
                       className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
-                      onClick={handleCheckout}
+                      onClick={handleCheckoutClick}
                       disabled={pendingItems.length === 0 || state.isCheckingOut}
                     >
                       {state.isCheckingOut ? 'Processing...' : 'Finish'}
@@ -625,6 +658,35 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           </div>
         </div>
       </div>
+
+      {/* Checkout Confirmation Dialog */}
+      <Dialog open={state.showConfirmDialog} onOpenChange={(open) => !open && dispatch({ type: 'HIDE_CONFIRM_DIALOG' })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-stone-900">Confirm Checkout</DialogTitle>
+            <DialogDescription className="text-stone-600">
+              {state.confirmDialogMessage}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-3 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => dispatch({ type: 'HIDE_CONFIRM_DIALOG' })}
+              className="flex-1 sm:flex-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCheckoutConfirm}
+              className="flex-1 sm:flex-none bg-stone-900 hover:bg-stone-800 text-white"
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
