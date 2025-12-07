@@ -35,7 +35,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     failures: number;
   } | null>(null);
   const [isCartExpanded, setIsCartExpanded] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(40 * 60 + 25); // 40:25 in seconds
 
   // Hook for looking up products
   const { data: product, isLoading, error } = useProductLookup(scannedCode);
@@ -48,20 +47,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       navigator.vibrate(type === 'success' ? 100 : [100, 50, 100]);
     }
   }, []);
-
-  // Timer countdown
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   useEffect(() => {
     if (!scannedCode) return;
@@ -292,76 +277,70 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   return (
     <>
       {/* Mobile View */}
-      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-700 overflow-hidden">
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-violet-600 to-violet-700 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4">
+        <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-white">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-12 w-12 rounded-full bg-white/20 hover:bg-white/30 text-white"
+            className="h-10 w-10 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
           >
-            <ArrowLeftIcon className="h-6 w-6" />
+            <ArrowLeftIcon className="h-5 w-5" />
           </Button>
-          <div className="text-white text-sm font-medium">
-            Time left - {formatTime(timeLeft)}
-          </div>
+          <p className="text-stone-700 text-center text-xs font-medium">
+            Scan the items barcode inside the square frame to add items to your cart
+          </p>
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-12 w-12 rounded-full bg-transparent hover:bg-white/10 text-white"
+            className="h-10 w-10 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
           >
-            <CloseIcon className="h-6 w-6" />
+            <CloseIcon className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Scanner Section */}
         <div className="px-6 pt-4">
-          <h1 className="text-3xl font-bold text-white text-center mb-3">
-            Start Shopping
-          </h1>
-          <p className="text-white/90 text-center text-sm mb-8">
-            Scan the items barcode inside the square frame to add items to your cart
-          </p>
 
           {/* Scanner Frame */}
-          <div className="relative mx-auto max-w-sm aspect-square">
+          <div className="relative mx-auto w-full max-w-lg aspect-square">
             {/* Corner Brackets */}
-            <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 pointer-events-none z-10">
               {/* Top Left */}
-              <div className="absolute top-0 left-0 w-16 h-16 border-l-4 border-t-4 border-white rounded-tl-2xl" />
+              <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-white" />
               {/* Top Right */}
-              <div className="absolute top-0 right-0 w-16 h-16 border-r-4 border-t-4 border-white rounded-tr-2xl" />
+              <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-white" />
               {/* Bottom Left */}
-              <div className="absolute bottom-0 left-0 w-16 h-16 border-l-4 border-b-4 border-white rounded-bl-2xl" />
+              <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-white" />
               {/* Bottom Right */}
-              <div className="absolute bottom-0 right-0 w-16 h-16 border-r-4 border-b-4 border-white rounded-br-2xl" />
+              <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-white" />
 
               {/* Scan Line */}
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-purple-400 shadow-lg shadow-purple-400/50" />
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-white shadow-lg" />
             </div>
 
             {/* Scanner or Barcode Area */}
-            <div className="absolute inset-0 m-12 bg-white rounded-lg overflow-hidden">
+            <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
               {showScanner ? (
-                <Scanner onScanSuccess={handleScanSuccess} />
+                <Scanner onScanSuccess={handleScanSuccess} scannerId="mobile-reader" />
               ) : (
-                <div className="flex items-center justify-center h-full bg-gray-50">
-                  <div className="text-center px-4">
+                <div className="flex items-center justify-center h-full bg-stone-900">
+                  <div className="text-center px-4 w-full max-w-xs">
                     <form onSubmit={handleManualSubmit} className="space-y-4">
                       <input
                         type="text"
                         value={manualCode}
                         onChange={(e) => setManualCode(e.target.value)}
-                        className="w-full bg-white border-2 border-gray-300 rounded-lg p-3 text-gray-900 text-center tracking-widest focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                        className="w-full bg-white border-2 border-stone-300 rounded-lg p-3 text-stone-900 text-center tracking-widest focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 outline-none"
                         placeholder="Enter barcode"
                         autoFocus
                       />
                       <Button
                         type="submit"
                         disabled={manualCode.length < 3 || isPendingLookup}
-                        className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        className="w-full bg-white hover:bg-stone-100 text-stone-900"
                       >
                         {isPendingLookup ? 'Searching…' : 'Add Item'}
                       </Button>
@@ -369,7 +348,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                     <Button
                       variant="ghost"
                       onClick={() => setShowScanner(true)}
-                      className="mt-4 text-gray-600"
+                      className="mt-4 text-white hover:text-white hover:bg-white/10"
                     >
                       Use Camera
                     </Button>
@@ -379,10 +358,10 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             </div>
 
             {isPendingLookup && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-20">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="animate-spin h-10 w-10 border-4 border-white border-t-transparent rounded-full" />
-                  <p className="text-white text-sm">Searching…</p>
+                  <div className="animate-spin h-10 w-10 border-4 border-white/20 border-t-white rounded-full" />
+                  <p className="text-white text-sm font-medium">Searching…</p>
                 </div>
               </div>
             )}
@@ -390,13 +369,13 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
           {/* Error Message */}
           {lookupError && (
-            <div className="mt-4 bg-red-500/20 border border-red-300 text-white p-3 rounded-lg text-sm flex items-start gap-2">
-              <WarningIcon className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="mt-4 bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm flex items-start gap-2">
+              <WarningIcon className="h-5 w-5 shrink-0 mt-0.5 text-red-600" />
               <div className="flex-1">
                 <p className="font-semibold">Not Found</p>
-                <p className="text-white/90 text-xs mt-1">{lookupError}</p>
+                <p className="text-red-800 text-xs mt-1">{lookupError}</p>
               </div>
-              <button onClick={() => setLookupError(null)} className="text-white/80 hover:text-white">
+              <button onClick={() => setLookupError(null)} className="text-red-600 hover:text-red-900">
                 <CloseIcon className="h-5 w-5" />
               </button>
             </div>
@@ -414,7 +393,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             <Button
               onClick={() => setIsCartExpanded(!isCartExpanded)}
               size="icon"
-              className="h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
+              className="h-12 w-12 rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg"
             >
               {isCartExpanded ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
             </Button>
@@ -424,13 +403,13 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           {!isCartExpanded && (
             <div className="p-6 flex items-center justify-between cursor-pointer" onClick={() => setIsCartExpanded(true)}>
               <div className="flex items-center gap-3">
-                <ShoppingCartIcon className="h-6 w-6 text-indigo-600" />
+                <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
                   <p className="text-sm text-gray-600">{cart.length} items</p>
                 </div>
               </div>
-              <div className="text-2xl font-bold text-indigo-600">
+              <div className="text-2xl font-bold text-stone-900">
                 € {total.toFixed(2)}
               </div>
             </div>
@@ -442,13 +421,13 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               {/* Cart Header */}
               <div className="p-6 pb-4 flex items-center justify-between border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <ShoppingCartIcon className="h-6 w-6 text-indigo-600" />
+                  <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
                   <div>
                     <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
                     <p className="text-sm text-gray-500">{cart.length} items</p>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-indigo-600">
+                <div className="text-2xl font-bold text-stone-900">
                   € {total.toFixed(2)}
                 </div>
               </div>
@@ -499,7 +478,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                               onClick={() => updateQuantity(index, -1)}
                               className="h-8 w-8 p-0 hover:bg-gray-200"
                             >
-                              <MinusIcon className="h-4 w-4 text-indigo-600" />
+                              <MinusIcon className="h-4 w-4 text-stone-900" />
                             </Button>
                             <span className="w-8 text-center font-semibold text-gray-900">
                               {item.quantity}
@@ -510,7 +489,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                               onClick={() => updateQuantity(index, 1)}
                               className="h-8 w-8 p-0 hover:bg-gray-200"
                             >
-                              <PlusIcon className="h-4 w-4 text-indigo-600" />
+                              <PlusIcon className="h-4 w-4 text-stone-900" />
                             </Button>
                           </div>
 
@@ -547,7 +526,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                   </Button>
 
                   <Button
-                    className="w-full h-12 text-base font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+                    className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
                     onClick={handleCheckout}
                     disabled={pendingItems.length === 0 || isCheckingOut}
                   >
@@ -560,222 +539,233 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         </div>
       </div>
 
-      {/* Tablet/Desktop View - Keep existing layout */}
-      <div className="hidden lg:block relative w-full max-w-7xl mx-auto">
-        <div className="flex flex-row gap-8 h-[calc(100vh-140px)]">
-          <div className="flex items-center justify-between gap-3 rounded-lg border-2 border-gray-200 bg-gray-50 px-5 py-4 text-xs text-gray-600 font-semibold">
-            <span className="inline-flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-          Batch checkout
-        </span>
-        <span className="text-[11px] text-gray-500">Scan items, then mark paid to update stock.</span>
-      </div>
-
-      {/* Left Column: Scanner - 45% on desktop */}
-      <div className="w-full lg:w-[45%] flex flex-col gap-3 lg:gap-5 shrink-0">
-        <div className="flex justify-between items-center px-1">
-          <button onClick={onBack} className="text-gray-700 hover:text-gray-900 flex items-center gap-2 text-sm bg-white border-2 border-gray-300 px-3 py-3 rounded-lg hover:bg-gray-50">
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-        </div>
-
-        {/* Error Message - Inline display */}
-        {lookupError && (
-          <div className="bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm animate-in fade-in duration-200">
-            <div className="flex items-start gap-2">
-              <WarningIcon className="h-5 w-5 mt-0.5 text-red-600" />
-              <div>
-                <p className="font-semibold">Not Found</p>
-                <p className="text-red-800 text-xs mt-1">{lookupError}</p>
-              </div>
-              <button
-                onClick={() => setLookupError(null)}
-                className="ml-auto text-red-600 hover:text-red-900 text-lg leading-none"
-              >
-                <CloseIcon className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Scanner */}
-        <div className={`transition-all duration-300 ${!showScanner && 'opacity-50'}`}>
-          {showScanner ? (
-            <div className="relative rounded-lg overflow-hidden border-2 border-gray-300 bg-black aspect-[4/3] lg:aspect-square w-full mx-auto max-w-sm lg:max-w-none shrink-0">
-              <Scanner onScanSuccess={handleScanSuccess} />
-              {isPendingLookup && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10 text-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin h-10 w-10 border-4 border-gray-400 border-t-transparent rounded-full"></div>
-                    <p className="text-white text-sm">Searching…</p>
-                  </div>
-                </div>
-              )}
-              <button
-                onClick={() => setShowScanner(false)}
-                disabled={isPendingLookup}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/95 text-gray-900 px-4 py-3 rounded-lg text-xs font-medium border-2 border-gray-300 whitespace-nowrap hover:bg-white"
-              >
-                {isPendingLookup ? 'Searching…' : 'Type Instead'}
-              </button>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg p-6 border-2 border-gray-200 aspect-[4/3] lg:aspect-square flex flex-col justify-center">
-              <form onSubmit={handleManualSubmit} className="space-y-4">
-                <label className="block text-gray-700 text-sm font-medium text-center">Barcode</label>
-                <input
-                  type="text"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  className="w-full bg-gray-50 border-2 border-gray-300 rounded-lg p-3 text-gray-900 text-center tracking-widest focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none text-sm"
-                  autoFocus
-                />
-                <button type="submit" disabled={manualCode.length < 3 || isPendingLookup} className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors">
-                  {isPendingLookup ? 'Searching…' : 'Add Item'}
-                </button>
-              </form>
-              <button onClick={() => setShowScanner(true)} className="mt-4 text-gray-600 hover:text-gray-900 text-sm text-center">Use Camera</button>
-            </div>
-          )}
-        </div>
-
-        <div className="hidden lg:block bg-gray-50 p-4 rounded-lg border-2 border-gray-200 text-center">
-          <p className="text-sm text-gray-600">Scan items. Duplicates increase quantity.</p>
-        </div>
-      </div>
-
-      {/* Right Column: Cart List - 55% on desktop */}
-      <div className="flex-1 bg-white rounded-t-2xl lg:rounded-2xl border-2 border-gray-200 flex flex-col overflow-hidden relative lg:shadow-sm">
-        {/* Cart Header */}
-        <div className="p-6 border-b-2 border-gray-200 bg-gray-50 sticky top-0 z-20">
-          <h2 className="text-lg font-bold text-gray-900 flex justify-between items-center gap-4">
-            <span>Shopping Cart</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-emerald-700 bg-emerald-100 border-2 border-emerald-300 px-3 py-1.5 rounded-lg uppercase">
-                {pendingItems.length} ready
-              </span>
-              <span className="text-xs font-bold text-gray-700 bg-gray-200 border border-gray-300 px-3 py-1.5 rounded-lg uppercase">{cart.length} total</span>
-            </div>
-          </h2>
-        </div>
-
-        {/* Scrollable List */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-3 pb-28 lg:pb-5 lg:space-y-2.5">
-          {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400 gap-3 min-h-[150px]">
-              <ShoppingCartIcon className="h-12 w-12 opacity-20" />
-              <p className="text-sm">Cart is empty</p>
-            </div>
-          ) : (
-            cart.map((item, index) => (
-              <div key={`${item.product.id}-${index}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border-2 border-gray-200">
-                {/* Image Thumb */}
-                <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden shrink-0 border-2 border-gray-300">
-                  {item.product.fields.Image?.[0]?.url ? (
-                    <img src={item.product.fields.Image[0].url} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-lg text-gray-400">
-                      <BoxIcon className="h-5 w-5" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 truncate text-base">{item.product.fields.Name}</h3>
-                  <p className="text-gray-600 text-sm font-medium">
-                    {item.product.fields.Price != null
-                      ? `€${item.product.fields.Price.toFixed(2)}`
-                      : 'No price'}
-                  </p>
-                  {item.status === 'processing' && (
-                    <p className="text-xs text-blue-600 mt-1">Processing…</p>
-                  )}
-                  {item.status === 'success' && (
-                    <p className="text-xs text-emerald-600 mt-1">Checked out</p>
-                  )}
-                  {item.status === 'failed' && (
-                    <p className="text-xs text-red-600 mt-1">
-                      Failed. {item.statusMessage || 'Adjust quantity and retry.'}
-                    </p>
-                  )}
-                </div>
-
-                {/* Controls */}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center bg-white border-2 border-gray-300 rounded-lg h-11">
-                    <button onClick={() => updateQuantity(index, -1)} className="px-2 h-full hover:bg-gray-100 text-gray-700 flex items-center justify-center font-semibold">
-                      <MinusIcon className="h-4 w-4" />
-                    </button>
-                    <span className="w-6 text-center font-mono font-bold text-gray-900 text-sm">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(index, 1)} className="px-2 h-full hover:bg-gray-100 text-gray-700 flex items-center justify-center font-semibold">
-                      <PlusIcon className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="font-mono font-semibold text-gray-900 w-16 text-right text-sm">
-                    {item.product.fields.Price != null
-                      ? `€${(item.product.fields.Price * item.quantity).toFixed(2)}`
-                      : '—'}
-                  </div>
-                  <button onClick={() => removeFromCart(index)} className="p-2 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg font-semibold transition-colors" title="Remove item">
-                    <CloseIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Footer - Fixed at bottom of container on Mobile */}
-        <div className="absolute lg:relative bottom-0 left-0 right-0 p-5 border-t-2 border-gray-200 bg-gray-50 lg:shadow-none z-20 lg:p-6">
-          {statusSummary && (
-            <div className="mb-5 flex flex-col gap-2 bg-gray-50 border-2 border-gray-200 rounded-lg p-4 text-sm text-gray-900 font-medium">
-              <div className="flex flex-wrap items-center gap-4">
-                <span className="flex items-center gap-2 text-emerald-700 font-bold text-base">
-                  <CheckCircleIcon className="h-5 w-5" />
-                  {statusSummary.successes}
-                </span>
-                <span className="flex items-center gap-2 text-red-700 font-bold text-base">
-                  <CloseIcon className="h-5 w-5" />
-                  {statusSummary.failures}
-                </span>
-              </div>
-              {statusSummary.failures > 0 ? (
-                <p className="text-gray-700 text-xs">Failed items remain in cart. Adjust and retry.</p>
-              ) : (
-                <p className="text-gray-700 text-xs">All items checked out successfully.</p>
-              )}
-            </div>
-          )}
-          <div className="flex justify-between items-end mb-6">
-            <span className="text-gray-600 text-sm font-bold uppercase tracking-wide">Total</span>
-            <div className="text-right">
-              <div className="text-4xl lg:text-5xl font-semibold text-gray-900 tracking-tight">
-                {missingPrices > 0 ? '~' : ''}€{total.toFixed(2)}
-              </div>
-              {missingPrices > 0 && (
-                <div className="text-[11px] text-gray-500 mt-1">Excludes {missingPrices} unpriced item{missingPrices > 1 ? 's' : ''}</div>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={handleCheckout}
-            disabled={pendingItems.length === 0 || isCheckingOut}
-            className="w-full py-4 lg:py-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors text-sm shadow-sm hover:shadow-md"
+      {/* Tablet/Desktop View - New Scanner UI with visible cart */}
+      <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-violet-600 to-violet-700 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-white">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="h-10 w-10 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
           >
-            {isCheckingOut ? (
-              <>
-                <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-                Checking out…
-              </>
-            ) : (
-              <>Mark Paid ({pendingItems.length})</>
-            )}
-          </button>
+            <ArrowLeftIcon className="h-5 w-5" />
+          </Button>
+          <p className="text-stone-700 text-center text-xs font-medium">
+            Scan the items barcode inside the square frame to add items to your cart
+          </p>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="h-10 w-10 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+          >
+            <CloseIcon className="h-5 w-5" />
+          </Button>
         </div>
-      </div>
 
+        {/* Two Column Layout */}
+        <div className="flex flex-row gap-6 h-[calc(100vh-100px)] px-6 pb-6">
+          {/* Left Column: Scanner */}
+          <div className="w-1/2 flex flex-col items-center justify-center gap-4">
+
+            {/* Scanner Frame */}
+            <div className="relative w-full max-w-lg aspect-square">
+              {/* Corner Brackets */}
+              <div className="absolute inset-0 pointer-events-none z-10">
+                {/* Top Left */}
+                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-white" />
+                {/* Top Right */}
+                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-white" />
+                {/* Bottom Left */}
+                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-white" />
+                {/* Bottom Right */}
+                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-white" />
+
+                {/* Scan Line */}
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-white shadow-lg" />
+              </div>
+
+              {/* Scanner or Barcode Area */}
+              <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
+                {showScanner ? (
+                  <Scanner onScanSuccess={handleScanSuccess} scannerId="desktop-reader" />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-stone-900">
+                    <div className="text-center px-4 w-full max-w-xs">
+                      <form onSubmit={handleManualSubmit} className="space-y-4">
+                        <input
+                          type="text"
+                          value={manualCode}
+                          onChange={(e) => setManualCode(e.target.value)}
+                          className="w-full bg-white border-2 border-stone-300 rounded-lg p-3 text-stone-900 text-center tracking-widest focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 outline-none text-sm"
+                          placeholder="Enter barcode"
+                          autoFocus
+                        />
+                        <Button
+                          type="submit"
+                          disabled={manualCode.length < 3 || isPendingLookup}
+                          className="w-full bg-white hover:bg-stone-100 text-stone-900 text-sm"
+                        >
+                          {isPendingLookup ? 'Searching…' : 'Add Item'}
+                        </Button>
+                      </form>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowScanner(true)}
+                        className="mt-4 text-white hover:text-white hover:bg-white/10 text-sm"
+                      >
+                        Use Camera
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {isPendingLookup && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-20">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin h-10 w-10 border-4 border-white/20 border-t-white rounded-full" />
+                    <p className="text-white text-sm font-medium">Searching…</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Error Message */}
+            {lookupError && (
+              <div className="bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm flex items-start gap-2 max-w-md w-full">
+                <WarningIcon className="h-5 w-5 shrink-0 mt-0.5 text-red-600" />
+                <div className="flex-1">
+                  <p className="font-semibold">Not Found</p>
+                  <p className="text-red-800 text-xs mt-1">{lookupError}</p>
+                </div>
+                <button onClick={() => setLookupError(null)} className="text-red-600 hover:text-red-900">
+                  <CloseIcon className="h-5 w-5" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column: Cart */}
+          <div className="w-1/2 bg-white rounded-2xl flex flex-col overflow-hidden">
+            {/* Cart Header */}
+            <div className="p-6 pb-4 flex items-center justify-between border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
+                  <p className="text-sm text-gray-500">{cart.length} items</p>
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-stone-900">
+                € {total.toFixed(2)}
+              </div>
+            </div>
+
+            {/* Cart Items List */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                  <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3" />
+                  <p className="text-sm">Cart is empty</p>
+                </div>
+              ) : (
+                cart.map((item, index) => (
+                  <div key={`${item.product.id}-${index}`} className="flex items-start gap-4">
+                    {/* Product Image */}
+                    <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                      {item.product.fields.Image?.[0]?.url ? (
+                        <img
+                          src={item.product.fields.Image[0].url}
+                          alt={item.product.fields.Name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <BoxIcon className="h-8 w-8 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-gray-900 text-base mb-1">
+                        {item.product.fields.Name}
+                      </h4>
+                      <p className="text-sm text-gray-500 mb-2">
+                        {item.product.fields.Category || '1kg'} • €{' '}
+                        {item.product.fields.Price != null
+                          ? `${item.product.fields.Price.toFixed(2)}/kg`
+                          : 'No price'}
+                      </p>
+
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center bg-gray-100 rounded-lg">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateQuantity(index, -1)}
+                            className="h-8 w-8 p-0 hover:bg-gray-200"
+                          >
+                            <MinusIcon className="h-4 w-4 text-stone-900" />
+                          </Button>
+                          <span className="w-8 text-center font-semibold text-gray-900">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateQuantity(index, 1)}
+                            className="h-8 w-8 p-0 hover:bg-gray-200"
+                          >
+                            <PlusIcon className="h-4 w-4 text-stone-900" />
+                          </Button>
+                        </div>
+
+                        {/* Item Total */}
+                        <div className="font-bold text-gray-900">
+                          €{' '}
+                          {item.product.fields.Price != null
+                            ? (item.product.fields.Price * item.quantity).toFixed(2)
+                            : '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Total and Actions */}
+            <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
+              {/* Total */}
+              <div className="flex items-center justify-between pb-2">
+                <span className="text-lg font-semibold text-gray-700">Total</span>
+                <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                  onClick={() => setShowScanner(true)}
+                >
+                  Next Product
+                </Button>
+
+                <Button
+                  className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                  onClick={handleCheckout}
+                  disabled={pendingItems.length === 0 || isCheckingOut}
+                >
+                  {isCheckingOut ? 'Processing...' : 'Finish'}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </>
