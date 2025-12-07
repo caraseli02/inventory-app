@@ -85,7 +85,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
           {error}
         </div>
       )}
-      <div className="absolute bottom-4 left-0 right-0 text-center text-white/70 text-sm pointer-events-none">
+      <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm pointer-events-none">
         Align code within frame
       </div>
     </div>

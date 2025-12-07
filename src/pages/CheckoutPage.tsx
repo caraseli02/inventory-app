@@ -277,25 +277,25 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   return (
     <>
       {/* Mobile View */}
-      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-violet-600 to-violet-700 overflow-hidden">
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-white">
+        <div className="flex items-center justify-between p-4 border-b border-white/50">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
           >
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
-          <p className="text-stone-700 text-center text-xs font-medium">
+          <p className="text-slate-700 text-center text-xs font-medium">
             Scan the items barcode inside the square frame to add items to your cart
           </p>
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
           >
             <CloseIcon className="h-5 w-5" />
           </Button>
@@ -309,16 +309,16 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             {/* Corner Brackets */}
             <div className="absolute inset-0 pointer-events-none z-10">
               {/* Top Left */}
-              <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-white" />
+              <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-slate-700" />
               {/* Top Right */}
-              <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-white" />
+              <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-slate-700" />
               {/* Bottom Left */}
-              <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-white" />
+              <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-slate-700" />
               {/* Bottom Right */}
-              <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-white" />
+              <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-slate-700" />
 
               {/* Scan Line */}
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-white shadow-lg" />
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-700 shadow-lg" />
             </div>
 
             {/* Scanner or Barcode Area */}
@@ -358,10 +358,10 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             </div>
 
             {isPendingLookup && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-20">
+              <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="animate-spin h-10 w-10 border-4 border-white/20 border-t-white rounded-full" />
-                  <p className="text-white text-sm font-medium">Searching…</p>
+                  <div className="animate-spin h-10 w-10 border-4 border-slate-200 border-t-slate-700 rounded-full" />
+                  <p className="text-slate-900 text-sm font-medium">Searching…</p>
                 </div>
               </div>
             )}
@@ -540,50 +540,50 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       </div>
 
       {/* Tablet/Desktop View - New Scanner UI with visible cart */}
-      <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-violet-600 to-violet-700 overflow-hidden">
+      <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-white">
+        <div className="flex items-center justify-between p-4 border-b border-white/50">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
           >
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
-          <p className="text-stone-700 text-center text-xs font-medium">
+          <p className="text-slate-700 text-center text-xs font-medium">
             Scan the items barcode inside the square frame to add items to your cart
           </p>
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-stone-600 hover:text-stone-900 hover:bg-stone-100"
+            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
           >
             <CloseIcon className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Two Column Layout */}
-        <div className="flex flex-row gap-6 h-[calc(100vh-100px)] px-6 pb-6">
+        <div className="flex flex-row gap-6 h-[calc(100vh-72px)] px-6 py-6">
           {/* Left Column: Scanner */}
-          <div className="w-1/2 flex flex-col items-center justify-center gap-4">
+          <div className="w-[45%] flex flex-col gap-4">
 
             {/* Scanner Frame */}
-            <div className="relative w-full max-w-lg aspect-square">
+            <div className="relative w-full aspect-square">
               {/* Corner Brackets */}
               <div className="absolute inset-0 pointer-events-none z-10">
                 {/* Top Left */}
-                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-white" />
+                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-slate-700" />
                 {/* Top Right */}
-                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-white" />
+                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-slate-700" />
                 {/* Bottom Left */}
-                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-white" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-slate-700" />
                 {/* Bottom Right */}
-                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-white" />
+                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-slate-700" />
 
                 {/* Scan Line */}
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-white shadow-lg" />
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-700 shadow-lg" />
               </div>
 
               {/* Scanner or Barcode Area */}
@@ -623,10 +623,10 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               </div>
 
               {isPendingLookup && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-20">
+                <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
                   <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin h-10 w-10 border-4 border-white/20 border-t-white rounded-full" />
-                    <p className="text-white text-sm font-medium">Searching…</p>
+                    <div className="animate-spin h-10 w-10 border-4 border-slate-200 border-t-slate-700 rounded-full" />
+                    <p className="text-slate-900 text-sm font-medium">Searching…</p>
                   </div>
                 </div>
               )}
@@ -648,7 +648,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           </div>
 
           {/* Right Column: Cart */}
-          <div className="w-1/2 bg-white rounded-2xl flex flex-col overflow-hidden">
+          <div className="w-[55%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
             {/* Cart Header */}
             <div className="p-6 pb-4 flex items-center justify-between border-b border-gray-200">
               <div className="flex items-center gap-3">
