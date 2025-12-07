@@ -12,6 +12,36 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core
+          'react-vendor': ['react', 'react-dom'],
+
+          // React Query (TanStack Query)
+          'query-vendor': ['@tanstack/react-query'],
+
+          // Airtable SDK
+          'airtable-vendor': ['airtable'],
+
+          // UI libraries (Radix UI primitives for shadcn)
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-icons',
+            '@radix-ui/react-label',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-select',
+          ],
+
+          // Scanner library (html5-qrcode is heavy ~150KB)
+          'scanner-vendor': ['html5-qrcode'],
+        },
+      },
+    },
+    // Adjust chunk size warning limit
+    chunkSizeWarningLimit: 600,
+  },
   plugins: [
     react(),
     tailwindcss(),
