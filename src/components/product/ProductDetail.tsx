@@ -53,7 +53,7 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
     product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : 'N/A';
   const expiryDisplay = product.fields['Expiry Date'] || 'No expiry date';
 
-  // Calculate current stock from movements since Airtable rollup isn't being returned
+  // Calculate current stock from ALL movements (since Airtable rollup isn't being returned)
   // Sum all quantities (which are already signed: positive for IN, negative for OUT)
   const calculatedStock = history?.reduce((total, movement) => {
     return total + (movement.fields.Quantity || 0);
@@ -61,6 +61,9 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
 
   // Use calculated stock if Airtable rollup is undefined
   const currentStock = product.fields['Current Stock'] ?? calculatedStock;
+
+  // Only show the 10 most recent movements in the UI
+  const recentHistory = history?.slice(0, 10) ?? [];
 
   const handleStockButton = (type: 'IN' | 'OUT') => {
     const qty = parseInt(stockQuantity);
@@ -181,7 +184,7 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
         <div className="border-t-2 border-stone-200 pt-6">
           <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-4">Recent Activity</h3>
           <div className="space-y-2">
-            {history?.map((move) => (
+            {recentHistory.map((move) => (
               <div key={move.id} className="flex justify-between items-center text-sm p-3 bg-stone-50 rounded-lg border border-stone-200">
                 <div className="flex items-center gap-3">
                   <Badge
@@ -195,7 +198,7 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
                 </div>
               </div>
             ))}
-            {!history?.length && (
+            {recentHistory.length === 0 && (
               <div className="text-stone-500 text-sm text-center italic py-4">No recent movements</div>
             )}
           </div>
