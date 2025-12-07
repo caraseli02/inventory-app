@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
+import { QuickAddSection } from '../components/cart/QuickAddSection';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
@@ -522,8 +523,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             <ScannerFrame
               scannerId="mobile-reader"
               onScanSuccess={handleScanSuccess}
-              showScanner={state.showScanner}
-              onToggleScanner={() => dispatch({ type: 'TOGGLE_SCANNER' })}
               manualCode={state.manualCode}
               onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
               onManualSubmit={handleManualSubmit}
@@ -577,6 +576,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 onUpdateQuantity={updateQuantity}
                 customFooter={
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
+                    {/* Quick Add Section */}
+                    <QuickAddSection
+                      onAddItem={handleScanSuccess}
+                      isPending={isPendingLookup}
+                    />
+
                     {/* Total */}
                     <div className="flex items-center justify-between pb-2">
                       <span className="text-lg font-semibold text-gray-700">Total</span>
@@ -624,8 +629,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             <ScannerFrame
               scannerId="desktop-reader"
               onScanSuccess={handleScanSuccess}
-              showScanner={state.showScanner}
-              onToggleScanner={() => dispatch({ type: 'TOGGLE_SCANNER' })}
               manualCode={state.manualCode}
               onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
               onManualSubmit={handleManualSubmit}
@@ -645,6 +648,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               onUpdateQuantity={updateQuantity}
               customFooter={
                 <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
+                  {/* Quick Add Section */}
+                  <QuickAddSection
+                    onAddItem={handleScanSuccess}
+                    isPending={isPendingLookup}
+                  />
+
                   {/* Total */}
                   <div className="flex items-center justify-between pb-2">
                     <span className="text-lg font-semibold text-gray-700">Total</span>
