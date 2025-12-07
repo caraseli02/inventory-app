@@ -328,8 +328,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
         {/* Cart Toggle/Collapse */}
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out ${
-            isCartExpanded ? 'h-[75vh] rounded-t-3xl' : 'h-auto rounded-t-3xl'
+          className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out z-20 ${
+            isCartExpanded ? 'h-[80vh] max-h-[calc(100vh-120px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
           }`}
         >
           {/* Toggle Button */}

@@ -124,7 +124,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
             </Badge>
           )}
 
-      <CardContent className="px-6 py-6">
+      <CardContent className="px-6 py-6 max-h-[calc(100vh-240px)] md:max-h-none overflow-y-auto">
         <form onSubmit={handleSubmit} className="space-y-5" id="create-product-form">
           {formData.imageUrl && (
             <div className="flex justify-center mb-4">
@@ -197,7 +197,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
             <div>
               <Label htmlFor="price" className="text-stone-700 font-semibold">Price</Label>
               <div className="relative mt-1.5">
-                <span className="absolute left-3 top-3 text-stone-500 font-medium">$</span>
+                <span className="absolute left-3 top-3 text-stone-500 font-medium">€</span>
                 <Input
                   id="price"
                   type="number"
@@ -258,10 +258,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
           type="submit"
           form="create-product-form"
           disabled={mutation.isPending}
-          className="flex-1 bg-gradient-to-br text-white shadow-md font-bold"
-          style={{
-            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-          }}
+          className="flex-1 font-bold"
         >
           {mutation.isPending ? (
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

@@ -145,7 +145,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         </div>
       </CardHeader>
 
-      <CardContent className="px-6 py-6">
+      <CardContent className="px-6 py-6 max-h-[calc(100vh-240px)] md:max-h-none overflow-y-auto">
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-stone-50 to-white border-2 border-stone-200">
             <CardContent className="p-4">
@@ -168,10 +168,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
               disabled={loadingAction !== null}
               variant="destructive"
               size="lg"
-              className="flex-1 bg-gradient-to-br from-terracotta-500 to-terracotta-600 hover:from-terracotta-600 hover:to-terracotta-700 text-white shadow-md"
-              style={{
-                background: 'linear-gradient(to bottom right, var(--color-terracotta), var(--color-terracotta-dark))',
-              }}
+              className="flex-1"
             >
               {loadingAction === 'OUT' ? (
                 <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
@@ -199,10 +196,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
               onClick={() => handleStockChange('IN')}
               disabled={loadingAction !== null}
               size="lg"
-              className="flex-1 bg-gradient-to-br from-forest-500 to-forest-600 hover:from-forest-600 hover:to-forest-700 text-white shadow-md"
-              style={{
-                background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-              }}
+              className="flex-1"
             >
               {loadingAction === 'IN' ? (
                 <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
