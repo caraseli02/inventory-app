@@ -45,23 +45,26 @@ export const useStockMutation = (product: Product) => {
       // Snapshot previous value
       const previousProduct = queryClient.getQueryData<Product>(['product', product.fields.Barcode]);
 
-      // Optimistically update
-      queryClient.setQueryData(['product', product.fields.Barcode], (old: Product | undefined) => {
+      // Optimistically update the history by adding a temporary movement
+      // This automatically updates the calculated stock in ProductDetail
+      queryClient.setQueryData(['history', product.id], (old: any[] | undefined) => {
         if (!old) return old;
-        const change = type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity);
-        return {
-          ...old,
+        const tempMovement = {
+          id: `temp-${Date.now()}`,
           fields: {
-            ...old.fields,
-            'Current Stock': (old.fields?.['Current Stock'] ?? 0) + change,
+            Type: type,
+            Quantity: type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity),
+            Date: new Date().toISOString().split('T')[0],
           },
         };
+        return [tempMovement, ...old];
       });
 
       return { previousProduct };
     },
     onSuccess: (_data, { type, quantity }) => {
       const action = type === 'IN' ? 'added to' : 'removed from';
+      console.log('[useStockMutation] Stock movement successful, will refetch product');
       showToast(
         'success',
         'Stock updated',

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { getStockMovements } from '../../lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useStockMutation } from '../../hooks/useStockMutation';
-import type { Product } from '../../types';
+import { useProductLookup } from '../../hooks/useProductLookup';
 import { BoxIcon } from '../ui/Icons';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
@@ -10,30 +10,73 @@ import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 
 interface ProductDetailProps {
-  product: Product;
+  barcode: string;
   onScanNew: () => void;
   mode: 'add' | 'remove';
 }
 
-const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
+const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
+  // Fetch product reactively - this ensures we always show fresh data from cache
+  const { data: product, isLoading } = useProductLookup(barcode);
+
+  // Initialize hooks unconditionally (Rules of Hooks)
   const [stockQuantity, setStockQuantity] = useState<string>('1');
-  const { handleStockChange, loadingAction } = useStockMutation(product);
+
+  // Fetch History - needs product ID
+  const { data: history } = useQuery({
+    queryKey: ['history', product?.id],
+    queryFn: () => getStockMovements(product!.id),
+    enabled: !!product?.id,
+  });
+
+  // Only initialize mutation hook when product exists
+  // Pass a dummy product during loading to satisfy hooks rule
+  const dummyProduct = { id: '', fields: { Name: '', Barcode: barcode, 'Current Stock': 0 } } as any;
+  const { handleStockChange, loadingAction } = useStockMutation(product || dummyProduct);
+
+  // Show loading state
+  if (isLoading || !product) {
+    return (
+      <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200">
+        <CardContent className="p-6 flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-2">
+            <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
+            <p className="text-stone-900 text-sm font-medium">Loading product...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const displayCategory = product.fields.Category || 'Uncategorized';
   const displayPrice =
     product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : 'N/A';
   const expiryDisplay = product.fields['Expiry Date'] || 'No expiry date';
 
+  // Calculate current stock from ALL movements (since Airtable rollup isn't being returned)
+  // Sum all quantities (which are already signed: positive for IN, negative for OUT)
+  const calculatedStock = history?.reduce((total, movement) => {
+    return total + (movement.fields.Quantity || 0);
+  }, 0) ?? 0;
+
+  // Use calculated stock if Airtable rollup is undefined
+  const currentStock = product.fields['Current Stock'] ?? calculatedStock;
+
+  // Only show the 10 most recent movements in the UI
+  const recentHistory = history?.slice(0, 10) ?? [];
+
   const handleStockButton = (type: 'IN' | 'OUT') => {
     const qty = parseInt(stockQuantity);
+    console.log('[ProductDetail] Initiating stock change:', { qty, type, currentStock, calculatedStock });
     handleStockChange(qty, type);
   };
 
-  // Fetch History
-  const { data: history } = useQuery({
-    queryKey: ['history', product.id],
-    queryFn: () => getStockMovements(product.id),
-    enabled: !!product.id,
+  // Debug: Log current stock value
+  console.log('[ProductDetail] Rendering with stock:', {
+    airtableStock: product.fields['Current Stock'],
+    calculatedStock,
+    currentStock,
+    movementCount: history?.length
   });
 
   return (
@@ -70,7 +113,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
           </div>
           <div className="text-right flex-shrink-0">
             <div className="text-3xl font-light text-stone-900">
-              {product.fields['Current Stock'] ?? 0}
+              {currentStock}
             </div>
             <div className="text-xs text-stone-500 uppercase tracking-widest font-semibold mt-1">In Stock</div>
           </div>
@@ -141,7 +184,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         <div className="border-t-2 border-stone-200 pt-6">
           <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-4">Recent Activity</h3>
           <div className="space-y-2">
-            {history?.map((move) => (
+            {recentHistory.map((move) => (
               <div key={move.id} className="flex justify-between items-center text-sm p-3 bg-stone-50 rounded-lg border border-stone-200">
                 <div className="flex items-center gap-3">
                   <Badge
@@ -155,7 +198,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
                 </div>
               </div>
             ))}
-            {!history?.length && (
+            {recentHistory.length === 0 && (
               <div className="text-stone-500 text-sm text-center italic py-4">No recent movements</div>
             )}
           </div>
