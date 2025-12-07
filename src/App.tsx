@@ -81,12 +81,12 @@ function App() {
     <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
       <OfflineIndicator />
 
-      <header className="mb-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <header className="mb-6 lg:mb-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Badge variant="outline" className="text-xs tracking-widest text-stone-400 uppercase font-bold bg-stone-50 border-stone-200 mb-2">
             Inventory Management
           </Badge>
-          <h1 className="text-5xl font-bold tracking-tight text-stone-900">Grocery Inventory</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">Grocery Inventory</h1>
         </div>
         <div className="flex items-center gap-3">
           {isTablet && (
@@ -100,11 +100,11 @@ function App() {
       <main className="w-full px-0 lg:px-0 flex-1 flex flex-col items-center">
         {view === 'home' ? (
           <div className="w-full max-w-5xl animate-in fade-in duration-300">
-            <div className="grid gap-7 sm:grid-cols-2 lg:gap-8">
+            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:gap-8">
               {actions.map((action) => (
                 <Card
                   key={action.key}
-                  className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+                  className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
                   onClick={action.onClick}
                   role="button"
                   tabIndex={0}
@@ -114,24 +114,24 @@ function App() {
                     }
                   }}
                 >
-                  <div className="flex h-full flex-col justify-between gap-8">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
+                  <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
+                    <div className="flex items-start justify-between gap-3 sm:gap-4">
+                      <div className="flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
                         {action.icon}
                       </div>
-                      <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-3 py-1.5 text-xs font-bold tracking-wider uppercase">
+                      <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
                         {action.key === 'add' ? 'Inbound' : 'Outbound'}
                       </Badge>
                     </div>
-                    <div className="space-y-3">
-                      <h2 className="text-2xl font-bold text-stone-900">{action.title}</h2>
-                      <p className="text-sm text-stone-600 font-medium">{action.description}</p>
+                    <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
+                      <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{action.title}</h2>
+                      <p className="text-xs sm:text-sm text-stone-600 font-medium">{action.description}</p>
                     </div>
                   </div>
                 </Card>
               ))}
               <Card
-                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
                 onClick={() => setView('checkout')}
                 role="button"
                 tabIndex={0}
@@ -141,18 +141,18 @@ function App() {
                   }
                 }}
               >
-                <div className="flex h-full flex-col justify-between gap-8">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
+                <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
+                  <div className="flex items-start justify-between gap-3 sm:gap-4">
+                    <div className="flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
                       <ShoppingCartIcon className="h-6 w-6" />
                     </div>
-                    <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-3 py-1.5 text-xs font-bold tracking-wider uppercase">
+                    <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
                       {isTablet ? 'Tablet' : 'Mobile'}
                     </Badge>
                   </div>
-                  <div className="space-y-3">
-                    <h2 className="text-2xl font-bold text-stone-900">Checkout Mode</h2>
-                    <p className="text-sm text-stone-600 font-medium">
+                  <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
+                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">Checkout Mode</h2>
+                    <p className="text-xs sm:text-sm text-stone-600 font-medium">
                       Batch scan for payment with simplified mobile controls.
                     </p>
                   </div>
