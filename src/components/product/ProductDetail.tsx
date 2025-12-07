@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '../../hooks/useToast';
 import type { Product } from '../../types';
 import { logger } from '../../lib/logger';
-import { BoxIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { BoxIcon } from '../ui/Icons';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -184,15 +184,12 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
               disabled={loadingAction !== null}
               variant="destructive"
               size="lg"
-              className="flex-1"
+              className="flex-1 font-semibold"
             >
               {loadingAction === 'OUT' ? (
                 <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
               ) : (
-                <>
-                  <MinusIcon className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Remove</span>
-                </>
+                'Remove'
               )}
             </Button>
           )}
@@ -212,15 +209,12 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
               onClick={() => handleStockChange('IN')}
               disabled={loadingAction !== null}
               size="lg"
-              className="flex-1"
+              className="flex-1 font-semibold bg-stone-900 hover:bg-stone-800 text-white border-2 border-stone-900"
             >
               {loadingAction === 'IN' ? (
                 <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
               ) : (
-                <>
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Add</span>
-                </>
+                'Add'
               )}
             </Button>
           )}
