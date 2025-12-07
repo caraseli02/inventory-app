@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { addStockMovement, getStockMovements } from '../../lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useToast } from '../../hooks/useToast';
 import type { Product } from '../../types';
 import { logger } from '../../lib/logger';
-import { ArrowLeftIcon, BoxIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { BoxIcon } from '../ui/Icons';
+import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Badge } from '../ui/badge';
 
 interface ProductDetailProps {
   product: Product;
@@ -11,8 +16,13 @@ interface ProductDetailProps {
   mode: 'add' | 'remove';
 }
 
+type StockMutationContext = {
+  previousProduct: Product | undefined;
+};
+
 const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
 
   const [stockQuantity, setStockQuantity] = useState<string>('1');
@@ -20,7 +30,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
 
   const displayCategory = product.fields.Category || 'Uncategorized';
   const displayPrice =
-    product.fields.Price != null ? `$${product.fields.Price.toFixed(2)}` : 'N/A';
+    product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : 'N/A';
   const expiryDisplay = product.fields['Expiry Date'] || 'No expiry date';
 
   const stockMutation = useMutation({
@@ -28,13 +38,13 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
       logger.info('Initiating stock mutation', { productId: product.id, quantity, type });
       return addStockMovement(product.id, quantity, type);
     },
-    onMutate: async ({ type, quantity }) => {
+    onMutate: async ({ type, quantity }): Promise<StockMutationContext> => {
       setLoadingAction(type);
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['product', product.fields.Barcode] });
 
       // Snapshot previous value
-      const previousProduct = queryClient.getQueryData(['product', product.fields.Barcode]);
+      const previousProduct = queryClient.getQueryData<Product>(['product', product.fields.Barcode]);
 
       // Optimistically update
       queryClient.setQueryData(['product', product.fields.Barcode], (old: Product | undefined) => {
@@ -51,12 +61,26 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
 
       return { previousProduct };
     },
-    onError: (err, _newTodo, context: unknown) => {
+    onSuccess: (_data, { type, quantity }) => {
+      const action = type === 'IN' ? 'added to' : 'removed from';
+      showToast(
+        'success',
+        'Stock updated',
+        `${quantity} item${quantity > 1 ? 's' : ''} ${action} inventory`,
+        3000
+      );
+    },
+    onError: (err, _variables, context: StockMutationContext | undefined) => {
       logger.error('Stock mutation failed', { error: err, productId: product.id });
-      alert(`Failed to update stock: ${err.message || 'Unknown error'}`);
+      showToast(
+        'error',
+        'Failed to update stock',
+        err.message || 'Unknown error occurred. Please try again.',
+        4000
+      );
       // Rollback
-      if ((context as { previousProduct: Product | undefined })?.previousProduct) {
-        queryClient.setQueryData(['product', product.fields.Barcode], (context as { previousProduct: Product | undefined }).previousProduct);
+      if (context?.previousProduct) {
+        queryClient.setQueryData(['product', product.fields.Barcode], context.previousProduct);
       }
     },
     onSettled: () => {
@@ -72,7 +96,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
     const qty = parseInt(stockQuantity);
     if (isNaN(qty) || qty <= 0) {
       logger.warn('Invalid stock quantity entered', { quantity: stockQuantity });
-      alert("Please enter a valid positive quantity.");
+      showToast('warning', 'Invalid quantity', 'Please enter a valid positive quantity', 3000);
       return;
     }
 
@@ -97,123 +121,140 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   });
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white rounded-xl overflow-hidden border-2 border-gray-200 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="bg-gray-50 border-b-2 border-gray-200 px-6 py-4">
+    <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200">
+      <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-6 py-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-gray-200">
+            <div className="flex items-center gap-4 mb-3">
+              <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-stone-200 shadow-sm">
                 {product.fields.Image && product.fields.Image.length > 0 ? (
                   <img
                     src={product.fields.Image[0].url}
                     alt={product.fields.Name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                      const img = e.target;
+                      if (img instanceof HTMLImageElement) {
+                        img.style.display = 'none';
+                        img.nextElementSibling?.classList.remove('hidden');
+                      }
                     }}
                   />
                 ) : (
-                  <BoxIcon className="h-7 w-7 text-gray-400" />
+                  <BoxIcon className="h-8 w-8 text-stone-400" />
                 )}
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 leading-tight">{product.fields.Name}</h2>
-                <span className="text-sm text-gray-500">{displayCategory}</span>
+                <h2 className="text-2xl font-bold text-stone-900 leading-tight mb-1">{product.fields.Name}</h2>
+                <Badge variant="secondary" className="bg-stone-100 text-stone-700 border-stone-300">
+                  {displayCategory}
+                </Badge>
               </div>
             </div>
           </div>
           <div className="text-right flex-shrink-0">
-            <div className="text-2xl font-light text-gray-900">
+            <div className="text-3xl font-light text-stone-900">
               {product.fields['Current Stock'] ?? 0}
             </div>
-            <div className="text-xs text-gray-500 uppercase tracking-widest font-medium">Stock</div>
+            <div className="text-xs text-stone-500 uppercase tracking-widest font-semibold mt-1">In Stock</div>
           </div>
         </div>
-      </div>
+      </CardHeader>
 
-      <div className="px-6 py-6">
+      <CardContent className="px-6 py-6 max-h-[calc(100dvh-240px)] md:max-h-none overflow-y-auto">
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
-            <div className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">Price</div>
-            <div className="text-gray-900 font-medium">{displayPrice}</div>
-          </div>
-          <div className="bg-gray-50 p-4 rounded-xl border-2 border-gray-200">
-            <div className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">Expiry</div>
-            <div className="text-gray-900 font-medium text-sm">{expiryDisplay}</div>
-          </div>
+          <Card className="bg-gradient-to-br from-stone-50 to-white border-2 border-stone-200">
+            <CardContent className="p-4">
+              <div className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">Price</div>
+              <div className="text-stone-900 font-semibold text-lg">{displayPrice}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-stone-50 to-white border-2 border-stone-200">
+            <CardContent className="p-4">
+              <div className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">Expiry</div>
+              <div className="text-stone-900 font-semibold text-sm">{expiryDisplay}</div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="flex gap-3 mb-6">
           {mode === 'remove' && (
-            <button
+            <Button
               onClick={() => handleStockChange('OUT')}
               disabled={loadingAction !== null}
-              className="flex-1 py-4 bg-red-50 hover:bg-red-100 text-red-700 border-2 border-red-200 rounded-lg font-semibold transition-colors active:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              variant="destructive"
+              size="lg"
+              className="flex-1 font-semibold"
             >
               {loadingAction === 'OUT' ? (
-                <span className="animate-spin h-4 w-4 border-2 border-red-700 border-t-transparent rounded-full"></span>
+                <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
               ) : (
-                <MinusIcon className="h-4 w-4" />
+                'Remove'
               )}
-              <span className="hidden sm:inline text-sm">Remove</span>
-            </button>
+            </Button>
           )}
 
-          <div className="w-20">
-            <input
+          <div className="w-24">
+            <Input
               type="number"
               min="1"
               value={stockQuantity}
               onChange={(e) => setStockQuantity(e.target.value)}
-              className="w-full h-14 bg-gray-50 border-2 border-gray-300 rounded-lg text-center text-gray-900 font-semibold text-lg focus:border-gray-400 focus:ring-1 focus:ring-gray-900/20 outline-none"
+              className="h-10 text-center text-lg font-bold border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
             />
           </div>
 
           {mode === 'add' && (
-            <button
+            <Button
+              variant='outline'
               onClick={() => handleStockChange('IN')}
               disabled={loadingAction !== null}
-              className="flex-1 py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-2 border-emerald-200 rounded-lg font-semibold transition-colors active:bg-emerald-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              size="lg"
+              className="flex-1"
             >
               {loadingAction === 'IN' ? (
-                <span className="animate-spin h-4 w-4 border-2 border-emerald-700 border-t-transparent rounded-full"></span>
+                <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
               ) : (
-                <PlusIcon className="h-4 w-4" />
+                'Add'
               )}
-              <span className="hidden sm:inline text-sm">Add</span>
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Recent Activity Section */}
-        <div className="border-t-2 border-gray-200 pt-6">
-          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Recent Activity</h3>
+        <div className="border-t-2 border-stone-200 pt-6">
+          <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-4">Recent Activity</h3>
           <div className="space-y-2">
             {history?.map((move) => (
-              <div key={move.id} className="flex justify-between items-center text-sm p-3 bg-gray-50 rounded-lg">
+              <div key={move.id} className="flex justify-between items-center text-sm p-3 bg-stone-50 rounded-lg border border-stone-200">
                 <div className="flex items-center gap-3">
-                  <span className={`w-2 h-2 rounded-full ${move.fields.Type === 'IN' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                  <span className="text-gray-600">{move.fields.Date}</span>
+                  <Badge
+                    variant={move.fields.Type === 'IN' ? 'default' : 'destructive'}
+                    className={`w-2 h-2 p-0 rounded-full ${move.fields.Type === 'IN' ? 'bg-emerald-500' : 'bg-red-500'}`}
+                  />
+                  <span className="text-stone-600 font-medium">{move.fields.Date}</span>
                 </div>
-                <div className={`font-mono font-semibold ${move.fields.Type === 'IN' ? 'text-emerald-700' : 'text-red-700'}`}>
+                <div className={`font-mono font-bold ${move.fields.Type === 'IN' ? 'text-emerald-700' : 'text-red-700'}`}>
                   {move.fields.Type === 'IN' ? '+' : '-'}{Math.abs(move.fields.Quantity)}
                 </div>
               </div>
             ))}
-            {!history?.length && <div className="text-gray-500 text-sm text-center italic py-2">No recent movements</div>}
+            {!history?.length && (
+              <div className="text-stone-500 text-sm text-center italic py-4">No recent movements</div>
+            )}
           </div>
         </div>
-      </div>
+      </CardContent>
 
-      <div className="bg-gray-50 p-4 border-t-2 border-gray-200 flex justify-center">
-        <button onClick={onScanNew} className="text-gray-700 hover:text-gray-900 text-sm font-medium transition-colors inline-flex items-center gap-2">
-          <ArrowLeftIcon className="h-4 w-4" />
+      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 fixed bottom-0 w-full">
+        <Button
+          onClick={onScanNew}
+          className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
+        >
           Scan Another Product
-        </button>
-      </div>
-    </div>
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 

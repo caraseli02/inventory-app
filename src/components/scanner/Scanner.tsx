@@ -3,12 +3,13 @@ import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 interface ScannerProps {
   onScanSuccess: (decodedText: string) => void;
+  scannerId?: string;
 }
 
-const Scanner = ({ onScanSuccess }: ScannerProps) => {
+const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const regionId = 'reader';
+  const regionId = scannerId;
 
   useEffect(() => {
     // strict mode safety check: if already initialized, don't re-init
@@ -30,7 +31,6 @@ const Scanner = ({ onScanSuccess }: ScannerProps) => {
         const config = {
           formatsToSupport: formatsToSupport,
           fps: 10,
-          qrbox: { width: 250, height: 250 },
           aspectRatio: 1.0,
         };
 
@@ -78,14 +78,14 @@ const Scanner = ({ onScanSuccess }: ScannerProps) => {
   }, [onScanSuccess]);
 
   return (
-    <div className="w-full max-w-md mx-auto overflow-hidden rounded-lg shadow-xl bg-black relative">
-      <div id={regionId} className="w-full h-[300px] bg-black"></div>
+    <div className="w-full h-full overflow-hidden bg-black relative">
+      <div id={regionId} className="w-full h-full bg-black"></div>
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-red-500 p-4 text-center">
           {error}
         </div>
       )}
-      <div className="absolute bottom-4 left-0 right-0 text-center text-white/70 text-sm pointer-events-none">
+      <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm pointer-events-none">
         Align code within frame
       </div>
     </div>

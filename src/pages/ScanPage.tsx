@@ -1,14 +1,15 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
+import { useToast } from '../hooks/useToast';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
+import { PageHeader } from '../components/ui/PageHeader';
 import {
-  ArrowLeftIcon,
-  PencilIcon,
-  SearchIcon,
   ShoppingCartIcon,
 } from '../components/ui/Icons';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 
 type ScanMode = 'add' | 'remove';
 
@@ -16,14 +17,12 @@ type ScanPageProps = {
   mode: ScanMode;
   onBack: () => void;
   onModeChange: (mode: ScanMode) => void;
-  isTablet: boolean;
-  onCheckout?: () => void;
 };
 
-const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPageProps) => {
+const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
-  const [showScanner, setShowScanner] = useState(true);
   const [manualCode, setManualCode] = useState('');
+  const { showToast } = useToast();
 
   const handleScanSuccess = (code: string) => {
     setScannedCode(code);
@@ -32,28 +31,31 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
 
   const { data: product, isLoading, error } = useProductLookup(scannedCode);
 
+  // Handle product not found in remove mode
+  useEffect(() => {
+    if (!isLoading && !product && !error && scannedCode && mode === 'remove') {
+      showToast(
+        'error',
+        'Product not found',
+        `Cannot remove item: product with barcode ${scannedCode} does not exist in inventory`,
+        5000
+      );
+      // Reset after showing error
+      const timer = setTimeout(() => {
+        setScannedCode(null);
+        setManualCode('');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, product, error, scannedCode, mode, showToast]);
+
   const handleReset = () => {
     setScannedCode(null);
     setManualCode('');
-    setShowScanner(true);
-  };
-
-  const getStatusContent = () => {
-    if (isLoading) return <span className="text-amber-600">Searching...</span>;
-    if (error) return <span className="text-red-600">Connection error</span>;
-    if (product) return <span className="text-emerald-600">Found: {product.fields.Name}</span>;
-    return <span className="text-gray-500">Not found</span>;
   };
 
   const handleModeToggle = () => {
     onModeChange(mode === 'add' ? 'remove' : 'add');
-  };
-
-  const getModeBadgeStyles = () => {
-    if (mode === 'add') {
-      return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-    }
-    return 'bg-amber-50 text-amber-700 border border-amber-200';
   };
 
   const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -63,242 +65,188 @@ const ScanPage = ({ mode, onBack, onModeChange, isTablet, onCheckout }: ScanPage
     }
   };
 
-  const showCreateForm = !isLoading && !product && !error && scannedCode;
+  // Only show create form in 'add' mode when product not found
+  const showCreateForm = !isLoading && !product && !error && scannedCode && mode === 'add';
   const showDetail = !isLoading && product && scannedCode;
 
-  if (showCreateForm && scannedCode) {
-    return (
-      <div className="w-full">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <button
-            onClick={handleReset}
-            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          <div className="flex items-center gap-2">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border-2 ${getModeBadgeStyles()}`}>
-              <span className={`h-2.5 w-2.5 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
-            </div>
-            <button
-              onClick={handleModeToggle}
-              className="text-sm px-4 py-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 font-semibold transition hover:bg-gray-50 hover:border-gray-400"
-            >
-              Switch
-            </button>
-          </div>
-        </div>
-        <CreateProductForm
-          barcode={scannedCode}
-          onSuccess={() => { /* Query invalidation handles the UI switch automatically */ }}
-          onCancel={handleReset}
-        />
-      </div>
-    );
-  }
-
-  if (showDetail && product) {
-    return (
-      <div className="w-full">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <button
-            onClick={handleReset}
-            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-          <div className="flex items-center gap-2">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg border-2 ${getModeBadgeStyles()}`}>
-              <span className={`h-2.5 w-2.5 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
-            </div>
-            <button
-              onClick={handleModeToggle}
-              className="text-sm px-4 py-2 rounded-lg border-2 border-gray-300 bg-white text-gray-700 font-semibold transition hover:bg-gray-50 hover:border-gray-400"
-            >
-              Switch
-            </button>
-          </div>
-        </div>
-        <ProductDetail product={product} onScanNew={handleReset} mode={mode} />
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full max-w-3xl mx-auto p-4 flex flex-col items-center min-h-[520px]">
-      {/* Header Bar - Clean 3-zone layout */}
-      <div className="w-full flex items-center justify-between mb-6 gap-4">
-        {/* Left: Navigation */}
-        <div className="flex-shrink-0">
-          {isTablet && (
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            Back
-          </button>
-        )}
-        {!isTablet && onCheckout && (
-          <button
-            onClick={onCheckout}
-            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-          >
-            <ShoppingCartIcon className="h-4 w-4" />
-            Checkout
-          </button>
-        )}
-      </div>
+    <>
+      {/* Mobile View */}
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
+        <PageHeader
+          title={showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
+          onBack={onBack}
+        />
 
-        {/* Center: Mode Indicator */}
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 font-semibold text-sm ${
-            mode === 'add'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-              : 'bg-amber-50 border-amber-200 text-amber-700'
-          }`}>
-            <span className={`h-3 w-3 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            {mode === 'add' ? 'Add Mode' : 'Remove Mode'}
+        {/* Scanner Section */}
+        <div className={`px-6 pt-4 space-y-4 ${scannedCode ? 'hidden' : ''}`}>
+          {/* Scanner Frame */}
+          <div className="relative mx-auto w-full max-w-lg aspect-square">
+            {/* Corner Brackets */}
+            <div className="absolute inset-0 pointer-events-none z-10">
+              <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
+              <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
+              <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
+              <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
+            </div>
+
+            {/* Scanner Area */}
+            <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
+              <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
+            </div>
+
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
+                  <p className="text-stone-900 text-sm font-medium">Searching…</p>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Right: Mode Toggle */}
-        <div className="flex-shrink-0">
-          <button
-            onClick={handleModeToggle}
-            className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-          >
-            <ArrowLeftIcon className="h-4 w-4 rotate-180" />
-            Switch {mode === 'add' ? 'to Remove' : 'to Add'}
-          </button>
-        </div>
-      </div>
-
-      {/* Status Display - Enhanced Prominent Banner */}
-      <div className={`w-full mb-6 rounded-lg border-2 p-4 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4 ${
-        scannedCode
-          ? mode === 'add'
-            ? 'bg-emerald-50 border-emerald-200'
-            : 'bg-amber-50 border-amber-200'
-          : 'bg-white border-gray-200'
-      }`}>
-        <div className="flex-1">
-          <p className="text-xs tracking-widest text-gray-500 uppercase font-bold mb-1">
-            {scannedCode ? 'PROCESSING SCAN' : 'READY TO SCAN'}
-          </p>
-          <h2 className="text-lg font-semibold text-gray-900">
-            {scannedCode ? getStatusContent() : mode === 'add' ? 'Scan to add inventory' : 'Scan to remove inventory'}
-          </h2>
-          {scannedCode && (
-            <p className="text-xs text-gray-600 mt-2 font-mono">Code: {scannedCode}</p>
-          )}
-        </div>
-
-        {/* Status Badge - Right aligned, more prominent */}
-        <div className="flex items-center gap-3">
-          <div className={`flex items-center gap-2 rounded-lg px-4 py-2 border-2 font-semibold text-sm ${
-            mode === 'add'
-              ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-              : 'bg-amber-50 border-amber-300 text-amber-700'
-          }`}>
-            <span className={`h-2.5 w-2.5 rounded-full ${mode === 'add' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-            {mode === 'add' ? 'Receiving' : 'Removing'}
+          {/* Manual Entry */}
+          <div className="mx-auto w-full max-w-lg">
+            <form onSubmit={handleManualSubmit} className="flex gap-2">
+              <Input
+                type="text"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                placeholder="Enter barcode manually"
+              />
+              <Button
+                type="submit"
+                disabled={manualCode.length < 3}
+                className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
+              >
+                Add
+              </Button>
+            </form>
           </div>
-          {!isTablet && onCheckout && !scannedCode && (
-            <button
-              onClick={onCheckout}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-sm font-medium text-white transition"
-              title="Quick checkout"
+
+          {/* Action Buttons */}
+          <div className="mx-auto w-full max-w-lg space-y-3">
+            <Button
+              variant="outline"
+              className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+              onClick={handleModeToggle}
             >
-              <ShoppingCartIcon className="h-4 w-4" />
-            </button>
-          )}
+              Switch to {mode === 'add' ? 'Remove' : 'Add'} Mode
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {!scannedCode && (
-        <div className="w-full max-w-2xl animate-in fade-in duration-500">
-          {showScanner ? (
-            <div className={`relative rounded-2xl overflow-hidden border-2 border-gray-200 bg-black shadow-md aspect-[4/3]`}>
-              <Scanner onScanSuccess={handleScanSuccess} />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/40 to-transparent p-6 flex justify-center">
-                <button
-                  onClick={() => setShowScanner(false)}
-                  className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white/95 px-5 py-3 text-sm font-semibold text-gray-900 transition hover:bg-white shadow-sm"
-                >
-                  <PencilIcon className="h-4 w-4" />
-                  Enter manually
-                </button>
+        {/* Content Panel */}
+        <div
+          className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out overflow-hidden z-50 ${
+            scannedCode ? 'h-[calc(100dvh-73px)]' : 'h-auto rounded-t-3xl'
+          }`}
+        >
+          {!scannedCode ? (
+            /* Empty State - Collapsed */
+            <div className="p-6 flex items-center justify-center">
+              <div className="flex items-center gap-3 text-gray-500">
+                <ShoppingCartIcon className="h-5 w-5 opacity-50" />
+                <p className="text-sm">Point camera at barcode or enter manually</p>
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl border-2 border-gray-200 bg-white p-8">
-              <form onSubmit={handleManualSubmit} className="w-full space-y-6">
-                <div className="space-y-3">
-                  <label className="block text-gray-900 text-sm font-semibold">Enter Barcode</label>
-                  <input
-                    type="text"
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value)}
-                    placeholder="e.g. 012345678901"
-                    className="w-full rounded-lg border-2 border-gray-300 bg-white px-4 py-4 text-lg text-gray-900 tracking-widest font-medium outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-900/10"
-                    autoFocus
-                  />
-                  <p className="text-xs text-gray-600">Search for existing products or create new ones.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={manualCode.trim().length < 3}
-                    className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-5 py-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${mode === 'add' ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg' : 'bg-amber-600 hover:bg-amber-700 text-white shadow-md hover:shadow-lg'}`}
-                  >
-                    <SearchIcon className="h-4 w-4" />
-                    Lookup
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowScanner(true)}
-                    className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-5 py-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-                  >
-                    <ArrowLeftIcon className="h-4 w-4" />
-                    Camera
-                  </button>
-                </div>
-              </form>
+            /* Content - Full screen without border/shadow */
+            <div className="h-full overflow-y-auto">
+              {showDetail && product && <ProductDetail product={product} onScanNew={handleReset} mode={mode} />}
+              {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
             </div>
           )}
         </div>
-      )}
+      </div>
 
-      {scannedCode && !showCreateForm && !showDetail && (
-        <div className="w-full rounded-2xl border-2 border-gray-200 bg-white p-10 animate-in zoom-in-95 duration-300 shadow-sm">
-          <div className="text-center mb-10">
-            <div className="text-xs text-gray-500 tracking-widest uppercase font-bold mb-4">Barcode Detected</div>
-            <div className="text-5xl font-mono text-gray-900 tracking-[0.15em] font-semibold mb-8">{scannedCode}</div>
+      {/* Desktop/Tablet View */}
+      <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200">
+        <PageHeader
+          title={showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
+          onBack={onBack}
+        />
 
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div className="h-full bg-gray-400 rounded-full animate-pulse" style={{width: '60%'}}></div>
+        {/* Two-Column Layout */}
+        <div className="flex h-[calc(100dvh-64px)] gap-6 p-6">
+          {/* Left Column: Scanner (45%) */}
+          <div className="w-[45%] flex flex-col gap-6">
+            <div className="relative mx-auto w-full max-w-lg aspect-square">
+              {/* Corner Brackets */}
+              <div className="absolute inset-0 pointer-events-none z-10">
+                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
+                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
+                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
               </div>
-              <p className="text-xs text-gray-500">Looking up product...</p>
+
+              {/* Scanner Area */}
+              <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
+                <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
+              </div>
+
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
+                    <p className="text-stone-900 text-sm font-medium">Searching…</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Manual Entry */}
+            <form onSubmit={handleManualSubmit} className="flex gap-2">
+              <Input
+                type="text"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                placeholder="Enter barcode manually"
+              />
+              <Button
+                type="submit"
+                disabled={manualCode.length < 3}
+                className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
+              >
+                Add
+              </Button>
+            </form>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                onClick={handleModeToggle}
+              >
+                Switch to {mode === 'add' ? 'Remove' : 'Add'} Mode
+              </Button>
             </div>
           </div>
 
-          <div className="flex justify-center">
-            <button
-              onClick={handleReset}
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 hover:border-gray-400"
-            >
-              Cancel & Rescan
-            </button>
+          {/* Right Column: Panel (55%) */}
+          <div className="w-[55%] bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden">
+            {!scannedCode ? (
+              /* Empty State */
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3 text-gray-400" />
+                <p className="text-sm text-gray-500">Point camera at barcode or enter manually</p>
+              </div>
+            ) : (
+              /* Content - Full height without footer */
+              <div className="flex-1 overflow-y-auto">
+                {showDetail && product && <ProductDetail product={product} onScanNew={handleReset} mode={mode} />}
+                {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 

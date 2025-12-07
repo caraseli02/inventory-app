@@ -1,11 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Fresh Precision Color Palette */
+  --color-cream: #FAFAF9;
+  --color-forest: #059669;
+  --color-forest-dark: #047857;
+  --color-terracotta: #EA580C;
+  --color-terracotta-dark: #C2410C;
+  --color-lavender: #8B5CF6;
+  --color-lavender-dark: #7C3AED;
+  --color-stone: #78716C;
+  --color-stone-dark: #57534E;
+
+  font-family: var(--font-body);
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-cream);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
 }

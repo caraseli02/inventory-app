@@ -24,19 +24,24 @@ cp .env.example .env  # Create environment file
 ## Architecture
 
 ### Core Principles
+- **shadcn/ui primitives only**: NEVER use raw HTML elements (`<button>`, `<input>`, etc.) - always use shadcn components from `@/components/ui/`
 - **UI and logic separation**: Components never talk to Airtable directly; all backend calls live in `/lib`
 - **Backend abstraction**: Airtable calls isolated in `lib/airtable.ts` and `lib/api.ts` for easy migration
 - **Modular AI layer**: AI helpers in `lib/ai/` imported only when needed
 - **PWA-first**: Optimized for tablet/mobile fullscreen experience
+- **Design consistency**: Follow the "Fresh Precision" aesthetic with CSS variables, gradients, and organic rounded corners
+- **Currency standard**: All prices are displayed in EUR (€). Use `€${price.toFixed(2)}` format throughout the application
 
 ### Directory Structure
 ```
 src/
 ├── components/       # Global UI components
+│   ├── ui/           # shadcn/ui primitives (Button, Input, Card, etc.)
 │   ├── scanner/      # Scanner component (html5-qrcode)
 │   └── product/      # Product management forms
-├── pages/            # Top-level page components (ScanPage.tsx)
+├── pages/            # Top-level page components (ScanPage.tsx, CheckoutPage.tsx)
 ├── lib/              # Business logic & external services
+│   ├── utils.ts      # Utility functions (cn helper for shadcn)
 │   ├── airtable.ts   # Airtable client initialization & table constants
 │   ├── api.ts        # CRUD functions (getProductByBarcode, createProduct, etc.)
 │   └── ai/           # AI helpers (OpenFoodFacts integration)
@@ -243,11 +248,140 @@ Use `CreateProductDTO` from `lib/api.ts`:
 
 - **Frontend**: React 19, TypeScript 5.9, Vite 7
 - **Styling**: TailwindCSS v4 (via `@tailwindcss/vite`)
+- **UI Components**: shadcn/ui (Radix UI primitives)
 - **State Management**: TanStack Query (React Query)
 - **Scanner**: html5-qrcode
 - **Backend**: Airtable (via `airtable` npm package)
 - **PWA**: vite-plugin-pwa (auto-update, standalone mode)
 - **Linting**: ESLint 9 with TypeScript support
+
+## UI Components & Design System
+
+### shadcn/ui Philosophy
+
+**CRITICAL**: This project uses shadcn/ui components exclusively. **NEVER** create custom HTML buttons, inputs, forms, or other interactive elements when a shadcn component exists.
+
+### Available shadcn Components
+
+Components are located in `src/components/ui/` and should be imported using the `@/` alias:
+
+```typescript
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+```
+
+### Usage Rules
+
+1. **Always use shadcn components** - Never write `<button>`, `<input>`, `<select>`, etc. directly
+2. **Import from `@/components/ui/`** - Use the configured path alias
+3. **Follow component patterns** - Study existing implementations before creating new ones
+4. **Maintain design consistency** - Use the established "Fresh Precision" aesthetic
+
+### Design System: "Fresh Precision"
+
+The app follows a cohesive design language defined in `src/index.css`:
+
+**Typography**:
+- Display/Headers: `Instrument Serif` (font-family: var(--font-display))
+- Body/UI: `Inter` (font-family: var(--font-body))
+
+**Color Palette** (CSS variables):
+```css
+--color-cream: #FAFAF9        /* Background */
+--color-forest: #059669       /* Primary actions */
+--color-forest-dark: #047857  /* Primary hover */
+--color-terracotta: #EA580C   /* Warnings/Remove */
+--color-terracotta-dark: #C2410C
+--color-lavender: #8B5CF6     /* Accents */
+--color-lavender-dark: #7C3AED
+--color-stone: #78716C         /* Text */
+--color-stone-dark: #57534E
+```
+
+**Visual Style**:
+- Organic rounded corners (rounded-2xl for cards, rounded-lg for inputs)
+- Gradient backgrounds on headers/footers
+- Subtle shadows for depth
+- 2px borders (border-2) for definition
+- Smooth transitions and hover states
+
+### Component Examples
+
+**❌ WRONG - Custom HTML:**
+```tsx
+<button className="px-4 py-2 bg-blue-500 text-white rounded">
+  Click Me
+</button>
+```
+
+**✅ CORRECT - shadcn Button:**
+```tsx
+<Button
+  className="bg-gradient-to-br text-white"
+  style={{
+    background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+  }}
+>
+  Click Me
+</Button>
+```
+
+**❌ WRONG - Custom form input:**
+```tsx
+<input
+  type="text"
+  className="border rounded px-3 py-2"
+  placeholder="Enter name"
+/>
+```
+
+**✅ CORRECT - shadcn Input with Label:**
+```tsx
+<div>
+  <Label htmlFor="name" className="text-stone-700 font-semibold">Name</Label>
+  <Input
+    id="name"
+    type="text"
+    placeholder="Enter name"
+    className="mt-1.5 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
+  />
+</div>
+```
+
+**❌ WRONG - Custom card structure:**
+```tsx
+<div className="bg-white rounded-lg p-6 shadow">
+  <h2>Title</h2>
+  <p>Content</p>
+</div>
+```
+
+**✅ CORRECT - shadcn Card:**
+```tsx
+<Card className="shadow-lg border-stone-200">
+  <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200">
+    <h2 className="text-2xl font-bold text-stone-900">Title</h2>
+  </CardHeader>
+  <CardContent className="p-6">
+    <p>Content</p>
+  </CardContent>
+</Card>
+```
+
+### When to Add New shadcn Components
+
+If you need a component not yet in the project:
+
+1. Check [shadcn/ui documentation](https://ui.shadcn.com) for the component
+2. Install it: `npx shadcn-vue@latest add [component-name]` (or manually add to `src/components/ui/`)
+3. Ensure it imports `cn` from `@/lib/utils`
+4. Apply the "Fresh Precision" aesthetic with appropriate classes
+5. Update this CLAUDE.md file with the new component in the "Available shadcn Components" list
 
 ## Testing
 
@@ -255,8 +389,11 @@ No test framework is currently set up. Tests are planned post-MVP.
 
 ## Common Pitfalls
 
-1. **Airtable field names**: Use exact field names from Airtable schema (e.g., `'Expiry Date'` not `expiryDate`)
-2. **Image attachments**: Must use `[{ url: string }]` format, not plain URL strings
-3. **Stock quantity signs**: Don't manually negate quantities; use type parameter in `addStockMovement`
-4. **Environment variables**: All Vite env vars must be prefixed with `VITE_`
-5. **Table name typos**: Always import and use `TABLES` constants from `lib/airtable.ts`
+1. **Using raw HTML elements**: Never use `<button>`, `<input>`, `<select>`, etc. - ALWAYS use shadcn components from `@/components/ui/`
+2. **Airtable field names**: Use exact field names from Airtable schema (e.g., `'Expiry Date'` not `expiryDate`)
+3. **Image attachments**: Must use `[{ url: string }]` format, not plain URL strings
+4. **Stock quantity signs**: Don't manually negate quantities; use type parameter in `addStockMovement`
+5. **Environment variables**: All Vite env vars must be prefixed with `VITE_`
+6. **Table name typos**: Always import and use `TABLES` constants from `lib/airtable.ts`
+7. **Path aliases**: Import shadcn components using `@/components/ui/` not relative paths like `../../components/ui/`
+8. **Design consistency**: Follow the "Fresh Precision" aesthetic - use CSS variables for colors, maintain rounded corners, and apply gradients to headers/footers

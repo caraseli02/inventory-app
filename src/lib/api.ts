@@ -52,6 +52,19 @@ const validateNonEmptyString = (value: unknown, fieldName: string): string => {
 const getCreatedTime = <TFields extends FieldSet>(record: AirtableRecord<TFields>): string =>
   (record._rawJson as { createdTime?: string } | undefined)?.createdTime ?? '';
 
+/**
+ * Maps an Airtable product record to the application's Product type
+ *
+ * Performs validation and normalization:
+ * - Validates required fields (Name, Barcode)
+ * - Normalizes Image attachments to simple { url } format
+ * - Extracts createdTime from raw JSON
+ * - Throws ValidationError if required fields are missing or invalid
+ *
+ * @param record - Raw Airtable record from the Products table
+ * @returns Normalized Product object
+ * @throws {ValidationError} If Name or Barcode is missing/invalid
+ */
 export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Product => {
   // Validate that required fields exist
   if (!record.fields.Name || typeof record.fields.Name !== 'string') {
@@ -93,7 +106,19 @@ export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Produ
   };
 };
 
-// Read-only API (Lookup)
+/**
+ * Fetches a product from Airtable by its barcode
+ *
+ * Features:
+ * - Uses filterByFormula for exact barcode matching
+ * - Escapes barcode to prevent formula injection
+ * - Returns null if product not found (not an error)
+ * - Logs all operations for debugging
+ *
+ * @param barcode - Product barcode to lookup
+ * @returns Product if found, null if not found
+ * @throws Error if Airtable API call fails
+ */
 export const getProductByBarcode = async (barcode: string): Promise<Product | null> => {
   logger.debug('Fetching product by barcode', { barcode });
 
@@ -128,7 +153,6 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
   }
 };
 
-// Create Product
 export interface CreateProductDTO {
   Name: string;
   Barcode: string;
@@ -138,6 +162,28 @@ export interface CreateProductDTO {
   Image?: string; // URL string
 }
 
+/**
+ * Creates a new product in Airtable
+ *
+ * Validation:
+ * - Name and Barcode are required (non-empty strings)
+ * - Price must be a finite number if provided
+ * - Image URL is converted to Airtable attachment format
+ *
+ * @param data - Product data to create
+ * @returns Newly created Product with Airtable record ID
+ * @throws {ValidationError} If required fields are invalid
+ * @throws {NetworkError} If Airtable API request fails
+ *
+ * @example
+ * const product = await createProduct({
+ *   Name: 'Organic Bananas',
+ *   Barcode: '123456789',
+ *   Category: 'Produce',
+ *   Price: 2.99,
+ *   Image: 'https://example.com/banana.jpg'
+ * });
+ */
 export const createProduct = async (data: CreateProductDTO): Promise<Product> => {
   // Validate required fields
   try {
@@ -203,7 +249,34 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
   }
 };
 
-// Add Stock Movement
+/**
+ * Records a stock movement (IN or OUT) for a product in Airtable
+ *
+ * Automatic quantity signing:
+ * - IN movements are stored as positive values
+ * - OUT movements are stored as negative values
+ * - This allows Airtable's Sum rollup to automatically calculate Current Stock
+ *
+ * Validation:
+ * - Product ID must be non-empty
+ * - Quantity must be positive (signing is handled internally)
+ * - Type must be exactly 'IN' or 'OUT'
+ *
+ * @param productId - Airtable record ID of the product
+ * @param quantity - Absolute quantity value (always positive)
+ * @param type - Movement type: 'IN' for receiving, 'OUT' for removing
+ * @returns Created StockMovement record
+ * @throws {ValidationError} If inputs are invalid
+ * @throws {NetworkError} If Airtable API request fails
+ *
+ * @example
+ * // Add 10 items to stock
+ * await addStockMovement(product.id, 10, 'IN');
+ *
+ * @example
+ * // Remove 5 items from stock (stored as -5 internally)
+ * await addStockMovement(product.id, 5, 'OUT');
+ */
 export const addStockMovement = async (productId: string, quantity: number, type: 'IN' | 'OUT'): Promise<StockMovement> => {
   // Validate inputs
   if (!productId || !productId.trim()) {
