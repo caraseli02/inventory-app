@@ -45,21 +45,8 @@ export const useStockMutation = (product: Product) => {
       // Snapshot previous value
       const previousProduct = queryClient.getQueryData<Product>(['product', product.fields.Barcode]);
 
-      // Optimistically update the product's Current Stock field
-      // This ensures the optimistic update works even if we're calculating from movements
-      queryClient.setQueryData(['product', product.fields.Barcode], (old: Product | undefined) => {
-        if (!old) return old;
-        const change = type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity);
-        return {
-          ...old,
-          fields: {
-            ...old.fields,
-            'Current Stock': (old.fields?.['Current Stock'] ?? 0) + change,
-          },
-        };
-      });
-
-      // Also optimistically update the history by adding a temporary movement
+      // Optimistically update the history by adding a temporary movement
+      // This automatically updates the calculated stock in ProductDetail
       queryClient.setQueryData(['history', product.id], (old: any[] | undefined) => {
         if (!old) return old;
         const tempMovement = {
