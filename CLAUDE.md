@@ -185,15 +185,25 @@ To implement barcode scanning (from `docs/specs/scanner.md`):
 - Architecture reference: `docs/project_architecture_structure.md`
 - Documentation index: `docs/README.md`
 - ADRs (Architecture Decision Records): `docs/adrs/`
+- **Project management files** (root directory):
+  - `feature_list.json` - Complete feature tracking with testing status
+  - `claude-progress.md` - Project completeness and sprint tracking
+  - `init.sh` - Initialization script for server startup and testing
 
-### MVP Scope (from `docs/specs/mvp_scope.md`)
-**MVP-Critical** (must ship):
+### MVP Scope (from `docs/specs/mvp_scope_lean.md`)
+**CURRENT STATUS**: All 15 MVP-critical features implemented ✅
+
+**Core features complete**:
+- Barcode scanning, product lookup, AI auto-fill
+- Stock movements (IN/OUT), movement history
+- Optimistic UI updates, error handling
+- PWA support, responsive design
+
+**Post-MVP** (deferred until user validation):
 - Backend proxy for Airtable
-- Validation guardrails (barcode formats, non-negative stock/price)
-- Scanner/API error handling
-- Operations & safety basics
-
-**Nice-to-have**: Docs polish, observability hooks, PWA offline behavior
+- Comprehensive input sanitization
+- Observability & logging infrastructure
+- PWA offline support
 
 ## Type System
 
@@ -383,9 +393,183 @@ If you need a component not yet in the project:
 4. Apply the "Fresh Precision" aesthetic with appropriate classes
 5. Update this CLAUDE.md file with the new component in the "Available shadcn Components" list
 
-## Testing
+## Testing & Project Management
 
-No test framework is currently set up. Tests are planned post-MVP.
+### Project Management Files
+
+This project uses three critical files to track progress and ensure quality:
+
+#### 1. feature_list.json
+**Location**: `/feature_list.json`
+**Purpose**: Comprehensive feature tracking with implementation and testing status
+
+**Structure**:
+- 20 features total (15 MVP-critical + 5 post-MVP)
+- Each feature includes:
+  - Unique ID, name, category, priority
+  - Implementation status (`implemented: true/false`)
+  - Testing status (`tested: true/false`)
+  - Step-by-step breakdown with completion status
+  - Test scenarios with test file references
+
+**⚠️ CRITICAL RULES**:
+- **ONLY** modify `implemented` and `tested` boolean fields
+- **NEVER** remove or modify feature entries, steps, or scenarios
+- Update this file after implementing or testing a feature
+- Commit changes immediately after updates
+
+**Example usage**:
+```json
+{
+  "id": "F001",
+  "name": "Barcode Scanning",
+  "implemented": true,
+  "tested": true,  // ← Update this after testing
+  "test_scenarios": [
+    {
+      "scenario": "Successfully scan a product barcode",
+      "tested": true  // ← Update this after specific test passes
+    }
+  ]
+}
+```
+
+#### 2. claude-progress.md
+**Location**: `/claude-progress.md`
+**Purpose**: High-level project completeness and sprint tracking
+
+**Contains**:
+- Overall progress percentage (currently 75%)
+- Feature completion by category
+- Testing status (0 of 53 scenarios tested)
+- Launch readiness checklist
+- Sprint tracking (Week 1-4+)
+- Known issues & bugs section
+- Recent activity log
+- Success metrics and validation goals
+
+**When to update**:
+- After completing a feature implementation
+- After testing a feature with Playwright MCP
+- When discovering bugs
+- At the end of each work session
+- Before creating a commit
+
+#### 3. init.sh
+**Location**: `/init.sh` (executable)
+**Purpose**: Automated initialization and testing guide
+
+**What it does**:
+1. Checks environment setup (.env file)
+2. Verifies dependencies installed
+3. Runs TypeScript validation (`tsc -b --noEmit`)
+4. Builds for production (`pnpm build`)
+5. Starts dev server on http://localhost:5173
+6. Provides testing instructions for Playwright MCP
+
+**Usage**:
+```bash
+./init.sh
+```
+
+### Testing Workflow with Playwright MCP
+
+This project uses **Playwright MCP** for automated browser testing. Playwright is already configured in Claude Code.
+
+#### Step-by-Step Testing Process
+
+**1. Start the Development Server**
+```bash
+./init.sh
+```
+
+This will:
+- Validate your environment
+- Check dependencies
+- Run TypeScript checks
+- Build the project
+- Start the dev server at http://localhost:5173
+
+**2. Open a New Terminal for Testing**
+
+In a separate terminal, use Claude Code with Playwright MCP to run tests.
+
+**3. Test Features with Playwright**
+
+Use prompts like these:
+
+```
+Navigate to http://localhost:5173 and take a screenshot of the scanner page
+```
+
+```
+Test the product creation flow at http://localhost:5173:
+1. Fill in Name: "Test Product"
+2. Fill in Barcode: "1234567890"
+3. Fill in Price: 5.99
+4. Submit the form
+5. Verify it was created successfully
+```
+
+```
+Test stock movement at http://localhost:5173:
+1. Navigate to an existing product
+2. Add a stock IN movement of 10 units
+3. Verify the stock count updates
+```
+
+```
+Test error handling at http://localhost:5173:
+1. Block camera permissions
+2. Verify error message is displayed
+```
+
+**4. Mark Tests as Complete**
+
+After each test scenario passes:
+
+1. Update `feature_list.json`:
+   ```json
+   "test_scenarios": [
+     {
+       "scenario": "Successfully scan a product barcode",
+       "tested": true  // ← Change from false to true
+     }
+   ]
+   ```
+
+2. Update `claude-progress.md`:
+   - Check off the test scenario in "Testing Status" section
+   - Update "Recent Activity Log" with test results
+   - Note any bugs in "Known Issues & Bugs" section
+
+**5. Commit Your Changes**
+
+After testing is complete:
+```bash
+git add feature_list.json claude-progress.md
+git commit -m "test: Complete testing for [feature name]"
+```
+
+**6. Leave Project Merge-Ready**
+
+After each testing session, ensure:
+- ✅ All tests documented in tracking files
+- ✅ All changes committed to git
+- ✅ No uncommitted changes
+- ✅ Features working as expected
+- ✅ Project ready for deployment
+
+### Testing Philosophy
+
+**IMPORTANT**: After implementing any feature, you MUST:
+1. Test it immediately with Playwright MCP
+2. Mark it as tested in `feature_list.json`
+3. Update `claude-progress.md` with results
+4. Commit changes to git
+5. Ensure project is in merge-ready state
+
+**This workflow is MANDATORY** - do not skip testing or leave changes uncommitted.
 
 ## Common Pitfalls
 
@@ -397,3 +581,7 @@ No test framework is currently set up. Tests are planned post-MVP.
 6. **Table name typos**: Always import and use `TABLES` constants from `lib/airtable.ts`
 7. **Path aliases**: Import shadcn components using `@/components/ui/` not relative paths like `../../components/ui/`
 8. **Design consistency**: Follow the "Fresh Precision" aesthetic - use CSS variables for colors, maintain rounded corners, and apply gradients to headers/footers
+9. **Modifying feature_list.json**: ONLY change `implemented` and `tested` boolean fields - NEVER remove or modify features, steps, or scenarios
+10. **Skipping testing**: ALWAYS test features with Playwright MCP after implementation - do not skip this step
+11. **Uncommitted changes**: ALWAYS commit changes after testing - leaving uncommitted work is not acceptable
+12. **Not updating progress**: ALWAYS update both `feature_list.json` and `claude-progress.md` after testing

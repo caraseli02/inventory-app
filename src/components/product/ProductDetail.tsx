@@ -121,7 +121,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   });
 
   return (
-    <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200">
+    <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200 relative">
       <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-6 py-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -246,7 +246,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         </div>
       </CardContent>
 
-      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 fixed bottom-0 w-full">
+      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 fixed md:static bottom-0 w-full">
         <Button
           onClick={onScanNew}
           className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"

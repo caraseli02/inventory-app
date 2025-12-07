@@ -1,0 +1,925 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2025-12-07",
+    "project": "Inventory App - Grocery Management",
+    "warning": "⚠️ STRICTLY DO NOT REMOVE OR MODIFY ANYTHING IN THIS FILE BEYOND MARKING FEATURES AS IMPLEMENTED"
+  },
+  "features": [
+    {
+      "id": "F001",
+      "name": "Barcode Scanning",
+      "category": "Core Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/scanner.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Initialize html5-qrcode scanner",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Request camera permissions",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Scan barcode and decode",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Handle successful scan result",
+          "completed": true
+        },
+        {
+          "step": 5,
+          "description": "Handle camera permission errors",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Successfully scan a product barcode",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle camera permission denied",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle scanner initialization failure",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F002",
+      "name": "Product Lookup",
+      "category": "Core Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/product_management.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Query Airtable by barcode",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Parse product data from response",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Display product details if found",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Handle product not found scenario",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Lookup existing product by barcode",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle product not found",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle network failure during lookup",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F003",
+      "name": "Create New Product",
+      "category": "Core Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/product_management.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Display product creation form",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Validate required fields (Name, Barcode)",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Submit product to Airtable",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Handle successful creation",
+          "completed": true
+        },
+        {
+          "step": 5,
+          "description": "Handle creation errors",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Create product with all required fields",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Create product with optional fields (category, price, expiry)",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Validate form prevents submission with missing required fields",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle duplicate barcode error",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F004",
+      "name": "AI Product Auto-Fill",
+      "category": "Core Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/product_management.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Query OpenFoodFacts API by barcode",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Parse product name from response",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Map categories from tags",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Extract product image URL",
+          "completed": true
+        },
+        {
+          "step": 5,
+          "description": "Auto-fill form fields with AI suggestions",
+          "completed": true
+        },
+        {
+          "step": 6,
+          "description": "Handle API failures gracefully",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Auto-fill product from OpenFoodFacts data",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle product not found in OpenFoodFacts",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Category mapping works correctly",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F005",
+      "name": "Stock Movements (IN/OUT)",
+      "category": "Core Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/stock_management.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Display stock movement form",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Validate quantity is non-negative",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Create stock movement record in Airtable",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Update optimistic UI with new stock level",
+          "completed": true
+        },
+        {
+          "step": 5,
+          "description": "Handle signed quantities (+ for IN, - for OUT)",
+          "completed": true
+        },
+        {
+          "step": 6,
+          "description": "Rollback on API failure",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Add stock IN movement",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Add stock OUT movement",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Verify stock rollup calculation updates correctly",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle negative quantity rejection",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Optimistic update rollback on failure",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F006",
+      "name": "Stock Movement History",
+      "category": "Core Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/stock_management.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Query last 10 stock movements for product",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Display movement type (IN/OUT)",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Display quantity and date",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Show notes if available",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Display recent stock movements",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Show correct movement type indicators",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle empty history",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F007",
+      "name": "Large Quantity Safety Confirmation",
+      "category": "Safety Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/validation_guardrails.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Detect quantity >= 50",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Show confirmation dialog",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Proceed only if user confirms",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Cancel operation if user declines",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Show confirmation for quantity >= 50",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Proceed when user confirms",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Cancel when user declines",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F008",
+      "name": "Current Stock Display",
+      "category": "Core Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/product_management.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Read 'Current Stock' rollup field from Airtable",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Display stock level in product detail",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Update optimistically on stock movements",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Display current stock correctly",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Update optimistically when adding movement",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F009",
+      "name": "PWA Support",
+      "category": "Technical Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/pwa_offline.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Configure vite-plugin-pwa",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Generate service worker",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Create PWA manifest",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Add app icons",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Install as PWA on mobile device",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Verify service worker registration",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Test standalone mode",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F010",
+      "name": "Responsive UI (Tablet/Mobile)",
+      "category": "UI Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/project_architecture_structure.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Implement mobile-first responsive layout",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Test on tablet viewports",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Ensure touch-friendly buttons/inputs",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Test on mobile viewport (375px)",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Test on tablet viewport (768px)",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Verify touch targets are >= 44px",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F011",
+      "name": "Optimistic UI Updates",
+      "category": "Technical Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/stock_management.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Update UI immediately on user action",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Send request to backend",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Rollback on failure",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Show error message on rollback",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Optimistic update appears immediately",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Rollback occurs on API failure",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Error message displays correctly",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F012",
+      "name": "Error Handling - Camera Permissions",
+      "category": "Error Handling",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/scanner_error_handling.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Detect camera permission denied",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Display user-friendly error message",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Provide instructions to enable camera",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Handle camera permission denied",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Display helpful error message",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F013",
+      "name": "Error Handling - Network Failures",
+      "category": "Error Handling",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/scanner_error_handling.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Catch network errors",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Display error alert with message",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Log error for debugging",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Handle network failure gracefully",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Display error message to user",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Allow retry after error",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F014",
+      "name": "Validation - Non-Negative Quantities",
+      "category": "Validation",
+      "priority": "MVP-Critical",
+      "spec": "docs/specs/validation_guardrails.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Add HTML5 min=0 validation",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Check quantity >= 0 in logic",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Prevent submission of negative values",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Reject negative quantity input",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Accept zero and positive quantities",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F015",
+      "name": "React Query Integration",
+      "category": "Technical Feature",
+      "priority": "MVP-Critical",
+      "spec": "docs/project_architecture_structure.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Configure QueryClient",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Wrap app with QueryClientProvider",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Implement queries for product lookup",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Implement mutations for product/stock operations",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Query caching works correctly",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Mutations invalidate relevant queries",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F016",
+      "name": "Backend Proxy for Airtable",
+      "category": "Infrastructure",
+      "priority": "Post-MVP",
+      "spec": "docs/specs/backend_proxy.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Design backend proxy API",
+          "completed": false
+        },
+        {
+          "step": 2,
+          "description": "Implement proxy endpoints",
+          "completed": false
+        },
+        {
+          "step": 3,
+          "description": "Add authentication",
+          "completed": false
+        },
+        {
+          "step": 4,
+          "description": "Update client to use proxy",
+          "completed": false
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Proxy authenticates requests",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Credentials not exposed client-side",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F017",
+      "name": "Comprehensive Input Sanitization",
+      "category": "Security",
+      "priority": "Post-MVP",
+      "spec": "docs/specs/validation_guardrails.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Implement server-side validation",
+          "completed": false
+        },
+        {
+          "step": 2,
+          "description": "Add input sanitization",
+          "completed": false
+        },
+        {
+          "step": 3,
+          "description": "Prevent formula injection",
+          "completed": false
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Block formula injection attempts",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Sanitize special characters",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F018",
+      "name": "Observability & Logging",
+      "category": "Infrastructure",
+      "priority": "Post-MVP",
+      "spec": "docs/specs/observability.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Set up error tracking (Sentry)",
+          "completed": false
+        },
+        {
+          "step": 2,
+          "description": "Implement structured logging",
+          "completed": false
+        },
+        {
+          "step": 3,
+          "description": "Add performance monitoring",
+          "completed": false
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Errors are tracked in Sentry",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Performance metrics collected",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F019",
+      "name": "PWA Offline Support",
+      "category": "Feature",
+      "priority": "Post-MVP",
+      "spec": "docs/specs/pwa_offline.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Implement offline cache strategy",
+          "completed": false
+        },
+        {
+          "step": 2,
+          "description": "Add retry queue for failed mutations",
+          "completed": false
+        },
+        {
+          "step": 3,
+          "description": "Show offline indicator",
+          "completed": false
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "App works offline",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Mutations sync when back online",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F020",
+      "name": "Manual Barcode Entry Fallback",
+      "category": "Feature",
+      "priority": "Post-MVP",
+      "spec": "docs/specs/scanner.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Add manual entry input field",
+          "completed": false
+        },
+        {
+          "step": 2,
+          "description": "Validate barcode format",
+          "completed": false
+        },
+        {
+          "step": 3,
+          "description": "Submit barcode for lookup",
+          "completed": false
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Enter barcode manually",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Validate barcode format",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    }
+  ]
+}
