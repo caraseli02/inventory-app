@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
+import { PageHeader } from '../components/ui/PageHeader';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
 import type { CartItem } from '../types';
 import { logger } from '../lib/logger';
 import {
-  ArrowLeftIcon,
   CheckCircleIcon,
-  CloseIcon,
   ShoppingCartIcon,
 } from '../components/ui/Icons';
 import { Button } from '../components/ui/button';
@@ -280,28 +279,11 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     <>
       {/* Mobile View */}
       <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/50">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Button>
-          <p className="text-stone-700 text-center text-xs font-medium">
-            Scan the items barcode inside the square frame to add items to your cart
-          </p>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
-          >
-            <CloseIcon className="h-5 w-5" />
-          </Button>
-        </div>
+        <PageHeader
+          title="Scan the items barcode inside the square frame to add items to your cart"
+          onBack={onBack}
+          variant="compact"
+        />
 
         {/* Scanner Section */}
         <div className="px-6 pt-4">
@@ -396,28 +378,11 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       {/* Tablet/Desktop View - New Scanner UI with visible cart */}
       <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/50">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Button>
-          <p className="text-stone-700 text-center text-xs font-medium">
-            Scan the items barcode inside the square frame to add items to your cart
-          </p>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
-          >
-            <CloseIcon className="h-5 w-5" />
-          </Button>
-        </div>
+        <PageHeader
+          title="Scan the items barcode inside the square frame to add items to your cart"
+          onBack={onBack}
+          variant="compact"
+        />
 
         {/* Two Column Layout */}
         <div className="flex flex-row gap-6 h-[calc(100dvh-72px)] px-6 py-6">

@@ -4,9 +4,8 @@ import { useProductLookup } from '../hooks/useProductLookup';
 import { useToast } from '../hooks/useToast';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
+import { PageHeader } from '../components/ui/PageHeader';
 import {
-  ArrowLeftIcon,
-  CloseIcon,
   ShoppingCartIcon,
 } from '../components/ui/Icons';
 import { Button } from '../components/ui/button';
@@ -74,28 +73,10 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
     <>
       {/* Mobile View */}
       <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/50">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Button>
-          <p className="text-stone-900 text-center text-base font-semibold">
-            {showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
-          </p>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
-          >
-            <CloseIcon className="h-5 w-5" />
-          </Button>
-        </div>
+        <PageHeader
+          title={showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
+          onBack={onBack}
+        />
 
         {/* Scanner Section */}
         <div className={`px-6 pt-4 space-y-4 ${scannedCode ? 'hidden' : ''}`}>
@@ -183,28 +164,10 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
 
       {/* Desktop/Tablet View */}
       <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/50">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
-          >
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Button>
-          <p className="text-stone-900 text-center text-base font-semibold">
-            {showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
-          </p>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onBack}
-            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
-          >
-            <CloseIcon className="h-5 w-5" />
-          </Button>
-        </div>
+        <PageHeader
+          title={showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
+          onBack={onBack}
+        />
 
         {/* Two-Column Layout */}
         <div className="flex h-[calc(100dvh-64px)] gap-6 p-6">
