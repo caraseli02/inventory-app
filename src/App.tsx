@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import ScanPage from './pages/ScanPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OfflineIndicator from './components/OfflineIndicator';
+import { ToastProvider } from './hooks/useToast';
 import { MinusIcon, PlusIcon, ShoppingCartIcon } from './components/ui/Icons';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
@@ -78,8 +79,9 @@ function App() {
   ];
 
   return (
-    <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
-      <OfflineIndicator />
+    <ToastProvider>
+      <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
+        <OfflineIndicator />
 
       <header className="mb-6 lg:mb-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -171,7 +173,8 @@ function App() {
         )}
 
       </main>
-    </div>
+      </div>
+    </ToastProvider>
   );
 }
 

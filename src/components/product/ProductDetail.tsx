@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { addStockMovement, getStockMovements } from '../../lib/api';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useToast } from '../../hooks/useToast';
 import type { Product } from '../../types';
 import { logger } from '../../lib/logger';
 import { ArrowLeftIcon, BoxIcon, MinusIcon, PlusIcon } from '../ui/Icons';
@@ -21,6 +22,7 @@ type StockMutationContext = {
 
 const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
 
   const [stockQuantity, setStockQuantity] = useState<string>('1');
@@ -59,9 +61,23 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
 
       return { previousProduct };
     },
+    onSuccess: (_data, { type, quantity }) => {
+      const action = type === 'IN' ? 'added to' : 'removed from';
+      showToast(
+        'success',
+        'Stock updated',
+        `${quantity} item${quantity > 1 ? 's' : ''} ${action} inventory`,
+        3000
+      );
+    },
     onError: (err, _variables, context: StockMutationContext | undefined) => {
       logger.error('Stock mutation failed', { error: err, productId: product.id });
-      alert(`Failed to update stock: ${err.message || 'Unknown error'}`);
+      showToast(
+        'error',
+        'Failed to update stock',
+        err.message || 'Unknown error occurred. Please try again.',
+        4000
+      );
       // Rollback
       if (context?.previousProduct) {
         queryClient.setQueryData(['product', product.fields.Barcode], context.previousProduct);
@@ -80,7 +96,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
     const qty = parseInt(stockQuantity);
     if (isNaN(qty) || qty <= 0) {
       logger.warn('Invalid stock quantity entered', { quantity: stockQuantity });
-      alert("Please enter a valid positive quantity.");
+      showToast('warning', 'Invalid quantity', 'Please enter a valid positive quantity', 3000);
       return;
     }
 

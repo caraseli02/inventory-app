@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useEffect } from 'react';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
+import { useToast } from '../hooks/useToast';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
 import {
@@ -22,6 +23,7 @@ type ScanPageProps = {
 const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
+  const { showToast } = useToast();
 
   const handleScanSuccess = (code: string) => {
     setScannedCode(code);
@@ -29,6 +31,24 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
   };
 
   const { data: product, isLoading, error } = useProductLookup(scannedCode);
+
+  // Handle product not found in remove mode
+  useEffect(() => {
+    if (!isLoading && !product && !error && scannedCode && mode === 'remove') {
+      showToast(
+        'error',
+        'Product not found',
+        `Cannot remove item: product with barcode ${scannedCode} does not exist in inventory`,
+        5000
+      );
+      // Reset after showing error
+      const timer = setTimeout(() => {
+        setScannedCode(null);
+        setManualCode('');
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, product, error, scannedCode, mode, showToast]);
 
   const handleReset = () => {
     setScannedCode(null);
@@ -46,7 +66,8 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
     }
   };
 
-  const showCreateForm = !isLoading && !product && !error && scannedCode;
+  // Only show create form in 'add' mode when product not found
+  const showCreateForm = !isLoading && !product && !error && scannedCode && mode === 'add';
   const showDetail = !isLoading && product && scannedCode;
 
   return (
