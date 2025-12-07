@@ -39,6 +39,7 @@ interface CheckoutState {
   scannedCode: string | null;
   showScanner: boolean;
   manualCode: string;
+  barcodeSource: 'scanner' | 'quick-add' | null;
 
   // Lookup state
   lookupRequested: boolean;
@@ -64,7 +65,7 @@ type CheckoutAction =
   | { type: 'CANCEL_CHECKOUT' }
 
   // Scanner actions
-  | { type: 'SET_SCANNED_CODE'; code: string | null }
+  | { type: 'SET_SCANNED_CODE'; code: string | null; source?: 'scanner' | 'quick-add' }
   | { type: 'SET_MANUAL_CODE'; code: string }
   | { type: 'TOGGLE_SCANNER' }
   | { type: 'SET_SHOW_SCANNER'; show: boolean }
@@ -92,6 +93,7 @@ const initialState: CheckoutState = {
   scannedCode: null,
   showScanner: true,
   manualCode: '',
+  barcodeSource: null,
   lookupRequested: false,
   lookupError: null,
   isCartExpanded: false,
@@ -184,6 +186,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       return {
         ...state,
         scannedCode: action.code,
+        barcodeSource: action.source || null,
       };
 
     case 'SET_MANUAL_CODE':
@@ -296,8 +299,10 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       dispatch({ type: 'ADD_TO_CART', product });
       playSound('success');
       dispatch({ type: 'LOOKUP_SUCCESS' });
-      // Auto-collapse cart on mobile to prepare for next scan
-      dispatch({ type: 'SET_CART_EXPANDED', expanded: false });
+      // Auto-collapse cart on mobile ONLY if barcode came from scanner, not QuickAdd
+      if (state.barcodeSource === 'scanner') {
+        dispatch({ type: 'SET_CART_EXPANDED', expanded: false });
+      }
       return;
     }
 
@@ -338,17 +343,18 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  }, [error, isLoading, playSound, product, state.scannedCode]);
+  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource]);
 
   /**
    * Handles successful barcode scan by initiating product lookup
    * - Only processes if no scan is currently in progress
    * - Sets scan code and requests lookup via useProductLookup hook
    * @param code - Scanned barcode value
+   * @param source - Where the barcode came from ('scanner' or 'quick-add')
    */
-  const handleScanSuccess = (code: string) => {
+  const handleScanSuccess = (code: string, source: 'scanner' | 'quick-add' = 'scanner') => {
     if (!state.scannedCode && !isPendingLookup) {
-      dispatch({ type: 'SET_SCANNED_CODE', code });
+      dispatch({ type: 'SET_SCANNED_CODE', code, source });
       dispatch({ type: 'REQUEST_LOOKUP' });
     }
   };
@@ -578,7 +584,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
                     {/* Quick Add Section */}
                     <QuickAddSection
-                      onAddItem={handleScanSuccess}
+                      onAddItem={(code) => handleScanSuccess(code, 'quick-add')}
                       isPending={isPendingLookup}
                     />
 
@@ -648,12 +654,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               onUpdateQuantity={updateQuantity}
               customFooter={
                 <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
-                  {/* Quick Add Section */}
-                  <QuickAddSection
-                    onAddItem={handleScanSuccess}
-                    isPending={isPendingLookup}
-                  />
-
                   {/* Total */}
                   <div className="flex items-center justify-between pb-2">
                     <span className="text-lg font-semibold text-gray-700">Total</span>
