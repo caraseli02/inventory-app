@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout UI Improvements - Mockups</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(to bottom right, #f5f5f4, #e7e5e4);
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1c1917;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #57534e;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+
+    .section {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1c1917;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge {
+      background: #059669;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-issue {
+      background: #ea580c;
+    }
+
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
+      margin-top: 20px;
+    }
+
+    .mockup {
+      border: 2px solid #e7e5e4;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fafaf9;
+    }
+
+    .mockup-header {
+      background: linear-gradient(to bottom right, #78716c, #57534e);
+      color: white;
+      padding: 15px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .mockup-body {
+      padding: 20px;
+    }
+
+    /* Scanner Frame */
+    .scanner-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .scanner-frame::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #78716c;
+      box-shadow: 0 0 10px rgba(120, 113, 108, 0.8);
+    }
+
+    .corner {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+    }
+
+    .corner-tl {
+      top: 0;
+      left: 0;
+      border-top: 3px solid #78716c;
+      border-left: 3px solid #78716c;
+    }
+
+    .corner-tr {
+      top: 0;
+      right: 0;
+      border-top: 3px solid #78716c;
+      border-right: 3px solid #78716c;
+    }
+
+    .corner-bl {
+      bottom: 0;
+      left: 0;
+      border-bottom: 3px solid #78716c;
+      border-left: 3px solid #78716c;
+    }
+
+    .corner-br {
+      bottom: 0;
+      right: 0;
+      border-bottom: 3px solid #78716c;
+      border-right: 3px solid #78716c;
+    }
+
+    .scanner-text {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: white;
+      font-size: 0.875rem;
+    }
+
+    /* Manual Input Section */
+    .manual-input {
+      background: white;
+      border: 2px solid #e7e5e4;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .manual-input.prominent {
+      background: linear-gradient(to bottom right, #fafaf9, #f5f5f4);
+      border: 2px solid #059669;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.1);
+    }
+
+    .input-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #57534e;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .input-wrapper {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #d6d3d1;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-family: monospace;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(to bottom right, #059669, #047857);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+    }
+
+    .btn-outline {
+      background: white;
+      border: 2px solid #d6d3d1;
+      color: #1c1917;
+    }
+
+    .btn-outline:hover {
+      background: #fafaf9;
+      border-color: #a8a29e;
+    }
+
+    .btn-icon {
+      padding: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Quick Add Section */
+    .quick-add {
+      background: linear-gradient(to bottom right, #eff6ff, #dbeafe);
+      border: 2px dashed #3b82f6;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 20px;
+    }
+
+    .quick-add-title {
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Cart Improvements */
+    .cart-item {
+      background: white;
+      border: 2px solid #e7e5e4;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .cart-item.enhanced {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: all 0.2s;
+    }
+
+    .cart-item.enhanced:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .product-image {
+      width: 60px;
+      height: 60px;
+      background: #f5f5f4;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .product-info {
+      flex: 1;
+    }
+
+    .product-name {
+      font-weight: 600;
+      color: #1c1917;
+      margin-bottom: 4px;
+    }
+
+    .product-meta {
+      font-size: 0.875rem;
+      color: #78716c;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .category-badge {
+      background: #f5f5f4;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: #57534e;
+    }
+
+    .price {
+      font-weight: 700;
+      color: #059669;
+    }
+
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fafaf9;
+      border: 2px solid #e7e5e4;
+      border-radius: 8px;
+      padding: 4px 8px;
+    }
+
+    .quantity-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: white;
+      border-radius: 6px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1c1917;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quantity-btn:hover {
+      background: #059669;
+      color: white;
+    }
+
+    .quantity {
+      font-weight: 700;
+      font-size: 1.125rem;
+      min-width: 32px;
+      text-align: center;
+    }
+
+    .total-section {
+      border-top: 2px solid #e7e5e4;
+      padding-top: 20px;
+      margin-top: 20px;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .total-label {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #57534e;
+    }
+
+    .total-amount {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1c1917;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn-large {
+      width: 100%;
+      padding: 16px;
+      font-size: 1rem;
+    }
+
+    .feature-list {
+      list-style: none;
+      margin: 20px 0;
+    }
+
+    .feature-list li {
+      padding: 12px 0;
+      border-bottom: 1px solid #e7e5e4;
+      display: flex;
+      align-items: start;
+      gap: 12px;
+    }
+
+    .feature-list li:last-child {
+      border-bottom: none;
+    }
+
+    .icon {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .icon-check {
+      color: #059669;
+    }
+
+    .icon-x {
+      color: #ea580c;
+    }
+
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .comparison-item {
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid #e7e5e4;
+    }
+
+    .comparison-item.current {
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+
+    .comparison-item.improved {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+
+    .comparison-label {
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .comparison {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 Checkout UI Improvements</h1>
+    <p class="subtitle">Visual mockups showing enhanced user experience with always-visible manual barcode input</p>
+
+    <!-- Current Issues Section -->
+    <div class="section">
+      <h2 class="section-title">
+        <span class="badge badge-issue">Issues</span>
+        Current Problems
+      </h2>
+      <ul class="feature-list">
+        <li>
+          <svg class="icon icon-x" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <div>
+            <strong>Hidden Manual Input:</strong> Manual barcode entry requires toggling off the scanner first, making it less discoverable
+          </div>
+        </li>
+        <li>
+          <svg class="icon icon-x" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <div>
+            <strong>Cart Hides Scanner:</strong> On mobile, expanding the cart completely hides the scanner - no way to add items while viewing cart
+          </div>
+        </li>
+        <li>
+          <svg class="icon icon-x" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <div>
+            <strong>No Quick Add:</strong> Cannot quickly add items without rescanning or toggling UI modes
+          </div>
+        </li>
+        <li>
+          <svg class="icon icon-x" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <div>
+            <strong>Limited Visual Feedback:</strong> Cart items lack visual enhancement (hover states, better product info layout)
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Proposed Improvements Section -->
+    <div class="section">
+      <h2 class="section-title">
+        <span class="badge">Improvements</span>
+        Proposed Solutions
+      </h2>
+      <ul class="feature-list">
+        <li>
+          <svg class="icon icon-check" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <div>
+            <strong>Always-Visible Manual Input:</strong> Persistent barcode input field below scanner - no toggle needed
+          </div>
+        </li>
+        <li>
+          <svg class="icon icon-check" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <div>
+            <strong>In-Cart Quick Add:</strong> Mini barcode input inside expanded cart for adding items without collapsing
+          </div>
+        </li>
+        <li>
+          <svg class="icon icon-check" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <div>
+            <strong>Enhanced Cart Items:</strong> Better visual hierarchy, hover effects, category badges, and clearer pricing
+          </div>
+        </li>
+        <li>
+          <svg class="icon icon-check" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          <div>
+            <strong>Prominent Input Styling:</strong> Visual emphasis on manual input with gradient borders and clear labels
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Visual Mockups -->
+    <div class="section">
+      <h2 class="section-title">
+        <span class="badge">Mockups</span>
+        Visual Examples
+      </h2>
+
+      <div class="mockup-grid">
+        <!-- Mockup 1: Current Implementation -->
+        <div class="mockup">
+          <div class="mockup-header">❌ Current: Hidden Manual Input</div>
+          <div class="mockup-body">
+            <div class="scanner-frame">
+              <div class="corner corner-tl"></div>
+              <div class="corner corner-tr"></div>
+              <div class="corner corner-bl"></div>
+              <div class="corner corner-br"></div>
+              <div class="scanner-text">Align code within frame</div>
+            </div>
+            <div style="text-align: center; color: #78716c; font-size: 0.875rem; padding: 20px;">
+              <p>⚠️ Manual input requires toggling scanner off</p>
+              <button class="btn btn-outline" style="margin-top: 12px;">Toggle to Manual Entry</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mockup 2: Improved with Always-Visible Input -->
+        <div class="mockup">
+          <div class="mockup-header">✅ Improved: Always-Visible Input</div>
+          <div class="mockup-body">
+            <div class="scanner-frame">
+              <div class="corner corner-tl"></div>
+              <div class="corner corner-tr"></div>
+              <div class="corner corner-bl"></div>
+              <div class="corner corner-br"></div>
+              <div class="scanner-text">Align code within frame</div>
+            </div>
+            <div class="manual-input prominent">
+              <label class="input-label">Or enter barcode manually:</label>
+              <div class="input-wrapper">
+                <input type="text" placeholder="1234567890" />
+                <button class="btn btn-primary">Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mockup 3: Current Cart Item -->
+        <div class="mockup">
+          <div class="mockup-header">❌ Current: Basic Cart Item</div>
+          <div class="mockup-body">
+            <div class="cart-item">
+              <div class="product-image">📦</div>
+              <div class="product-info">
+                <div class="product-name">Servietas</div>
+                <div class="product-meta">
+                  <span>General • €3.00/kg</span>
+                </div>
+              </div>
+              <div class="quantity-controls">
+                <button class="quantity-btn">−</button>
+                <span class="quantity">1</span>
+                <button class="quantity-btn">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mockup 4: Enhanced Cart Item -->
+        <div class="mockup">
+          <div class="mockup-header">✅ Improved: Enhanced Cart Item</div>
+          <div class="mockup-body">
+            <div class="cart-item enhanced">
+              <div class="product-image">📦</div>
+              <div class="product-info">
+                <div class="product-name">Servietas</div>
+                <div class="product-meta">
+                  <span class="category-badge">General</span>
+                  <span class="price">€3.00/kg</span>
+                </div>
+              </div>
+              <div class="quantity-controls">
+                <button class="quantity-btn">−</button>
+                <span class="quantity">1</span>
+                <button class="quantity-btn">+</button>
+              </div>
+            </div>
+            <p style="font-size: 0.75rem; color: #78716c; margin-top: 12px;">
+              ✨ Hover effect, better visual hierarchy, category badge
+            </p>
+          </div>
+        </div>
+
+        <!-- Mockup 5: Expanded Cart WITHOUT Quick Add -->
+        <div class="mockup">
+          <div class="mockup-header">❌ Current: Expanded Cart (No Input)</div>
+          <div class="mockup-body">
+            <div class="cart-item">
+              <div class="product-image">📦</div>
+              <div class="product-info">
+                <div class="product-name">Servietas</div>
+                <div class="product-meta">
+                  <span>General • €3.00/kg</span>
+                </div>
+              </div>
+              <div class="quantity-controls">
+                <button class="quantity-btn">−</button>
+                <span class="quantity">1</span>
+                <button class="quantity-btn">+</button>
+              </div>
+            </div>
+            <div class="total-section">
+              <div class="total-row">
+                <span class="total-label">Total</span>
+                <span class="total-amount">€ 3.00</span>
+              </div>
+              <div class="action-buttons">
+                <button class="btn btn-outline btn-large">Next Product</button>
+                <button class="btn btn-primary btn-large">Finish</button>
+              </div>
+            </div>
+            <p style="font-size: 0.75rem; color: #ea580c; margin-top: 12px; text-align: center;">
+              ⚠️ Must collapse cart to add more items
+            </p>
+          </div>
+        </div>
+
+        <!-- Mockup 6: Expanded Cart WITH Quick Add -->
+        <div class="mockup">
+          <div class="mockup-header">✅ Improved: Expanded Cart with Quick Add</div>
+          <div class="mockup-body">
+            <div class="cart-item enhanced">
+              <div class="product-image">📦</div>
+              <div class="product-info">
+                <div class="product-name">Servietas</div>
+                <div class="product-meta">
+                  <span class="category-badge">General</span>
+                  <span class="price">€3.00/kg</span>
+                </div>
+              </div>
+              <div class="quantity-controls">
+                <button class="quantity-btn">−</button>
+                <span class="quantity">1</span>
+                <button class="quantity-btn">+</button>
+              </div>
+            </div>
+
+            <!-- Quick Add Section -->
+            <div class="quick-add">
+              <div class="quick-add-title">
+                <span>⚡</span>
+                Quick Add Item
+              </div>
+              <div class="input-wrapper">
+                <input type="text" placeholder="Scan or enter barcode" style="font-size: 0.875rem;" />
+                <button class="btn btn-primary btn-icon">+</button>
+              </div>
+            </div>
+
+            <div class="total-section">
+              <div class="total-row">
+                <span class="total-label">Total</span>
+                <span class="total-amount">€ 3.00</span>
+              </div>
+              <div class="action-buttons">
+                <button class="btn btn-primary btn-large">Finish Checkout</button>
+              </div>
+            </div>
+            <p style="font-size: 0.75rem; color: #059669; margin-top: 12px; text-align: center;">
+              ✅ Add items without leaving cart view
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Implementation Summary -->
+    <div class="section">
+      <h2 class="section-title">
+        <span class="badge">Summary</span>
+        Key Implementation Changes
+      </h2>
+
+      <div class="comparison">
+        <div class="comparison-item current">
+          <div class="comparison-label" style="color: #dc2626;">
+            <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Before
+          </div>
+          <ul style="list-style: none; font-size: 0.875rem; line-height: 1.8;">
+            <li>• Manual input hidden behind toggle</li>
+            <li>• Cart expansion hides scanner</li>
+            <li>• Basic cart item styling</li>
+            <li>• Must collapse to add items</li>
+          </ul>
+        </div>
+
+        <div class="comparison-item improved">
+          <div class="comparison-label" style="color: #059669;">
+            <svg style="width: 20px; height: 20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            After
+          </div>
+          <ul style="list-style: none; font-size: 0.875rem; line-height: 1.8;">
+            <li>✅ Always-visible manual input</li>
+            <li>✅ Quick add in expanded cart</li>
+            <li>✅ Enhanced item styling + hover</li>
+            <li>✅ Seamless add-while-browsing</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top: 30px; padding: 20px; background: linear-gradient(to bottom right, #fef3c7, #fde68a); border-radius: 12px; border: 2px solid #f59e0b;">
+        <h3 style="color: #92400e; margin-bottom: 12px; font-size: 1.125rem;">💡 Implementation Notes</h3>
+        <ul style="color: #78350f; font-size: 0.875rem; line-height: 1.8; margin-left: 20px;">
+          <li>Move manual input BELOW scanner (always visible)</li>
+          <li>Add prominent styling with gradient border</li>
+          <li>Create QuickAddSection component for cart</li>
+          <li>Enhance CartItem with hover states and better layout</li>
+          <li>Add category badges and improved price display</li>
+          <li>Remove dependency on scanner toggle for manual entry</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
