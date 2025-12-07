@@ -220,18 +220,21 @@
 *None currently identified.*
 
 ### High Priority (Fix before Week 2)
-- [HIGH] Stock Movement History not displaying (discovered: 2025-12-07)
-  - Impact: Users cannot see recent stock movements in Product Detail view
-  - Evidence: Console logs show movements are being fetched successfully from Airtable API, but UI displays "No recent movements"
-  - Location: `src/components/product/ProductDetail.tsx` - Recent Activity section
-  - Workaround: Data IS being saved to Airtable correctly, just not displaying
-  - Fix ETA: Should be fixed before deployment
+*None currently identified.*
 
 ### Medium Priority (Fix if time allows)
 *None currently identified.*
 
 ### Low Priority / Nice-to-Have
 *None currently identified.*
+
+### ✅ Fixed Issues
+- [HIGH] Stock Movement History not displaying (discovered: 2025-12-07, **FIXED: 2025-12-07**)
+  - Impact: Users could not see recent stock movements in Product Detail view
+  - Root Cause: Airtable's `filterByFormula` doesn't work reliably with linked record fields
+  - Solution: Fetch recent records and filter client-side in JavaScript using `Array.includes()`
+  - Location: `src/lib/api.ts:337-380` - `getStockMovements()` function
+  - Verified: ✅ All 5 test movements now displaying correctly in UI
 
 **Process**: Add issues here as they're discovered during testing. Use format:
 ```
@@ -246,7 +249,14 @@
 ## 📝 Recent Activity Log
 
 ### 2025-12-07
-#### Testing Phase Complete ✅
+#### Bug Fix: Stock Movement History ✅ (Evening Session)
+- 🐛 **Bug Discovered**: Stock movement history not displaying in Product Detail view
+- 🔍 **Root Cause Identified**: Airtable's `filterByFormula` unreliable with linked record fields
+- ✅ **Fix Applied**: Changed to client-side filtering using JavaScript `Array.includes()`
+- ✅ **Verified**: All 5 test movements now displaying correctly (+1, +10, -3, +1, +1)
+- 📸 **Screenshot**: `stock-history-fixed.png` showing working Recent Activity section
+
+#### Testing Phase Complete ✅ (Afternoon Session)
 - ✅ Created `feature_list.json` with all 20 features tracked
 - ✅ Created `init.sh` script for server startup and testing guide
 - ✅ Created `claude-progress.md` for project tracking
@@ -254,7 +264,6 @@
 - ✅ Completed comprehensive Playwright MCP testing session
 - ✅ **Test Coverage**: 70% (37 of 53 scenarios tested)
 - ✅ **Features Tested**: 11 of 15 MVP-critical features ✅
-- ⚠️ **Bug Discovered**: Stock movement history not displaying (HIGH priority)
 
 #### Test Results Summary:
 - **F001 Barcode Scanning**: ✅ Manual entry working perfectly
@@ -262,7 +271,7 @@
 - **F003 Create New Product**: ✅ Full form submission successful
 - **F004 AI Auto-Fill**: ✅ **AMAZING!** OpenFoodFacts integration working perfectly (Maggi noodles image loaded)
 - **F005 Stock Movements**: ✅ Both IN (+10) and OUT (-3) movements successful
-- **F006 Stock History**: ⚠️ BUG - movements saved but not displaying
+- **F006 Stock History**: ✅ **FIXED** - All movements displaying correctly after client-side filtering fix
 - **F008 Current Stock**: ✅ Display working (rollup may have delay)
 - **F010 Responsive UI**: ✅ Mobile (375px) and Tablet (768px) tested
 - **F011 Optimistic Updates**: ✅ Immediate UI updates with success toasts

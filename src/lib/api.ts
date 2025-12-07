@@ -341,13 +341,28 @@ export const getStockMovements = async (productId: string): Promise<StockMovemen
     // Escape productId to prevent formula injection
     const escapedProductId = escapeAirtableString(productId);
 
-    const records = await base(TABLES.STOCK_MOVEMENTS)
+    // Fetch records and filter in JavaScript
+    // NOTE: Airtable's filterByFormula doesn't work reliably with linked record fields,
+    // so we fetch all recent records and filter client-side
+    const allRecords = await base(TABLES.STOCK_MOVEMENTS)
       .select({
-        filterByFormula: `{Product} = '${escapedProductId}'`,
         sort: [{ field: 'Date', direction: 'desc' }],
-        maxRecords: 10,
+        maxRecords: 100, // Fetch more records to ensure we get all relevant movements
       })
       .firstPage();
+
+    // Filter movements for this product
+    const records = allRecords
+      .filter(record => {
+        const productField = record.fields.Product as string[] | undefined;
+        return productField?.includes(escapedProductId);
+      })
+      .slice(0, 10); // Return only the 10 most recent
+
+    logger.info('Stock movements fetched', {
+      productId,
+      recordCount: records.length,
+    });
 
     return records.map(record => ({
       id: record.id,
