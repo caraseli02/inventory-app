@@ -117,17 +117,12 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
 
   return (
     <Card className="w-full max-w-lg mx-auto animate-in slide-in-from-bottom-5 duration-300 shadow-lg border-stone-200">
-      <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-6 py-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-stone-900">New Product</h2>
-          {aiLoading && (
+       {aiLoading && (
             <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-2 border-amber-200">
               <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-2"></span>
               Searching...
             </Badge>
           )}
-        </div>
-      </CardHeader>
 
       <CardContent className="px-6 py-6">
         <form onSubmit={handleSubmit} className="space-y-5" id="create-product-form">
@@ -249,7 +244,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
         )}
       </CardContent>
 
-      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-5 border-t-2 border-stone-200 flex gap-3">
+      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-5 border-t-2 border-stone-200 flex gap-3 fixed md:static bottom-0 w-full">
         <Button
           type="button"
           onClick={onCancel}
