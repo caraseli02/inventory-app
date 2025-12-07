@@ -15,9 +15,7 @@ import {
   WarningIcon,
 } from '../components/ui/Icons';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardFooter, CardHeader } from '../components/ui/card';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -36,6 +34,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     successes: number;
     failures: number;
   } | null>(null);
+  const [isCartExpanded, setIsCartExpanded] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(40 * 60 + 25); // 40:25 in seconds
 
   // Hook for looking up products
   const { data: product, isLoading, error } = useProductLookup(scannedCode);
@@ -48,6 +48,20 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       navigator.vibrate(type === 'success' ? 100 : [100, 50, 100]);
     }
   }, []);
+
+  // Timer countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (!scannedCode) return;
@@ -261,24 +275,297 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         </div>
         <h2 className="text-3xl font-semibold text-gray-900 mb-2">Checkout Complete</h2>
         <p className="text-gray-600 mb-8">Stock has been updated for all items.</p>
-        <button
+        <Button
           onClick={() => {
             setCheckoutComplete(false);
             onBack();
           }}
-          className="bg-white border-2 border-gray-300 hover:bg-gray-50 text-gray-700 px-8 py-3 rounded-lg font-medium transition-colors"
+          variant="outline"
+          className="px-8 py-3"
         >
           Back to Home
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-5 lg:gap-8 h-[calc(100dvh-120px)] lg:h-[calc(100vh-140px)]">
-      <div className="flex items-center justify-between gap-3 rounded-lg border-2 border-gray-200 bg-gray-50 px-5 py-4 text-xs text-gray-600 lg:hidden font-semibold">
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+    <>
+      {/* Mobile View */}
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-purple-700 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="h-12 w-12 rounded-full bg-white/20 hover:bg-white/30 text-white"
+          >
+            <ArrowLeftIcon className="h-6 w-6" />
+          </Button>
+          <div className="text-white text-sm font-medium">
+            Time left - {formatTime(timeLeft)}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="h-12 w-12 rounded-full bg-transparent hover:bg-white/10 text-white"
+          >
+            <CloseIcon className="h-6 w-6" />
+          </Button>
+        </div>
+
+        {/* Scanner Section */}
+        <div className="px-6 pt-4">
+          <h1 className="text-3xl font-bold text-white text-center mb-3">
+            Start Shopping
+          </h1>
+          <p className="text-white/90 text-center text-sm mb-8">
+            Scan the items barcode inside the square frame to add items to your cart
+          </p>
+
+          {/* Scanner Frame */}
+          <div className="relative mx-auto max-w-sm aspect-square">
+            {/* Corner Brackets */}
+            <div className="absolute inset-0 pointer-events-none">
+              {/* Top Left */}
+              <div className="absolute top-0 left-0 w-16 h-16 border-l-4 border-t-4 border-white rounded-tl-2xl" />
+              {/* Top Right */}
+              <div className="absolute top-0 right-0 w-16 h-16 border-r-4 border-t-4 border-white rounded-tr-2xl" />
+              {/* Bottom Left */}
+              <div className="absolute bottom-0 left-0 w-16 h-16 border-l-4 border-b-4 border-white rounded-bl-2xl" />
+              {/* Bottom Right */}
+              <div className="absolute bottom-0 right-0 w-16 h-16 border-r-4 border-b-4 border-white rounded-br-2xl" />
+
+              {/* Scan Line */}
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-purple-400 shadow-lg shadow-purple-400/50" />
+            </div>
+
+            {/* Scanner or Barcode Area */}
+            <div className="absolute inset-0 m-12 bg-white rounded-lg overflow-hidden">
+              {showScanner ? (
+                <Scanner onScanSuccess={handleScanSuccess} />
+              ) : (
+                <div className="flex items-center justify-center h-full bg-gray-50">
+                  <div className="text-center px-4">
+                    <form onSubmit={handleManualSubmit} className="space-y-4">
+                      <input
+                        type="text"
+                        value={manualCode}
+                        onChange={(e) => setManualCode(e.target.value)}
+                        className="w-full bg-white border-2 border-gray-300 rounded-lg p-3 text-gray-900 text-center tracking-widest focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                        placeholder="Enter barcode"
+                        autoFocus
+                      />
+                      <Button
+                        type="submit"
+                        disabled={manualCode.length < 3 || isPendingLookup}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700"
+                      >
+                        {isPendingLookup ? 'Searching…' : 'Add Item'}
+                      </Button>
+                    </form>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowScanner(true)}
+                      className="mt-4 text-gray-600"
+                    >
+                      Use Camera
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {isPendingLookup && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm z-10">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="animate-spin h-10 w-10 border-4 border-white border-t-transparent rounded-full" />
+                  <p className="text-white text-sm">Searching…</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Error Message */}
+          {lookupError && (
+            <div className="mt-4 bg-red-500/20 border border-red-300 text-white p-3 rounded-lg text-sm flex items-start gap-2">
+              <WarningIcon className="h-5 w-5 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold">Not Found</p>
+                <p className="text-white/90 text-xs mt-1">{lookupError}</p>
+              </div>
+              <button onClick={() => setLookupError(null)} className="text-white/80 hover:text-white">
+                <CloseIcon className="h-5 w-5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Cart Toggle/Collapse */}
+        <div
+          className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out ${
+            isCartExpanded ? 'h-[75vh] rounded-t-3xl' : 'h-auto rounded-t-3xl'
+          }`}
+        >
+          {/* Toggle Button */}
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+            <Button
+              onClick={() => setIsCartExpanded(!isCartExpanded)}
+              size="icon"
+              className="h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg"
+            >
+              {isCartExpanded ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
+            </Button>
+          </div>
+
+          {/* Collapsed Cart Summary */}
+          {!isCartExpanded && (
+            <div className="p-6 flex items-center justify-between cursor-pointer" onClick={() => setIsCartExpanded(true)}>
+              <div className="flex items-center gap-3">
+                <ShoppingCartIcon className="h-6 w-6 text-indigo-600" />
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
+                  <p className="text-sm text-gray-600">{cart.length} items</p>
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-indigo-600">
+                € {total.toFixed(2)}
+              </div>
+            </div>
+          )}
+
+          {/* Expanded Cart */}
+          {isCartExpanded && (
+            <div className="h-full flex flex-col">
+              {/* Cart Header */}
+              <div className="p-6 pb-4 flex items-center justify-between border-b border-gray-200">
+                <div className="flex items-center gap-3">
+                  <ShoppingCartIcon className="h-6 w-6 text-indigo-600" />
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
+                    <p className="text-sm text-gray-500">{cart.length} items</p>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-indigo-600">
+                  € {total.toFixed(2)}
+                </div>
+              </div>
+
+              {/* Cart Items List */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {cart.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3" />
+                    <p className="text-sm">Cart is empty</p>
+                  </div>
+                ) : (
+                  cart.map((item, index) => (
+                    <div key={`${item.product.id}-${index}`} className="flex items-start gap-4">
+                      {/* Product Image */}
+                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                        {item.product.fields.Image?.[0]?.url ? (
+                          <img
+                            src={item.product.fields.Image[0].url}
+                            alt={item.product.fields.Name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BoxIcon className="h-8 w-8 text-gray-400" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-gray-900 text-base mb-1">
+                          {item.product.fields.Name}
+                        </h4>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {item.product.fields.Category || '1kg'} • €{' '}
+                          {item.product.fields.Price != null
+                            ? `${item.product.fields.Price.toFixed(2)}/kg`
+                            : 'No price'}
+                        </p>
+
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center bg-gray-100 rounded-lg">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => updateQuantity(index, -1)}
+                              className="h-8 w-8 p-0 hover:bg-gray-200"
+                            >
+                              <MinusIcon className="h-4 w-4 text-indigo-600" />
+                            </Button>
+                            <span className="w-8 text-center font-semibold text-gray-900">
+                              {item.quantity}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => updateQuantity(index, 1)}
+                              className="h-8 w-8 p-0 hover:bg-gray-200"
+                            >
+                              <PlusIcon className="h-4 w-4 text-indigo-600" />
+                            </Button>
+                          </div>
+
+                          {/* Item Total */}
+                          <div className="font-bold text-gray-900">
+                            €{' '}
+                            {item.product.fields.Price != null
+                              ? (item.product.fields.Price * item.quantity).toFixed(2)
+                              : '—'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Total and Actions */}
+              <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
+                {/* Total */}
+                <div className="flex items-center justify-between pb-2">
+                  <span className="text-lg font-semibold text-gray-700">Total</span>
+                  <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                    onClick={() => setIsCartExpanded(false)}
+                  >
+                    Next Product
+                  </Button>
+
+                  <Button
+                    className="w-full h-12 text-base font-semibold bg-indigo-600 hover:bg-indigo-700 text-white"
+                    onClick={handleCheckout}
+                    disabled={pendingItems.length === 0 || isCheckingOut}
+                  >
+                    {isCheckingOut ? 'Processing...' : 'Finish'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tablet/Desktop View - Keep existing layout */}
+      <div className="hidden lg:block relative w-full max-w-7xl mx-auto">
+        <div className="flex flex-row gap-8 h-[calc(100vh-140px)]">
+          <div className="flex items-center justify-between gap-3 rounded-lg border-2 border-gray-200 bg-gray-50 px-5 py-4 text-xs text-gray-600 font-semibold">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
           Batch checkout
         </span>
         <span className="text-[11px] text-gray-500">Scan items, then mark paid to update stock.</span>
@@ -399,7 +686,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                   <h3 className="font-semibold text-gray-900 truncate text-base">{item.product.fields.Name}</h3>
                   <p className="text-gray-600 text-sm font-medium">
                     {item.product.fields.Price != null
-                      ? `$${item.product.fields.Price.toFixed(2)}`
+                      ? `€${item.product.fields.Price.toFixed(2)}`
                       : 'No price'}
                   </p>
                   {item.status === 'processing' && (
@@ -428,7 +715,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                   </div>
                   <div className="font-mono font-semibold text-gray-900 w-16 text-right text-sm">
                     {item.product.fields.Price != null
-                      ? `$${(item.product.fields.Price * item.quantity).toFixed(2)}`
+                      ? `€${(item.product.fields.Price * item.quantity).toFixed(2)}`
                       : '—'}
                   </div>
                   <button onClick={() => removeFromCart(index)} className="p-2 text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg font-semibold transition-colors" title="Remove item">
@@ -465,7 +752,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             <span className="text-gray-600 text-sm font-bold uppercase tracking-wide">Total</span>
             <div className="text-right">
               <div className="text-4xl lg:text-5xl font-semibold text-gray-900 tracking-tight">
-                {missingPrices > 0 ? '~' : ''}${total.toFixed(2)}
+                {missingPrices > 0 ? '~' : ''}€{total.toFixed(2)}
               </div>
               {missingPrices > 0 && (
                 <div className="text-[11px] text-gray-500 mt-1">Excludes {missingPrices} unpriced item{missingPrices > 1 ? 's' : ''}</div>
@@ -489,32 +776,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         </div>
       </div>
 
-      {/* Mobile sticky footer */}
-      <div className="lg:hidden fixed inset-x-0 bottom-3 px-3 z-30">
-        <div className="mx-auto max-w-3xl rounded-lg border-2 border-gray-200 bg-white shadow-md backdrop-blur p-4 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Total</p>
-            <p className="text-2xl font-light text-gray-900">${total.toFixed(2)}</p>
-            <p className="text-xs text-gray-600">{pendingItems.length} ready to checkout</p>
-          </div>
-          <div className="flex flex-col gap-2 w-40">
-            <button
-              onClick={handleCheckout}
-              disabled={pendingItems.length === 0 || isCheckingOut}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isCheckingOut ? 'Processing…' : 'Mark Paid'}
-            </button>
-            <button
-              onClick={onBack}
-              className="text-xs text-gray-600 hover:text-gray-900 underline underline-offset-2 text-center font-medium"
-            >
-              Back to scanning
-            </button>
-          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
