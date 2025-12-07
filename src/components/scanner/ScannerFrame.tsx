@@ -8,8 +8,6 @@ import { CloseIcon, WarningIcon } from '../ui/Icons';
 interface ScannerFrameProps {
   scannerId: string;
   onScanSuccess: (code: string) => void;
-  showScanner: boolean;
-  onToggleScanner: (show: boolean) => void;
   manualCode: string;
   onManualCodeChange: (code: string) => void;
   onManualSubmit: (e: FormEvent<HTMLFormElement>) => void;
@@ -20,13 +18,11 @@ interface ScannerFrameProps {
 }
 
 /**
- * ScannerFrame component with corner brackets, manual entry, loading state, and error display
+ * ScannerFrame component with always-visible scanner and manual input below
  */
 export const ScannerFrame = ({
   scannerId,
   onScanSuccess,
-  showScanner,
-  onToggleScanner,
   manualCode,
   onManualCodeChange,
   onManualSubmit,
@@ -56,40 +52,9 @@ export const ScannerFrame = ({
           <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
         </div>
 
-        {/* Scanner or Manual Entry */}
+        {/* Scanner - Always visible */}
         <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
-          {showScanner ? (
-            <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
-          ) : (
-            <div className="flex items-center justify-center h-full bg-stone-900">
-              <div className="text-center px-4 w-full max-w-xs">
-                <form onSubmit={onManualSubmit} className="space-y-4">
-                  <Input
-                    type="text"
-                    value={manualCode}
-                    onChange={(e) => onManualCodeChange(e.target.value)}
-                    className={`w-full bg-white border-2 border-stone-300 rounded-lg p-3 text-stone-900 text-center tracking-widest focus:border-stone-900 focus:ring-2 focus:ring-stone-900/10 ${textSize}`}
-                    placeholder="Enter barcode"
-                    autoFocus
-                  />
-                  <Button
-                    type="submit"
-                    disabled={manualCode.length < 3 || isPending}
-                    className={`w-full bg-white hover:bg-stone-100 text-stone-900 ${textSize}`}
-                  >
-                    {isPending ? 'Searching…' : 'Add Item'}
-                  </Button>
-                </form>
-                <Button
-                  variant="ghost"
-                  onClick={() => onToggleScanner(true)}
-                  className={`mt-4 text-white hover:text-white hover:bg-white/10 ${textSize}`}
-                >
-                  Use Camera
-                </Button>
-              </div>
-            </div>
-          )}
+          <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
         </div>
 
         {/* Loading Overlay */}
@@ -98,6 +63,35 @@ export const ScannerFrame = ({
             <Spinner size="md" label="Searching…" />
           </div>
         )}
+      </div>
+
+      {/* Always-visible Manual Input Section */}
+      <div className="mt-4">
+        <div className="bg-gradient-to-br from-stone-50 to-stone-100 border-2 border-stone-200 rounded-lg p-4">
+          <label className={`text-stone-700 font-semibold mb-2 block ${textSize}`}>
+            Or enter barcode manually:
+          </label>
+          <form onSubmit={onManualSubmit} className="flex gap-2">
+            <Input
+              type="text"
+              value={manualCode}
+              onChange={(e) => onManualCodeChange(e.target.value)}
+              className={`flex-1 font-mono tracking-wider border-2 border-stone-300 focus-visible:ring-stone-400 ${textSize}`}
+              placeholder="1234567890"
+              disabled={isPending}
+            />
+            <Button
+              type="submit"
+              disabled={manualCode.length < 3 || isPending}
+              className={`text-white ${textSize}`}
+              style={{
+                background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+              }}
+            >
+              {isPending ? 'Adding...' : 'Add'}
+            </Button>
+          </form>
+        </div>
       </div>
 
       {/* Error Message */}

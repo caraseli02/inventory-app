@@ -141,7 +141,14 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
 
     const record = records[0];
 
-    logger.info('Product found', { barcode, productId: record.id });
+    logger.info('Product found', { barcode, productId: record.id, currentStock: record.fields['Current Stock'] });
+    console.log('[getProductByBarcode] Fetched product:', {
+      id: record.id,
+      name: record.fields.Name,
+      currentStock: record.fields['Current Stock']
+    });
+    console.log('[getProductByBarcode] ALL FIELDS from Airtable:', record.fields);
+    console.log('[getProductByBarcode] Field names:', Object.keys(record.fields));
     return mapAirtableProduct(record);
   } catch (error) {
     logger.error('Failed to fetch product by barcode', {
@@ -352,12 +359,12 @@ export const getStockMovements = async (productId: string): Promise<StockMovemen
       .firstPage();
 
     // Filter movements for this product
+    // Return ALL movements for accurate stock calculation (not just 10 most recent)
     const records = allRecords
       .filter(record => {
         const productField = record.fields.Product as string[] | undefined;
         return productField?.includes(escapedProductId);
-      })
-      .slice(0, 10); // Return only the 10 most recent
+      });
 
     logger.info('Stock movements fetched', {
       productId,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addStockMovement } from '../lib/api';
-import { useToast } from './useToast';
+import { toast } from 'sonner';
 import { logger } from '../lib/logger';
 import type { Product } from '../types';
 
@@ -29,7 +29,6 @@ type StockMutationContext = {
  */
 export const useStockMutation = (product: Product) => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
   const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
 
   const stockMutation = useMutation({
@@ -45,38 +44,35 @@ export const useStockMutation = (product: Product) => {
       // Snapshot previous value
       const previousProduct = queryClient.getQueryData<Product>(['product', product.fields.Barcode]);
 
-      // Optimistically update
-      queryClient.setQueryData(['product', product.fields.Barcode], (old: Product | undefined) => {
+      // Optimistically update the history by adding a temporary movement
+      // This automatically updates the calculated stock in ProductDetail
+      queryClient.setQueryData(['history', product.id], (old: any[] | undefined) => {
         if (!old) return old;
-        const change = type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity);
-        return {
-          ...old,
+        const tempMovement = {
+          id: `temp-${Date.now()}`,
           fields: {
-            ...old.fields,
-            'Current Stock': (old.fields?.['Current Stock'] ?? 0) + change,
+            Type: type,
+            Quantity: type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity),
+            Date: new Date().toISOString().split('T')[0],
           },
         };
+        return [tempMovement, ...old];
       });
 
       return { previousProduct };
     },
     onSuccess: (_data, { type, quantity }) => {
       const action = type === 'IN' ? 'added to' : 'removed from';
-      showToast(
-        'success',
-        'Stock updated',
-        `${quantity} item${quantity > 1 ? 's' : ''} ${action} inventory`,
-        3000
-      );
+      console.log('[useStockMutation] Stock movement successful, will refetch product');
+      toast.success('Stock updated', {
+        description: `${quantity} item${quantity > 1 ? 's' : ''} ${action} inventory`,
+      });
     },
     onError: (err, _variables, context: StockMutationContext | undefined) => {
       logger.error('Stock mutation failed', { error: err, productId: product.id });
-      showToast(
-        'error',
-        'Failed to update stock',
-        err instanceof Error ? err.message : 'Unknown error occurred. Please try again.',
-        4000
-      );
+      toast.error('Failed to update stock', {
+        description: err instanceof Error ? err.message : 'Unknown error occurred. Please try again.',
+      });
       // Rollback
       if (context?.previousProduct) {
         queryClient.setQueryData(['product', product.fields.Barcode], context.previousProduct);
@@ -99,7 +95,9 @@ export const useStockMutation = (product: Product) => {
   const handleStockChange = (quantity: number, type: 'IN' | 'OUT') => {
     if (isNaN(quantity) || quantity <= 0) {
       logger.warn('Invalid stock quantity', { quantity });
-      showToast('warning', 'Invalid quantity', 'Please enter a valid positive quantity', 3000);
+      toast.warning('Invalid quantity', {
+        description: 'Please enter a valid positive quantity',
+      });
       return;
     }
 

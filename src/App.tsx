@@ -1,6 +1,7 @@
 import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react';
 import OfflineIndicator from './components/OfflineIndicator';
 import { ToastProvider } from './hooks/useToast';
+import { Toaster } from 'sonner';
 import { MinusIcon, PlusIcon, ShoppingCartIcon, ListIcon } from './components/ui/Icons';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
@@ -114,8 +115,10 @@ function App() {
 
   return (
     <ToastProvider>
-      <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
-        <OfflineIndicator />
+      <>
+        <Toaster position="top-center" richColors closeButton expand={false} />
+        <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
+          <OfflineIndicator />
 
       <header className="mb-6 lg:mb-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -250,6 +253,7 @@ function App() {
 
       </main>
       </div>
+    </>
     </ToastProvider>
   );
 }
