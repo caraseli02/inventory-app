@@ -121,7 +121,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
   });
 
   return (
-    <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-lg border-stone-200">
+    <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200">
       <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-6 py-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -200,16 +200,17 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
               min="1"
               value={stockQuantity}
               onChange={(e) => setStockQuantity(e.target.value)}
-              className="h-14 text-center text-lg font-bold border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
+              className="h-10 text-center text-lg font-bold border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
             />
           </div>
 
           {mode === 'add' && (
             <Button
+              variant='outline'
               onClick={() => handleStockChange('IN')}
               disabled={loadingAction !== null}
               size="lg"
-              className="flex-1 font-semibold bg-stone-900 hover:bg-stone-800 text-white border-2 border-stone-900"
+              className="flex-1"
             >
               {loadingAction === 'IN' ? (
                 <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full"></span>
@@ -245,7 +246,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         </div>
       </CardContent>
 
-      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200">
+      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 fixed bottom-0 w-full">
         <Button
           onClick={onScanNew}
           className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
