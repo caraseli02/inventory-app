@@ -5,10 +5,18 @@ import { MinusIcon, PlusIcon, ShoppingCartIcon } from './components/ui/Icons';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Spinner } from './components/ui/spinner';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Route-based code splitting: lazy load pages
 const ScanPage = lazy(() => import('./pages/ScanPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+
+// Loading fallback component for lazy-loaded pages
+const LoadingFallback = ({ label }: { label: string }) => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <Spinner size="lg" label={label} />
+  </div>
+);
 
 type ViewState = 'home' | 'add' | 'remove' | 'checkout';
 
@@ -166,25 +174,21 @@ function App() {
             </div>
           </div>
         ) : view === 'checkout' ? (
-          <Suspense fallback={
-            <div className="flex items-center justify-center min-h-[400px]">
-              <Spinner size="lg" label="Loading checkout..." />
-            </div>
-          }>
-            <CheckoutPage onBack={() => setView('home')} />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback label="Loading checkout..." />}>
+              <CheckoutPage onBack={() => setView('home')} />
+            </Suspense>
+          </ErrorBoundary>
         ) : (
-          <Suspense fallback={
-            <div className="flex items-center justify-center min-h-[400px]">
-              <Spinner size="lg" label="Loading scanner..." />
-            </div>
-          }>
-            <ScanPage
-              mode={scannerMode}
-              onBack={() => setView('home')}
-              onModeChange={handleScannerModeChange}
-            />
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback label="Loading scanner..." />}>
+              <ScanPage
+                mode={scannerMode}
+                onBack={() => setView('home')}
+                onModeChange={handleScannerModeChange}
+              />
+            </Suspense>
+          </ErrorBoundary>
         )}
 
       </main>
