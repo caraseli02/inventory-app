@@ -52,25 +52,25 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
   return (
     <>
       {/* Mobile View */}
-      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/50">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
+            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
           >
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
-          <p className="text-slate-900 text-center text-base font-semibold">
+          <p className="text-stone-900 text-center text-base font-semibold">
             {showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
           </p>
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
+            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
           >
             <CloseIcon className="h-5 w-5" />
           </Button>
@@ -82,11 +82,11 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
           <div className="relative mx-auto w-full max-w-lg aspect-square">
             {/* Corner Brackets */}
             <div className="absolute inset-0 pointer-events-none z-10">
-              <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-slate-700" />
-              <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-slate-700" />
-              <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-slate-700" />
-              <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-slate-700" />
-              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-700 shadow-lg" />
+              <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
+              <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
+              <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
+              <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
             </div>
 
             {/* Scanner Area */}
@@ -97,8 +97,8 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="animate-spin h-10 w-10 border-4 border-slate-200 border-t-slate-700 rounded-full" />
-                  <p className="text-slate-900 text-sm font-medium">Searching…</p>
+                  <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
+                  <p className="text-stone-900 text-sm font-medium">Searching…</p>
                 </div>
               </div>
             )}
@@ -111,7 +111,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
                 type="text"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                className="flex-1 h-12 bg-white border-2 border-slate-300 rounded-lg px-4 text-slate-900 placeholder:text-slate-400 focus:border-slate-700 focus:ring-2 focus:ring-slate-700/10"
+                className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
                 placeholder="Enter barcode manually"
               />
               <Button
@@ -139,7 +139,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
         {/* Content Panel */}
         <div
           className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out overflow-hidden z-50 ${
-            scannedCode ? 'h-[calc(100vh-73px)]' : 'h-auto rounded-t-3xl'
+            scannedCode ? 'h-[calc(100dvh-73px)]' : 'h-auto rounded-t-3xl'
           }`}
         >
           {!scannedCode ? (
@@ -161,42 +161,42 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
       </div>
 
       {/* Desktop/Tablet View */}
-      <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-slate-100 to-slate-200">
+      <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/50">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
+            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
           >
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
-          <p className="text-slate-900 text-center text-base font-semibold">
+          <p className="text-stone-900 text-center text-base font-semibold">
             {showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
           </p>
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
+            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
           >
             <CloseIcon className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Two-Column Layout */}
-        <div className="flex h-[calc(100vh-64px)] gap-6 p-6">
+        <div className="flex h-[calc(100dvh-64px)] gap-6 p-6">
           {/* Left Column: Scanner (45%) */}
           <div className="w-[45%] flex flex-col gap-6">
             <div className="relative mx-auto w-full max-w-lg aspect-square">
               {/* Corner Brackets */}
               <div className="absolute inset-0 pointer-events-none z-10">
-                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-slate-700" />
-                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-slate-700" />
-                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-slate-700" />
-                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-slate-700" />
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-700 shadow-lg" />
+                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
+                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
+                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
+                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
               </div>
 
               {/* Scanner Area */}
@@ -207,8 +207,8 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
                   <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin h-10 w-10 border-4 border-slate-200 border-t-slate-700 rounded-full" />
-                    <p className="text-slate-900 text-sm font-medium">Searching…</p>
+                    <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
+                    <p className="text-stone-900 text-sm font-medium">Searching…</p>
                   </div>
                 </div>
               )}
@@ -220,7 +220,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
                 type="text"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                className="flex-1 h-12 bg-white border-2 border-slate-300 rounded-lg px-4 text-slate-900 placeholder:text-slate-400 focus:border-slate-700 focus:ring-2 focus:ring-slate-700/10"
+                className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
                 placeholder="Enter barcode manually"
               />
               <Button

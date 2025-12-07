@@ -124,7 +124,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
             </Badge>
           )}
 
-      <CardContent className="px-6 py-6 max-h-[calc(100vh-240px)] md:max-h-none overflow-y-auto">
+      <CardContent className="px-6 py-6 max-h-[calc(100dvh-240px)] md:max-h-none overflow-y-auto">
         <form onSubmit={handleSubmit} className="space-y-5" id="create-product-form">
           {formData.imageUrl && (
             <div className="flex justify-center mb-4">

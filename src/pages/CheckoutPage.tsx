@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
+import { Cart } from '../components/cart/Cart';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
 import type { CartItem } from '../types';
 import { logger } from '../lib/logger';
 import {
   ArrowLeftIcon,
-  BoxIcon,
   CheckCircleIcon,
   CloseIcon,
-  MinusIcon,
-  PlusIcon,
   ShoppingCartIcon,
 } from '../components/ui/Icons';
 import { Button } from '../components/ui/button';
@@ -197,19 +195,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     );
     setCart(processingCart);
 
-    let successes = 0;
-    let failures = 0;
     const results: CartItem[] = [];
     const itemsToProcess = processingCart.filter((item) => item.status === 'processing');
 
     for (const item of itemsToProcess) {
       try {
         await addStockMovement(item.product.id, item.quantity, 'OUT');
-        successes += 1;
         results.push({ ...item, status: 'success' });
       } catch (err) {
-        failures += 1;
-
         let userMessage = 'Unknown error. Please try again.';
 
         if (err instanceof ValidationError) {
@@ -286,25 +279,25 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   return (
     <>
       {/* Mobile View */}
-      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/50">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
+            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
           >
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
-          <p className="text-slate-700 text-center text-xs font-medium">
+          <p className="text-stone-700 text-center text-xs font-medium">
             Scan the items barcode inside the square frame to add items to your cart
           </p>
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
+            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
           >
             <CloseIcon className="h-5 w-5" />
           </Button>
@@ -329,7 +322,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         {/* Cart Toggle/Collapse */}
         <div
           className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out z-20 ${
-            isCartExpanded ? 'h-[80vh] max-h-[calc(100vh-120px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
+            isCartExpanded ? 'h-[80dvh] max-h-[calc(100dvh-120px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
           }`}
         >
           {/* Toggle Button */}
@@ -362,154 +355,72 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           {/* Expanded Cart */}
           {isCartExpanded && (
             <div className="h-full flex flex-col">
-              {/* Cart Header */}
-              <div className="p-6 pb-4 flex items-center justify-between border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
-                    <p className="text-sm text-gray-500">{cart.length} items</p>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-stone-900">
-                  € {total.toFixed(2)}
-                </div>
-              </div>
-
-              {/* Cart Items List */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {cart.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                    <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3" />
-                    <p className="text-sm">Cart is empty</p>
-                  </div>
-                ) : (
-                  cart.map((item, index) => (
-                    <div key={`${item.product.id}-${index}`} className="flex items-start gap-4">
-                      {/* Product Image */}
-                      <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                        {item.product.fields.Image?.[0]?.url ? (
-                          <img
-                            src={item.product.fields.Image[0].url}
-                            alt={item.product.fields.Name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <BoxIcon className="h-8 w-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-900 text-base mb-1">
-                          {item.product.fields.Name}
-                        </h4>
-                        <p className="text-sm text-gray-500 mb-2">
-                          {item.product.fields.Category || '1kg'} • €{' '}
-                          {item.product.fields.Price != null
-                            ? `${item.product.fields.Price.toFixed(2)}/kg`
-                            : 'No price'}
-                        </p>
-
-                        {/* Quantity Controls */}
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center bg-gray-100 rounded-lg">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => updateQuantity(index, -1)}
-                              className="h-8 w-8 p-0 hover:bg-gray-200"
-                            >
-                              <MinusIcon className="h-4 w-4 text-stone-900" />
-                            </Button>
-                            <span className="w-8 text-center font-semibold text-gray-900">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => updateQuantity(index, 1)}
-                              className="h-8 w-8 p-0 hover:bg-gray-200"
-                            >
-                              <PlusIcon className="h-4 w-4 text-stone-900" />
-                            </Button>
-                          </div>
-
-                          {/* Item Total */}
-                          <div className="font-bold text-gray-900">
-                            €{' '}
-                            {item.product.fields.Price != null
-                              ? (item.product.fields.Price * item.quantity).toFixed(2)
-                              : '—'}
-                          </div>
-                        </div>
-                      </div>
+              <Cart
+                cart={cart}
+                total={total}
+                isCheckingOut={isCheckingOut}
+                onUpdateQuantity={updateQuantity}
+                customFooter={
+                  <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
+                    {/* Total */}
+                    <div className="flex items-center justify-between pb-2">
+                      <span className="text-lg font-semibold text-gray-700">Total</span>
+                      <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
                     </div>
-                  ))
-                )}
-              </div>
 
-              {/* Total and Actions */}
-              <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
-                {/* Total */}
-                <div className="flex items-center justify-between pb-2">
-                  <span className="text-lg font-semibold text-gray-700">Total</span>
-                  <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
-                </div>
+                    {/* Action Buttons */}
+                    <div className="space-y-3">
+                      <Button
+                        variant="outline"
+                        className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                        onClick={() => setIsCartExpanded(false)}
+                      >
+                        Next Product
+                      </Button>
 
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
-                    onClick={() => setIsCartExpanded(false)}
-                  >
-                    Next Product
-                  </Button>
-
-                  <Button
-                    className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
-                    onClick={handleCheckout}
-                    disabled={pendingItems.length === 0 || isCheckingOut}
-                  >
-                    {isCheckingOut ? 'Processing...' : 'Finish'}
-                  </Button>
-                </div>
-              </div>
+                      <Button
+                        className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                        onClick={handleCheckout}
+                        disabled={pendingItems.length === 0 || isCheckingOut}
+                      >
+                        {isCheckingOut ? 'Processing...' : 'Finish'}
+                      </Button>
+                    </div>
+                  </div>
+                }
+              />
             </div>
           )}
         </div>
       </div>
 
       {/* Tablet/Desktop View - New Scanner UI with visible cart */}
-      <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
+      <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/50">
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
+            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
           >
             <ArrowLeftIcon className="h-5 w-5" />
           </Button>
-          <p className="text-slate-700 text-center text-xs font-medium">
+          <p className="text-stone-700 text-center text-xs font-medium">
             Scan the items barcode inside the square frame to add items to your cart
           </p>
           <Button
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-10 w-10 text-slate-700 hover:text-slate-900 hover:bg-white/30"
+            className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
           >
             <CloseIcon className="h-5 w-5" />
           </Button>
         </div>
 
         {/* Two Column Layout */}
-        <div className="flex flex-row gap-6 h-[calc(100vh-72px)] px-6 py-6">
+        <div className="flex flex-row gap-6 h-[calc(100dvh-72px)] px-6 py-6">
           {/* Left Column: Scanner */}
           <div className="w-[45%] flex flex-col gap-4">
             <ScannerFrame
@@ -529,122 +440,40 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
           {/* Right Column: Cart */}
           <div className="w-[55%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
-            {/* Cart Header */}
-            <div className="p-6 pb-4 flex items-center justify-between border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
-                  <p className="text-sm text-gray-500">{cart.length} items</p>
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-stone-900">
-                € {total.toFixed(2)}
-              </div>
-            </div>
-
-            {/* Cart Items List */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {cart.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                  <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3" />
-                  <p className="text-sm">Cart is empty</p>
-                </div>
-              ) : (
-                cart.map((item, index) => (
-                  <div key={`${item.product.id}-${index}`} className="flex items-start gap-4">
-                    {/* Product Image */}
-                    <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                      {item.product.fields.Image?.[0]?.url ? (
-                        <img
-                          src={item.product.fields.Image[0].url}
-                          alt={item.product.fields.Name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <BoxIcon className="h-8 w-8 text-gray-400" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-gray-900 text-base mb-1">
-                        {item.product.fields.Name}
-                      </h4>
-                      <p className="text-sm text-gray-500 mb-2">
-                        {item.product.fields.Category || '1kg'} • €{' '}
-                        {item.product.fields.Price != null
-                          ? `${item.product.fields.Price.toFixed(2)}/kg`
-                          : 'No price'}
-                      </p>
-
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center bg-gray-100 rounded-lg">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => updateQuantity(index, -1)}
-                            className="h-8 w-8 p-0 hover:bg-gray-200"
-                          >
-                            <MinusIcon className="h-4 w-4 text-stone-900" />
-                          </Button>
-                          <span className="w-8 text-center font-semibold text-gray-900">
-                            {item.quantity}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => updateQuantity(index, 1)}
-                            className="h-8 w-8 p-0 hover:bg-gray-200"
-                          >
-                            <PlusIcon className="h-4 w-4 text-stone-900" />
-                          </Button>
-                        </div>
-
-                        {/* Item Total */}
-                        <div className="font-bold text-gray-900">
-                          €{' '}
-                          {item.product.fields.Price != null
-                            ? (item.product.fields.Price * item.quantity).toFixed(2)
-                            : '—'}
-                        </div>
-                      </div>
-                    </div>
+            <Cart
+              cart={cart}
+              total={total}
+              isCheckingOut={isCheckingOut}
+              onUpdateQuantity={updateQuantity}
+              customFooter={
+                <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
+                  {/* Total */}
+                  <div className="flex items-center justify-between pb-2">
+                    <span className="text-lg font-semibold text-gray-700">Total</span>
+                    <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
                   </div>
-                ))
-              )}
-            </div>
 
-            {/* Total and Actions */}
-            <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
-              {/* Total */}
-              <div className="flex items-center justify-between pb-2">
-                <span className="text-lg font-semibold text-gray-700">Total</span>
-                <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
-              </div>
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <Button
+                      variant="outline"
+                      className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                      onClick={() => setShowScanner(true)}
+                    >
+                      Next Product
+                    </Button>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
-                  onClick={() => setShowScanner(true)}
-                >
-                  Next Product
-                </Button>
-
-                <Button
-                  className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
-                  onClick={handleCheckout}
-                  disabled={pendingItems.length === 0 || isCheckingOut}
-                >
-                  {isCheckingOut ? 'Processing...' : 'Finish'}
-                </Button>
-              </div>
-            </div>
+                    <Button
+                      className="w-full h-12 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                      onClick={handleCheckout}
+                      disabled={pendingItems.length === 0 || isCheckingOut}
+                    >
+                      {isCheckingOut ? 'Processing...' : 'Finish'}
+                    </Button>
+                  </div>
+                </div>
+              }
+            />
           </div>
         </div>
       </div>

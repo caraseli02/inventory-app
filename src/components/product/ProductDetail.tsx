@@ -28,7 +28,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
 
   const displayCategory = product.fields.Category || 'Uncategorized';
   const displayPrice =
-    product.fields.Price != null ? `$${product.fields.Price.toFixed(2)}` : 'N/A';
+    product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : 'N/A';
   const expiryDisplay = product.fields['Expiry Date'] || 'No expiry date';
 
   const stockMutation = useMutation({
@@ -145,7 +145,7 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         </div>
       </CardHeader>
 
-      <CardContent className="px-6 py-6 max-h-[calc(100vh-240px)] md:max-h-none overflow-y-auto">
+      <CardContent className="px-6 py-6 max-h-[calc(100dvh-240px)] md:max-h-none overflow-y-auto">
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-stone-50 to-white border-2 border-stone-200">
             <CardContent className="p-4">

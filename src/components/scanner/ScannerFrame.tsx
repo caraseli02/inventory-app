@@ -2,6 +2,7 @@ import type { FormEvent } from 'react';
 import Scanner from './Scanner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Spinner } from '../ui/spinner';
 import { CloseIcon, WarningIcon } from '../ui/Icons';
 
 interface ScannerFrameProps {
@@ -43,16 +44,16 @@ export const ScannerFrame = ({
         {/* Corner Brackets */}
         <div className="absolute inset-0 pointer-events-none z-10">
           {/* Top Left */}
-          <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-slate-700" />
+          <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
           {/* Top Right */}
-          <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-slate-700" />
+          <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
           {/* Bottom Left */}
-          <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-slate-700" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
           {/* Bottom Right */}
-          <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-slate-700" />
+          <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
 
           {/* Scan Line */}
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-700 shadow-lg" />
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
         </div>
 
         {/* Scanner or Manual Entry */}
@@ -94,10 +95,7 @@ export const ScannerFrame = ({
         {/* Loading Overlay */}
         {isPending && (
           <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
-            <div className="flex flex-col items-center gap-2">
-              <div className="animate-spin h-10 w-10 border-4 border-slate-200 border-t-slate-700 rounded-full" />
-              <p className="text-slate-900 text-sm font-medium">Searching…</p>
-            </div>
+            <Spinner size="md" label="Searching…" />
           </div>
         )}
       </div>

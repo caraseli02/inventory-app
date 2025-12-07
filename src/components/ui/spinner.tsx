@@ -21,13 +21,13 @@ export const Spinner = ({ size = 'md', className, label }: SpinnerProps) => {
     <div className="flex flex-col items-center gap-2">
       <div
         className={cn(
-          'animate-spin rounded-full border-slate-200 border-t-slate-700',
+          'animate-spin rounded-full border-stone-200 border-t-stone-700',
           sizeClasses[size],
           className
         )}
       />
       {label && (
-        <p className="text-slate-900 text-sm font-medium">{label}</p>
+        <p className="text-stone-900 text-sm font-medium">{label}</p>
       )}
     </div>
   );
