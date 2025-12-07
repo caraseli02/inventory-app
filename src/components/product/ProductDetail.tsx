@@ -4,7 +4,7 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { useToast } from '../../hooks/useToast';
 import type { Product } from '../../types';
 import { logger } from '../../lib/logger';
-import { ArrowLeftIcon, BoxIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { BoxIcon, MinusIcon, PlusIcon } from '../ui/Icons';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -251,9 +251,11 @@ const ProductDetail = ({ product, onScanNew, mode }: ProductDetailProps) => {
         </div>
       </CardContent>
 
-      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 flex justify-center">
-        <Button onClick={onScanNew} variant="ghost" className="text-stone-700 hover:text-stone-900 font-medium">
-          <ArrowLeftIcon className="h-4 w-4 mr-2" />
+      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200">
+        <Button
+          onClick={onScanNew}
+          className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
+        >
           Scan Another Product
         </Button>
       </CardFooter>
