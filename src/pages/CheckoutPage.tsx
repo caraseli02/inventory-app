@@ -295,6 +295,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       dispatch({ type: 'ADD_TO_CART', product });
       playSound('success');
       dispatch({ type: 'LOOKUP_SUCCESS' });
+      // Auto-collapse cart on mobile to prepare for next scan
+      dispatch({ type: 'SET_CART_EXPANDED', expanded: false });
       return;
     }
 
@@ -514,21 +516,23 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           variant="compact"
         />
 
-        {/* Scanner Section */}
-        <div className="px-6 pt-4">
-          <ScannerFrame
-            scannerId="mobile-reader"
-            onScanSuccess={handleScanSuccess}
-            showScanner={state.showScanner}
-            onToggleScanner={() => dispatch({ type: 'TOGGLE_SCANNER' })}
-            manualCode={state.manualCode}
-            onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
-            onManualSubmit={handleManualSubmit}
-            isPending={isPendingLookup}
-            error={state.lookupError}
-            onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
-          />
-        </div>
+        {/* Scanner Section - Hidden when cart is expanded on mobile */}
+        {!state.isCartExpanded && (
+          <div className="px-6 pt-4">
+            <ScannerFrame
+              scannerId="mobile-reader"
+              onScanSuccess={handleScanSuccess}
+              showScanner={state.showScanner}
+              onToggleScanner={() => dispatch({ type: 'TOGGLE_SCANNER' })}
+              manualCode={state.manualCode}
+              onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
+              onManualSubmit={handleManualSubmit}
+              isPending={isPendingLookup}
+              error={state.lookupError}
+              onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
+            />
+          </div>
+        )}
 
         {/* Cart Toggle/Collapse */}
         <div
