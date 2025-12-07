@@ -3,7 +3,7 @@ import { createProduct, addStockMovement } from '../../lib/api';
 import { suggestProductDetails } from '../../lib/ai';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { logger } from '../../lib/logger';
-import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
+import { Card, CardContent, CardFooter } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';

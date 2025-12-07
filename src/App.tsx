@@ -189,8 +189,6 @@ function App() {
             mode={scannerMode}
             onBack={() => setView('home')}
             onModeChange={handleScannerModeChange}
-            isTablet={isTablet}
-            onCheckout={() => setView('checkout')}
           />
         )}
 

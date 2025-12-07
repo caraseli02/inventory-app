@@ -30,10 +30,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [lookupRequested, setLookupRequested] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
-  const [statusSummary, setStatusSummary] = useState<{
-    successes: number;
-    failures: number;
-  } | null>(null);
   const [isCartExpanded, setIsCartExpanded] = useState(false);
 
   // Hook for looking up products
@@ -67,8 +63,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         return [...prevCart, { product, quantity: 1 }];
       });
 
-      setStatusSummary(null);
-      setCheckoutComplete(false);
+        setCheckoutComplete(false);
       setLookupError(null);  // Clear any previous lookup errors
       playSound('success');
 
@@ -138,15 +133,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       newCart.splice(index, 1);
     }
     setCart(newCart);
-    setStatusSummary(null);
   };
 
-  const removeFromCart = (index: number) => {
-    const newCart = [...cart];
-    newCart.splice(index, 1);
-    setCart(newCart);
-    setStatusSummary(null);
-  };
 
   const pendingItems = cart.filter((item) => item.status !== 'success');
 
@@ -179,7 +167,6 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
     setIsCheckingOut(true);
     setCheckoutComplete(false);
-    setStatusSummary(null);
 
     const processingCart = cart.map((item): CartItem =>
       item.status === 'success' ? item : { ...item, status: 'processing' as const, statusMessage: undefined },
@@ -233,10 +220,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     const mergedResults = [...priorSuccesses, ...results];
 
     const failedItems = mergedResults.filter((item) => item.status === 'failed');
-    const totalSuccesses = successes + priorSuccesses.length;
 
     // Batch all state updates at the end
-    setStatusSummary({ successes: totalSuccesses, failures });
     setCheckoutComplete(failedItems.length === 0 && mergedResults.length > 0);
 
     if (failedItems.length === 0 && mergedResults.length > 0) {
@@ -250,7 +235,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     setIsCheckingOut(false);
   };
 
-  const { total, missingPrices } = calculateTotals();
+  const { total } = calculateTotals();
 
   if (checkoutComplete) {
     return (
