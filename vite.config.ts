@@ -78,6 +78,12 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // Force new service worker to activate immediately
+        skipWaiting: true,
+        // Take control of all pages immediately
+        clientsClaim: true,
+        // Clean up old caches to prevent chunk mismatch
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

@@ -7,9 +7,31 @@ import { Badge } from './components/ui/badge';
 import { Spinner } from './components/ui/spinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
-// Route-based code splitting: lazy load pages
-const ScanPage = lazy(() => import('./pages/ScanPage'));
-const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+// Route-based code splitting: lazy load pages with retry on failure
+const retryLazyImport = (
+  importFn: () => Promise<any>,
+  retriesLeft = 3,
+  interval = 1000
+): Promise<any> => {
+  return importFn().catch((error) => {
+    if (retriesLeft === 0) {
+      // If all retries failed, force reload to get fresh chunks
+      console.error('Chunk load failed after retries. Reloading page...', error);
+      window.location.reload();
+      throw error;
+    }
+
+    console.warn(`Chunk load failed. Retrying... (${retriesLeft} attempts left)`, error);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(retryLazyImport(importFn, retriesLeft - 1, interval));
+      }, interval);
+    });
+  });
+};
+
+const ScanPage = lazy(() => retryLazyImport(() => import('./pages/ScanPage')));
+const CheckoutPage = lazy(() => retryLazyImport(() => import('./pages/CheckoutPage')));
 
 // Loading fallback component for lazy-loaded pages
 const LoadingFallback = ({ label }: { label: string }) => (
