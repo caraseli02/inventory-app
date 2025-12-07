@@ -272,7 +272,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
           type="submit"
           form="create-product-form"
           disabled={mutation.isPending}
-          className="flex-1 font-bold"
+          className="flex-1 font-bold bg-stone-900 hover:bg-stone-800 text-white"
         >
           {mutation.isPending ? (
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>

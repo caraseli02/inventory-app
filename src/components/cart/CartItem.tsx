@@ -70,10 +70,9 @@ export const CartItem = ({ item, index, onUpdateQuantity, onRemove }: CartItemPr
           {/* Optional Remove Button */}
           {onRemove && (
             <Button
-              variant="ghost"
               size="sm"
               onClick={() => onRemove(index)}
-              className="text-xs text-red-600 hover:text-red-900 hover:bg-red-50"
+              className="text-xs bg-stone-900 hover:bg-stone-800 text-white"
             >
               Remove
             </Button>
