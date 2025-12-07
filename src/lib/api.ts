@@ -377,3 +377,38 @@ export const getStockMovements = async (productId: string): Promise<StockMovemen
     throw error;
   }
 };
+
+/**
+ * Fetches all products from Airtable
+ *
+ * Features:
+ * - Retrieves all products sorted alphabetically by Name
+ * - Maps products using mapAirtableProduct for validation
+ * - Suitable for inventory list views
+ *
+ * @returns Array of all Product records
+ * @throws Error if Airtable API call fails
+ */
+export const getAllProducts = async (): Promise<Product[]> => {
+  logger.debug('Fetching all products');
+
+  try {
+    const records = await productsTable
+      .select({
+        sort: [{ field: 'Name', direction: 'asc' }],
+      })
+      .all();
+
+    logger.info('All products fetched', {
+      recordCount: records.length,
+    });
+
+    return records.map(mapAirtableProduct);
+  } catch (error) {
+    logger.error('Failed to fetch all products', {
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
+    throw error;
+  }
+};
