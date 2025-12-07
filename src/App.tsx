@@ -4,7 +4,6 @@ import CheckoutPage from './pages/CheckoutPage';
 import OfflineIndicator from './components/OfflineIndicator';
 import { MinusIcon, PlusIcon, ShoppingCartIcon } from './components/ui/Icons';
 import { Card } from './components/ui/card';
-import { Button } from './components/ui/button';
 import { Badge } from './components/ui/badge';
 
 type ViewState = 'home' | 'add' | 'remove' | 'checkout';
@@ -22,14 +21,7 @@ function App() {
   const [scannerMode, setScannerMode] = useState<Extract<ViewState, 'add' | 'remove'>>(() => {
     return getStoredScannerMode();
   });
-  const [view, setView] = useState<ViewState>(() => {
-    if (typeof window === 'undefined') return 'home';
-
-    const isTabletViewport = window.matchMedia('(min-width: 768px)').matches;
-    if (isTabletViewport) return 'home';
-
-    return getStoredScannerMode();
-  });
+  const [view, setView] = useState<ViewState>('home');
 
   const [isTablet, setIsTablet] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -43,17 +35,13 @@ function App() {
     const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
       const isNowTablet = event.matches;
       setIsTablet(isNowTablet);
-
-      if (!isNowTablet && view === 'home') {
-        setView(scannerMode);
-      }
     };
 
     handleChange(mediaQuery);
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [scannerMode, view]);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -101,16 +89,6 @@ function App() {
           <h1 className="text-5xl font-bold tracking-tight text-stone-900">Grocery Inventory</h1>
         </div>
         <div className="flex items-center gap-3">
-          {!isTablet && view !== 'checkout' && (
-            <Button
-              onClick={() => setView('checkout')}
-              variant="outline"
-              className="border-2 border-stone-300 hover:bg-stone-100"
-            >
-              <ShoppingCartIcon className="h-4 w-4 mr-2" />
-              Checkout
-            </Button>
-          )}
           {isTablet && (
             <Badge variant="secondary" className="bg-stone-100 border-stone-200">
               Tablet mode
@@ -183,7 +161,7 @@ function App() {
             </div>
           </div>
         ) : view === 'checkout' ? (
-          <CheckoutPage onBack={() => setView(isTablet ? 'home' : scannerMode)} />
+          <CheckoutPage onBack={() => setView('home')} />
         ) : (
           <ScanPage
             mode={scannerMode}
