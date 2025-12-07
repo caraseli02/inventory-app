@@ -53,14 +53,28 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
     product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : 'N/A';
   const expiryDisplay = product.fields['Expiry Date'] || 'No expiry date';
 
+  // Calculate current stock from movements since Airtable rollup isn't being returned
+  // Sum all quantities (which are already signed: positive for IN, negative for OUT)
+  const calculatedStock = history?.reduce((total, movement) => {
+    return total + (movement.fields.Quantity || 0);
+  }, 0) ?? 0;
+
+  // Use calculated stock if Airtable rollup is undefined
+  const currentStock = product.fields['Current Stock'] ?? calculatedStock;
+
   const handleStockButton = (type: 'IN' | 'OUT') => {
     const qty = parseInt(stockQuantity);
-    console.log('[ProductDetail] Initiating stock change:', { qty, type, currentStock: product.fields['Current Stock'] });
+    console.log('[ProductDetail] Initiating stock change:', { qty, type, currentStock, calculatedStock });
     handleStockChange(qty, type);
   };
 
   // Debug: Log current stock value
-  console.log('[ProductDetail] Rendering with stock:', product.fields['Current Stock'], 'Product ID:', product.id);
+  console.log('[ProductDetail] Rendering with stock:', {
+    airtableStock: product.fields['Current Stock'],
+    calculatedStock,
+    currentStock,
+    movementCount: history?.length
+  });
 
   return (
     <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200 relative">
@@ -96,7 +110,7 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
           </div>
           <div className="text-right flex-shrink-0">
             <div className="text-3xl font-light text-stone-900">
-              {product.fields['Current Stock'] ?? 0}
+              {currentStock}
             </div>
             <div className="text-xs text-stone-500 uppercase tracking-widest font-semibold mt-1">In Stock</div>
           </div>
