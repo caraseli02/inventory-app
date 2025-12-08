@@ -9,6 +9,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ProductSkeleton } from './ProductSkeleton';
+import EditProductDialog from './EditProductDialog';
+import DeleteConfirmDialog from './DeleteConfirmDialog';
 import type { Product } from '../../types';
 
 interface ProductDetailProps {
@@ -22,6 +24,8 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
 
   // Initialize hooks unconditionally (Rules of Hooks)
   const [stockQuantity, setStockQuantity] = useState<string>('1');
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch History - needs product ID
   const { data: history } = useQuery({
@@ -99,8 +103,18 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
                   <BoxIcon className="h-8 w-8 text-stone-400" />
                 )}
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-stone-900 leading-tight mb-1">{product.fields.Name}</h2>
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <h2 className="text-2xl font-bold text-stone-900 leading-tight">{product.fields.Name}</h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEditDialog(true)}
+                    className="border-2 border-stone-300 hover:bg-stone-100 flex items-center gap-1.5 text-xs font-semibold"
+                  >
+                    ✏️ Edit
+                  </Button>
+                </div>
                 <Badge variant="secondary" className="bg-stone-100 text-stone-700 border-stone-300">
                   {displayCategory}
                 </Badge>
@@ -241,13 +255,37 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
       </CardContent>
 
       <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 sticky bottom-0 w-full z-10">
-        <Button
-          onClick={onScanNew}
-          className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
-        >
-          Scan Another Product
-        </Button>
+        <div className="flex gap-3 w-full">
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteDialog(true)}
+            className="border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50 font-semibold flex items-center gap-2"
+          >
+            🗑️ Delete
+          </Button>
+          <Button
+            onClick={onScanNew}
+            className="flex-1 h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
+          >
+            Scan Another Product
+          </Button>
+        </div>
       </CardFooter>
+
+      {/* Edit Product Dialog */}
+      <EditProductDialog
+        product={product}
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        product={product}
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onDeleteSuccess={onScanNew}
+      />
     </Card>
   );
 };

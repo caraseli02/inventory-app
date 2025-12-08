@@ -412,3 +412,131 @@ export const getAllProducts = async (): Promise<Product[]> => {
     throw error;
   }
 };
+
+/**
+ * Updates an existing product in Airtable
+ *
+ * Validation:
+ * - Product ID is required (non-empty string)
+ * - Only provided fields are updated (partial update)
+ * - Price must be a finite number if provided
+ * - Image URL is converted to Airtable attachment format
+ *
+ * @param productId - Airtable record ID of the product to update
+ * @param data - Partial product data to update
+ * @returns Updated Product with Airtable record ID
+ * @throws {ValidationError} If product ID is invalid or fields are invalid
+ * @throws {NetworkError} If Airtable API request fails
+ *
+ * @example
+ * const updatedProduct = await updateProduct('recXXX', {
+ *   Name: 'Organic Bananas',
+ *   Price: 3.49,
+ * });
+ */
+export const updateProduct = async (
+  productId: string,
+  data: Partial<CreateProductDTO>
+): Promise<Product> => {
+  // Validate product ID
+  try {
+    validateNonEmptyString(productId, 'Product ID');
+  } catch (validationError) {
+    logger.warn('Product update validation failed', {
+      errorMessage: validationError instanceof Error ? validationError.message : String(validationError),
+    });
+    throw validationError;
+  }
+
+  // Validate optional fields if provided
+  if (data.Name !== undefined) {
+    validateNonEmptyString(data.Name, 'Product name');
+  }
+  if (data.Price !== undefined && data.Price !== null && !Number.isFinite(data.Price)) {
+    throw new ValidationError(`Price must be a finite number, got: ${data.Price}`);
+  }
+
+  logger.info('Updating product', {
+    productId,
+    hasName: data.Name !== undefined,
+    hasCategory: data.Category !== undefined,
+    hasPrice: data.Price !== undefined,
+    hasImage: data.Image !== undefined,
+  });
+
+  const fields: Record<string, unknown> = {};
+
+  // Only add fields that are provided
+  if (data.Name !== undefined) fields.Name = data.Name;
+  if (data.Category !== undefined) fields.Category = data.Category;
+  if (data.Price !== undefined) fields.Price = data.Price;
+  if (data['Expiry Date'] !== undefined) fields['Expiry Date'] = data['Expiry Date'];
+
+  // Airtable requires attachments as array of objects with url
+  if (data.Image !== undefined) {
+    fields.Image = data.Image ? [{ url: data.Image } as Attachment] : [];
+  }
+
+  try {
+    const record = await productsTable.update(productId, fields as Partial<ProductFields>, { typecast: true });
+
+    logger.info('Product updated successfully', { productId, name: record.fields.Name });
+    return mapAirtableProduct(record);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Failed to update product', {
+      productId,
+      errorMessage,
+      errorStack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    throw error;
+  }
+};
+
+/**
+ * Deletes a product from Airtable
+ *
+ * Validation:
+ * - Product ID is required (non-empty string)
+ *
+ * Note: Related stock movements may be orphaned or cascade-deleted
+ * depending on Airtable base configuration. Consider checking for
+ * existing stock movements before deletion.
+ *
+ * @param productId - Airtable record ID of the product to delete
+ * @returns void
+ * @throws {ValidationError} If product ID is invalid
+ * @throws {NetworkError} If Airtable API request fails
+ *
+ * @example
+ * await deleteProduct('recXXX');
+ */
+export const deleteProduct = async (productId: string): Promise<void> => {
+  // Validate product ID
+  try {
+    validateNonEmptyString(productId, 'Product ID');
+  } catch (validationError) {
+    logger.warn('Product deletion validation failed', {
+      errorMessage: validationError instanceof Error ? validationError.message : String(validationError),
+    });
+    throw validationError;
+  }
+
+  logger.info('Deleting product', { productId });
+
+  try {
+    await productsTable.destroy(productId);
+
+    logger.info('Product deleted successfully', { productId });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Failed to delete product', {
+      productId,
+      errorMessage,
+      errorStack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    throw error;
+  }
+};
