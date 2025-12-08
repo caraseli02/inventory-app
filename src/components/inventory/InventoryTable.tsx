@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Plus, Minus, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -19,6 +19,8 @@ interface InventoryTableProps {
   products: Product[];
   onViewDetails: (product: Product) => void;
   onQuickAdjust?: (productId: string, delta: number) => void;
+  onEdit?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
   loadingProductIds?: Set<string>;
 }
 
@@ -26,6 +28,8 @@ const InventoryTableComponent = ({
   products,
   onViewDetails,
   onQuickAdjust,
+  onEdit,
+  onDelete,
   loadingProductIds = EMPTY_LOADING_SET,
 }: InventoryTableProps) => {
   if (products.length === 0) {
@@ -51,8 +55,8 @@ const InventoryTableComponent = ({
             <TableHead className="font-bold text-stone-900 text-base">Category</TableHead>
             <TableHead className="font-bold text-stone-900 text-base text-right">Stock</TableHead>
             <TableHead className="font-bold text-stone-900 text-base text-right">Price</TableHead>
-            {onQuickAdjust && (
-              <TableHead className="font-bold text-stone-900 text-base text-center w-[180px] lg:w-[200px]">
+            {(onQuickAdjust || onEdit || onDelete) && (
+              <TableHead className="font-bold text-stone-900 text-base text-center w-[220px] lg:w-[280px]">
                 Actions
               </TableHead>
             )}
@@ -146,36 +150,71 @@ const InventoryTableComponent = ({
                   )}
                 </TableCell>
 
-                {/* Quick Adjust Actions */}
-                {onQuickAdjust && (
+                {/* Actions */}
+                {(onQuickAdjust || onEdit || onDelete) && (
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-2 lg:gap-3 justify-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 lg:h-10 px-3 lg:px-4 border-2 border-stone-300"
-                        onClick={() => onQuickAdjust(product.id, -1)}
-                        disabled={isLoading || currentStock === 0}
-                      >
-                        {isLoading ? (
-                          <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
-                        ) : (
-                          <Minus className="h-3 w-3 lg:h-4 lg:w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 lg:h-10 px-3 lg:px-4 border-2 border-stone-300"
-                        onClick={() => onQuickAdjust(product.id, 1)}
-                        disabled={isLoading}
-                      >
-                        {isLoading ? (
-                          <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
-                        ) : (
-                          <Plus className="h-3 w-3 lg:h-4 lg:w-4" />
-                        )}
-                      </Button>
+                    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-2 justify-center">
+                      {/* Quick Adjust */}
+                      {onQuickAdjust && (
+                        <div className="flex items-center gap-1.5 lg:gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300"
+                            onClick={() => onQuickAdjust(product.id, -1)}
+                            disabled={isLoading || currentStock === 0}
+                            title="Remove 1 unit"
+                          >
+                            {isLoading ? (
+                              <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
+                            ) : (
+                              <Minus className="h-3 w-3 lg:h-4 lg:w-4" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300"
+                            onClick={() => onQuickAdjust(product.id, 1)}
+                            disabled={isLoading}
+                            title="Add 1 unit"
+                          >
+                            {isLoading ? (
+                              <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
+                            ) : (
+                              <Plus className="h-3 w-3 lg:h-4 lg:w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Edit and Delete */}
+                      {(onEdit || onDelete) && (
+                        <div className="flex items-center gap-1.5 lg:gap-2">
+                          {onEdit && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300 hover:bg-stone-100"
+                              onClick={() => onEdit(product)}
+                              title="Edit product"
+                            >
+                              <Edit2 className="h-3 w-3 lg:h-4 lg:w-4" />
+                            </Button>
+                          )}
+                          {onDelete && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
+                              onClick={() => onDelete(product)}
+                              title="Delete product"
+                            >
+                              <Trash2 className="h-3 w-3 lg:h-4 lg:w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                 )}
