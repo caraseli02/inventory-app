@@ -1,4 +1,5 @@
 import { useState, type FormEvent, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Scanner from '../components/scanner/Scanner';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { useToast } from '../hooks/useToast';
@@ -16,6 +17,7 @@ type ScanPageProps = {
 };
 
 const ScanPage = ({ onBack }: ScanPageProps) => {
+  const { t } = useTranslation();
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
   const { showToast } = useToast();
@@ -33,8 +35,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
       const errorMessage = error instanceof Error ? error.message : String(error);
       showToast(
         'error',
-        'Lookup failed',
-        errorMessage || 'Failed to lookup product. Please try again.',
+        t('toast.lookupFailed'),
+        errorMessage || t('toast.lookupFailedMessage'),
         5000
       );
       // Reset after showing error
@@ -71,7 +73,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
       {/* Mobile View */}
       <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
         <PageHeader
-          title={showCreateForm ? 'New Product' : showDetail ? 'Manage Stock' : 'Scan Product'}
+          title={showCreateForm ? t('product.newProduct') : showDetail ? t('product.manageStock') : t('scanner.title')}
           onBack={onBack}
         />
 
@@ -98,7 +100,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
               <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
                 <div className="flex flex-col items-center gap-2">
                   <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
-                  <p className="text-stone-900 text-sm font-medium">Searching…</p>
+                  <p className="text-stone-900 text-sm font-medium">{t('scanner.searching')}</p>
                 </div>
               </div>
             )}
@@ -112,14 +114,14 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
                 className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
-                placeholder="Enter barcode manually"
+                placeholder={t('scanner.manualEntry')}
               />
               <Button
                 type="submit"
                 disabled={manualCode.length < 3}
                 className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
               >
-                Add
+                {t('scanner.addButton')}
               </Button>
             </form>
           </div>
@@ -138,7 +140,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
             <div className="p-6 flex items-center justify-center">
               <div className="flex items-center gap-3 text-gray-500">
                 <ShoppingCartIcon className="h-5 w-5 opacity-50" />
-                <p className="text-sm">Point camera at barcode or enter manually</p>
+                <p className="text-sm">{t('scanner.emptyState')}</p>
               </div>
             </div>
           ) : (
@@ -154,7 +156,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
       {/* Desktop/Tablet View */}
       <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200">
         <PageHeader
-          title={showCreateForm ? 'New Product' : showDetail ? 'Manage Stock' : 'Scan Product'}
+          title={showCreateForm ? t('product.newProduct') : showDetail ? t('product.manageStock') : t('scanner.title')}
           onBack={onBack}
         />
 
@@ -182,7 +184,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                 <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
                   <div className="flex flex-col items-center gap-2">
                     <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
-                    <p className="text-stone-900 text-sm font-medium">Searching…</p>
+                    <p className="text-stone-900 text-sm font-medium">{t('scanner.searching')}</p>
                   </div>
                 </div>
               )}
@@ -198,14 +200,14 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
                     className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
-                    placeholder="Enter barcode manually"
+                    placeholder={t('scanner.manualEntry')}
                   />
                   <Button
                     type="submit"
                     disabled={manualCode.length < 3}
                     className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
                   >
-                    Add
+                    {t('scanner.addButton')}
                   </Button>
                 </form>
               </>
@@ -218,7 +220,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
               /* Empty State */
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3 text-gray-400" />
-                <p className="text-sm text-gray-500">Point camera at barcode or enter manually</p>
+                <p className="text-sm text-gray-500">{t('scanner.emptyState')}</p>
               </div>
             ) : (
               /* Content - Full height without footer */

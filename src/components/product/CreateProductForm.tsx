@@ -1,4 +1,5 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createProduct, addStockMovement } from '../../lib/api';
 import { suggestProductDetails } from '../../lib/ai';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ interface CreateProductFormProps {
 }
 
 const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
@@ -95,8 +97,8 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
     },
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ['product', barcode] });
-      toast.success('Product created', {
-        description: `${newProduct.fields.Name} successfully added to inventory`,
+      toast.success(t('toast.productCreated'), {
+        description: t('toast.productCreatedMessage', { name: newProduct.fields.Name }),
       });
       onSuccess();
     },
@@ -107,8 +109,8 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
         errorStack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString(),
       });
-      toast.error('Failed to create product', {
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      toast.error(t('toast.error'), {
+        description: error instanceof Error ? error.message : t('errors.unknownError'),
       });
     },
   });

@@ -1,4 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import OfflineIndicator from './components/OfflineIndicator';
 import { ToastProvider } from './hooks/useToast';
 import { Toaster } from 'sonner';
@@ -45,6 +46,7 @@ const LoadingFallback = ({ label }: { label: string }) => (
 type ViewState = 'home' | 'manage' | 'checkout' | 'inventory';
 
 function App() {
+  const { t } = useTranslation();
   const [view, setView] = useState<ViewState>('home');
 
   const [isTablet, setIsTablet] = useState(() => {
@@ -78,14 +80,14 @@ function App() {
       <header className="mb-6 lg:mb-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Badge variant="outline" className="text-xs tracking-widest text-stone-400 uppercase font-bold bg-stone-50 border-stone-200 mb-2">
-            Inventory Management
+            {t('app.subtitle')}
           </Badge>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">Grocery Inventory</h1>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">{t('app.title')}</h1>
         </div>
         <div className="flex items-center gap-3">
           {isTablet && (
             <Badge variant="secondary" className="bg-stone-100 border-stone-200">
-              Tablet mode
+              {t('app.tabletMode')}
             </Badge>
           )}
         </div>
@@ -112,13 +114,13 @@ function App() {
                       <BoxIcon className="h-6 w-6" />
                     </div>
                     <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
-                      Scanner
+                      {t('home.manageStock.badge')}
                     </Badge>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
-                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">Manage Stock</h2>
+                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{t('home.manageStock.title')}</h2>
                     <p className="text-xs sm:text-sm text-stone-600 font-medium">
-                      Scan barcodes to add or remove inventory items.
+                      {t('home.manageStock.description')}
                     </p>
                   </div>
                 </div>
@@ -140,13 +142,13 @@ function App() {
                       <ShoppingCartIcon className="h-6 w-6" />
                     </div>
                     <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
-                      {isTablet ? 'Tablet' : 'Mobile'}
+                      {isTablet ? t('home.checkoutMode.badgeTablet') : t('home.checkoutMode.badgeMobile')}
                     </Badge>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
-                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">Checkout Mode</h2>
+                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{t('home.checkoutMode.title')}</h2>
                     <p className="text-xs sm:text-sm text-stone-600 font-medium">
-                      Batch scan for payment with simplified mobile controls.
+                      {t('home.checkoutMode.description')}
                     </p>
                   </div>
                 </div>
@@ -168,13 +170,13 @@ function App() {
                       <ListIcon className="h-6 w-6" />
                     </div>
                     <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
-                      Browse
+                      {t('home.viewInventory.badge')}
                     </Badge>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
-                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">View Inventory</h2>
+                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{t('home.viewInventory.title')}</h2>
                     <p className="text-xs sm:text-sm text-stone-600 font-medium">
-                      Browse all products, check stock levels, and adjust quantities.
+                      {t('home.viewInventory.description')}
                     </p>
                   </div>
                 </div>
@@ -183,19 +185,19 @@ function App() {
           </div>
         ) : view === 'checkout' ? (
           <ErrorBoundary>
-            <Suspense fallback={<LoadingFallback label="Loading checkout..." />}>
+            <Suspense fallback={<LoadingFallback label={t('loading.checkout')} />}>
               <CheckoutPage onBack={() => setView('home')} />
             </Suspense>
           </ErrorBoundary>
         ) : view === 'inventory' ? (
           <ErrorBoundary>
-            <Suspense fallback={<LoadingFallback label="Loading inventory..." />}>
+            <Suspense fallback={<LoadingFallback label={t('loading.inventory')} />}>
               <InventoryListPage onBack={() => setView('home')} />
             </Suspense>
           </ErrorBoundary>
         ) : (
           <ErrorBoundary>
-            <Suspense fallback={<LoadingFallback label="Loading scanner..." />}>
+            <Suspense fallback={<LoadingFallback label={t('loading.scanner')} />}>
               <ScanPage onBack={() => setView('home')} />
             </Suspense>
           </ErrorBoundary>

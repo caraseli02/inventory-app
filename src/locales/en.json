@@ -1,0 +1,185 @@
+{
+  "app": {
+    "title": "Grocery Inventory",
+    "subtitle": "Inventory Management",
+    "tabletMode": "Tablet mode"
+  },
+  "home": {
+    "manageStock": {
+      "title": "Manage Stock",
+      "description": "Scan barcodes to add or remove inventory items.",
+      "badge": "Scanner"
+    },
+    "checkoutMode": {
+      "title": "Checkout Mode",
+      "description": "Batch scan for payment with simplified mobile controls.",
+      "badgeMobile": "Mobile",
+      "badgeTablet": "Tablet"
+    },
+    "viewInventory": {
+      "title": "View Inventory",
+      "description": "Browse all products, check stock levels, and adjust quantities.",
+      "badge": "Browse"
+    }
+  },
+  "scanner": {
+    "title": "Scan Product",
+    "searching": "Searching…",
+    "manualEntry": "Enter barcode manually",
+    "addButton": "Add",
+    "emptyState": "Point camera at barcode or enter manually"
+  },
+  "product": {
+    "newProduct": "New Product",
+    "manageStock": "Manage Stock",
+    "barcode": "Barcode",
+    "name": "Product Name",
+    "namePlaceholder": "e.g. Organic Bananas",
+    "category": "Category",
+    "price": "Price",
+    "pricePlaceholder": "0.00",
+    "initialStock": "Initial Stock",
+    "expiryDate": "Expiry Date",
+    "inStock": "In Stock",
+    "expiry": "Expiry",
+    "noExpiry": "No expiry date",
+    "adjustQuantity": "Adjust Quantity",
+    "addStock": "Add Stock",
+    "removeStock": "Remove Stock",
+    "editProduct": "Edit Product",
+    "delete": "Delete",
+    "scanAnother": "Scan Another Product",
+    "recentActivity": "Recent Activity",
+    "noRecentMovements": "No recent movements",
+    "preview": "Preview",
+    "searching": "Searching...",
+    "createAndStock": "Create & Stock",
+    "cancel": "Cancel",
+    "insufficientStock": "Insufficient Stock",
+    "cannotRemove": "Cannot remove {{quantity}} unit(s). Only {{available}} unit(s) available.",
+    "updateProduct": "Update Product",
+    "update": "Update"
+  },
+  "categories": {
+    "General": "General",
+    "Produce": "Produce",
+    "Dairy": "Dairy",
+    "Meat": "Meat",
+    "Pantry": "Pantry",
+    "Snacks": "Snacks",
+    "Beverages": "Beverages",
+    "Household": "Household",
+    "Uncategorized": "Uncategorized"
+  },
+  "inventory": {
+    "title": "Inventory List",
+    "loading": "Loading inventory...",
+    "failedToLoad": "Failed to Load Inventory",
+    "tryAgain": "Try Again",
+    "noProducts": "No products found",
+    "adjustFilters": "Try adjusting your filters or search query",
+    "refresh": "Refresh",
+    "refreshed": "Refreshed",
+    "dataRefreshed": "Inventory data refreshed",
+    "filters": {
+      "search": "Search products...",
+      "category": "All categories",
+      "sortBy": "Sort by",
+      "sortByName": "Name",
+      "sortByStock": "Stock",
+      "sortByPrice": "Price",
+      "reset": "Reset",
+      "showing": "Showing {{count}} of {{total}} products"
+    },
+    "table": {
+      "product": "Product",
+      "category": "Category",
+      "stock": "Stock",
+      "price": "Price",
+      "actions": "Actions",
+      "viewDetails": "View Details",
+      "edit": "Edit",
+      "delete": "Delete"
+    }
+  },
+  "cart": {
+    "title": "My Cart",
+    "items": "items",
+    "empty": "Cart is empty",
+    "total": "Total",
+    "nextProduct": "Next Product",
+    "finish": "Finish",
+    "processing": "Processing...",
+    "quickAdd": {
+      "title": "Quick Add",
+      "placeholder": "Scan or enter code",
+      "add": "Add"
+    }
+  },
+  "checkout": {
+    "title": "Scan the items barcode inside the square frame to add items to your cart",
+    "complete": "Checkout Complete",
+    "stockUpdated": "Stock has been updated for all items.",
+    "backToHome": "Back to Home",
+    "confirmTitle": "Confirm Checkout",
+    "confirmMessage": "Complete checkout for {{count}} items? Total: {{total}}",
+    "confirmMessageWithMissing": "Complete checkout for {{count}} items? Priced subtotal: {{total}}. {{missing}} item(s) are missing price data and will be processed without totals.",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "dialogs": {
+    "productDetail": {
+      "title": "Product Details"
+    },
+    "deleteConfirm": {
+      "title": "Confirm Deletion",
+      "message": "Are you sure you want to delete {{name}}? This action cannot be undone.",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "deleting": "Deleting...",
+      "deleted": "Product Deleted",
+      "deletedMessage": "{{name}} was deleted successfully",
+      "deleteFailed": "Delete Failed",
+      "deleteFailedMessage": "Failed to delete product. Please try again."
+    },
+    "editProduct": {
+      "title": "Edit Product"
+    }
+  },
+  "toast": {
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Information",
+    "productCreated": "Product created",
+    "productCreatedMessage": "{{name}} successfully added to inventory",
+    "productUpdated": "Product updated",
+    "productUpdatedMessage": "{{name}} updated successfully",
+    "stockUpdated": "Stock Updated",
+    "stockUpdatedMessage": "{{action}} {{quantity}} unit(s) for {{name}}",
+    "stockAdded": "Added",
+    "stockRemoved": "Removed",
+    "updateFailed": "Update Failed",
+    "lookupFailed": "Lookup failed",
+    "lookupFailedMessage": "Failed to lookup product. Please try again.",
+    "productNotFound": "Product not found. Please add it to inventory first.",
+    "networkError": "Network error. Check your connection and try again.",
+    "authError": "Authentication failed. Check API credentials.",
+    "validationError": "Cannot reduce stock below zero. Adjust quantity and retry.",
+    "authorizationError": "Authorization failed. Contact support."
+  },
+  "offline": {
+    "message": "No internet connection"
+  },
+  "loading": {
+    "scanner": "Loading scanner...",
+    "checkout": "Loading checkout...",
+    "inventory": "Loading inventory...",
+    "default": "Loading..."
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "tryRefreshing": "Try refreshing the page",
+    "unknownError": "Unknown error occurred"
+  }
+}

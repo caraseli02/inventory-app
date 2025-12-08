@@ -1,0 +1,185 @@
+{
+  "app": {
+    "title": "Inventario de Comestibles",
+    "subtitle": "Gestión de Inventario",
+    "tabletMode": "Modo tableta"
+  },
+  "home": {
+    "manageStock": {
+      "title": "Gestionar Stock",
+      "description": "Escanea códigos de barras para agregar o quitar artículos del inventario.",
+      "badge": "Escáner"
+    },
+    "checkoutMode": {
+      "title": "Modo Caja",
+      "description": "Escaneo por lotes para pago con controles móviles simplificados.",
+      "badgeMobile": "Móvil",
+      "badgeTablet": "Tableta"
+    },
+    "viewInventory": {
+      "title": "Ver Inventario",
+      "description": "Navega todos los productos, consulta niveles de stock y ajusta cantidades.",
+      "badge": "Navegar"
+    }
+  },
+  "scanner": {
+    "title": "Escanear Producto",
+    "searching": "Buscando…",
+    "manualEntry": "Ingresar código de barras manualmente",
+    "addButton": "Agregar",
+    "emptyState": "Apunta la cámara al código de barras o ingrésalo manualmente"
+  },
+  "product": {
+    "newProduct": "Nuevo Producto",
+    "manageStock": "Gestionar Stock",
+    "barcode": "Código de Barras",
+    "name": "Nombre del Producto",
+    "namePlaceholder": "ej. Bananas Orgánicas",
+    "category": "Categoría",
+    "price": "Precio",
+    "pricePlaceholder": "0.00",
+    "initialStock": "Stock Inicial",
+    "expiryDate": "Fecha de Vencimiento",
+    "inStock": "En Stock",
+    "expiry": "Vencimiento",
+    "noExpiry": "Sin fecha de vencimiento",
+    "adjustQuantity": "Ajustar Cantidad",
+    "addStock": "Agregar Stock",
+    "removeStock": "Quitar Stock",
+    "editProduct": "Editar Producto",
+    "delete": "Eliminar",
+    "scanAnother": "Escanear Otro Producto",
+    "recentActivity": "Actividad Reciente",
+    "noRecentMovements": "Sin movimientos recientes",
+    "preview": "Vista Previa",
+    "searching": "Buscando...",
+    "createAndStock": "Crear y Almacenar",
+    "cancel": "Cancelar",
+    "insufficientStock": "Stock Insuficiente",
+    "cannotRemove": "No se pueden quitar {{quantity}} unidades. Solo hay {{available}} unidades disponibles.",
+    "updateProduct": "Actualizar Producto",
+    "update": "Actualizar"
+  },
+  "categories": {
+    "General": "General",
+    "Produce": "Frutas y Verduras",
+    "Dairy": "Lácteos",
+    "Meat": "Carnes",
+    "Pantry": "Despensa",
+    "Snacks": "Snacks",
+    "Beverages": "Bebidas",
+    "Household": "Hogar",
+    "Uncategorized": "Sin categoría"
+  },
+  "inventory": {
+    "title": "Lista de Inventario",
+    "loading": "Cargando inventario...",
+    "failedToLoad": "Error al Cargar el Inventario",
+    "tryAgain": "Intentar de Nuevo",
+    "noProducts": "No se encontraron productos",
+    "adjustFilters": "Intenta ajustar tus filtros o búsqueda",
+    "refresh": "Actualizar",
+    "refreshed": "Actualizado",
+    "dataRefreshed": "Datos de inventario actualizados",
+    "filters": {
+      "search": "Buscar productos...",
+      "category": "Todas las categorías",
+      "sortBy": "Ordenar por",
+      "sortByName": "Nombre",
+      "sortByStock": "Stock",
+      "sortByPrice": "Precio",
+      "reset": "Restablecer",
+      "showing": "Mostrando {{count}} de {{total}} productos"
+    },
+    "table": {
+      "product": "Producto",
+      "category": "Categoría",
+      "stock": "Stock",
+      "price": "Precio",
+      "actions": "Acciones",
+      "viewDetails": "Ver Detalles",
+      "edit": "Editar",
+      "delete": "Eliminar"
+    }
+  },
+  "cart": {
+    "title": "Mi Carrito",
+    "items": "artículos",
+    "empty": "El carrito está vacío",
+    "total": "Total",
+    "nextProduct": "Siguiente Producto",
+    "finish": "Finalizar",
+    "processing": "Procesando...",
+    "quickAdd": {
+      "title": "Agregar Rápido",
+      "placeholder": "Escanear o ingresar código",
+      "add": "Agregar"
+    }
+  },
+  "checkout": {
+    "title": "Escanea el código de barras de los artículos dentro del marco cuadrado para agregarlos a tu carrito",
+    "complete": "Pago Completado",
+    "stockUpdated": "El stock se ha actualizado para todos los artículos.",
+    "backToHome": "Volver al Inicio",
+    "confirmTitle": "Confirmar Pago",
+    "confirmMessage": "¿Completar el pago de {{count}} artículos? Total: {{total}}",
+    "confirmMessageWithMissing": "¿Completar el pago de {{count}} artículos? Subtotal con precio: {{total}}. {{missing}} artículo(s) no tienen precio y se procesarán sin totales.",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
+  },
+  "dialogs": {
+    "productDetail": {
+      "title": "Detalles del Producto"
+    },
+    "deleteConfirm": {
+      "title": "Confirmar Eliminación",
+      "message": "¿Estás seguro de que deseas eliminar {{name}}? Esta acción no se puede deshacer.",
+      "confirm": "Eliminar",
+      "cancel": "Cancelar",
+      "deleting": "Eliminando...",
+      "deleted": "Producto Eliminado",
+      "deletedMessage": "{{name}} fue eliminado exitosamente",
+      "deleteFailed": "Error al Eliminar",
+      "deleteFailedMessage": "No se pudo eliminar el producto. Por favor, intenta de nuevo."
+    },
+    "editProduct": {
+      "title": "Editar Producto"
+    }
+  },
+  "toast": {
+    "success": "Éxito",
+    "error": "Error",
+    "warning": "Advertencia",
+    "info": "Información",
+    "productCreated": "Producto creado",
+    "productCreatedMessage": "{{name}} agregado exitosamente al inventario",
+    "productUpdated": "Producto actualizado",
+    "productUpdatedMessage": "{{name}} actualizado exitosamente",
+    "stockUpdated": "Stock Actualizado",
+    "stockUpdatedMessage": "{{action}} {{quantity}} unidad(es) para {{name}}",
+    "stockAdded": "Agregado",
+    "stockRemoved": "Quitado",
+    "updateFailed": "Error al Actualizar",
+    "lookupFailed": "Búsqueda falló",
+    "lookupFailedMessage": "No se pudo buscar el producto. Por favor, intenta de nuevo.",
+    "productNotFound": "Producto no encontrado. Por favor, agrégalo primero al inventario.",
+    "networkError": "Error de red. Verifica tu conexión e intenta de nuevo.",
+    "authError": "Error de autenticación. Verifica las credenciales de la API.",
+    "validationError": "No se puede reducir el stock por debajo de cero. Ajusta la cantidad e intenta de nuevo.",
+    "authorizationError": "Error de autorización. Contacta a soporte."
+  },
+  "offline": {
+    "message": "Sin conexión a internet"
+  },
+  "loading": {
+    "scanner": "Cargando escáner...",
+    "checkout": "Cargando caja...",
+    "inventory": "Cargando inventario...",
+    "default": "Cargando..."
+  },
+  "errors": {
+    "somethingWentWrong": "Algo salió mal",
+    "tryRefreshing": "Intenta actualizar la página",
+    "unknownError": "Ocurrió un error desconocido"
+  }
+}
