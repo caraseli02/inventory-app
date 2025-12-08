@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addStockMovement } from '../lib/api';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
-import type { Product } from '../types';
+import type { Product, StockMovement } from '../types';
 
 const SAFE_STOCK_THRESHOLD = 50;
 
@@ -46,7 +46,7 @@ export const useStockMutation = (product: Product) => {
 
       // Optimistically update the history by adding a temporary movement
       // This automatically updates the calculated stock in ProductDetail
-      queryClient.setQueryData(['history', product.id], (old: any[] | undefined) => {
+      queryClient.setQueryData(['history', product.id], (old: StockMovement[] | undefined) => {
         if (!old) return old;
         const tempMovement = {
           id: `temp-${Date.now()}`,

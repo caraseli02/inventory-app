@@ -32,7 +32,7 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
 
   // Only initialize mutation hook when product exists
   // Pass a dummy product during loading to satisfy hooks rule
-  const dummyProduct = { id: '', fields: { Name: '', Barcode: barcode, 'Current Stock': 0 } } as any;
+  const dummyProduct: Product = { id: '', fields: { Name: '', Barcode: barcode, 'Current Stock': 0 } };
   const { handleStockChange, loadingAction } = useStockMutation(product || dummyProduct);
 
   // Show loading state with skeleton
