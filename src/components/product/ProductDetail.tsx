@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getStockMovements } from '../../lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useStockMutation } from '../../hooks/useStockMutation';
@@ -19,6 +20,7 @@ interface ProductDetailProps {
 }
 
 const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
+  const { t } = useTranslation();
   // Fetch product reactively - this ensures we always show fresh data from cache
   const { data: product, isLoading } = useProductLookup(barcode);
 
@@ -48,10 +50,10 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
     return <ProductSkeleton />;
   }
 
-  const displayCategory = product.fields.Category || 'Uncategorized';
+  const displayCategory = product.fields.Category ? t(`categories.${product.fields.Category}`) : t('categories.Uncategorized');
   const displayPrice =
     product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : 'N/A';
-  const expiryDisplay = product.fields['Expiry Date'] || 'No expiry date';
+  const expiryDisplay = product.fields['Expiry Date'] || t('product.noExpiry');
 
   // Calculate current stock from ALL movements (since Airtable rollup isn't being returned)
   // Sum all quantities (which are already signed: positive for IN, negative for OUT)
@@ -115,7 +117,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
             <div className="text-3xl font-light text-stone-900">
               {currentStock}
             </div>
-            <div className="text-xs text-stone-500 uppercase tracking-widest font-semibold mt-1">In Stock</div>
+            <div className="text-xs text-stone-500 uppercase tracking-widest font-semibold mt-1">{t('product.inStock')}</div>
           </div>
         </div>
       </CardHeader>
@@ -124,13 +126,13 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-stone-50 to-white border-2 border-stone-200">
             <CardContent className="p-4">
-              <div className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">Price</div>
+              <div className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">{t('product.price')}</div>
               <div className="text-stone-900 font-semibold text-lg">{displayPrice}</div>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-stone-50 to-white border-2 border-stone-200">
             <CardContent className="p-4">
-              <div className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">Expiry</div>
+              <div className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">{t('product.expiry')}</div>
               <div className="text-stone-900 font-semibold text-sm">{expiryDisplay}</div>
             </CardContent>
           </Card>
@@ -138,7 +140,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
 
         {/* Quantity Controls */}
         <div className="mb-4">
-          <div className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">Adjust Quantity</div>
+          <div className="text-xs text-stone-500 uppercase tracking-widest font-bold mb-2">{t('product.adjustQuantity')}</div>
           <div className="flex items-center justify-center gap-3">
             <Button
               onClick={() => {
@@ -188,7 +190,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
             ) : (
               <span className="flex items-center gap-2">
                 <span className="text-lg">📥</span>
-                Add Stock
+                {t('product.addStock')}
               </span>
             )}
           </Button>
@@ -204,7 +206,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
             ) : (
               <span className="flex items-center gap-2">
                 <span className="text-lg">📤</span>
-                Remove Stock
+                {t('product.removeStock')}
               </span>
             )}
           </Button>
@@ -218,7 +220,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
             size="lg"
             className="font-semibold border-2 border-stone-300 hover:bg-stone-100 flex items-center justify-center gap-2"
           >
-            ✏️ Edit Product
+            ✏️ {t('product.editProduct')}
           </Button>
           <Button
             variant="outline"
@@ -226,7 +228,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
             size="lg"
             className="font-semibold border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50 flex items-center justify-center gap-2"
           >
-            🗑️ Delete
+            🗑️ {t('product.delete')}
           </Button>
         </div>
 
@@ -234,14 +236,14 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
         {currentStock < parseInt(stockQuantity) && (
           <div className="mb-4 p-3 bg-red-50 border-2 border-red-200 rounded-lg">
             <p className="text-sm text-red-700 font-medium">
-              ⚠️ Cannot remove {stockQuantity} units. Only {currentStock} in stock.
+              ⚠️ {t('product.cannotRemove', { quantity: stockQuantity, available: currentStock })}
             </p>
           </div>
         )}
 
         {/* Recent Activity Section */}
         <div className="border-t-2 border-stone-200 pt-4 mt-4">
-          <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">Recent Activity</h3>
+          <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">{t('product.recentActivity')}</h3>
           <div className="space-y-2">
             {recentHistory.map((move) => (
               <div key={move.id} className="flex justify-between items-center text-sm p-2.5 bg-stone-50 rounded-lg border border-stone-200">
@@ -258,7 +260,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
               </div>
             ))}
             {recentHistory.length === 0 && (
-              <div className="text-stone-500 text-sm text-center italic py-3">No recent movements</div>
+              <div className="text-stone-500 text-sm text-center italic py-3">{t('product.noRecentMovements')}</div>
             )}
           </div>
         </div>
@@ -269,7 +271,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
           onClick={onScanNew}
           className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
         >
-          Scan Another Product
+          {t('product.scanAnother')}
         </Button>
       </CardFooter>
 

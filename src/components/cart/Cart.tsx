@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CartItem as CartItemType } from '../../types';
 import { CartItem as CartItemComponent } from './CartItem';
 import { CartHeader } from './CartHeader';
@@ -31,6 +32,7 @@ export const Cart = ({
   onCheckout,
   customFooter,
 }: CartProps) => {
+  const { t } = useTranslation();
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -43,7 +45,7 @@ export const Cart = ({
         {cart.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3" />
-            <p className="text-sm">Cart is empty</p>
+            <p className="text-sm">{t('cart.empty')}</p>
           </div>
         ) : (
           cart.map((item, index) => (
