@@ -82,17 +82,6 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       <PageHeader
         title="Inventory List"
         onBack={onBack}
-        actions={
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isLoading}
-            className="border-2 border-stone-300"
-          >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
-        }
       />
 
       <div className="h-[calc(100dvh-64px)] overflow-y-auto p-6">
@@ -105,6 +94,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
             filteredCount={filteredCount}
             onFilterChange={updateFilter}
             onReset={resetFilters}
+            onRefresh={handleRefresh}
+            isRefreshing={isLoading}
           />
 
           {/* Loading State */}

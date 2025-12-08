@@ -1,4 +1,4 @@
-import { Search, X, ArrowUpDown } from 'lucide-react';
+import { Search, X, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../ui/select';
-import type { InventoryFilters, SortField, SortDirection } from '../../hooks/useInventoryList';
+import type { InventoryFilters, SortField } from '../../hooks/useInventoryList';
 
 interface InventoryFiltersProps {
   filters: InventoryFilters;
@@ -21,6 +21,8 @@ interface InventoryFiltersProps {
     value: InventoryFilters[K]
   ) => void;
   onReset: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 export const InventoryFiltersBar = ({
@@ -30,6 +32,8 @@ export const InventoryFiltersBar = ({
   filteredCount,
   onFilterChange,
   onReset,
+  onRefresh,
+  isRefreshing = false,
 }: InventoryFiltersProps) => {
   const hasActiveFilters =
     filters.searchQuery ||
@@ -148,6 +152,20 @@ export const InventoryFiltersBar = ({
             ? `${totalProducts} products`
             : `${filteredCount} of ${totalProducts}`}
         </Badge>
+
+        {/* Refresh Button */}
+        {onRefresh && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="h-10 w-10 p-0 border-2 border-stone-300"
+            title="Refresh inventory"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { getAllProducts } from '../lib/api';
-import type { Product } from '../types';
 
 export type SortField = 'name' | 'stock' | 'price' | 'category';
 export type SortDirection = 'asc' | 'desc';
