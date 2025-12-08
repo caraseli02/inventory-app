@@ -70,7 +70,8 @@ export const useInventoryList = () => {
       result = result.filter((product) => {
         const currentStock = product.fields['Current Stock Level'] ?? 0;
         const minStock = product.fields['Min Stock Level'] ?? 0;
-        return currentStock < minStock;
+        // Only filter products that have a defined minimum stock level
+        return currentStock < minStock && minStock > 0;
       });
     }
 

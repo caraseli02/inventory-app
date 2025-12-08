@@ -11,6 +11,9 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import type { Product } from '../../types';
 
+// Module-level constant to avoid creating new Set on every render
+const EMPTY_LOADING_SET = new Set<string>();
+
 interface InventoryTableProps {
   products: Product[];
   onViewDetails: (product: Product) => void;
@@ -22,7 +25,7 @@ export const InventoryTable = ({
   products,
   onViewDetails,
   onQuickAdjust,
-  loadingProductIds = new Set(),
+  loadingProductIds = EMPTY_LOADING_SET,
 }: InventoryTableProps) => {
   if (products.length === 0) {
     return (
@@ -65,8 +68,17 @@ export const InventoryTable = ({
             return (
               <TableRow
                 key={product.id}
-                className="cursor-pointer hover:bg-stone-50"
+                className="cursor-pointer hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-lavender)] focus:ring-inset"
                 onClick={() => onViewDetails(product)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onViewDetails(product);
+                  }
+                }}
+                tabIndex={0}
+                role="button"
+                aria-label={`View details for ${product.fields.Name}`}
               >
                 {/* Image */}
                 <TableCell>

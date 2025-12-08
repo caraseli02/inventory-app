@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
@@ -23,6 +23,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState<Set<string>>(new Set());
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     products,
@@ -37,18 +38,31 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     filteredCount,
   } = useInventoryList();
 
-  const handleViewDetails = (product: Product) => {
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleViewDetails = useCallback((product: Product) => {
     setSelectedProduct(product);
     setDetailDialogOpen(true);
-  };
+  }, []);
 
-  const handleCloseDialog = () => {
+  const handleCloseDialog = useCallback(() => {
     setDetailDialogOpen(false);
+    // Clear any existing timeout
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
     // Small delay before clearing to avoid flash
-    setTimeout(() => setSelectedProduct(null), 200);
-  };
+    closeTimeoutRef.current = setTimeout(() => setSelectedProduct(null), 200);
+  }, []);
 
-  const handleQuickAdjust = async (productId: string, delta: number) => {
+  const handleQuickAdjust = useCallback(async (productId: string, delta: number) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
@@ -96,12 +110,12 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         return next;
       });
     }
-  };
+  }, [products, loadingProducts, queryClient, showToast]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     refetch();
     showToast('success', 'Refreshed', 'Inventory data refreshed', 2000);
-  };
+  }, [refetch, showToast]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
