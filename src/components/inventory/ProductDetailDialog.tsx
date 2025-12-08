@@ -48,7 +48,7 @@ export const ProductDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="h-dvh w-full sm:h-auto sm:max-w-[95vw] sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6">
+      <DialogContent className="h-dvh w-full max-w-none sm:h-auto sm:max-w-[95vw] sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6">
         <DialogHeader className="pt-[max(1.5rem,env(safe-area-inset-top))] px-6 pb-4 sm:p-0 sm:pb-4">
           <DialogTitle className="text-2xl font-bold text-stone-900 flex items-center gap-2">
             <Package className="h-6 w-6" />
