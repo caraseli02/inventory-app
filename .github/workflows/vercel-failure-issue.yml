@@ -1,0 +1,72 @@
+name: Create Issue on Vercel Build Failure
+
+on:
+  deployment_status:
+  check_run:
+    types: [completed]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  create-issue:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event.deployment_status.state == 'failure') ||
+      (github.event.check_run.conclusion == 'failure' && contains(github.event.check_run.app.name, 'Vercel'))
+
+    steps:
+      - name: Create issue for Claude Code
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 Vercel Build Failed on ${context.ref}`;
+            const body = `@claude Please fix the Vercel build failure.
+
+            **Details:**
+            - Branch: \`${context.ref}\`
+            - Commit: ${context.sha}
+            - Deployment URL: ${{ github.event.deployment_status.target_url || 'N/A' }}
+            - Check URL: ${{ github.event.check_run.html_url || 'N/A' }}
+
+            **Tasks:**
+            1. Investigate the build error
+            2. Run \`pnpm build\` to reproduce the issue
+            3. Fix the TypeScript/build errors
+            4. Ensure the build passes
+            5. Commit and push the fix
+
+            **Branch to fix:** \`${context.ref}\`
+            `;
+
+            // Check if an issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'vercel-build-failure'
+            });
+
+            const existingIssue = issues.data.find(issue =>
+              issue.title.includes(context.ref)
+            );
+
+            if (existingIssue) {
+              // Add a comment to existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: `Another build failure occurred:\n\n${body}`
+              });
+            } else {
+              // Create new issue
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['vercel-build-failure', 'automated']
+              });
+            }
