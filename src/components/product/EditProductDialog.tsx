@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { updateProduct } from '../../lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ interface EditProductDialogProps {
 }
 
 const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   // Initialize form with current product values
@@ -46,8 +48,8 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
       queryClient.invalidateQueries({ queryKey: ['product', product.fields.Barcode] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
 
-      toast.success('Product updated', {
-        description: `${updatedProduct.fields.Name} successfully updated`,
+      toast.success(t('toast.productUpdated'), {
+        description: t('toast.productUpdatedMessage', { name: updatedProduct.fields.Name }),
       });
 
       onOpenChange(false);
@@ -59,8 +61,8 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
         errorStack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString(),
       });
-      toast.error('Failed to update product', {
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      toast.error(t('toast.updateFailed'), {
+        description: error instanceof Error ? error.message : t('errors.unknownError'),
       });
     },
   });
@@ -78,7 +80,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-stone-900">Edit Product</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5" id="edit-product-form">
@@ -87,7 +89,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
               <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-stone-300 bg-stone-100 relative shadow-sm">
                 <img
                   src={formData.imageUrl}
-                  alt="Product Preview"
+                  alt={t('product.preview')}
                   className="w-full h-full object-contain"
                   onError={(e) => {
                     const img = e.target;
@@ -101,7 +103,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
           )}
 
           <div>
-            <Label htmlFor="barcode" className="text-stone-700 font-semibold">Barcode</Label>
+            <Label htmlFor="barcode" className="text-stone-700 font-semibold">{t('product.barcode')}</Label>
             <Input
               id="barcode"
               type="text"
@@ -109,11 +111,11 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
               disabled
               className="mt-1.5 bg-stone-50 border-2 border-stone-300 text-stone-600 cursor-not-allowed"
             />
-            <p className="text-xs text-stone-500 mt-1">Barcode cannot be changed</p>
+            <p className="text-xs text-stone-500 mt-1">{t('product.barcodeCannotChange')}</p>
           </div>
 
           <div>
-            <Label htmlFor="name" className="text-stone-700 font-semibold">Product Name</Label>
+            <Label htmlFor="name" className="text-stone-700 font-semibold">{t('product.name')}</Label>
             <Input
               id="name"
               type="text"
@@ -121,14 +123,14 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
               required
               value={formData.name}
               onChange={handleChange}
-              placeholder="e.g. Organic Bananas"
+              placeholder={t('product.namePlaceholder')}
               className="mt-1.5 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="category" className="text-stone-700 font-semibold">Category</Label>
+              <Label htmlFor="category" className="text-stone-700 font-semibold">{t('product.category')}</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -137,19 +139,19 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="General">General</SelectItem>
-                  <SelectItem value="Produce">Produce</SelectItem>
-                  <SelectItem value="Dairy">Dairy</SelectItem>
-                  <SelectItem value="Meat">Meat</SelectItem>
-                  <SelectItem value="Pantry">Pantry</SelectItem>
-                  <SelectItem value="Snacks">Snacks</SelectItem>
-                  <SelectItem value="Beverages">Beverages</SelectItem>
-                  <SelectItem value="Household">Household</SelectItem>
+                  <SelectItem value="General">{t('categories.General')}</SelectItem>
+                  <SelectItem value="Produce">{t('categories.Produce')}</SelectItem>
+                  <SelectItem value="Dairy">{t('categories.Dairy')}</SelectItem>
+                  <SelectItem value="Meat">{t('categories.Meat')}</SelectItem>
+                  <SelectItem value="Pantry">{t('categories.Pantry')}</SelectItem>
+                  <SelectItem value="Snacks">{t('categories.Snacks')}</SelectItem>
+                  <SelectItem value="Beverages">{t('categories.Beverages')}</SelectItem>
+                  <SelectItem value="Household">{t('categories.Household')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="price" className="text-stone-700 font-semibold">Price</Label>
+              <Label htmlFor="price" className="text-stone-700 font-semibold">{t('product.price')}</Label>
               <div className="relative mt-1.5">
                 <span className="absolute left-3 top-3 text-stone-500 font-medium">€</span>
                 <Input
@@ -159,7 +161,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                   step="0.01"
                   value={formData.price}
                   onChange={handleChange}
-                  placeholder="0.00"
+                  placeholder={t('product.pricePlaceholder')}
                   className="pl-7 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
                 />
               </div>
@@ -167,7 +169,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
           </div>
 
           <div>
-            <Label htmlFor="expiryDate" className="text-stone-700 font-semibold">Expiry Date</Label>
+            <Label htmlFor="expiryDate" className="text-stone-700 font-semibold">{t('product.expiryDate')}</Label>
             <Input
               id="expiryDate"
               type="date"
@@ -179,14 +181,14 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
           </div>
 
           <div>
-            <Label htmlFor="imageUrl" className="text-stone-700 font-semibold">Image URL</Label>
+            <Label htmlFor="imageUrl" className="text-stone-700 font-semibold">{t('product.imageUrl')}</Label>
             <Input
               id="imageUrl"
               type="url"
               name="imageUrl"
               value={formData.imageUrl}
               onChange={handleChange}
-              placeholder="https://example.com/image.jpg"
+              placeholder={t('product.imageUrlPlaceholder')}
               className="mt-1.5 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
             />
           </div>
@@ -194,7 +196,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
 
         {mutation.isError && (
           <div className="text-red-700 text-sm text-center bg-red-50 p-3 rounded-lg border-2 border-red-200 font-medium">
-            {mutation.error instanceof Error ? mutation.error.message : 'Failed to update product.'}
+            {mutation.error instanceof Error ? mutation.error.message : t('product.updateFailed')}
           </div>
         )}
 
@@ -206,7 +208,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
             className="border-2 border-stone-300 hover:bg-stone-100"
             disabled={mutation.isPending}
           >
-            Cancel
+            {t('product.cancel')}
           </Button>
           <Button
             type="submit"
@@ -217,7 +219,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
             {mutation.isPending ? (
               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             ) : (
-              'Save Changes'
+              t('product.saveChanges')
             )}
           </Button>
         </DialogFooter>

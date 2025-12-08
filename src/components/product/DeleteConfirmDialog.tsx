@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { deleteProduct } from '../../lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ interface DeleteConfirmDialogProps {
 }
 
 const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: DeleteConfirmDialogProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [confirmed, setConfirmed] = useState(false);
 
@@ -29,8 +31,8 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.removeQueries({ queryKey: ['product', product.fields.Barcode] });
 
-      toast.success('Product deleted', {
-        description: `${product.fields.Name} has been permanently deleted`,
+      toast.success(t('dialogs.deleteConfirm.deleted'), {
+        description: t('dialogs.deleteConfirm.deletedMessage', { name: product.fields.Name }),
       });
 
       onOpenChange(false);
@@ -43,8 +45,8 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
         errorStack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString(),
       });
-      toast.error('Failed to delete product', {
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      toast.error(t('dialogs.deleteConfirm.deleteFailed'), {
+        description: error instanceof Error ? error.message : t('errors.unknownError'),
       });
     },
   });
@@ -68,13 +70,13 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[var(--color-terracotta)] flex items-center gap-2">
             <span className="text-3xl">⚠️</span>
-            Delete Product?
+            {t('dialogs.deleteConfirm.title')}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-sm text-stone-700 font-medium">
-            You are about to permanently delete:
+            {t('dialogs.deleteConfirm.aboutToDelete')}
           </p>
 
           <div className="bg-white border-2 border-red-200 rounded-lg p-4 space-y-2">
@@ -92,15 +94,15 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
               )}
               <div className="flex-1">
                 <h3 className="font-bold text-stone-900">{product.fields.Name}</h3>
-                <p className="text-xs text-stone-600">Barcode: {product.fields.Barcode}</p>
+                <p className="text-xs text-stone-600">{t('dialogs.deleteConfirm.barcode')}: {product.fields.Barcode}</p>
               </div>
             </div>
 
             {product.fields['Current Stock Level'] != null && product.fields['Current Stock Level'] > 0 && (
               <div className="pt-2 border-t border-stone-200">
                 <p className="text-sm text-stone-700">
-                  <span className="font-semibold">Current Stock:</span>{' '}
-                  {product.fields['Current Stock Level']} units
+                  <span className="font-semibold">{t('dialogs.deleteConfirm.currentStock')}:</span>{' '}
+                  {product.fields['Current Stock Level']} {t('dialogs.deleteConfirm.units')}
                 </p>
               </div>
             )}
@@ -109,10 +111,10 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
           <div className="bg-red-100 border-2 border-red-300 rounded-lg p-3 space-y-2">
             <p className="text-sm text-red-800 font-semibold flex items-center gap-2">
               <span>⚠️</span>
-              This action cannot be undone.
+              {t('dialogs.deleteConfirm.cannotUndo')}
             </p>
             <p className="text-xs text-red-700">
-              All product data and stock movement history will be permanently deleted.
+              {t('dialogs.deleteConfirm.allDataDeleted')}
             </p>
           </div>
 
@@ -127,14 +129,14 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
               htmlFor="confirm-delete"
               className="text-sm text-stone-700 font-medium cursor-pointer leading-tight"
             >
-              I understand this action is permanent and cannot be undone
+              {t('dialogs.deleteConfirm.confirmCheckbox')}
             </Label>
           </div>
         </div>
 
         {mutation.isError && (
           <div className="text-red-700 text-sm text-center bg-red-100 p-3 rounded-lg border-2 border-red-300 font-medium">
-            {mutation.error instanceof Error ? mutation.error.message : 'Failed to delete product.'}
+            {mutation.error instanceof Error ? mutation.error.message : t('dialogs.deleteConfirm.deleteFailed')}
           </div>
         )}
 
@@ -147,7 +149,7 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
             disabled={mutation.isPending}
             autoFocus
           >
-            Cancel
+            {t('dialogs.deleteConfirm.cancel')}
           </Button>
           <Button
             type="button"
@@ -158,7 +160,7 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
             {mutation.isPending ? (
               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             ) : (
-              'Delete Product'
+              t('dialogs.deleteConfirm.confirm')
             )}
           </Button>
         </DialogFooter>

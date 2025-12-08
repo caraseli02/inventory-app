@@ -33,6 +33,7 @@
     "newProduct": "Nuevo Producto",
     "manageStock": "Gestionar Stock",
     "barcode": "Código de Barras",
+    "barcodeCannotChange": "El código de barras no se puede cambiar",
     "name": "Nombre del Producto",
     "namePlaceholder": "ej. Bananas Orgánicas",
     "category": "Categoría",
@@ -40,6 +41,8 @@
     "pricePlaceholder": "0.00",
     "initialStock": "Stock Inicial",
     "expiryDate": "Fecha de Vencimiento",
+    "imageUrl": "URL de Imagen",
+    "imageUrlPlaceholder": "https://ejemplo.com/imagen.jpg",
     "inStock": "En Stock",
     "expiry": "Vencimiento",
     "noExpiry": "Sin fecha de vencimiento",
@@ -55,9 +58,11 @@
     "searching": "Buscando...",
     "createAndStock": "Crear y Almacenar",
     "cancel": "Cancelar",
+    "saveChanges": "Guardar Cambios",
     "insufficientStock": "Stock Insuficiente",
     "cannotRemove": "No se pueden quitar {{quantity}} unidades. Solo hay {{available}} unidades disponibles.",
     "updateProduct": "Actualizar Producto",
+    "updateFailed": "Error al actualizar el producto",
     "update": "Actualizar"
   },
   "categories": {
@@ -107,8 +112,11 @@
     "items": "artículos",
     "empty": "El carrito está vacío",
     "total": "Total",
+    "totalWithCount": "Total ({{count}} artículos)",
     "nextProduct": "Siguiente Producto",
     "finish": "Finalizar",
+    "checkout": "Pagar",
+    "checkoutComplete": "¡Pago Completado!",
     "processing": "Procesando...",
     "quickAdd": {
       "title": "Agregar Rápido",
@@ -132,14 +140,20 @@
       "title": "Detalles del Producto"
     },
     "deleteConfirm": {
-      "title": "Confirmar Eliminación",
-      "message": "¿Estás seguro de que deseas eliminar {{name}}? Esta acción no se puede deshacer.",
-      "confirm": "Eliminar",
+      "title": "¿Eliminar Producto?",
+      "aboutToDelete": "Estás a punto de eliminar permanentemente:",
+      "barcode": "Código de barras",
+      "currentStock": "Stock Actual",
+      "units": "unidades",
+      "cannotUndo": "Esta acción no se puede deshacer.",
+      "allDataDeleted": "Todos los datos del producto y el historial de movimientos de stock serán eliminados permanentemente.",
+      "confirmCheckbox": "Entiendo que esta acción es permanente y no se puede deshacer",
+      "confirm": "Eliminar Producto",
       "cancel": "Cancelar",
       "deleting": "Eliminando...",
       "deleted": "Producto Eliminado",
-      "deletedMessage": "{{name}} fue eliminado exitosamente",
-      "deleteFailed": "Error al Eliminar",
+      "deletedMessage": "{{name}} ha sido eliminado permanentemente",
+      "deleteFailed": "Error al eliminar el producto",
       "deleteFailedMessage": "No se pudo eliminar el producto. Por favor, intenta de nuevo."
     },
     "editProduct": {
@@ -169,7 +183,9 @@
     "authorizationError": "Error de autorización. Contacta a soporte."
   },
   "offline": {
-    "message": "Sin conexión a internet"
+    "message": "Sin conexión a internet",
+    "mode": "Modo sin conexión",
+    "limitedFunctionality": "Funcionalidad limitada"
   },
   "loading": {
     "scanner": "Cargando escáner...",

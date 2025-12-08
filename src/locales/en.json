@@ -33,6 +33,7 @@
     "newProduct": "New Product",
     "manageStock": "Manage Stock",
     "barcode": "Barcode",
+    "barcodeCannotChange": "Barcode cannot be changed",
     "name": "Product Name",
     "namePlaceholder": "e.g. Organic Bananas",
     "category": "Category",
@@ -40,6 +41,8 @@
     "pricePlaceholder": "0.00",
     "initialStock": "Initial Stock",
     "expiryDate": "Expiry Date",
+    "imageUrl": "Image URL",
+    "imageUrlPlaceholder": "https://example.com/image.jpg",
     "inStock": "In Stock",
     "expiry": "Expiry",
     "noExpiry": "No expiry date",
@@ -55,9 +58,11 @@
     "searching": "Searching...",
     "createAndStock": "Create & Stock",
     "cancel": "Cancel",
+    "saveChanges": "Save Changes",
     "insufficientStock": "Insufficient Stock",
     "cannotRemove": "Cannot remove {{quantity}} unit(s). Only {{available}} unit(s) available.",
     "updateProduct": "Update Product",
+    "updateFailed": "Failed to update product",
     "update": "Update"
   },
   "categories": {
@@ -107,8 +112,11 @@
     "items": "items",
     "empty": "Cart is empty",
     "total": "Total",
+    "totalWithCount": "Total ({{count}} items)",
     "nextProduct": "Next Product",
     "finish": "Finish",
+    "checkout": "Checkout",
+    "checkoutComplete": "Checkout Complete!",
     "processing": "Processing...",
     "quickAdd": {
       "title": "Quick Add",
@@ -132,14 +140,20 @@
       "title": "Product Details"
     },
     "deleteConfirm": {
-      "title": "Confirm Deletion",
-      "message": "Are you sure you want to delete {{name}}? This action cannot be undone.",
-      "confirm": "Delete",
+      "title": "Delete Product?",
+      "aboutToDelete": "You are about to permanently delete:",
+      "barcode": "Barcode",
+      "currentStock": "Current Stock",
+      "units": "units",
+      "cannotUndo": "This action cannot be undone.",
+      "allDataDeleted": "All product data and stock movement history will be permanently deleted.",
+      "confirmCheckbox": "I understand this action is permanent and cannot be undone",
+      "confirm": "Delete Product",
       "cancel": "Cancel",
       "deleting": "Deleting...",
-      "deleted": "Product Deleted",
-      "deletedMessage": "{{name}} was deleted successfully",
-      "deleteFailed": "Delete Failed",
+      "deleted": "Product deleted",
+      "deletedMessage": "{{name}} has been permanently deleted",
+      "deleteFailed": "Failed to delete product",
       "deleteFailedMessage": "Failed to delete product. Please try again."
     },
     "editProduct": {
@@ -169,7 +183,9 @@
     "authorizationError": "Authorization failed. Contact support."
   },
   "offline": {
-    "message": "No internet connection"
+    "message": "No internet connection",
+    "mode": "Offline mode",
+    "limitedFunctionality": "Limited functionality"
   },
   "loading": {
     "scanner": "Loading scanner...",
