@@ -48,40 +48,43 @@ export const ProductDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="h-dvh w-full sm:h-auto sm:max-w-[700px] lg:max-w-[900px] sm:max-h-[90vh] overflow-y-auto p-0 sm:p-6">
-        <DialogHeader className="pt-[max(1.5rem,env(safe-area-inset-top))] px-6 pb-4 sm:p-0 sm:pb-0">
+      <DialogContent className="h-dvh w-full sm:h-auto sm:max-w-[800px] lg:max-w-[1000px] sm:max-h-[90vh] overflow-y-auto p-0 sm:p-6">
+        <DialogHeader className="pt-[max(1.5rem,env(safe-area-inset-top))] px-6 pb-4 sm:p-0 sm:pb-4">
           <DialogTitle className="text-2xl font-bold text-stone-900 flex items-center gap-2">
             <Package className="h-6 w-6" />
             Product Details
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 px-6 pb-6 sm:px-0 sm:pb-0">
-          {/* Product Image */}
+        {/* Mobile: Vertical Stack | Tablet/Desktop: Horizontal Layout */}
+        <div className="px-6 pb-6 sm:px-0 sm:pb-0 sm:flex sm:gap-6">
+          {/* Left Column: Image (only on tablet+) */}
           {imageUrl && (
-            <div className="flex justify-center">
+            <div className="flex justify-center sm:justify-start sm:flex-shrink-0 mb-6 sm:mb-0">
               <img
                 src={imageUrl}
                 alt={product.fields.Name}
-                className="max-h-48 lg:max-h-64 rounded-lg border-2 border-stone-200 object-contain"
+                className="max-h-48 sm:max-h-none sm:h-auto sm:w-48 rounded-lg border-2 border-stone-200 object-contain"
               />
             </div>
           )}
 
-          {/* Product Name */}
-          <div>
-            <h2 className="text-3xl font-bold text-stone-900 mb-2">
-              {product.fields.Name}
-            </h2>
-            {product.fields.Category && (
-              <Badge variant="secondary" className="bg-stone-100 border-stone-200">
-                {product.fields.Category}
-              </Badge>
-            )}
-          </div>
+          {/* Right Column: All Details */}
+          <div className="flex-1 space-y-6 sm:overflow-y-auto sm:max-h-[calc(90vh-120px)]">
+            {/* Product Name */}
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
+                {product.fields.Name}
+              </h2>
+              {product.fields.Category && (
+                <Badge variant="secondary" className="bg-stone-100 border-stone-200">
+                  {product.fields.Category}
+                </Badge>
+              )}
+            </div>
 
-          {/* Product Info Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Product Info Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Barcode */}
             <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
               <Barcode className="h-5 w-5 text-stone-600 mt-0.5" />
@@ -164,64 +167,65 @@ export const ProductDetailDialog = ({
             )}
           </div>
 
-          {/* Stock Movement History */}
-          <div>
-            <h3 className="text-lg font-bold text-stone-900 mb-3">
-              Recent Stock Movements
-            </h3>
-            {loadingMovements ? (
-              <div className="flex justify-center py-8">
-                <Spinner size="md" label="Loading movements..." />
-              </div>
-            ) : movements.length > 0 ? (
-              <div className="space-y-2 max-h-48 lg:max-h-96 overflow-y-auto">
-                {movements.map((movement) => (
-                  <div
-                    key={movement.id}
-                    className="flex items-center justify-between p-3 bg-stone-50 rounded-lg border border-stone-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Badge
-                        variant={
-                          movement.fields.Type === 'IN' ? 'default' : 'secondary'
-                        }
-                        className={
-                          movement.fields.Type === 'IN'
-                            ? 'bg-[var(--color-forest)] text-white'
-                            : 'bg-stone-200 text-stone-900'
-                        }
-                      >
-                        {movement.fields.Type}
-                      </Badge>
-                      <span className="font-bold text-stone-900">
-                        {Math.abs(movement.fields.Quantity)} units
+            {/* Stock Movement History */}
+            <div>
+              <h3 className="text-lg font-bold text-stone-900 mb-3">
+                Recent Stock Movements
+              </h3>
+              {loadingMovements ? (
+                <div className="flex justify-center py-8">
+                  <Spinner size="md" label="Loading movements..." />
+                </div>
+              ) : movements.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {movements.map((movement) => (
+                    <div
+                      key={movement.id}
+                      className="flex items-center justify-between p-3 bg-stone-50 rounded-lg border border-stone-200"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Badge
+                          variant={
+                            movement.fields.Type === 'IN' ? 'default' : 'secondary'
+                          }
+                          className={
+                            movement.fields.Type === 'IN'
+                              ? 'bg-[var(--color-forest)] text-white'
+                              : 'bg-stone-200 text-stone-900'
+                          }
+                        >
+                          {movement.fields.Type}
+                        </Badge>
+                        <span className="font-bold text-stone-900">
+                          {Math.abs(movement.fields.Quantity)} units
+                        </span>
+                      </div>
+                      <span className="text-sm text-stone-600">
+                        {movement.fields.Date
+                          ? new Date(movement.fields.Date).toLocaleDateString()
+                          : '—'}
                       </span>
                     </div>
-                    <span className="text-sm text-stone-600">
-                      {movement.fields.Date
-                        ? new Date(movement.fields.Date).toLocaleDateString()
-                        : '—'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-stone-600 text-center py-4">
-                No stock movements recorded
-              </p>
-            )}
-          </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-stone-600 text-center py-4">
+                  No stock movements recorded
+                </p>
+              )}
+            </div>
 
-          {/* Close Button */}
-          <div className="flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0 border-t border-stone-200">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="border-2 border-stone-300"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Close
-            </Button>
+            {/* Close Button */}
+            <div className="flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0 border-t border-stone-200">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="border-2 border-stone-300"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
