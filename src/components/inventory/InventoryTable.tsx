@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
 import {
   Table,
@@ -32,13 +33,15 @@ const InventoryTableComponent = ({
   onDelete,
   loadingProductIds = EMPTY_LOADING_SET,
 }: InventoryTableProps) => {
+  const { t } = useTranslation();
+
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
         <div className="text-6xl mb-4">📦</div>
-        <h3 className="text-xl font-bold text-stone-900 mb-2">No products found</h3>
+        <h3 className="text-xl font-bold text-stone-900 mb-2">{t('inventory.noProducts')}</h3>
         <p className="text-stone-600">
-          Try adjusting your filters or search query
+          {t('inventory.adjustFilters')}
         </p>
       </div>
     );
@@ -49,15 +52,15 @@ const InventoryTableComponent = ({
       <Table>
         <TableHeader>
           <TableRow className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200">
-            <TableHead className="w-[80px] lg:w-[100px]">Image</TableHead>
-            <TableHead className="font-bold text-stone-900 text-base">Name</TableHead>
-            <TableHead className="font-bold text-stone-900 text-base">Barcode</TableHead>
-            <TableHead className="font-bold text-stone-900 text-base">Category</TableHead>
-            <TableHead className="font-bold text-stone-900 text-base text-right">Stock</TableHead>
-            <TableHead className="font-bold text-stone-900 text-base text-right">Price</TableHead>
+            <TableHead className="w-[80px] lg:w-[100px]">{t('inventory.table.image')}</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base">{t('inventory.table.name')}</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base">{t('inventory.table.barcode')}</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base">{t('inventory.table.category')}</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base text-right">{t('inventory.table.stock')}</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base text-right">{t('inventory.table.price')}</TableHead>
             {(onQuickAdjust || onEdit || onDelete) && (
               <TableHead className="font-bold text-stone-900 text-base text-center w-[220px] lg:w-[280px]">
-                Actions
+                {t('inventory.table.actions')}
               </TableHead>
             )}
           </TableRow>
@@ -119,7 +122,7 @@ const InventoryTableComponent = ({
                 <TableCell>
                   {product.fields.Category ? (
                     <Badge variant="secondary" className="bg-stone-100 border-stone-200">
-                      {product.fields.Category}
+                      {t(`categories.${product.fields.Category}`)}
                     </Badge>
                   ) : (
                     <span className="text-stone-400 text-sm">—</span>
@@ -163,7 +166,7 @@ const InventoryTableComponent = ({
                             className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300"
                             onClick={() => onQuickAdjust(product.id, -1)}
                             disabled={isLoading || currentStock === 0}
-                            title="Remove 1 unit"
+                            title={t('inventory.table.removeUnit')}
                           >
                             {isLoading ? (
                               <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
@@ -177,7 +180,7 @@ const InventoryTableComponent = ({
                             className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300"
                             onClick={() => onQuickAdjust(product.id, 1)}
                             disabled={isLoading}
-                            title="Add 1 unit"
+                            title={t('inventory.table.addUnit')}
                           >
                             {isLoading ? (
                               <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
@@ -197,7 +200,7 @@ const InventoryTableComponent = ({
                               size="sm"
                               className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300 hover:bg-stone-100"
                               onClick={() => onEdit(product)}
-                              title="Edit product"
+                              title={t('inventory.table.editProduct')}
                             >
                               <Edit2 className="h-3 w-3 lg:h-4 lg:w-4" />
                             </Button>
@@ -208,7 +211,7 @@ const InventoryTableComponent = ({
                               size="sm"
                               className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
                               onClick={() => onDelete(product)}
-                              title="Delete product"
+                              title={t('inventory.table.deleteProduct')}
                             >
                               <Trash2 className="h-3 w-3 lg:h-4 lg:w-4" />
                             </Button>

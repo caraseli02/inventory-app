@@ -97,6 +97,9 @@
       "showing": "Mostrando {{count}} de {{total}} productos"
     },
     "table": {
+      "image": "Imagen",
+      "name": "Nombre",
+      "barcode": "Código de barras",
       "product": "Producto",
       "category": "Categoría",
       "stock": "Stock",
@@ -104,7 +107,11 @@
       "actions": "Acciones",
       "viewDetails": "Ver Detalles",
       "edit": "Editar",
-      "delete": "Eliminar"
+      "delete": "Eliminar",
+      "removeUnit": "Quitar 1 unidad",
+      "addUnit": "Agregar 1 unidad",
+      "editProduct": "Editar producto",
+      "deleteProduct": "Eliminar producto"
     }
   },
   "cart": {
@@ -118,6 +125,7 @@
     "checkout": "Pagar",
     "checkoutComplete": "¡Pago Completado!",
     "processing": "Procesando...",
+    "complete": "Completado",
     "quickAdd": {
       "title": "Agregar Rápido",
       "placeholder": "Escanear o ingresar código",

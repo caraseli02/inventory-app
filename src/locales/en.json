@@ -97,6 +97,9 @@
       "showing": "Showing {{count}} of {{total}} products"
     },
     "table": {
+      "image": "Image",
+      "name": "Name",
+      "barcode": "Barcode",
       "product": "Product",
       "category": "Category",
       "stock": "Stock",
@@ -104,7 +107,11 @@
       "actions": "Actions",
       "viewDetails": "View Details",
       "edit": "Edit",
-      "delete": "Delete"
+      "delete": "Delete",
+      "removeUnit": "Remove 1 unit",
+      "addUnit": "Add 1 unit",
+      "editProduct": "Edit product",
+      "deleteProduct": "Delete product"
     }
   },
   "cart": {
@@ -118,6 +125,7 @@
     "checkout": "Checkout",
     "checkoutComplete": "Checkout Complete!",
     "processing": "Processing...",
+    "complete": "Complete",
     "quickAdd": {
       "title": "Quick Add",
       "placeholder": "Scan or enter code",
