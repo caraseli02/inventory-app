@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Plus, Minus, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -9,6 +9,8 @@ interface ProductListItemProps {
   product: Product;
   onViewDetails: (product: Product) => void;
   onQuickAdjust?: (productId: string, delta: number) => void;
+  onEdit?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
   isLoading?: boolean;
 }
 
@@ -16,6 +18,8 @@ const ProductListItemComponent = ({
   product,
   onViewDetails,
   onQuickAdjust,
+  onEdit,
+  onDelete,
   isLoading = false,
 }: ProductListItemProps) => {
   const currentStock = product.fields['Current Stock Level'] ?? 0;
@@ -120,6 +124,37 @@ const ProductListItemComponent = ({
                   </>
                 )}
               </Button>
+            </div>
+          )}
+
+          {/* Edit and Delete Buttons */}
+          {(onEdit || onDelete) && (
+            <div
+              className="flex items-center gap-2 mt-2"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {onEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 flex-1 border-2 border-stone-300 hover:bg-stone-100"
+                  onClick={() => onEdit(product)}
+                >
+                  <Edit2 className="h-3.5 w-3.5 mr-1.5" />
+                  Edit
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 flex-1 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
+                  onClick={() => onDelete(product)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  Delete
+                </Button>
+              )}
             </div>
           )}
         </div>

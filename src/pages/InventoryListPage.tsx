@@ -8,6 +8,8 @@ import { InventoryFiltersBar } from '../components/inventory/InventoryFilters';
 import { ProductListItem } from '../components/inventory/ProductListItem';
 import { InventoryTable } from '../components/inventory/InventoryTable';
 import { ProductDetailDialog } from '../components/inventory/ProductDetailDialog';
+import EditProductDialog from '../components/product/EditProductDialog';
+import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { addStockMovement } from '../lib/api';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,6 +25,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const { showToast } = useToast();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [editProduct, setEditProduct] = useState<Product | null>(null);
+  const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [loadingProducts, setLoadingProducts] = useState<Set<string>>(new Set());
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -145,6 +149,19 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     showToast('success', 'Refreshed', 'Inventory data refreshed', 2000);
   }, [refetch, showToast]);
 
+  const handleEdit = useCallback((product: Product) => {
+    setEditProduct(product);
+  }, []);
+
+  const handleDelete = useCallback((product: Product) => {
+    setDeleteProduct(product);
+  }, []);
+
+  const handleDeleteSuccess = useCallback(() => {
+    // Refresh the list after deletion
+    refetch();
+  }, [refetch]);
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
       <PageHeader
@@ -204,6 +221,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                       product={product}
                       onViewDetails={handleViewDetails}
                       onQuickAdjust={handleQuickAdjust}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
                       isLoading={loadingProducts.has(product.id)}
                     />
                   ))
@@ -226,6 +245,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                   products={products}
                   onViewDetails={handleViewDetails}
                   onQuickAdjust={handleQuickAdjust}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
                   loadingProductIds={loadingProducts}
                 />
               </div>
@@ -242,6 +263,25 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           onClose={handleCloseDialog}
         />
       </ErrorBoundary>
+
+      {/* Edit Product Dialog */}
+      {editProduct && (
+        <EditProductDialog
+          product={editProduct}
+          open={!!editProduct}
+          onOpenChange={(open) => !open && setEditProduct(null)}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteProduct && (
+        <DeleteConfirmDialog
+          product={deleteProduct}
+          open={!!deleteProduct}
+          onOpenChange={(open) => !open && setDeleteProduct(null)}
+          onDeleteSuccess={handleDeleteSuccess}
+        />
+      )}
     </div>
   );
 };

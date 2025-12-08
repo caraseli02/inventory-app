@@ -9,6 +9,8 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ProductSkeleton } from './ProductSkeleton';
+import EditProductDialog from './EditProductDialog';
+import DeleteConfirmDialog from './DeleteConfirmDialog';
 import type { Product } from '../../types';
 
 interface ProductDetailProps {
@@ -22,6 +24,8 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
 
   // Initialize hooks unconditionally (Rules of Hooks)
   const [stockQuantity, setStockQuantity] = useState<string>('1');
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch History - needs product ID
   const { data: history } = useQuery({
@@ -99,7 +103,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
                   <BoxIcon className="h-8 w-8 text-stone-400" />
                 )}
               </div>
-              <div>
+              <div className="flex-1">
                 <h2 className="text-2xl font-bold text-stone-900 leading-tight mb-1">{product.fields.Name}</h2>
                 <Badge variant="secondary" className="bg-stone-100 text-stone-700 border-stone-300">
                   {displayCategory}
@@ -172,7 +176,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
         </div>
 
         {/* Action Buttons - Both Visible */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <Button
             onClick={() => handleStockButton('IN')}
             disabled={loadingAction !== null}
@@ -203,6 +207,26 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
                 Remove Stock
               </span>
             )}
+          </Button>
+        </div>
+
+        {/* Edit and Delete Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <Button
+            variant="outline"
+            onClick={() => setShowEditDialog(true)}
+            size="lg"
+            className="font-semibold border-2 border-stone-300 hover:bg-stone-100 flex items-center justify-center gap-2"
+          >
+            ✏️ Edit Product
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteDialog(true)}
+            size="lg"
+            className="font-semibold border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50 flex items-center justify-center gap-2"
+          >
+            🗑️ Delete
           </Button>
         </div>
 
@@ -248,6 +272,21 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
           Scan Another Product
         </Button>
       </CardFooter>
+
+      {/* Edit Product Dialog */}
+      <EditProductDialog
+        product={product}
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        product={product}
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onDeleteSuccess={onScanNew}
+      />
     </Card>
   );
 };
