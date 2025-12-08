@@ -1,8 +1,8 @@
-import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import OfflineIndicator from './components/OfflineIndicator';
 import { ToastProvider } from './hooks/useToast';
 import { Toaster } from 'sonner';
-import { MinusIcon, PlusIcon, ShoppingCartIcon, ListIcon } from './components/ui/Icons';
+import { BoxIcon, ShoppingCartIcon, ListIcon } from './components/ui/Icons';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Spinner } from './components/ui/spinner';
@@ -42,21 +42,9 @@ const LoadingFallback = ({ label }: { label: string }) => (
   </div>
 );
 
-type ViewState = 'home' | 'add' | 'remove' | 'checkout' | 'inventory';
-
-const SCANNER_MODE_KEY = 'scannerMode';
-
-const getStoredScannerMode = (): Extract<ViewState, 'add' | 'remove'> => {
-  if (typeof window === 'undefined') return 'add';
-
-  const storedMode = window.localStorage.getItem(SCANNER_MODE_KEY);
-  return storedMode === 'remove' ? 'remove' : 'add';
-};
+type ViewState = 'home' | 'manage' | 'checkout' | 'inventory';
 
 function App() {
-  const [scannerMode, setScannerMode] = useState<Extract<ViewState, 'add' | 'remove'>>(() => {
-    return getStoredScannerMode();
-  });
   const [view, setView] = useState<ViewState>('home');
 
   const [isTablet, setIsTablet] = useState(() => {
@@ -79,39 +67,6 @@ function App() {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    window.localStorage.setItem(SCANNER_MODE_KEY, scannerMode);
-  }, [scannerMode]);
-
-  const handleScannerModeChange = (mode: Extract<ViewState, 'add' | 'remove'>) => {
-    setScannerMode(mode);
-    setView(mode);
-  };
-
-  const actions: Array<{
-    key: Extract<ViewState, 'add' | 'remove'>;
-    title: string;
-    description: string;
-    icon: ReactNode;
-    onClick: () => void;
-  }> = [
-    {
-      key: 'add' as const,
-      title: 'Add Items',
-      description: 'Receive inventory into stock',
-      icon: <PlusIcon className="h-6 w-6" />,
-      onClick: () => handleScannerModeChange('add'),
-    },
-    {
-      key: 'remove' as const,
-      title: 'Remove Items',
-      description: 'Deplete inventory that was used',
-      icon: <MinusIcon className="h-6 w-6" />,
-      onClick: () => handleScannerModeChange('remove'),
-    },
-  ];
 
   return (
     <ToastProvider>
@@ -140,35 +95,34 @@ function App() {
         {view === 'home' ? (
           <div className="w-full max-w-5xl animate-in fade-in duration-300">
             <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:gap-8">
-              {actions.map((action) => (
-                <Card
-                  key={action.key}
-                  className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
-                  onClick={action.onClick}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      action.onClick();
-                    }
-                  }}
-                >
-                  <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
-                    <div className="flex items-start justify-between gap-3 sm:gap-4">
-                      <div className="flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
-                        {action.icon}
-                      </div>
-                      <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
-                        {action.key === 'add' ? 'Inbound' : 'Outbound'}
-                      </Badge>
+              <Card
+                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+                onClick={() => setView('manage')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setView('manage');
+                  }
+                }}
+              >
+                <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
+                  <div className="flex items-start justify-between gap-3 sm:gap-4">
+                    <div className="flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
+                      <BoxIcon className="h-6 w-6" />
                     </div>
-                    <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
-                      <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{action.title}</h2>
-                      <p className="text-xs sm:text-sm text-stone-600 font-medium">{action.description}</p>
-                    </div>
+                    <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
+                      Scanner
+                    </Badge>
                   </div>
-                </Card>
-              ))}
+                  <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
+                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">Manage Stock</h2>
+                    <p className="text-xs sm:text-sm text-stone-600 font-medium">
+                      Scan barcodes to add or remove inventory items.
+                    </p>
+                  </div>
+                </div>
+              </Card>
               <Card
                 className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
                 onClick={() => setView('checkout')}
@@ -242,11 +196,7 @@ function App() {
         ) : (
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback label="Loading scanner..." />}>
-              <ScanPage
-                mode={scannerMode}
-                onBack={() => setView('home')}
-                onModeChange={handleScannerModeChange}
-              />
+              <ScanPage onBack={() => setView('home')} />
             </Suspense>
           </ErrorBoundary>
         )}
