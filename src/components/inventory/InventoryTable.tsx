@@ -45,14 +45,14 @@ const InventoryTableComponent = ({
       <Table>
         <TableHeader>
           <TableRow className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200">
-            <TableHead className="w-[80px]">Image</TableHead>
-            <TableHead className="font-bold text-stone-900">Name</TableHead>
-            <TableHead className="font-bold text-stone-900">Barcode</TableHead>
-            <TableHead className="font-bold text-stone-900">Category</TableHead>
-            <TableHead className="font-bold text-stone-900 text-right">Stock</TableHead>
-            <TableHead className="font-bold text-stone-900 text-right">Price</TableHead>
+            <TableHead className="w-[80px] lg:w-[100px]">Image</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base">Name</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base">Barcode</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base">Category</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base text-right">Stock</TableHead>
+            <TableHead className="font-bold text-stone-900 text-base text-right">Price</TableHead>
             {onQuickAdjust && (
-              <TableHead className="font-bold text-stone-900 text-center w-[180px]">
+              <TableHead className="font-bold text-stone-900 text-base text-center w-[180px] lg:w-[200px]">
                 Actions
               </TableHead>
             )}
@@ -69,7 +69,7 @@ const InventoryTableComponent = ({
             return (
               <TableRow
                 key={product.id}
-                className="cursor-pointer hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-lavender)] focus:ring-inset"
+                className="cursor-pointer hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-lavender)] focus:ring-inset h-16 lg:h-20"
                 onClick={() => onViewDetails(product)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
@@ -87,27 +87,27 @@ const InventoryTableComponent = ({
                     <img
                       src={imageUrl}
                       alt={product.fields.Name}
-                      className="h-12 w-12 rounded-lg object-cover border border-stone-200"
+                      className="h-12 w-12 lg:h-16 lg:w-16 rounded-lg object-cover border border-stone-200"
                     />
                   ) : (
-                    <div className="h-12 w-12 rounded-lg bg-stone-100 flex items-center justify-center border border-stone-200">
-                      <span className="text-lg">📦</span>
+                    <div className="h-12 w-12 lg:h-16 lg:w-16 rounded-lg bg-stone-100 flex items-center justify-center border border-stone-200">
+                      <span className="text-lg lg:text-2xl">📦</span>
                     </div>
                   )}
                 </TableCell>
 
                 {/* Name */}
-                <TableCell className="font-semibold text-stone-900">
+                <TableCell className="font-semibold text-stone-900 text-base lg:text-lg">
                   <div className="flex items-center gap-2">
                     {product.fields.Name}
                     {isLowStock && (
-                      <AlertTriangle className="h-4 w-4 text-[var(--color-terracotta)]" />
+                      <AlertTriangle className="h-4 w-4 lg:h-5 lg:w-5 text-[var(--color-terracotta)]" />
                     )}
                   </div>
                 </TableCell>
 
                 {/* Barcode */}
-                <TableCell className="text-stone-600 font-mono text-sm">
+                <TableCell className="text-stone-600 font-mono text-sm lg:text-base">
                   {product.fields.Barcode}
                 </TableCell>
 
@@ -125,7 +125,7 @@ const InventoryTableComponent = ({
                 {/* Stock */}
                 <TableCell className="text-right">
                   <span
-                    className={`font-bold text-lg ${
+                    className={`font-bold text-lg lg:text-xl ${
                       isLowStock
                         ? 'text-[var(--color-terracotta)]'
                         : 'text-stone-900'
@@ -138,7 +138,7 @@ const InventoryTableComponent = ({
                 {/* Price */}
                 <TableCell className="text-right">
                   {product.fields.Price != null ? (
-                    <span className="font-bold text-stone-900">
+                    <span className="font-bold text-stone-900 text-base lg:text-lg">
                       €{product.fields.Price.toFixed(2)}
                     </span>
                   ) : (
@@ -149,31 +149,31 @@ const InventoryTableComponent = ({
                 {/* Quick Adjust Actions */}
                 {onQuickAdjust && (
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="flex items-center gap-2 justify-center">
+                    <div className="flex items-center gap-2 lg:gap-3 justify-center">
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 px-3 border-2 border-stone-300"
+                        className="h-8 lg:h-10 px-3 lg:px-4 border-2 border-stone-300"
                         onClick={() => onQuickAdjust(product.id, -1)}
                         disabled={isLoading || currentStock === 0}
                       >
                         {isLoading ? (
-                          <span className="animate-spin h-3 w-3 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
+                          <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
                         ) : (
-                          <Minus className="h-3 w-3" />
+                          <Minus className="h-3 w-3 lg:h-4 lg:w-4" />
                         )}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 px-3 border-2 border-stone-300"
+                        className="h-8 lg:h-10 px-3 lg:px-4 border-2 border-stone-300"
                         onClick={() => onQuickAdjust(product.id, 1)}
                         disabled={isLoading}
                       >
                         {isLoading ? (
-                          <span className="animate-spin h-3 w-3 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
+                          <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
                         ) : (
-                          <Plus className="h-3 w-3" />
+                          <Plus className="h-3 w-3 lg:h-4 lg:w-4" />
                         )}
                       </Button>
                     </div>

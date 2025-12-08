@@ -48,7 +48,7 @@ export const ProductDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="h-dvh w-full sm:h-auto sm:max-w-[600px] sm:max-h-[90vh] overflow-y-auto p-0 sm:p-6">
+      <DialogContent className="h-dvh w-full sm:h-auto sm:max-w-[700px] lg:max-w-[900px] sm:max-h-[90vh] overflow-y-auto p-0 sm:p-6">
         <DialogHeader className="pt-[max(1.5rem,env(safe-area-inset-top))] px-6 pb-4 sm:p-0 sm:pb-0">
           <DialogTitle className="text-2xl font-bold text-stone-900 flex items-center gap-2">
             <Package className="h-6 w-6" />
@@ -63,7 +63,7 @@ export const ProductDetailDialog = ({
               <img
                 src={imageUrl}
                 alt={product.fields.Name}
-                className="max-h-48 rounded-lg border-2 border-stone-200 object-contain"
+                className="max-h-48 lg:max-h-64 rounded-lg border-2 border-stone-200 object-contain"
               />
             </div>
           )}
@@ -81,7 +81,7 @@ export const ProductDetailDialog = ({
           </div>
 
           {/* Product Info Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Barcode */}
             <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
               <Barcode className="h-5 w-5 text-stone-600 mt-0.5" />
@@ -174,7 +174,7 @@ export const ProductDetailDialog = ({
                 <Spinner size="md" label="Loading movements..." />
               </div>
             ) : movements.length > 0 ? (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="space-y-2 max-h-48 lg:max-h-96 overflow-y-auto">
                 {movements.map((movement) => (
                   <div
                     key={movement.id}
