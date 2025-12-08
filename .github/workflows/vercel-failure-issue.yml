@@ -4,43 +4,74 @@ on:
   deployment_status:
   check_run:
     types: [completed]
+  workflow_run:
+    workflows: ["*"]
+    types: [completed]
 
 permissions:
   issues: write
   contents: read
+  checks: read
 
 jobs:
   create-issue:
     runs-on: ubuntu-latest
     if: |
       (github.event.deployment_status.state == 'failure') ||
-      (github.event.check_run.conclusion == 'failure' && contains(github.event.check_run.app.name, 'Vercel'))
+      (github.event.check_run.conclusion == 'failure' && contains(github.event.check_run.app.name, 'Vercel')) ||
+      (github.event.workflow_run.conclusion == 'failure')
 
     steps:
+      - name: Get build context
+        id: context
+        run: |
+          # Extract branch name
+          if [ "${{ github.event.deployment_status.environment_url }}" != "" ]; then
+            echo "deployment_url=${{ github.event.deployment_status.target_url }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.event.deployment_status.deployment.ref }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.check_run.html_url }}" != "" ]; then
+            echo "check_url=${{ github.event.check_run.html_url }}" >> $GITHUB_OUTPUT
+            echo "branch=${{ github.event.check_run.check_suite.head_branch }}" >> $GITHUB_OUTPUT
+          else
+            echo "branch=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create issue for Claude Code
         uses: actions/github-script@v7
         with:
           script: |
-            const title = `🚨 Vercel Build Failed on ${context.ref}`;
+            const branch = '${{ steps.context.outputs.branch }}' || context.ref;
+            const title = `🚨 Vercel Build Failed on ${branch}`;
             const body = `@claude Please fix the Vercel build failure.
 
             **Details:**
-            - Branch: \`${context.ref}\`
-            - Commit: ${context.sha}
-            - Deployment URL: ${{ github.event.deployment_status.target_url || 'N/A' }}
-            - Check URL: ${{ github.event.check_run.html_url || 'N/A' }}
+            - Branch: \`${branch}\`
+            - Commit: \`${context.sha}\`
+            - Deployment URL: ${{ steps.context.outputs.deployment_url || 'N/A' }}
+            - Check URL: ${{ steps.context.outputs.check_url || 'N/A' }}
+            - Repository: ${context.repo.owner}/${context.repo.repo}
 
-            **Tasks:**
-            1. Investigate the build error
-            2. Run \`pnpm build\` to reproduce the issue
-            3. Fix the TypeScript/build errors
-            4. Ensure the build passes
-            5. Commit and push the fix
+            **Your Tasks:**
+            1. Checkout the branch: \`${branch}\`
+            2. Run \`pnpm build\` to reproduce the TypeScript/build errors
+            3. Read the error output carefully
+            4. Fix all build errors (likely TypeScript type errors, missing imports, or syntax issues)
+            5. Verify the fix with \`pnpm build\` - it must succeed
+            6. Follow the CLAUDE.md guidelines (use shadcn components, maintain design consistency)
+            7. Commit with message: \`fix: Resolve Vercel build failure\`
+            8. Push to branch: \`${branch}\`
 
-            **Branch to fix:** \`${context.ref}\`
+            **Important:**
+            - This is branch \`${branch}\`, NOT main
+            - Make sure to push to the correct branch
+            - Test the build locally before committing
+            - Keep fixes minimal and focused on the build errors
+
+            ---
+            *Triggered by GitHub Action due to Vercel deployment failure*
             `;
 
-            // Check if an issue already exists
+            // Check if an issue already exists for this branch
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -48,8 +79,9 @@ jobs:
               labels: 'vercel-build-failure'
             });
 
+            const branchName = branch.replace('refs/heads/', '');
             const existingIssue = issues.data.find(issue =>
-              issue.title.includes(context.ref)
+              issue.title.includes(branchName)
             );
 
             if (existingIssue) {
@@ -58,15 +90,17 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: existingIssue.number,
-                body: `Another build failure occurred:\n\n${body}`
+                body: `🔄 Another build failure occurred on \`${branchName}\`\n\nCommit: \`${context.sha}\`\n\n@claude Please check the latest commit and fix any new errors.`
               });
+              console.log(`Updated existing issue #${existingIssue.number}`);
             } else {
               // Create new issue
-              await github.rest.issues.create({
+              const newIssue = await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: title,
                 body: body,
-                labels: ['vercel-build-failure', 'automated']
+                labels: ['vercel-build-failure', 'automated', 'bug']
               });
+              console.log(`Created new issue #${newIssue.data.number}`);
             }

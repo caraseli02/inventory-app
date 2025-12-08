@@ -1,22 +1,22 @@
 # 🚀 Quick Start: Auto-Fix Vercel Builds
 
-## 5-Minute Setup
+## 2-Minute Setup (Claude Code Max)
 
-### Step 1: Get API Key
-Visit: https://console.anthropic.com
-- Sign in
-- Go to **API Keys**
-- Create a new key
-- Copy it (starts with `sk-ant-...`)
+### Step 1: Install Claude Code GitHub App
 
-### Step 2: Add to GitHub
-1. Go to your repo: **Settings** → **Secrets and variables** → **Actions**
-2. Click **New repository secret**
-3. Name: `ANTHROPIC_API_KEY`
-4. Paste your key
-5. Save
+In your Claude Code CLI, run:
+```bash
+/install-github-app
+```
 
-### Step 3: Test It
+Follow the prompts to:
+1. Authorize the app
+2. Select this repository: `caraseli02/inventory-app`
+3. Grant permissions
+
+**That's it!** No API keys needed with Claude Code Max subscription.
+
+### Step 2: Test It
 ```bash
 # Create a build error to test
 echo "const x: number = 'wrong';" >> src/test-error.ts
@@ -25,11 +25,11 @@ git commit -m "test: Trigger build failure"
 git push
 ```
 
-### Step 4: Watch the Magic ✨
-- Go to **Actions** tab
-- Wait for Vercel to fail
-- Watch "Auto-fix Vercel Build Failures" workflow run
-- Claude will commit a fix automatically!
+### Step 3: Watch the Magic ✨
+- Go to **Issues** tab
+- Wait for the automated issue to appear
+- Watch Claude respond with a fix
+- Claude will commit the fix to your branch!
 
 ---
 
@@ -37,45 +37,44 @@ git push
 
 Every time a Vercel build fails:
 1. ✅ GitHub detects the failure
-2. ✅ Workflow triggers automatically
-3. ✅ Claude Code analyzes the error
-4. ✅ Fixes the issue
-5. ✅ Commits and pushes
-6. ✅ Vercel rebuilds automatically
+2. ✅ Workflow creates an issue automatically
+3. ✅ @claude is mentioned in the issue
+4. ✅ Claude Code analyzes the error
+5. ✅ Fixes the issue
+6. ✅ Commits and pushes
+7. ✅ Vercel rebuilds automatically
+8. ✅ Issue is updated with fix details
 
 **Zero manual intervention required!**
 
 ---
 
-## Choose Your Mode
+## How It Works
 
-### 🤖 Fully Automatic (Default)
-- Uses `.github/workflows/vercel-build-fix.yml`
-- Claude fixes and commits automatically
-- No human intervention
+### 🤖 Issue-Based Automation (Enabled)
+- Uses `.github/workflows/vercel-failure-issue.yml`
+- Creates an issue when Vercel fails
+- @claude mention triggers Claude Code GitHub App
+- Claude responds, fixes, and commits automatically
+- You can comment on the issue to give Claude feedback
 
-**Disable issue creation:**
+**Benefits:**
+✅ Full visibility - every fix is tracked in an issue
+✅ Audit trail - all fixes documented
+✅ Iterative - Claude can respond to your comments
+✅ No API keys needed - uses your Claude Code Max subscription
+
+**To temporarily disable:**
 ```bash
 mv .github/workflows/vercel-failure-issue.yml \
    .github/workflows/vercel-failure-issue.yml.disabled
 ```
 
-### 👀 Review Before Fixing
-- Uses `.github/workflows/vercel-failure-issue.yml`
-- Creates an issue, tags `@claude`
-- You review before Claude commits
-
-**Disable auto-fix:**
+**To re-enable:**
 ```bash
-mv .github/workflows/vercel-build-fix.yml \
-   .github/workflows/vercel-build-fix.yml.disabled
+mv .github/workflows/vercel-failure-issue.yml.disabled \
+   .github/workflows/vercel-failure-issue.yml
 ```
-
-### 🔀 Both (Safe Start)
-- Keep both workflows enabled
-- Issue gives you visibility
-- Auto-fix runs in parallel
-- Review the commits before merging
 
 ---
 
@@ -87,13 +86,14 @@ mv .github/workflows/vercel-build-fix.yml \
 gh workflow list
 
 # Check recent runs
-gh run list --workflow=vercel-build-fix.yml
+gh run list --workflow=vercel-failure-issue.yml
 ```
 
-**Claude Code not fixing?**
-- Verify `ANTHROPIC_API_KEY` secret is set
-- Check Action logs for errors
-- Ensure branch is not protected (or allow Actions bot to push)
+**Claude not responding to issues?**
+- Run `/install-github-app` again to verify installation
+- Check GitHub Settings → Applications → Claude Code
+- Ensure @claude mention is lowercase in the issue
+- Check the issue has the `vercel-build-failure` label
 
 **Want to test without breaking things?**
 ```bash
@@ -112,11 +112,17 @@ gh pr create --fill
 
 ---
 
-## Cost Estimate
+## Cost
 
-- **Per fix attempt**: $0.15 - $0.75 (depending on complexity)
-- **Only charged when builds actually fail**
-- **Typical monthly cost**: $5-20 (assuming 10-30 build failures)
+**With Claude Code Max subscription:**
+- ✅ **No additional API costs**
+- ✅ **Unlimited issue responses**
+- ✅ **Included in your subscription**
+
+**GitHub Actions:**
+- ✅ Free for public repos
+- ✅ 2,000 minutes/month for private repos
+- ✅ This workflow uses ~1 minute per build failure
 
 Much cheaper than developer time debugging builds! ⏰💰
 
@@ -124,12 +130,28 @@ Much cheaper than developer time debugging builds! ⏰💰
 
 ## Next: Make It Smarter
 
-Customize the prompt in `.github/workflows/vercel-build-fix.yml` to:
+Customize the issue template in `.github/workflows/vercel-failure-issue.yml` to:
 - Check specific files first (your common error sources)
-- Run additional validation
+- Run additional validation before committing
 - Follow your team's commit conventions
-- Notify Slack/Discord on fixes
+- Add custom labels or assignees
+- Integrate with Slack/Discord notifications
+
+**Example customization:**
+```yaml
+# In .github/workflows/vercel-failure-issue.yml
+# Edit the "Your Tasks:" section:
+
+**Your Tasks:**
+1. Checkout the branch: \`${branch}\`
+2. First check common error files: src/types/*.ts
+3. Run \`pnpm build\` to reproduce errors
+4. Fix all TypeScript errors
+5. Run \`pnpm lint\` to check code style
+6. Commit with format: \`fix(build): [description]\`
+7. Push to: \`${branch}\`
+```
 
 ---
 
-**Full docs**: See `.github/CLAUDE_VERCEL_SETUP.md`
+**Full docs**: See `.github/SETUP_WITH_CLAUDE_MAX.md`
