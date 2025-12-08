@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
 import { X, Package, Barcode, Tag, Euro, Calendar, AlertTriangle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Spinner } from '../ui/spinner';
 import { getStockMovements } from '../../lib/api';
 import { logger } from '../../lib/logger';
-import type { Product, StockMovement } from '../../types';
+import type { Product } from '../../types';
 
 interface ProductDetailDialogProps {
   product: Product | null;
@@ -19,27 +19,25 @@ export const ProductDetailDialog = ({
   open,
   onClose,
 }: ProductDetailDialogProps) => {
-  const [movements, setMovements] = useState<StockMovement[]>([]);
-  const [loadingMovements, setLoadingMovements] = useState(false);
-
-  useEffect(() => {
-    if (open && product) {
-      setLoadingMovements(true);
-      getStockMovements(product.id)
-        .then(setMovements)
-        .catch((error) => {
-          logger.error('Failed to fetch stock movements', {
-            productId: product.id,
-            errorMessage: error instanceof Error ? error.message : String(error),
-            errorStack: error instanceof Error ? error.stack : undefined,
-          });
-          setMovements([]);
-        })
-        .finally(() => setLoadingMovements(false));
-    } else {
-      setMovements([]);
-    }
-  }, [open, product]);
+  // Use React Query for stock movements - handles loading state automatically
+  const { data: movements = [], isLoading: loadingMovements } = useQuery({
+    queryKey: ['stockMovements', product?.id],
+    queryFn: async () => {
+      if (!product) return [];
+      try {
+        return await getStockMovements(product.id);
+      } catch (error) {
+        logger.error('Failed to fetch stock movements', {
+          productId: product.id,
+          errorMessage: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
+        });
+        return [];
+      }
+    },
+    enabled: open && !!product,
+    staleTime: 1000 * 60, // 1 minute
+  });
 
   if (!product) return null;
 
