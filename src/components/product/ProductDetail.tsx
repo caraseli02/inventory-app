@@ -116,7 +116,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
         </div>
       </CardHeader>
 
-      <CardContent className="px-6 py-6 max-h-[calc(100dvh-240px)] md:max-h-none overflow-y-auto">
+      <CardContent className="px-6 py-6 pb-24 md:pb-6 overflow-y-auto">
         <div className="grid grid-cols-2 gap-4 mb-6">
           <Card className="bg-gradient-to-br from-stone-50 to-white border-2 border-stone-200">
             <CardContent className="p-4">
@@ -216,31 +216,31 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
         )}
 
         {/* Recent Activity Section */}
-        <div className="border-t-2 border-stone-200 pt-6">
-          <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-4">Recent Activity</h3>
+        <div className="border-t-2 border-stone-200 pt-4 mt-4">
+          <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">Recent Activity</h3>
           <div className="space-y-2">
             {recentHistory.map((move) => (
-              <div key={move.id} className="flex justify-between items-center text-sm p-3 bg-stone-50 rounded-lg border border-stone-200">
-                <div className="flex items-center gap-3">
+              <div key={move.id} className="flex justify-between items-center text-sm p-2.5 bg-stone-50 rounded-lg border border-stone-200">
+                <div className="flex items-center gap-2.5">
                   <Badge
                     variant={move.fields.Type === 'IN' ? 'default' : 'destructive'}
                     className={`w-2 h-2 p-0 rounded-full ${move.fields.Type === 'IN' ? 'bg-emerald-500' : 'bg-red-500'}`}
                   />
-                  <span className="text-stone-600 font-medium">{move.fields.Date}</span>
+                  <span className="text-stone-600 font-medium text-xs">{move.fields.Date}</span>
                 </div>
-                <div className={`font-mono font-bold ${move.fields.Type === 'IN' ? 'text-emerald-700' : 'text-red-700'}`}>
+                <div className={`font-mono font-bold text-sm ${move.fields.Type === 'IN' ? 'text-emerald-700' : 'text-red-700'}`}>
                   {move.fields.Type === 'IN' ? '+' : '-'}{Math.abs(move.fields.Quantity)}
                 </div>
               </div>
             ))}
             {recentHistory.length === 0 && (
-              <div className="text-stone-500 text-sm text-center italic py-4">No recent movements</div>
+              <div className="text-stone-500 text-sm text-center italic py-3">No recent movements</div>
             )}
           </div>
         </div>
       </CardContent>
 
-      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 fixed md:static bottom-0 w-full">
+      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 sticky bottom-0 w-full z-10">
         <Button
           onClick={onScanNew}
           className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
