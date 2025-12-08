@@ -1,0 +1,21 @@
+#!/bin/bash
+# Pre-commit hook: Check TypeScript and lint before commit
+
+echo "🔍 Running pre-commit checks..."
+
+# Run TypeScript check
+echo "📝 Checking TypeScript..."
+if ! pnpm exec tsc -b --noEmit; then
+  echo "❌ TypeScript check failed. Please fix the errors before committing."
+  exit 1
+fi
+
+# Run linter
+echo "🔧 Running linter..."
+if ! pnpm lint; then
+  echo "⚠️  Lint check failed. Please fix the errors before committing."
+  exit 1
+fi
+
+echo "✅ All checks passed!"
+exit 0
