@@ -69,7 +69,11 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     // Prevent multiple simultaneous operations on the same product
     if (loadingProducts.has(productId)) return;
 
-    const currentStock = product.fields['Current Stock Level'] ?? 0;
+    // Data integrity check: ensure stock value is a valid number
+    const stockValue = product.fields['Current Stock Level'];
+    const currentStock = typeof stockValue === 'number' && Number.isFinite(stockValue)
+      ? stockValue
+      : 0;
     const type = delta > 0 ? 'IN' : 'OUT';
     const quantity = Math.abs(delta);
 
@@ -87,11 +91,29 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     // Add to loading set
     setLoadingProducts((prev) => new Set(prev).add(productId));
 
+    // Get previous data for rollback
+    const previousData = queryClient.getQueryData<Product[]>(['products', 'all']);
+
+    // Optimistically update the cache
+    queryClient.setQueryData<Product[]>(['products', 'all'], (oldData) => {
+      if (!oldData) return oldData;
+
+      return oldData.map((p) => {
+        if (p.id !== productId) return p;
+
+        const newStock = currentStock + delta;
+        return {
+          ...p,
+          fields: {
+            ...p.fields,
+            'Current Stock Level': newStock,
+          },
+        };
+      });
+    });
+
     try {
       await addStockMovement(productId, quantity, type);
-
-      // Invalidate queries to refetch updated data
-      await queryClient.invalidateQueries({ queryKey: ['products', 'all'] });
 
       showToast(
         'success',
@@ -100,6 +122,11 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         3000
       );
     } catch (err) {
+      // Rollback on error
+      if (previousData) {
+        queryClient.setQueryData(['products', 'all'], previousData);
+      }
+
       const errorMessage = err instanceof Error ? err.message : 'Failed to update stock';
       showToast('error', 'Update Failed', errorMessage, 5000);
     } finally {

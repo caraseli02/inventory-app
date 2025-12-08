@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Spinner } from '../ui/spinner';
 import { getStockMovements } from '../../lib/api';
+import { logger } from '../../lib/logger';
 import type { Product, StockMovement } from '../../types';
 
 interface ProductDetailDialogProps {
@@ -27,7 +28,11 @@ export const ProductDetailDialog = ({
       getStockMovements(product.id)
         .then(setMovements)
         .catch((error) => {
-          console.error('Failed to fetch stock movements:', error);
+          logger.error('Failed to fetch stock movements', {
+            productId: product.id,
+            errorMessage: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+          });
           setMovements([]);
         })
         .finally(() => setLoadingMovements(false));

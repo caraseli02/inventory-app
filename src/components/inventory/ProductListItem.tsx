@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Plus, Minus, AlertTriangle } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -11,7 +12,7 @@ interface ProductListItemProps {
   isLoading?: boolean;
 }
 
-export const ProductListItem = ({
+const ProductListItemComponent = ({
   product,
   onViewDetails,
   onQuickAdjust,
@@ -126,3 +127,6 @@ export const ProductListItem = ({
     </Card>
   );
 };
+
+// Memoize to prevent unnecessary re-renders when parent updates
+export const ProductListItem = memo(ProductListItemComponent);

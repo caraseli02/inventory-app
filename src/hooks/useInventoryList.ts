@@ -68,8 +68,17 @@ export const useInventoryList = () => {
     // Apply low stock filter
     if (filters.lowStockOnly) {
       result = result.filter((product) => {
-        const currentStock = product.fields['Current Stock Level'] ?? 0;
-        const minStock = product.fields['Min Stock Level'] ?? 0;
+        // Data integrity checks: ensure values are valid numbers
+        const stockValue = product.fields['Current Stock Level'];
+        const minValue = product.fields['Min Stock Level'];
+
+        const currentStock = typeof stockValue === 'number' && Number.isFinite(stockValue)
+          ? stockValue
+          : 0;
+        const minStock = typeof minValue === 'number' && Number.isFinite(minValue)
+          ? minValue
+          : 0;
+
         // Only filter products that have a defined minimum stock level
         return currentStock < minStock && minStock > 0;
       });
@@ -85,14 +94,20 @@ export const useInventoryList = () => {
           aValue = a.fields.Name.toLowerCase();
           bValue = b.fields.Name.toLowerCase();
           break;
-        case 'stock':
-          aValue = a.fields['Current Stock Level'] ?? 0;
-          bValue = b.fields['Current Stock Level'] ?? 0;
+        case 'stock': {
+          const aStock = a.fields['Current Stock Level'];
+          const bStock = b.fields['Current Stock Level'];
+          aValue = typeof aStock === 'number' && Number.isFinite(aStock) ? aStock : 0;
+          bValue = typeof bStock === 'number' && Number.isFinite(bStock) ? bStock : 0;
           break;
-        case 'price':
-          aValue = a.fields.Price ?? 0;
-          bValue = b.fields.Price ?? 0;
+        }
+        case 'price': {
+          const aPrice = a.fields.Price;
+          const bPrice = b.fields.Price;
+          aValue = typeof aPrice === 'number' && Number.isFinite(aPrice) ? aPrice : 0;
+          bValue = typeof bPrice === 'number' && Number.isFinite(bPrice) ? bPrice : 0;
           break;
+        }
         case 'category':
           aValue = (a.fields.Category ?? '').toLowerCase();
           bValue = (b.fields.Category ?? '').toLowerCase();

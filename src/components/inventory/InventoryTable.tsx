@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Plus, Minus, AlertTriangle } from 'lucide-react';
 import {
   Table,
@@ -21,7 +22,7 @@ interface InventoryTableProps {
   loadingProductIds?: Set<string>;
 }
 
-export const InventoryTable = ({
+const InventoryTableComponent = ({
   products,
   onViewDetails,
   onQuickAdjust,
@@ -186,3 +187,6 @@ export const InventoryTable = ({
     </div>
   );
 };
+
+// Memoize to prevent unnecessary re-renders when parent updates
+export const InventoryTable = memo(InventoryTableComponent);
