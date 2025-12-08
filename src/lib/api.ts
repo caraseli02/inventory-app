@@ -97,7 +97,7 @@ export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Produ
       Category: record.fields.Category as string | undefined,
       Price: record.fields.Price as number | undefined,
       'Expiry Date': record.fields['Expiry Date'] as string | undefined,
-      'Current Stock': record.fields['Current Stock'] as number | undefined,
+      'Current Stock Level': record.fields['Current Stock Level'] as number | undefined,
       'Ideal Stock': record.fields['Ideal Stock'] as number | undefined,
       'Min Stock Level': record.fields['Min Stock Level'] as number | undefined,
       Supplier: record.fields.Supplier as string | undefined,
@@ -141,11 +141,11 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
 
     const record = records[0];
 
-    logger.info('Product found', { barcode, productId: record.id, currentStock: record.fields['Current Stock'] });
+    logger.info('Product found', { barcode, productId: record.id, currentStock: record.fields['Current Stock Level'] });
     console.log('[getProductByBarcode] Fetched product:', {
       id: record.id,
       name: record.fields.Name,
-      currentStock: record.fields['Current Stock']
+      currentStock: record.fields['Current Stock Level']
     });
     console.log('[getProductByBarcode] ALL FIELDS from Airtable:', record.fields);
     console.log('[getProductByBarcode] Field names:', Object.keys(record.fields));
@@ -262,7 +262,7 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
  * Automatic quantity signing:
  * - IN movements are stored as positive values
  * - OUT movements are stored as negative values
- * - This allows Airtable's Sum rollup to automatically calculate Current Stock
+ * - This allows Airtable's Sum rollup to automatically calculate Current Stock Level
  *
  * Validation:
  * - Product ID must be non-empty
@@ -299,7 +299,7 @@ export const addStockMovement = async (productId: string, quantity: number, type
   logger.info('Adding stock movement', { productId, quantity, type });
 
   // Quantity is signed: negative for OUT, positive for IN
-  // This allows Airtable's Sum rollup field ('Current Stock') to auto-calculate inventory correctly
+  // This allows Airtable's Sum rollup field ('Current Stock Level') to auto-calculate inventory correctly
   const finalQuantity = type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity);
   const dateStr = new Date().toISOString().split('T')[0];
 

@@ -32,7 +32,7 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
 
   // Only initialize mutation hook when product exists
   // Pass a dummy product during loading to satisfy hooks rule
-  const dummyProduct = { id: '', fields: { Name: '', Barcode: barcode, 'Current Stock': 0 } } as any;
+  const dummyProduct = { id: '', fields: { Name: '', Barcode: barcode, 'Current Stock Level': 0 } } as any;
   const { handleStockChange, loadingAction } = useStockMutation(product || dummyProduct);
 
   // Show loading state with skeleton
@@ -52,7 +52,7 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
   }, 0) ?? 0;
 
   // Use calculated stock if Airtable rollup is undefined
-  const currentStock = product.fields['Current Stock'] ?? calculatedStock;
+  const currentStock = product.fields['Current Stock Level'] ?? calculatedStock;
 
   // Only show the 10 most recent movements in the UI
   const recentHistory = history?.slice(0, 10) ?? [];
@@ -65,7 +65,7 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
 
   // Debug: Log current stock value
   console.log('[ProductDetail] Rendering with stock:', {
-    airtableStock: product.fields['Current Stock'],
+    airtableStock: product.fields['Current Stock Level'],
     calculatedStock,
     currentStock,
     movementCount: history?.length

@@ -15,7 +15,7 @@ export const ProductListItem = ({
   onViewDetails,
   onQuickAdjust,
 }: ProductListItemProps) => {
-  const currentStock = product.fields['Current Stock'] ?? 0;
+  const currentStock = product.fields['Current Stock Level'] ?? 0;
   const minStock = product.fields['Min Stock Level'] ?? 0;
   const isLowStock = currentStock < minStock && minStock > 0;
   const imageUrl = product.fields.Image?.[0]?.url;

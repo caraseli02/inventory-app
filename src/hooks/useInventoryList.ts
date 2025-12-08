@@ -20,7 +20,7 @@ export interface InventoryFilters {
  * - Fetches all products from Airtable
  * - Client-side search by name/barcode
  * - Filter by category
- * - Filter by low stock (Current Stock < Min Stock Level)
+ * - Filter by low stock (Current Stock Level < Min Stock Level)
  * - Sort by name, stock, price, or category
  * - Auto-refetch on window focus
  * - 5-minute cache
@@ -68,7 +68,7 @@ export const useInventoryList = () => {
     // Apply low stock filter
     if (filters.lowStockOnly) {
       result = result.filter((product) => {
-        const currentStock = product.fields['Current Stock'] ?? 0;
+        const currentStock = product.fields['Current Stock Level'] ?? 0;
         const minStock = product.fields['Min Stock Level'] ?? 0;
         return currentStock < minStock;
       });
@@ -85,8 +85,8 @@ export const useInventoryList = () => {
           bValue = b.fields.Name.toLowerCase();
           break;
         case 'stock':
-          aValue = a.fields['Current Stock'] ?? 0;
-          bValue = b.fields['Current Stock'] ?? 0;
+          aValue = a.fields['Current Stock Level'] ?? 0;
+          bValue = b.fields['Current Stock Level'] ?? 0;
           break;
         case 'price':
           aValue = a.fields.Price ?? 0;

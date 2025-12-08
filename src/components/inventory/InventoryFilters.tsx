@@ -69,22 +69,37 @@ export const InventoryFiltersBar = ({
       {/* Filters Row */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Category Filter */}
-        <Select
-          value={filters.category}
-          onValueChange={(value) => onFilterChange('category', value)}
-        >
-          <SelectTrigger className="w-[180px] h-10 border-2 border-stone-300">
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="relative">
+          <Select
+            value={filters.category || undefined}
+            onValueChange={(value) => onFilterChange('category', value)}
+          >
+            <SelectTrigger className="w-[180px] h-10 border-2 border-stone-300">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {filters.category && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute right-8 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-stone-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFilterChange('category', '');
+              }}
+              title="Clear category filter"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
 
         {/* Low Stock Filter */}
         <Button

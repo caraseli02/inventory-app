@@ -38,22 +38,22 @@ export const ProductDetailDialog = ({
 
   if (!product) return null;
 
-  const currentStock = product.fields['Current Stock'] ?? 0;
+  const currentStock = product.fields['Current Stock Level'] ?? 0;
   const minStock = product.fields['Min Stock Level'] ?? 0;
   const isLowStock = currentStock < minStock && minStock > 0;
   const imageUrl = product.fields.Image?.[0]?.url;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="h-dvh w-full sm:h-auto sm:max-w-[600px] sm:max-h-[90vh] overflow-y-auto p-0 sm:p-6">
+        <DialogHeader className="pt-[max(1.5rem,env(safe-area-inset-top))] px-6 pb-4 sm:p-0 sm:pb-0">
           <DialogTitle className="text-2xl font-bold text-stone-900 flex items-center gap-2">
             <Package className="h-6 w-6" />
             Product Details
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-6 px-6 pb-6 sm:px-0 sm:pb-0">
           {/* Product Image */}
           {imageUrl && (
             <div className="flex justify-center">
@@ -210,7 +210,7 @@ export const ProductDetailDialog = ({
           </div>
 
           {/* Close Button */}
-          <div className="flex justify-end pt-4 border-t border-stone-200">
+          <div className="flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0 border-t border-stone-200">
             <Button
               variant="outline"
               onClick={onClose}
