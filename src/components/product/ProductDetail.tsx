@@ -104,17 +104,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
                 )}
               </div>
               <div className="flex-1">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <h2 className="text-2xl font-bold text-stone-900 leading-tight">{product.fields.Name}</h2>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowEditDialog(true)}
-                    className="border-2 border-stone-300 hover:bg-stone-100 flex items-center gap-1.5 text-xs font-semibold"
-                  >
-                    ✏️ Edit
-                  </Button>
-                </div>
+                <h2 className="text-2xl font-bold text-stone-900 leading-tight mb-1">{product.fields.Name}</h2>
                 <Badge variant="secondary" className="bg-stone-100 text-stone-700 border-stone-300">
                   {displayCategory}
                 </Badge>
@@ -186,7 +176,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
         </div>
 
         {/* Action Buttons - Both Visible */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <Button
             onClick={() => handleStockButton('IN')}
             disabled={loadingAction !== null}
@@ -217,6 +207,26 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
                 Remove Stock
               </span>
             )}
+          </Button>
+        </div>
+
+        {/* Edit and Delete Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <Button
+            variant="outline"
+            onClick={() => setShowEditDialog(true)}
+            size="lg"
+            className="font-semibold border-2 border-stone-300 hover:bg-stone-100 flex items-center justify-center gap-2"
+          >
+            ✏️ Edit Product
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowDeleteDialog(true)}
+            size="lg"
+            className="font-semibold border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50 flex items-center justify-center gap-2"
+          >
+            🗑️ Delete
           </Button>
         </div>
 
@@ -255,21 +265,12 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
       </CardContent>
 
       <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 sticky bottom-0 w-full z-10">
-        <div className="flex gap-3 w-full">
-          <Button
-            variant="outline"
-            onClick={() => setShowDeleteDialog(true)}
-            className="border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50 font-semibold flex items-center gap-2"
-          >
-            🗑️ Delete
-          </Button>
-          <Button
-            onClick={onScanNew}
-            className="flex-1 h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
-          >
-            Scan Another Product
-          </Button>
-        </div>
+        <Button
+          onClick={onScanNew}
+          className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
+        >
+          Scan Another Product
+        </Button>
       </CardFooter>
 
       {/* Edit Product Dialog */}
