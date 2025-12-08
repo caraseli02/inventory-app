@@ -9,11 +9,11 @@ import { Spinner } from './components/ui/spinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Route-based code splitting: lazy load pages with retry on failure
-const retryLazyImport = (
-  importFn: () => Promise<any>,
+const retryLazyImport = <T,>(
+  importFn: () => Promise<T>,
   retriesLeft = 3,
   interval = 1000
-): Promise<any> => {
+): Promise<T> => {
   return importFn().catch((error) => {
     if (retriesLeft === 0) {
       // If all retries failed, force reload to get fresh chunks

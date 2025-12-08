@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ProductSkeleton } from './ProductSkeleton';
+import type { Product } from '../../types';
 
 interface ProductDetailProps {
   barcode: string;
@@ -32,7 +33,11 @@ const ProductDetail = ({ barcode, onScanNew, mode }: ProductDetailProps) => {
 
   // Only initialize mutation hook when product exists
   // Pass a dummy product during loading to satisfy hooks rule
-  const dummyProduct = { id: '', fields: { Name: '', Barcode: barcode, 'Current Stock Level': 0 } } as any;
+  const dummyProduct: Product = {
+    id: '',
+    createdTime: '',
+    fields: { Name: '', Barcode: barcode, 'Current Stock Level': 0 }
+  };
   const { handleStockChange, loadingAction } = useStockMutation(product || dummyProduct);
 
   // Show loading state with skeleton
