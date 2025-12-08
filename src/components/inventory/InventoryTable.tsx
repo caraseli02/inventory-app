@@ -15,12 +15,14 @@ interface InventoryTableProps {
   products: Product[];
   onViewDetails: (product: Product) => void;
   onQuickAdjust?: (productId: string, delta: number) => void;
+  loadingProductIds?: Set<string>;
 }
 
 export const InventoryTable = ({
   products,
   onViewDetails,
   onQuickAdjust,
+  loadingProductIds = new Set(),
 }: InventoryTableProps) => {
   if (products.length === 0) {
     return (
@@ -58,6 +60,7 @@ export const InventoryTable = ({
             const minStock = product.fields['Min Stock Level'] ?? 0;
             const isLowStock = currentStock < minStock && minStock > 0;
             const imageUrl = product.fields.Image?.[0]?.url;
+            const isLoading = loadingProductIds.has(product.id);
 
             return (
               <TableRow
@@ -139,16 +142,26 @@ export const InventoryTable = ({
                         size="sm"
                         className="h-8 px-3 border-2 border-stone-300"
                         onClick={() => onQuickAdjust(product.id, -1)}
+                        disabled={isLoading || currentStock === 0}
                       >
-                        <Minus className="h-3 w-3" />
+                        {isLoading ? (
+                          <span className="animate-spin h-3 w-3 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
+                        ) : (
+                          <Minus className="h-3 w-3" />
+                        )}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         className="h-8 px-3 border-2 border-stone-300"
                         onClick={() => onQuickAdjust(product.id, 1)}
+                        disabled={isLoading}
                       >
-                        <Plus className="h-3 w-3" />
+                        {isLoading ? (
+                          <span className="animate-spin h-3 w-3 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
+                        ) : (
+                          <Plus className="h-3 w-3" />
+                        )}
                       </Button>
                     </div>
                   </TableCell>

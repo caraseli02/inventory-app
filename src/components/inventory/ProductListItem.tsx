@@ -8,12 +8,14 @@ interface ProductListItemProps {
   product: Product;
   onViewDetails: (product: Product) => void;
   onQuickAdjust?: (productId: string, delta: number) => void;
+  isLoading?: boolean;
 }
 
 export const ProductListItem = ({
   product,
   onViewDetails,
   onQuickAdjust,
+  isLoading = false,
 }: ProductListItemProps) => {
   const currentStock = product.fields['Current Stock Level'] ?? 0;
   const minStock = product.fields['Min Stock Level'] ?? 0;
@@ -90,18 +92,32 @@ export const ProductListItem = ({
                 size="sm"
                 className="h-8 flex-1 border-2 border-stone-300"
                 onClick={() => onQuickAdjust(product.id, -1)}
+                disabled={isLoading || currentStock === 0}
               >
-                <Minus className="h-4 w-4 mr-1" />
-                Remove
+                {isLoading ? (
+                  <span className="animate-spin h-4 w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
+                ) : (
+                  <>
+                    <Minus className="h-4 w-4 mr-1" />
+                    Remove
+                  </>
+                )}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 className="h-8 flex-1 border-2 border-stone-300"
                 onClick={() => onQuickAdjust(product.id, 1)}
+                disabled={isLoading}
               >
-                <Plus className="h-4 w-4 mr-1" />
-                Add
+                {isLoading ? (
+                  <span className="animate-spin h-4 w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </>
+                )}
               </Button>
             </div>
           )}

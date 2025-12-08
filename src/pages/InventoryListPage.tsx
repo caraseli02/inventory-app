@@ -22,6 +22,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const { showToast } = useToast();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState<Set<string>>(new Set());
 
   const {
     products,
@@ -51,14 +52,32 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
+    // Prevent multiple simultaneous operations on the same product
+    if (loadingProducts.has(productId)) return;
+
+    const currentStock = product.fields['Current Stock Level'] ?? 0;
     const type = delta > 0 ? 'IN' : 'OUT';
     const quantity = Math.abs(delta);
+
+    // Prevent negative stock
+    if (type === 'OUT' && currentStock < quantity) {
+      showToast(
+        'error',
+        'Insufficient Stock',
+        `Cannot remove ${quantity} unit(s). Only ${currentStock} unit(s) available.`,
+        4000
+      );
+      return;
+    }
+
+    // Add to loading set
+    setLoadingProducts((prev) => new Set(prev).add(productId));
 
     try {
       await addStockMovement(productId, quantity, type);
 
       // Invalidate queries to refetch updated data
-      queryClient.invalidateQueries({ queryKey: ['products', 'all'] });
+      await queryClient.invalidateQueries({ queryKey: ['products', 'all'] });
 
       showToast(
         'success',
@@ -69,6 +88,13 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update stock';
       showToast('error', 'Update Failed', errorMessage, 5000);
+    } finally {
+      // Remove from loading set
+      setLoadingProducts((prev) => {
+        const next = new Set(prev);
+        next.delete(productId);
+        return next;
+      });
     }
   };
 
@@ -136,6 +162,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                       product={product}
                       onViewDetails={handleViewDetails}
                       onQuickAdjust={handleQuickAdjust}
+                      isLoading={loadingProducts.has(product.id)}
                     />
                   ))
                 ) : (
@@ -157,6 +184,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                   products={products}
                   onViewDetails={handleViewDetails}
                   onQuickAdjust={handleQuickAdjust}
+                  loadingProductIds={loadingProducts}
                 />
               </div>
             </>
