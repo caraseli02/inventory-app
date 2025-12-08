@@ -6,7 +6,7 @@ export interface ProductFields extends FieldSet {
   Category?: string;         // Optional - may not be set at creation
   Price?: number;            // Optional - may not be set at creation
   'Expiry Date'?: string;    // Optional - may not be set at creation
-  'Current Stock'?: number;  // Rollup field (calculated by Airtable)
+  'Current Stock Level'?: number;  // Rollup field (calculated by Airtable)
   'Ideal Stock'?: number;
   'Min Stock Level'?: number;
   Supplier?: string;
@@ -22,7 +22,7 @@ export interface Product {
     Category?: string;
     Price?: number;
     'Expiry Date'?: string;
-    'Current Stock'?: number;
+    'Current Stock Level'?: number;
     'Ideal Stock'?: number;
     'Min Stock Level'?: number;
     Supplier?: string;

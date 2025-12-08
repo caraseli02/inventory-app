@@ -1,12 +1,12 @@
 import { useEffect, useState, lazy, Suspense, type ReactNode } from 'react';
 import OfflineIndicator from './components/OfflineIndicator';
+import { ToastProvider } from './hooks/useToast';
 import { Toaster } from 'sonner';
-import { MinusIcon, PlusIcon, ShoppingCartIcon } from './components/ui/Icons';
+import { MinusIcon, PlusIcon, ShoppingCartIcon, ListIcon } from './components/ui/Icons';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Spinner } from './components/ui/spinner';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { ToastProvider } from './hooks/useToast';
 
 // Route-based code splitting: lazy load pages with retry on failure
 const retryLazyImport = <T,>(
@@ -33,6 +33,7 @@ const retryLazyImport = <T,>(
 
 const ScanPage = lazy(() => retryLazyImport(() => import('./pages/ScanPage')));
 const CheckoutPage = lazy(() => retryLazyImport(() => import('./pages/CheckoutPage')));
+const InventoryListPage = lazy(() => retryLazyImport(() => import('./pages/InventoryListPage')));
 
 // Loading fallback component for lazy-loaded pages
 const LoadingFallback = ({ label }: { label: string }) => (
@@ -41,7 +42,7 @@ const LoadingFallback = ({ label }: { label: string }) => (
   </div>
 );
 
-type ViewState = 'home' | 'add' | 'remove' | 'checkout';
+type ViewState = 'home' | 'add' | 'remove' | 'checkout' | 'inventory';
 
 const SCANNER_MODE_KEY = 'scannerMode';
 
@@ -196,12 +197,46 @@ function App() {
                   </div>
                 </div>
               </Card>
+              <Card
+                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+                onClick={() => setView('inventory')}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    setView('inventory');
+                  }
+                }}
+              >
+                <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
+                  <div className="flex items-start justify-between gap-3 sm:gap-4">
+                    <div className="flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
+                      <ListIcon className="h-6 w-6" />
+                    </div>
+                    <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
+                      Browse
+                    </Badge>
+                  </div>
+                  <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
+                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">View Inventory</h2>
+                    <p className="text-xs sm:text-sm text-stone-600 font-medium">
+                      Browse all products, check stock levels, and adjust quantities.
+                    </p>
+                  </div>
+                </div>
+              </Card>
             </div>
           </div>
         ) : view === 'checkout' ? (
           <ErrorBoundary>
             <Suspense fallback={<LoadingFallback label="Loading checkout..." />}>
               <CheckoutPage onBack={() => setView('home')} />
+            </Suspense>
+          </ErrorBoundary>
+        ) : view === 'inventory' ? (
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingFallback label="Loading inventory..." />}>
+              <InventoryListPage onBack={() => setView('home')} />
             </Suspense>
           </ErrorBoundary>
         ) : (
