@@ -84,39 +84,39 @@ export const useInventoryList = () => {
       });
     }
 
-    // Apply sorting
-    result.sort((a, b) => {
-      let aValue: string | number | undefined;
-      let bValue: string | number | undefined;
+    // Apply sorting with pre-computed sort keys (Schwartzian Transform pattern)
+    // This avoids calling .toLowerCase() multiple times per product during sorting
+    const withSortKeys = result.map((product) => {
+      let sortKey: string | number;
 
       switch (filters.sortField) {
         case 'name':
-          aValue = a.fields.Name.toLowerCase();
-          bValue = b.fields.Name.toLowerCase();
+          sortKey = product.fields.Name.toLowerCase();
           break;
         case 'stock': {
-          const aStock = a.fields['Current Stock Level'];
-          const bStock = b.fields['Current Stock Level'];
-          aValue = typeof aStock === 'number' && Number.isFinite(aStock) ? aStock : 0;
-          bValue = typeof bStock === 'number' && Number.isFinite(bStock) ? bStock : 0;
+          const stock = product.fields['Current Stock Level'];
+          sortKey = typeof stock === 'number' && Number.isFinite(stock) ? stock : 0;
           break;
         }
         case 'price': {
-          const aPrice = a.fields.Price;
-          const bPrice = b.fields.Price;
-          aValue = typeof aPrice === 'number' && Number.isFinite(aPrice) ? aPrice : 0;
-          bValue = typeof bPrice === 'number' && Number.isFinite(bPrice) ? bPrice : 0;
+          const price = product.fields.Price;
+          sortKey = typeof price === 'number' && Number.isFinite(price) ? price : 0;
           break;
         }
         case 'category':
-          aValue = (a.fields.Category ?? '').toLowerCase();
-          bValue = (b.fields.Category ?? '').toLowerCase();
+          sortKey = (product.fields.Category ?? '').toLowerCase();
           break;
+        default:
+          sortKey = '';
       }
 
-      if (aValue === undefined && bValue === undefined) return 0;
-      if (aValue === undefined) return 1;
-      if (bValue === undefined) return -1;
+      return { product, sortKey };
+    });
+
+    // Sort by pre-computed keys
+    withSortKeys.sort((a, b) => {
+      const aValue = a.sortKey;
+      const bValue = b.sortKey;
 
       let comparison = 0;
       if (aValue < bValue) comparison = -1;
@@ -124,6 +124,9 @@ export const useInventoryList = () => {
 
       return filters.sortDirection === 'asc' ? comparison : -comparison;
     });
+
+    // Extract sorted products
+    result = withSortKeys.map(({ product }) => product);
 
     return result;
   }, [query.data, filters]);

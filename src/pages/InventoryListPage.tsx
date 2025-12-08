@@ -8,6 +8,7 @@ import { InventoryFiltersBar } from '../components/inventory/InventoryFilters';
 import { ProductListItem } from '../components/inventory/ProductListItem';
 import { InventoryTable } from '../components/inventory/InventoryTable';
 import { ProductDetailDialog } from '../components/inventory/ProductDetailDialog';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { addStockMovement } from '../lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../hooks/useToast';
@@ -234,11 +235,13 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       </div>
 
       {/* Product Detail Dialog */}
-      <ProductDetailDialog
-        product={selectedProduct}
-        open={detailDialogOpen}
-        onClose={handleCloseDialog}
-      />
+      <ErrorBoundary>
+        <ProductDetailDialog
+          product={selectedProduct}
+          open={detailDialogOpen}
+          onClose={handleCloseDialog}
+        />
+      </ErrorBoundary>
     </div>
   );
 };
