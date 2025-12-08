@@ -11,15 +11,11 @@ import {
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 
-type ScanMode = 'add' | 'remove';
-
 type ScanPageProps = {
-  mode: ScanMode;
   onBack: () => void;
-  onModeChange: (mode: ScanMode) => void;
 };
 
-const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
+const ScanPage = ({ onBack }: ScanPageProps) => {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
   const { showToast } = useToast();
@@ -50,32 +46,14 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
     }
   }, [error, scannedCode, showToast]);
 
-  // Handle product not found in remove mode
-  useEffect(() => {
-    if (!isLoading && !product && !error && scannedCode && mode === 'remove') {
-      showToast(
-        'error',
-        'Product not found',
-        `Cannot remove item: product with barcode ${scannedCode} does not exist in inventory`,
-        5000
-      );
-      // Reset after showing error
-      const timer = setTimeout(() => {
-        setScannedCode(null);
-        setManualCode('');
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, product, error, scannedCode, mode, showToast]);
+  // Product not found is now handled by CreateProductForm in add mode
+  // In unified interface, user can see stock level and choose whether to add or remove
 
   const handleReset = () => {
     setScannedCode(null);
     setManualCode('');
   };
 
-  const handleModeToggle = () => {
-    onModeChange(mode === 'add' ? 'remove' : 'add');
-  };
 
   const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -84,8 +62,8 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
     }
   };
 
-  // Only show create form in 'add' mode when product not found
-  const showCreateForm = !isLoading && !product && !error && scannedCode && mode === 'add';
+  // Show create form when product not found (unified interface allows adding new products)
+  const showCreateForm = !isLoading && !product && !error && scannedCode;
   const showDetail = !isLoading && product && scannedCode;
 
   return (
@@ -93,7 +71,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
       {/* Mobile View */}
       <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
         <PageHeader
-          title={showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
+          title={showCreateForm ? 'New Product' : showDetail ? 'Manage Stock' : 'Scan Product'}
           onBack={onBack}
         />
 
@@ -146,16 +124,6 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
             </form>
           </div>
 
-          {/* Action Buttons */}
-          <div className="mx-auto w-full max-w-lg space-y-3">
-            <Button
-              variant="outline"
-              className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
-              onClick={handleModeToggle}
-            >
-              Switch to {mode === 'add' ? 'Remove' : 'Add'} Mode
-            </Button>
-          </div>
           </div>
         )}
 
@@ -176,7 +144,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
           ) : (
             /* Content - Full screen without border/shadow */
             <div className="h-full overflow-y-auto">
-              {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} mode={mode} />}
+              {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
               {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
             </div>
           )}
@@ -186,7 +154,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
       {/* Desktop/Tablet View */}
       <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200">
         <PageHeader
-          title={showCreateForm ? 'New Product' : showDetail ? (mode === 'add' ? 'Add Product' : 'Remove Product') : 'Scan Product'}
+          title={showCreateForm ? 'New Product' : showDetail ? 'Manage Stock' : 'Scan Product'}
           onBack={onBack}
         />
 
@@ -240,17 +208,6 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
                     Add
                   </Button>
                 </form>
-
-                {/* Action Buttons */}
-                <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
-                    onClick={handleModeToggle}
-                  >
-                    Switch to {mode === 'add' ? 'Remove' : 'Add'} Mode
-                  </Button>
-                </div>
               </>
             )}
           </div>
@@ -266,7 +223,7 @@ const ScanPage = ({ mode, onBack, onModeChange }: ScanPageProps) => {
             ) : (
               /* Content - Full height without footer */
               <div className="flex-1 overflow-y-auto">
-                {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} mode={mode} />}
+                {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
                 {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
               </div>
             )}
