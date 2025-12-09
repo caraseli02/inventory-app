@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { addStockMovement } from '../lib/api';
 import { toast } from 'sonner';
@@ -28,6 +29,7 @@ type StockMutationContext = {
  * handleStockChange(10, 'IN');  // Add 10 items
  */
 export const useStockMutation = (product: Product) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [loadingAction, setLoadingAction] = useState<'IN' | 'OUT' | null>(null);
 
@@ -62,16 +64,16 @@ export const useStockMutation = (product: Product) => {
       return { previousProduct };
     },
     onSuccess: (_data, { type, quantity }) => {
-      const action = type === 'IN' ? 'added to' : 'removed from';
+      const action = type === 'IN' ? t('toast.addedTo') : t('toast.removedFrom');
       console.log('[useStockMutation] Stock movement successful, will refetch product');
-      toast.success('Stock updated', {
-        description: `${quantity} item${quantity > 1 ? 's' : ''} ${action} inventory`,
+      toast.success(t('toast.stockUpdateSuccess'), {
+        description: t('toast.stockUpdateDescription', { quantity, action }),
       });
     },
     onError: (err, _variables, context: StockMutationContext | undefined) => {
       logger.error('Stock mutation failed', { error: err, productId: product.id });
-      toast.error('Failed to update stock', {
-        description: err instanceof Error ? err.message : 'Unknown error occurred. Please try again.',
+      toast.error(t('toast.stockUpdateError'), {
+        description: err instanceof Error ? err.message : t('toast.stockUpdateErrorDescription'),
       });
       // Rollback
       if (context?.previousProduct) {
@@ -95,16 +97,17 @@ export const useStockMutation = (product: Product) => {
   const handleStockChange = (quantity: number, type: 'IN' | 'OUT') => {
     if (isNaN(quantity) || quantity <= 0) {
       logger.warn('Invalid stock quantity', { quantity });
-      toast.warning('Invalid quantity', {
-        description: 'Please enter a valid positive quantity',
+      toast.warning(t('toast.invalidQuantity'), {
+        description: t('toast.invalidQuantityDescription'),
       });
       return;
     }
 
     // Large quantity safety confirmation
     if (quantity > SAFE_STOCK_THRESHOLD) {
+      const action = type === 'IN' ? t('product.add').toLowerCase() : t('product.remove').toLowerCase();
       const confirmed = window.confirm(
-        `Large Stock Update Warning\n\nYou are about to ${type === 'IN' ? 'add' : 'remove'} ${quantity} items.\n\nIs this correct?`
+        `${t('toast.largeStockWarning')}\n\n${t('toast.largeStockConfirm', { action, quantity })}`
       );
       if (!confirmed) {
         logger.info('Large stock update cancelled by user', { quantity });

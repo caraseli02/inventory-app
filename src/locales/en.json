@@ -63,7 +63,11 @@
     "cannotRemove": "Cannot remove {{quantity}} unit(s). Only {{available}} unit(s) available.",
     "updateProduct": "Update Product",
     "updateFailed": "Failed to update product",
-    "update": "Update"
+    "update": "Update",
+    "stock": "Stock:",
+    "add": "Add",
+    "remove": "Remove",
+    "edit": "Edit"
   },
   "categories": {
     "General": "General",
@@ -210,7 +214,17 @@
     "networkError": "Network error. Check your connection and try again.",
     "authError": "Authentication failed. Check API credentials.",
     "validationError": "Cannot reduce stock below zero. Adjust quantity and retry.",
-    "authorizationError": "Authorization failed. Contact support."
+    "authorizationError": "Authorization failed. Contact support.",
+    "stockUpdateSuccess": "Stock updated",
+    "stockUpdateDescription": "{{quantity}} item(s) {{action}} inventory",
+    "stockUpdateError": "Failed to update stock",
+    "stockUpdateErrorDescription": "Unknown error occurred. Please try again.",
+    "invalidQuantity": "Invalid quantity",
+    "invalidQuantityDescription": "Please enter a valid positive quantity",
+    "largeStockWarning": "Large Stock Update Warning",
+    "largeStockConfirm": "You are about to {{action}} {{quantity}} items.\n\nIs this correct?",
+    "addedTo": "added to",
+    "removedFrom": "removed from"
   },
   "offline": {
     "message": "No internet connection",

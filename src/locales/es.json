@@ -63,7 +63,11 @@
     "cannotRemove": "No se pueden quitar {{quantity}} unidades. Solo hay {{available}} unidades disponibles.",
     "updateProduct": "Actualizar Producto",
     "updateFailed": "Error al actualizar el producto",
-    "update": "Actualizar"
+    "update": "Actualizar",
+    "stock": "Stock:",
+    "add": "Agregar",
+    "remove": "Quitar",
+    "edit": "Editar"
   },
   "categories": {
     "General": "General",
@@ -210,7 +214,17 @@
     "networkError": "Error de red. Verifica tu conexión e intenta de nuevo.",
     "authError": "Error de autenticación. Verifica las credenciales de la API.",
     "validationError": "No se puede reducir el stock por debajo de cero. Ajusta la cantidad e intenta de nuevo.",
-    "authorizationError": "Error de autorización. Contacta a soporte."
+    "authorizationError": "Error de autorización. Contacta a soporte.",
+    "stockUpdateSuccess": "Stock actualizado",
+    "stockUpdateDescription": "{{quantity}} artículo(s) {{action}} inventario",
+    "stockUpdateError": "Error al actualizar el stock",
+    "stockUpdateErrorDescription": "Ocurrió un error desconocido. Por favor, intenta de nuevo.",
+    "invalidQuantity": "Cantidad inválida",
+    "invalidQuantityDescription": "Por favor, ingresa una cantidad positiva válida",
+    "largeStockWarning": "Advertencia de Actualización de Stock Grande",
+    "largeStockConfirm": "Estás a punto de {{action}} {{quantity}} artículos.\n\n¿Es esto correcto?",
+    "addedTo": "agregado(s) al",
+    "removedFrom": "quitado(s) del"
   },
   "offline": {
     "message": "Sin conexión a internet",

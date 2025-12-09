@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -22,6 +23,7 @@ const ProductListItemComponent = ({
   onDelete,
   isLoading = false,
 }: ProductListItemProps) => {
+  const { t } = useTranslation();
   const currentStock = product.fields['Current Stock Level'] ?? 0;
   const minStock = product.fields['Min Stock Level'] ?? 0;
   const isLowStock = currentStock < minStock && minStock > 0;
@@ -63,14 +65,14 @@ const ProductListItemComponent = ({
               variant="secondary"
               className="bg-stone-100 border-stone-200 text-xs mb-2"
             >
-              {product.fields.Category}
+              {t(`categories.${product.fields.Category}`)}
             </Badge>
           )}
 
           {/* Stock and Price */}
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-stone-600">Stock:</span>
+              <span className="text-sm text-stone-600">{t('product.stock')}</span>
               <span
                 className={`font-bold ${
                   isLowStock ? 'text-[var(--color-terracotta)]' : 'text-stone-900'
@@ -104,7 +106,7 @@ const ProductListItemComponent = ({
                 ) : (
                   <>
                     <Minus className="h-4 w-4 mr-1" />
-                    Remove
+                    {t('product.remove')}
                   </>
                 )}
               </Button>
@@ -120,7 +122,7 @@ const ProductListItemComponent = ({
                 ) : (
                   <>
                     <Plus className="h-4 w-4 mr-1" />
-                    Add
+                    {t('product.add')}
                   </>
                 )}
               </Button>
@@ -141,7 +143,7 @@ const ProductListItemComponent = ({
                   onClick={() => onEdit(product)}
                 >
                   <Edit2 className="h-3.5 w-3.5 mr-1.5" />
-                  Edit
+                  {t('product.edit')}
                 </Button>
               )}
               {onDelete && (
@@ -152,7 +154,7 @@ const ProductListItemComponent = ({
                   onClick={() => onDelete(product)}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                  Delete
+                  {t('product.delete')}
                 </Button>
               )}
             </div>
