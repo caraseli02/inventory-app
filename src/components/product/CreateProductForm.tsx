@@ -1,4 +1,5 @@
 import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createProduct, addStockMovement } from '../../lib/api';
 import { suggestProductDetails } from '../../lib/ai';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ interface CreateProductFormProps {
 }
 
 const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     name: '',
@@ -95,8 +97,8 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
     },
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ['product', barcode] });
-      toast.success('Product created', {
-        description: `${newProduct.fields.Name} successfully added to inventory`,
+      toast.success(t('toast.productCreated'), {
+        description: t('toast.productCreatedMessage', { name: newProduct.fields.Name }),
       });
       onSuccess();
     },
@@ -107,8 +109,8 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
         errorStack: error instanceof Error ? error.stack : undefined,
         timestamp: new Date().toISOString(),
       });
-      toast.error('Failed to create product', {
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
+      toast.error(t('toast.error'), {
+        description: error instanceof Error ? error.message : t('errors.unknownError'),
       });
     },
   });
@@ -127,7 +129,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
        {aiLoading && (
             <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-2 border-amber-200">
               <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-2"></span>
-              Searching...
+              {t('product.searching')}
             </Badge>
           )}
 
@@ -148,14 +150,14 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   }}
                 />
                 <div className="absolute bottom-0 w-full bg-stone-900/60 text-white text-[10px] text-center py-1 font-medium">
-                  Preview
+                  {t('product.preview')}
                 </div>
               </div>
             </div>
           )}
 
           <div>
-            <Label htmlFor="barcode" className="text-stone-700 font-semibold">Barcode</Label>
+            <Label htmlFor="barcode" className="text-stone-700 font-semibold">{t('product.barcode')}</Label>
             <Input
               id="barcode"
               type="text"
@@ -166,7 +168,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
           </div>
 
           <div>
-            <Label htmlFor="name" className="text-stone-700 font-semibold">Product Name</Label>
+            <Label htmlFor="name" className="text-stone-700 font-semibold">{t('product.name')}</Label>
             <Input
               id="name"
               type="text"
@@ -174,14 +176,14 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
               required
               value={formData.name}
               onChange={handleChange}
-              placeholder="e.g. Organic Bananas"
+              placeholder={t('product.namePlaceholder')}
               className="mt-1.5 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="category" className="text-stone-700 font-semibold">Category</Label>
+              <Label htmlFor="category" className="text-stone-700 font-semibold">{t('product.category')}</Label>
               <Select
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -190,19 +192,19 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="General">General</SelectItem>
-                  <SelectItem value="Produce">Produce</SelectItem>
-                  <SelectItem value="Dairy">Dairy</SelectItem>
-                  <SelectItem value="Meat">Meat</SelectItem>
-                  <SelectItem value="Pantry">Pantry</SelectItem>
-                  <SelectItem value="Snacks">Snacks</SelectItem>
-                  <SelectItem value="Beverages">Beverages</SelectItem>
-                  <SelectItem value="Household">Household</SelectItem>
+                  <SelectItem value="General">{t('categories.General')}</SelectItem>
+                  <SelectItem value="Produce">{t('categories.Produce')}</SelectItem>
+                  <SelectItem value="Dairy">{t('categories.Dairy')}</SelectItem>
+                  <SelectItem value="Meat">{t('categories.Meat')}</SelectItem>
+                  <SelectItem value="Pantry">{t('categories.Pantry')}</SelectItem>
+                  <SelectItem value="Snacks">{t('categories.Snacks')}</SelectItem>
+                  <SelectItem value="Beverages">{t('categories.Beverages')}</SelectItem>
+                  <SelectItem value="Household">{t('categories.Household')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="price" className="text-stone-700 font-semibold">Price</Label>
+              <Label htmlFor="price" className="text-stone-700 font-semibold">{t('product.price')}</Label>
               <div className="relative mt-1.5">
                 <span className="absolute left-3 top-3 text-stone-500 font-medium">€</span>
                 <Input
@@ -212,7 +214,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   step="0.01"
                   value={formData.price}
                   onChange={handleChange}
-                  placeholder="0.00"
+                  placeholder={t('product.pricePlaceholder')}
                   className="pl-7 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
                 />
               </div>
@@ -221,7 +223,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="initialStock" className="text-stone-700 font-semibold">Initial Stock</Label>
+              <Label htmlFor="initialStock" className="text-stone-700 font-semibold">{t('product.initialStock')}</Label>
               <Input
                 id="initialStock"
                 type="number"
@@ -232,7 +234,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
               />
             </div>
             <div>
-              <Label htmlFor="expiryDate" className="text-stone-700 font-semibold">Expiry Date</Label>
+              <Label htmlFor="expiryDate" className="text-stone-700 font-semibold">{t('product.expiryDate')}</Label>
               <Input
                 id="expiryDate"
                 type="date"
@@ -259,7 +261,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
           variant="outline"
           className="flex-1 border-2 border-stone-300 hover:bg-stone-100"
         >
-          Cancel
+          {t('product.cancel')}
         </Button>
         <Button
           type="submit"
@@ -270,7 +272,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
           {mutation.isPending ? (
             <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
           ) : (
-            'Create & Stock'
+            t('product.createAndStock')
           )}
         </Button>
       </CardFooter>

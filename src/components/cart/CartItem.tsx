@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { CartItem as CartItemType } from '../../types';
 import { Badge } from '../ui/badge';
 import { BoxIcon, CheckCircleIcon } from '../ui/Icons';
@@ -13,9 +14,10 @@ interface CartItemProps {
  * Enhanced cart item with category badges, hover effects, and status indicators
  */
 export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
+  const { t } = useTranslation();
   const imageUrl = item.product.fields.Image?.[0]?.url;
   const price = item.product.fields.Price;
-  const category = item.product.fields.Category || 'General';
+  const category = item.product.fields.Category ? t(`categories.${item.product.fields.Category}`) : t('categories.General');
   const { status, statusMessage } = item;
 
   return (
@@ -104,7 +106,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
       {status === 'processing' && (
         <div className="px-3 pb-3 flex items-center gap-2 text-sm text-blue-700">
           <Spinner size="sm" />
-          <span>Processing...</span>
+          <span>{t('cart.processing')}</span>
         </div>
       )}
       {status === 'failed' && statusMessage && (
@@ -117,7 +119,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
       {status === 'success' && (
         <div className="px-3 pb-3 flex items-center gap-2 text-sm text-green-700">
           <CheckCircleIcon className="h-4 w-4" />
-          <span>Complete</span>
+          <span>{t('cart.complete')}</span>
         </div>
       )}
     </div>

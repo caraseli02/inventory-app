@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { X, Package, Barcode, Tag, Euro, Calendar, AlertTriangle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -19,6 +20,8 @@ export const ProductDetailDialog = ({
   open,
   onClose,
 }: ProductDetailDialogProps) => {
+  const { t } = useTranslation();
+
   // Use React Query for stock movements - handles loading state automatically
   const { data: movements = [], isLoading: loadingMovements } = useQuery({
     queryKey: ['stockMovements', product?.id],
@@ -52,7 +55,7 @@ export const ProductDetailDialog = ({
         <DialogHeader className="pt-[max(1.5rem,env(safe-area-inset-top))] px-6 pb-4 sm:p-0 sm:pb-4">
           <DialogTitle className="text-2xl font-bold text-stone-900 flex items-center gap-2">
             <Package className="h-6 w-6" />
-            Product Details
+            {t('dialogs.productDetail.title')}
           </DialogTitle>
         </DialogHeader>
 
@@ -78,7 +81,7 @@ export const ProductDetailDialog = ({
               </h2>
               {product.fields.Category && (
                 <Badge variant="secondary" className="bg-stone-100 border-stone-200">
-                  {product.fields.Category}
+                  {t(`categories.${product.fields.Category}`)}
                 </Badge>
               )}
             </div>
@@ -89,7 +92,7 @@ export const ProductDetailDialog = ({
             <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
               <Barcode className="h-5 w-5 text-stone-600 mt-0.5" />
               <div>
-                <p className="text-sm text-stone-600 font-medium">Barcode</p>
+                <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.barcode')}</p>
                 <p className="font-mono text-stone-900 font-bold">
                   {product.fields.Barcode}
                 </p>
@@ -100,7 +103,7 @@ export const ProductDetailDialog = ({
             <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
               <Euro className="h-5 w-5 text-stone-600 mt-0.5" />
               <div>
-                <p className="text-sm text-stone-600 font-medium">Price</p>
+                <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.price')}</p>
                 <p className="text-stone-900 font-bold">
                   {product.fields.Price != null
                     ? `€${product.fields.Price.toFixed(2)}`
@@ -113,7 +116,7 @@ export const ProductDetailDialog = ({
             <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
               <Package className="h-5 w-5 text-stone-600 mt-0.5" />
               <div>
-                <p className="text-sm text-stone-600 font-medium">Current Stock</p>
+                <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.currentStock')}</p>
                 <div className="flex items-center gap-2">
                   <p
                     className={`text-2xl font-bold ${
@@ -136,7 +139,7 @@ export const ProductDetailDialog = ({
               <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
                 <Tag className="h-5 w-5 text-stone-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-stone-600 font-medium">Min Stock Level</p>
+                  <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.minStockLevel')}</p>
                   <p className="text-stone-900 font-bold">{minStock}</p>
                 </div>
               </div>
@@ -147,7 +150,7 @@ export const ProductDetailDialog = ({
               <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
                 <Calendar className="h-5 w-5 text-stone-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-stone-600 font-medium">Expiry Date</p>
+                  <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.expiryDate')}</p>
                   <p className="text-stone-900 font-bold">
                     {new Date(product.fields['Expiry Date']).toLocaleDateString()}
                   </p>
@@ -160,7 +163,7 @@ export const ProductDetailDialog = ({
               <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
                 <Tag className="h-5 w-5 text-stone-600 mt-0.5" />
                 <div>
-                  <p className="text-sm text-stone-600 font-medium">Supplier</p>
+                  <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.supplier')}</p>
                   <p className="text-stone-900 font-bold">{product.fields.Supplier}</p>
                 </div>
               </div>
@@ -170,11 +173,11 @@ export const ProductDetailDialog = ({
             {/* Stock Movement History */}
             <div>
               <h3 className="text-lg font-bold text-stone-900 mb-3">
-                Recent Stock Movements
+                {t('dialogs.productDetail.recentMovements')}
               </h3>
               {loadingMovements ? (
                 <div className="flex justify-center py-8">
-                  <Spinner size="md" label="Loading movements..." />
+                  <Spinner size="md" label={t('dialogs.productDetail.loadingMovements')} />
                 </div>
               ) : movements.length > 0 ? (
                 <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -197,7 +200,7 @@ export const ProductDetailDialog = ({
                           {movement.fields.Type}
                         </Badge>
                         <span className="font-bold text-stone-900">
-                          {Math.abs(movement.fields.Quantity)} units
+                          {Math.abs(movement.fields.Quantity)} {t('dialogs.productDetail.units')}
                         </span>
                       </div>
                       <span className="text-sm text-stone-600">
@@ -210,7 +213,7 @@ export const ProductDetailDialog = ({
                 </div>
               ) : (
                 <p className="text-stone-600 text-center py-4">
-                  No stock movements recorded
+                  {t('dialogs.productDetail.noMovements')}
                 </p>
               )}
             </div>
@@ -223,7 +226,7 @@ export const ProductDetailDialog = ({
                 className="border-2 border-stone-300"
               >
                 <X className="h-4 w-4 mr-2" />
-                Close
+                {t('dialogs.productDetail.close')}
               </Button>
             </div>
           </div>

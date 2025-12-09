@@ -1,9 +1,10 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { withTranslation, type WithTranslation } from 'react-i18next';
 import { logger } from '../lib/logger';
 import { Button } from './ui/button';
 import { AlertTriangle } from 'lucide-react';
 
-interface ErrorBoundaryProps {
+interface ErrorBoundaryProps extends WithTranslation {
   children: ReactNode;
   fallback?: ReactNode;
 }
@@ -42,7 +43,7 @@ interface ErrorBoundaryState {
  *   <MyComponent />
  * </ErrorBoundary>
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -86,7 +87,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render(): ReactNode {
     const { hasError, error, errorInfo } = this.state;
-    const { children, fallback } = this.props;
+    const { children, fallback, t } = this.props;
 
     if (hasError) {
       // Use custom fallback if provided
@@ -107,31 +108,30 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             {/* Title */}
             <h1 className="text-2xl font-bold text-stone-900 text-center mb-3">
-              Something went wrong
+              {t('errors.somethingWentWrong')}
             </h1>
 
             {/* Description */}
             <p className="text-stone-600 text-center mb-6">
-              The application encountered an unexpected error. Don't worry — your data is safe.
-              Try refreshing the page or return to the home screen.
+              {t('errors.errorDescription')}
             </p>
 
             {/* Error Details (Development Mode) */}
             {import.meta.env.DEV && error && (
               <details className="mb-6 bg-stone-50 rounded-lg p-4 border border-stone-200">
                 <summary className="cursor-pointer font-semibold text-stone-700 text-sm mb-2">
-                  Error Details (Development Only)
+                  {t('errors.errorDetails')}
                 </summary>
                 <div className="space-y-2 text-xs">
                   <div>
-                    <span className="font-semibold text-stone-700">Error:</span>
+                    <span className="font-semibold text-stone-700">{t('errors.error')}</span>
                     <pre className="mt-1 p-2 bg-white rounded border border-stone-200 overflow-x-auto text-red-600">
                       {error.message}
                     </pre>
                   </div>
                   {error.stack && (
                     <div>
-                      <span className="font-semibold text-stone-700">Stack Trace:</span>
+                      <span className="font-semibold text-stone-700">{t('errors.stackTrace')}</span>
                       <pre className="mt-1 p-2 bg-white rounded border border-stone-200 overflow-x-auto text-stone-600 max-h-40">
                         {error.stack}
                       </pre>
@@ -139,7 +139,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   )}
                   {errorInfo?.componentStack && (
                     <div>
-                      <span className="font-semibold text-stone-700">Component Stack:</span>
+                      <span className="font-semibold text-stone-700">{t('errors.componentStack')}</span>
                       <pre className="mt-1 p-2 bg-white rounded border border-stone-200 overflow-x-auto text-stone-600 max-h-40">
                         {errorInfo.componentStack}
                       </pre>
@@ -155,14 +155,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 onClick={this.handleReset}
                 className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
               >
-                Try Again
+                {t('errors.tryAgain')}
               </Button>
               <Button
                 onClick={() => window.location.href = '/'}
                 variant="outline"
                 className="w-full h-12 border-2 font-medium"
               >
-                Return to Home
+                {t('errors.returnHome')}
               </Button>
             </div>
           </div>
@@ -173,3 +173,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return children;
   }
 }
+
+// Export with translation HOC
+export const ErrorBoundary = withTranslation()(ErrorBoundaryClass);

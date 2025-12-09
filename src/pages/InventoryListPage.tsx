@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
@@ -21,6 +22,7 @@ interface InventoryListPageProps {
 }
 
 const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -86,8 +88,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     if (type === 'OUT' && currentStock < quantity) {
       showToast(
         'error',
-        'Insufficient Stock',
-        `Cannot remove ${quantity} unit(s). Only ${currentStock} unit(s) available.`,
+        t('product.insufficientStock'),
+        t('product.cannotRemove', { quantity, available: currentStock }),
         4000
       );
       return;
@@ -120,10 +122,11 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     try {
       await addStockMovement(productId, quantity, type);
 
+      const action = type === 'IN' ? t('toast.stockAdded') : t('toast.stockRemoved');
       showToast(
         'success',
-        'Stock Updated',
-        `${type === 'IN' ? 'Added' : 'Removed'} ${quantity} unit(s) for ${product.fields.Name}`,
+        t('toast.stockUpdated'),
+        t('toast.stockUpdatedMessage', { action, quantity, name: product.fields.Name }),
         3000
       );
     } catch (err) {
@@ -132,8 +135,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         queryClient.setQueryData(['products', 'all'], previousData);
       }
 
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update stock';
-      showToast('error', 'Update Failed', errorMessage, 5000);
+      const errorMessage = err instanceof Error ? err.message : t('errors.unknownError');
+      showToast('error', t('toast.updateFailed'), errorMessage, 5000);
     } finally {
       // Remove from loading set
       setLoadingProducts((prev) => {
@@ -146,8 +149,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
   const handleRefresh = useCallback(() => {
     refetch();
-    showToast('success', 'Refreshed', 'Inventory data refreshed', 2000);
-  }, [refetch, showToast]);
+    showToast('success', t('inventory.refreshed'), t('inventory.dataRefreshed'), 2000);
+  }, [refetch, showToast, t]);
 
   const handleEdit = useCallback((product: Product) => {
     setEditProduct(product);
@@ -165,7 +168,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
       <PageHeader
-        title="Inventory List"
+        title={t('inventory.title')}
         onBack={onBack}
       />
 
@@ -186,7 +189,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           {/* Loading State */}
           {isLoading && (
             <div className="flex justify-center py-12">
-              <Spinner size="lg" label="Loading inventory..." />
+              <Spinner size="lg" label={t('inventory.loading')} />
             </div>
           )}
 
@@ -195,17 +198,17 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
             <div className="bg-white rounded-2xl border-2 border-[var(--color-terracotta)] p-8 text-center">
               <div className="text-5xl mb-4">⚠️</div>
               <h3 className="text-xl font-bold text-stone-900 mb-2">
-                Failed to Load Inventory
+                {t('inventory.failedToLoad')}
               </h3>
               <p className="text-stone-600 mb-4">
-                {error instanceof Error ? error.message : 'Unknown error occurred'}
+                {error instanceof Error ? error.message : t('errors.unknownError')}
               </p>
               <Button
                 onClick={handleRefresh}
                 className="bg-stone-900 hover:bg-stone-800 text-white"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Try Again
+                {t('inventory.tryAgain')}
               </Button>
             </div>
           )}
@@ -230,10 +233,10 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                   <div className="bg-white rounded-2xl border-2 border-stone-200 p-12 text-center">
                     <div className="text-6xl mb-4">📦</div>
                     <h3 className="text-xl font-bold text-stone-900 mb-2">
-                      No products found
+                      {t('inventory.noProducts')}
                     </h3>
                     <p className="text-stone-600">
-                      Try adjusting your filters or search query
+                      {t('inventory.adjustFilters')}
                     </p>
                   </div>
                 )}

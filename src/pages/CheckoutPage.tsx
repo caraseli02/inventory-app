@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
 import { QuickAddSection } from '../components/cart/QuickAddSection';
@@ -277,6 +278,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
 }
 
 const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
+  const { t } = useTranslation();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
 
   // Hook for looking up products
@@ -313,7 +315,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         barcode: state.scannedCode,
         timestamp: new Date().toISOString(),
       });
-      dispatch({ type: 'LOOKUP_ERROR', error: 'Product not found. Please add it to inventory first.' });
+      dispatch({ type: 'LOOKUP_ERROR', error: t('toast.productNotFound') });
       return;
     }
 
@@ -331,14 +333,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       });
 
       // Classify error and show user-facing feedback
-      let userMessage = 'Product not found. Check barcode and retry.';
+      let userMessage = t('toast.productNotFound');
       if (errorMessage.toLowerCase().includes('network') ||
           errorMessage.toLowerCase().includes('fetch') ||
           errorMessage.toLowerCase().includes('timeout')) {
-        userMessage = 'Network error. Check your connection and try again.';
+        userMessage = t('toast.networkError');
       } else if (errorMessage.toLowerCase().includes('unauthorized') ||
                  errorMessage.toLowerCase().includes('authentication')) {
-        userMessage = 'Authentication failed. Check API credentials.';
+        userMessage = t('toast.authError');
       }
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
@@ -416,8 +418,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     const { total, missingPrices } = calculateTotals();
     const totalLabel = `€${total.toFixed(2)}`;
     const confirmMessage = missingPrices
-      ? `Complete checkout for ${pendingItems.length} items? Priced subtotal: ${totalLabel}. ${missingPrices} item${missingPrices > 1 ? 's are' : ' is'} missing price data and will be processed without totals.`
-      : `Complete checkout for ${pendingItems.length} items? Total: ${totalLabel}`;
+      ? t('checkout.confirmMessageWithMissing', { count: pendingItems.length, total: totalLabel, missing: missingPrices })
+      : t('checkout.confirmMessage', { count: pendingItems.length, total: totalLabel });
 
     dispatch({ type: 'SHOW_CONFIRM_DIALOG', message: confirmMessage });
   };
@@ -446,14 +448,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         await addStockMovement(item.product.id, item.quantity, 'OUT');
         results.push({ ...item, status: 'success' });
       } catch (err) {
-        let userMessage = 'Unknown error. Please try again.';
+        let userMessage = t('errors.unknownError');
 
         if (err instanceof ValidationError) {
-          userMessage = 'Cannot reduce stock below zero. Adjust quantity and retry.';
+          userMessage = t('toast.validationError');
         } else if (err instanceof NetworkError) {
-          userMessage = 'Network error. Check connection and retry.';
+          userMessage = t('toast.networkError');
         } else if (err instanceof AuthorizationError) {
-          userMessage = 'Authorization failed. Contact support.';
+          userMessage = t('toast.authorizationError');
         } else if (err instanceof Error) {
           userMessage = err.message;
         }
@@ -500,14 +502,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
           <CheckCircleIcon className="h-12 w-12 text-emerald-700" />
         </div>
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">Checkout Complete</h2>
-        <p className="text-gray-600 mb-8">Stock has been updated for all items.</p>
+        <h2 className="text-3xl font-semibold text-gray-900 mb-2">{t('checkout.complete')}</h2>
+        <p className="text-gray-600 mb-8">{t('checkout.stockUpdated')}</p>
         <Button
           onClick={onBack}
           variant="outline"
           className="px-8 py-3"
         >
-          Back to Home
+          {t('checkout.backToHome')}
         </Button>
       </div>
     );
@@ -518,7 +520,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       {/* Mobile View */}
       <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
         <PageHeader
-          title="Scan the items barcode inside the square frame to add items to your cart"
+          title={t('checkout.title')}
           onBack={onBack}
           variant="compact"
         />
@@ -562,8 +564,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               <div className="flex items-center gap-3">
                 <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">My Cart</h3>
-                  <p className="text-sm text-gray-600">{state.cart.length} items</p>
+                  <h3 className="text-lg font-bold text-gray-900">{t('cart.title')}</h3>
+                  <p className="text-sm text-gray-600">{state.cart.length} {t('cart.items')}</p>
                 </div>
               </div>
               <div className="text-2xl font-bold text-stone-900">
@@ -590,7 +592,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
                     {/* Total */}
                     <div className="flex items-center justify-between pb-2">
-                      <span className="text-lg font-semibold text-gray-700">Total</span>
+                      <span className="text-lg font-semibold text-gray-700">{t('cart.total')}</span>
                       <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
                     </div>
 
@@ -601,7 +603,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                         className="w-full h-10 text-base font-medium border-2 hover:bg-gray-50"
                         onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: false })}
                       >
-                        Next Product
+                        {t('cart.nextProduct')}
                       </Button>
 
                       <Button
@@ -609,7 +611,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                         onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
-                        {state.isCheckingOut ? 'Processing...' : 'Finish'}
+                        {state.isCheckingOut ? t('cart.processing') : t('cart.finish')}
                       </Button>
                     </div>
                   </div>
@@ -623,7 +625,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       {/* Tablet/Desktop View - New Scanner UI with visible cart */}
       <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
         <PageHeader
-          title="Scan the items barcode inside the square frame to add items to your cart"
+          title={t('checkout.title')}
           onBack={onBack}
           variant="compact"
         />
@@ -656,7 +658,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
                   {/* Total */}
                   <div className="flex items-center justify-between pb-2">
-                    <span className="text-lg font-semibold text-gray-700">Total</span>
+                    <span className="text-lg font-semibold text-gray-700">{t('cart.total')}</span>
                     <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
                   </div>
 
@@ -667,7 +669,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                       className="w-full h-10 text-base font-medium border-2 hover:bg-gray-50"
                       onClick={() => dispatch({ type: 'SET_SHOW_SCANNER', show: true })}
                     >
-                      Next Product
+                      {t('cart.nextProduct')}
                     </Button>
 
                     <Button
@@ -675,7 +677,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                       onClick={handleCheckoutClick}
                       disabled={pendingItems.length === 0 || state.isCheckingOut}
                     >
-                      {state.isCheckingOut ? 'Processing...' : 'Finish'}
+                      {state.isCheckingOut ? t('cart.processing') : t('cart.finish')}
                     </Button>
                   </div>
                 </div>
@@ -689,7 +691,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       <Dialog open={state.showConfirmDialog} onOpenChange={(open) => !open && dispatch({ type: 'HIDE_CONFIRM_DIALOG' })}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-stone-900">Confirm Checkout</DialogTitle>
+            <DialogTitle className="text-stone-900">{t('checkout.confirmTitle')}</DialogTitle>
             <DialogDescription className="text-stone-600">
               {state.confirmDialogMessage}
             </DialogDescription>
@@ -701,14 +703,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
               onClick={() => dispatch({ type: 'HIDE_CONFIRM_DIALOG' })}
               className="flex-1 sm:flex-none"
             >
-              Cancel
+              {t('checkout.cancel')}
             </Button>
             <Button
               type="button"
               onClick={handleCheckoutConfirm}
               className="flex-1 sm:flex-none bg-stone-900 hover:bg-stone-800 text-white"
             >
-              Confirm
+              {t('checkout.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
