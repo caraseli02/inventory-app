@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Search, X, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
@@ -35,6 +36,7 @@ export const InventoryFiltersBar = ({
   onRefresh,
   isRefreshing = false,
 }: InventoryFiltersProps) => {
+  const { t } = useTranslation();
   const hasActiveFilters =
     filters.searchQuery ||
     filters.category ||
@@ -49,7 +51,7 @@ export const InventoryFiltersBar = ({
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
         <Input
           type="text"
-          placeholder="Search by name or barcode..."
+          placeholder={t('inventory.filters.searchPlaceholder')}
           value={filters.searchQuery}
           onChange={(e) => onFilterChange('searchQuery', e.target.value)}
           className="pl-10 h-12 bg-white border-2 border-stone-300 rounded-lg text-stone-900 placeholder:text-stone-400 focus-visible:ring-[var(--color-lavender)]"
@@ -75,12 +77,12 @@ export const InventoryFiltersBar = ({
             onValueChange={(value) => onFilterChange('category', value)}
           >
             <SelectTrigger className="w-[180px] h-10 border-2 border-stone-300">
-              <SelectValue placeholder="All Categories" />
+              <SelectValue placeholder={t('inventory.filters.allCategories')} />
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
                 <SelectItem key={category} value={category}>
-                  {category}
+                  {t(`categories.${category}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -94,7 +96,7 @@ export const InventoryFiltersBar = ({
                 e.stopPropagation();
                 onFilterChange('category', '');
               }}
-              title="Clear category filter"
+              title={t('inventory.filters.clearCategory')}
             >
               <X className="h-3 w-3" />
             </Button>
@@ -112,7 +114,7 @@ export const InventoryFiltersBar = ({
               : 'border-2 border-stone-300'
           }`}
         >
-          Low Stock
+          {t('inventory.filters.lowStock')}
         </Button>
 
         {/* Sort By */}
@@ -122,13 +124,13 @@ export const InventoryFiltersBar = ({
         >
           <SelectTrigger className="w-[140px] h-10 border-2 border-stone-300">
             <ArrowUpDown className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Sort by" />
+            <SelectValue placeholder={t('inventory.filters.sortBy')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="name">Name</SelectItem>
-            <SelectItem value="stock">Stock</SelectItem>
-            <SelectItem value="price">Price</SelectItem>
-            <SelectItem value="category">Category</SelectItem>
+            <SelectItem value="name">{t('inventory.filters.sortByName')}</SelectItem>
+            <SelectItem value="stock">{t('inventory.filters.sortByStock')}</SelectItem>
+            <SelectItem value="price">{t('inventory.filters.sortByPrice')}</SelectItem>
+            <SelectItem value="category">{t('inventory.filters.sortByCategory')}</SelectItem>
           </SelectContent>
         </Select>
 
@@ -143,7 +145,7 @@ export const InventoryFiltersBar = ({
             )
           }
           className="h-10 w-10 p-0 border-2 border-stone-300"
-          title={filters.sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+          title={filters.sortDirection === 'asc' ? t('inventory.filters.ascending') : t('inventory.filters.descending')}
         >
           {filters.sortDirection === 'asc' ? '↑' : '↓'}
         </Button>
@@ -157,15 +159,15 @@ export const InventoryFiltersBar = ({
             className="h-10 text-stone-600 hover:text-stone-900"
           >
             <X className="h-4 w-4 mr-1" />
-            Clear
+            {t('inventory.filters.clear')}
           </Button>
         )}
 
         {/* Results Count */}
         <Badge variant="secondary" className="ml-auto bg-stone-100 border-stone-200">
           {filteredCount === totalProducts
-            ? `${totalProducts} products`
-            : `${filteredCount} of ${totalProducts}`}
+            ? t('inventory.filters.productsCount', { count: totalProducts })
+            : t('inventory.filters.productsFiltered', { filtered: filteredCount, total: totalProducts })}
         </Badge>
 
         {/* Refresh Button */}
@@ -176,7 +178,7 @@ export const InventoryFiltersBar = ({
             onClick={onRefresh}
             disabled={isRefreshing}
             className="h-10 w-10 p-0 border-2 border-stone-300"
-            title="Refresh inventory"
+            title={t('inventory.filters.refreshInventory')}
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>

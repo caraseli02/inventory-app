@@ -88,11 +88,22 @@
     "dataRefreshed": "Datos de inventario actualizados",
     "filters": {
       "search": "Buscar productos...",
+      "searchPlaceholder": "Buscar por nombre o código de barras...",
+      "allCategories": "Todas las categorías",
       "category": "Todas las categorías",
+      "clearCategory": "Borrar filtro de categoría",
+      "lowStock": "Stock Bajo",
       "sortBy": "Ordenar por",
       "sortByName": "Nombre",
       "sortByStock": "Stock",
       "sortByPrice": "Precio",
+      "sortByCategory": "Categoría",
+      "ascending": "Ascendente",
+      "descending": "Descendente",
+      "clear": "Limpiar",
+      "productsCount": "{{count}} productos",
+      "productsFiltered": "{{filtered}} de {{total}}",
+      "refreshInventory": "Actualizar inventario",
       "reset": "Restablecer",
       "showing": "Mostrando {{count}} de {{total}} productos"
     },
@@ -145,7 +156,18 @@
   },
   "dialogs": {
     "productDetail": {
-      "title": "Detalles del Producto"
+      "title": "Detalles del Producto",
+      "barcode": "Código de barras",
+      "price": "Precio",
+      "currentStock": "Stock Actual",
+      "minStockLevel": "Nivel Mínimo de Stock",
+      "expiryDate": "Fecha de Vencimiento",
+      "supplier": "Proveedor",
+      "recentMovements": "Movimientos de Stock Recientes",
+      "loadingMovements": "Cargando movimientos...",
+      "noMovements": "No hay movimientos de stock registrados",
+      "units": "unidades",
+      "close": "Cerrar"
     },
     "deleteConfirm": {
       "title": "¿Eliminar Producto?",
@@ -203,6 +225,13 @@
   },
   "errors": {
     "somethingWentWrong": "Algo salió mal",
+    "errorDescription": "La aplicación encontró un error inesperado. No te preocupes — tus datos están seguros. Intenta actualizar la página o vuelve a la pantalla de inicio.",
+    "tryAgain": "Intentar de Nuevo",
+    "returnHome": "Volver al Inicio",
+    "errorDetails": "Detalles del Error (Solo Desarrollo)",
+    "error": "Error:",
+    "stackTrace": "Rastreo de Pila:",
+    "componentStack": "Pila de Componentes:",
     "tryRefreshing": "Intenta actualizar la página",
     "unknownError": "Ocurrió un error desconocido"
   }
