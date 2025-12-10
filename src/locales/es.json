@@ -31,6 +31,7 @@
   },
   "product": {
     "newProduct": "Nuevo Producto",
+    "createProduct": "Crear Producto",
     "manageStock": "Gestionar Stock",
     "barcode": "Código de Barras",
     "barcodeCannotChange": "El código de barras no se puede cambiar",

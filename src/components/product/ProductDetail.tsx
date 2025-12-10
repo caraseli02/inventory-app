@@ -83,6 +83,18 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
 
   return (
     <Card className="w-full max-w-lg mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200 relative">
+      {/* Loading Overlay for Stock Operations */}
+      {loadingAction !== null && (
+        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 border-4 border-stone-200 border-t-[var(--color-forest)] rounded-full animate-spin"></div>
+            <p className="text-stone-900 font-semibold text-lg">
+              {loadingAction === 'IN' ? t('product.addStock') : t('product.removeStock')}...
+            </p>
+          </div>
+        </div>
+      )}
+
       <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-6 py-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
