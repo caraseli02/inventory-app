@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
 import { QuickAddSection } from '../components/cart/QuickAddSection';
@@ -318,8 +319,28 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
     // Product found successfully
     if (product) {
+      // Check if product already exists in cart to show appropriate toast
+      const existingItem = state.cart.find(item => item.product.id === product.id);
+      const isNewItem = !existingItem;
+      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+
       dispatch({ type: 'ADD_TO_CART', product });
       playSound('success');
+
+      // Show toast notification
+      if (isNewItem) {
+        toast.success(t('cart.itemAdded'), {
+          description: t('cart.itemAddedDescription', { name: product.fields.Name }),
+        });
+      } else {
+        toast.success(t('cart.quantityUpdated'), {
+          description: t('cart.quantityUpdatedDescription', {
+            name: product.fields.Name,
+            quantity: newQuantity
+          }),
+        });
+      }
+
       dispatch({ type: 'LOOKUP_SUCCESS' });
       // Auto-collapse cart on mobile ONLY if barcode came from scanner, not QuickAdd
       if (state.barcodeSource === 'scanner') {
@@ -365,7 +386,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource]);
+  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource, state.cart, t]);
 
   /**
    * Handles successful barcode scan by initiating product lookup
@@ -666,8 +687,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
         {/* Two Column Layout */}
         <div className="flex flex-row gap-6 h-[calc(100dvh-72px)] px-6 py-6">
-          {/* Left Column: Scanner */}
-          <div className="w-[45%] flex flex-col gap-4">
+          {/* Left Column: Scanner (~30% width reduction from original 45%) */}
+          <div className="w-[32%] flex flex-col gap-4">
             <ScannerFrame
               scannerId="desktop-reader"
               onScanSuccess={handleScanSuccess}
@@ -681,8 +702,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             />
           </div>
 
-          {/* Right Column: Cart */}
-          <div className="w-[55%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
+          {/* Right Column: Cart (expanded to use more space) */}
+          <div className="w-[65%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
             <Cart
               cart={state.cart}
               total={total}

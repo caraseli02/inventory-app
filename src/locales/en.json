@@ -142,6 +142,10 @@
     "processing": "Processing...",
     "complete": "Complete",
     "insufficientStock": "Cannot add more. Only {{available}} unit(s) available in stock.",
+    "itemAdded": "Item Added to Cart",
+    "itemAddedDescription": "{{name}} has been added to your cart",
+    "quantityUpdated": "Quantity Updated",
+    "quantityUpdatedDescription": "{{name}} quantity updated to {{quantity}}",
     "quickAdd": {
       "title": "Quick Add",
       "placeholder": "Scan or enter code",

@@ -142,6 +142,10 @@
     "processing": "Procesando...",
     "complete": "Completado",
     "insufficientStock": "No se pueden agregar más. Solo hay {{available}} unidades disponibles en stock.",
+    "itemAdded": "Artículo Agregado al Carrito",
+    "itemAddedDescription": "{{name}} ha sido agregado a tu carrito",
+    "quantityUpdated": "Cantidad Actualizada",
+    "quantityUpdatedDescription": "Cantidad de {{name}} actualizada a {{quantity}}",
     "quickAdd": {
       "title": "Agregar Rápido",
       "placeholder": "Escanear o ingresar código",
