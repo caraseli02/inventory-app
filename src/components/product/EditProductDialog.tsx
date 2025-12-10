@@ -97,7 +97,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
             <DialogTitle className="text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
 
         <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto" id="edit-product-form">
           {formData.imageUrl && (
