@@ -59,7 +59,7 @@ interface CheckoutState {
  */
 type CheckoutAction =
   // Cart actions
-  | { type: 'ADD_TO_CART'; product: Product }
+  | { type: 'ADD_TO_CART'; product: Product; insufficientStockMessage?: string; zeroStockMessage?: string }
   | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number; errorMessage?: string }
   | { type: 'SET_CART'; cart: CartItem[] }
   | { type: 'CLEAR_CART' }
@@ -125,7 +125,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         // Validate stock before allowing increase
         if (newQuantity > availableStock) {
           item.status = 'failed';
-          item.statusMessage = `Cannot add more. Only ${availableStock} unit(s) available in stock.`;
+          item.statusMessage = action.insufficientStockMessage;
           return {
             ...state,
             cart: newCart,
@@ -148,7 +148,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       if (availableStock < 1) {
         return {
           ...state,
-          cart: [...state.cart, { product: action.product, quantity: 1, status: 'failed' as const, statusMessage: `Cannot add. Item has 0 stock.` }],
+          cart: [...state.cart, { product: action.product, quantity: 1, status: 'failed' as const, statusMessage: action.zeroStockMessage }],
           checkoutComplete: false,
         };
       }
@@ -368,7 +368,12 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         return;
       }
 
-      dispatch({ type: 'ADD_TO_CART', product });
+      dispatch({
+        type: 'ADD_TO_CART',
+        product,
+        insufficientStockMessage: t('cart.insufficientStock', { available: availableStock }),
+        zeroStockMessage: t('cart.zeroStock'),
+      });
       playSound('success');
 
       // Show toast notification
