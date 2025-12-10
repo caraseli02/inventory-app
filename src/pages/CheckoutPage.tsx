@@ -465,10 +465,38 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   /**
    * Shows confirmation dialog before processing checkout
-   * Calculates total and formats confirmation message
+   * Validates stock availability and calculates total
    */
   const handleCheckoutClick = () => {
     if (pendingItems.length === 0) return;
+
+    // Validate stock availability for all items
+    const itemsWithInsufficientStock: Array<{ name: string; quantity: number; available: number }> = [];
+
+    for (const item of pendingItems) {
+      const availableStock = item.product.fields['Current Stock Level'] ?? 0;
+      if (item.quantity > availableStock) {
+        itemsWithInsufficientStock.push({
+          name: item.product.fields.Name,
+          quantity: item.quantity,
+          available: availableStock
+        });
+      }
+    }
+
+    // If any items have insufficient stock, show error and prevent checkout
+    if (itemsWithInsufficientStock.length > 0) {
+      const errorMessages = itemsWithInsufficientStock
+        .map(item => `• ${item.name}: ${t('checkout.needsQuantity', { quantity: item.quantity, available: item.available })}`)
+        .join('\n');
+
+      toast.error(t('checkout.insufficientStockTitle'), {
+        description: t('checkout.insufficientStockDescription', { count: itemsWithInsufficientStock.length }) + '\n\n' + errorMessages,
+        duration: 6000, // Show longer for multiple items
+      });
+
+      return;
+    }
 
     const { total, missingPrices } = calculateTotals();
     const totalLabel = `€${total.toFixed(2)}`;

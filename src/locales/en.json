@@ -161,7 +161,10 @@
     "confirmMessage": "Complete checkout for {{count}} items? Total: {{total}}",
     "confirmMessageWithMissing": "Complete checkout for {{count}} items? Priced subtotal: {{total}}. {{missing}} item(s) are missing price data and will be processed without totals.",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "insufficientStockTitle": "Insufficient Stock",
+    "insufficientStockDescription": "Cannot complete checkout. {{count}} item(s) exceed available stock:",
+    "needsQuantity": "needs {{quantity}}, only {{available}} available"
   },
   "dialogs": {
     "productDetail": {

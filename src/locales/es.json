@@ -161,7 +161,10 @@
     "confirmMessage": "¿Completar el pago de {{count}} artículos? Total: {{total}}",
     "confirmMessageWithMissing": "¿Completar el pago de {{count}} artículos? Subtotal con precio: {{total}}. {{missing}} artículo(s) no tienen precio y se procesarán sin totales.",
     "confirm": "Confirmar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "insufficientStockTitle": "Stock Insuficiente",
+    "insufficientStockDescription": "No se puede completar el pago. {{count}} artículo(s) exceden el stock disponible:",
+    "needsQuantity": "necesita {{quantity}}, solo {{available}} disponibles"
   },
   "dialogs": {
     "productDetail": {
