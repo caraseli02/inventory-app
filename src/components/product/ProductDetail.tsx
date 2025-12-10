@@ -13,6 +13,7 @@ import { ProductSkeleton } from './ProductSkeleton';
 import EditProductDialog from './EditProductDialog';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
 import type { Product } from '../../types';
+import { Separator } from '@radix-ui/react-select';
 
 interface ProductDetailProps {
   barcode: string;
@@ -137,7 +138,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
         {/* Responsive Two-Column Layout: Left = Product Info/Controls, Right = Activity */}
         <div className="lg:flex lg:gap-8 lg:items-start">
           {/* Left Column: Product Info & Controls - takes more space on desktop */}
-          <div className="flex-1 lg:max-w-2xl">
+          <div className="flex-1 lg:max-w-2xl w-full">
             {/* Price & Expiry Cards - larger on desktop */}
             <div className="grid grid-cols-2 gap-3 lg:gap-4 mb-4 lg:mb-6">
               <Card className="bg-gradient-to-br from-stone-50 to-white border-2 border-stone-200">
@@ -155,9 +156,9 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
             </div>
 
             {/* Quantity Controls - larger on desktop */}
-            <div className="mb-4 lg:mb-6">
+            <div className="lg:mb-6 border-b border-stone-400 pb-4">
               <div className="text-[10px] lg:text-xs text-stone-500 uppercase tracking-widest font-bold mb-2 lg:mb-3">{t('product.adjustQuantity')}</div>
-              <div className="flex items-center justify-center gap-2 lg:gap-3">
+              <div className="flex items-center gap-2 lg:gap-3">
                 <Button
                   onClick={() => {
                     const current = parseInt(stockQuantity);
@@ -192,6 +193,8 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
                 </Button>
               </div>
             </div>
+            
+            <Separator className="my-4 lg:my-6" />
 
             {/* Action Buttons - larger on desktop */}
             <div className="grid grid-cols-2 gap-2 lg:gap-3 mb-3 lg:mb-4">
@@ -259,9 +262,9 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
           </div>
 
           {/* Right Column: Recent Activity - fixed width sidebar on desktop */}
-          <div className="lg:w-80 xl:w-96 lg:flex-shrink-0 lg:border-l-2 lg:border-stone-200 lg:pl-8 border-t-2 lg:border-t-0 border-stone-200 pt-4 lg:pt-0 mt-4 lg:mt-0">
+          <div className="lg:w-80 xl:w-96 ml-auto lg:flex-shrink-0 lg:border-l-2 lg:border-stone-200 lg:pl-8 border-t-2 lg:border-t-0 border-stone-200 pt-4 lg:pt-0 mt-4 lg:mt-0">
             <h3 className="text-xs lg:text-sm font-bold text-stone-900 uppercase tracking-wider mb-3">{t('product.recentActivity')}</h3>
-            <div className="space-y-2 max-h-48 lg:max-h-[calc(100vh-380px)] overflow-y-auto">
+            <div className="space-y-2 overflow-y-auto">
               {recentHistory.map((move) => (
                 <div key={move.id} className="flex justify-between items-center text-sm p-2.5 lg:p-3 bg-stone-50 rounded-lg border border-stone-200">
                   <div className="flex items-center gap-2">
@@ -287,7 +290,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
       <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 border-t-2 border-stone-200 sticky bottom-0 w-full z-10">
         <Button
           onClick={onScanNew}
-          className="w-full h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
+          className="w-full lg:w-fit h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
         >
           {t('product.scanAnother')}
         </Button>

@@ -35,26 +35,14 @@ export const ScannerFrame = ({
 
   return (
     <div>
-      {/* Scanner Frame */}
-      <div className="relative mx-auto w-full max-w-lg aspect-video md:aspect-square max-h-[45dvh] md:max-h-none overflow-hidden">
-        {/* Corner Brackets */}
-        <div className="absolute inset-0 pointer-events-none z-10">
-          {/* Top Left */}
-          <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
-          {/* Top Right */}
-          <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
-          {/* Bottom Left */}
-          <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
-          {/* Bottom Right */}
-          <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
-
-          {/* Scan Line */}
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
-        </div>
-
+      {/* Scanner Frame - Clean design */}
+      <div className="relative mx-auto w-full max-w-lg aspect-[4/3] md:aspect-square max-h-[45dvh] md:max-h-none rounded-xl overflow-hidden">
         {/* Scanner - Always visible */}
-        <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
-          <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
+        <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
+
+        {/* Simple scan line overlay */}
+        <div className="absolute inset-0 pointer-events-none z-10">
+          <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-white/50 rounded-full" />
         </div>
 
         {/* Loading Overlay */}

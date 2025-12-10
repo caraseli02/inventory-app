@@ -80,31 +80,25 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
         {/* Scanner Section */}
         {!scannedCode && (
           <div className="px-6 pt-4 space-y-4">
-            {/* Scanner Frame */}
-            <div className="relative mx-auto w-full max-w-lg aspect-square">
-              {/* Corner Brackets */}
+            {/* Scanner Frame - Clean, no duplicate UI */}
+            <div className="relative mx-auto w-full max-w-lg aspect-[4/3] rounded-xl overflow-hidden">
+              {/* Scanner Area - fills container */}
+              <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
+
+              {/* Simple scan line overlay */}
               <div className="absolute inset-0 pointer-events-none z-10">
-                <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
-                <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
-                <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
-                <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
+                <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-white/50 rounded-full" />
               </div>
 
-              {/* Scanner Area */}
-              <div className="absolute inset-0 bg-black rounded-lg overflow-hidden h-fit">
-                <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
-              </div>
-
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
-                  <p className="text-stone-900 text-sm font-medium">{t('scanner.searching')}</p>
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
+                    <p className="text-stone-900 text-sm font-medium">{t('scanner.searching')}</p>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
           {/* Manual Entry */}
           <div className="mx-auto w-full max-w-lg">
@@ -165,19 +159,14 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           {/* Left Column: Scanner (only visible when no scanned code) */}
           {!scannedCode && (
             <div className="w-[45%] flex flex-col gap-6">
-              <div className="relative mx-auto w-full max-w-lg aspect-square">
-                {/* Corner Brackets */}
-                <div className="absolute inset-0 pointer-events-none z-10">
-                  <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
-                  <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
-                  <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
-                  <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
-                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
-                </div>
+              {/* Scanner Frame - Clean, no duplicate UI */}
+              <div className="relative mx-auto w-full max-w-lg aspect-square rounded-xl overflow-hidden">
+                {/* Scanner Area - fills container */}
+                <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
 
-                {/* Scanner Area */}
-                <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
-                  <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
+                {/* Simple scan line overlay */}
+                <div className="absolute inset-0 pointer-events-none z-10">
+                  <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-white/50 rounded-full" />
                 </div>
 
                 {isLoading && (
