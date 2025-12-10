@@ -160,11 +160,11 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           onBack={onBack}
         />
 
-        {/* Two-Column Layout */}
+        {/* Two-Column Layout - Scanner hidden when product is scanned */}
         <div className="flex h-[calc(100dvh-64px)] gap-6 p-6">
-          {/* Left Column: Scanner (45%) */}
-          <div className="w-[45%] flex flex-col gap-6">
-            {!scannedCode && (
+          {/* Left Column: Scanner (only visible when no scanned code) */}
+          {!scannedCode && (
+            <div className="w-[45%] flex flex-col gap-6">
               <div className="relative mx-auto w-full max-w-lg aspect-square">
                 {/* Corner Brackets */}
                 <div className="absolute inset-0 pointer-events-none z-10">
@@ -189,33 +189,29 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                 </div>
               )}
               </div>
-            )}
 
-            {!scannedCode && (
-              <>
-                {/* Manual Entry */}
-                <form onSubmit={handleManualSubmit} className="flex gap-2">
-                  <Input
-                    type="text"
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value)}
-                    className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
-                    placeholder={t('scanner.manualEntry')}
-                  />
-                  <Button
-                    type="submit"
-                    disabled={manualCode.length < 3}
-                    className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
-                  >
-                    {t('scanner.addButton')}
-                  </Button>
-                </form>
-              </>
-            )}
-          </div>
+              {/* Manual Entry */}
+              <form onSubmit={handleManualSubmit} className="flex gap-2">
+                <Input
+                  type="text"
+                  value={manualCode}
+                  onChange={(e) => setManualCode(e.target.value)}
+                  className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                  placeholder={t('scanner.manualEntry')}
+                />
+                <Button
+                  type="submit"
+                  disabled={manualCode.length < 3}
+                  className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
+                >
+                  {t('scanner.addButton')}
+                </Button>
+              </form>
+            </div>
+          )}
 
-          {/* Right Column: Panel (55%) */}
-          <div className="w-[55%] bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden">
+          {/* Right Column: Panel (expands to full width when scanner hidden) */}
+          <div className={`${scannedCode ? 'w-full' : 'w-[55%]'} bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden`}>
             {!scannedCode ? (
               /* Empty State */
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
