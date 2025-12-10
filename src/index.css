@@ -90,3 +90,8 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Make scanner video fill container (camera aspect ratio differs from container) */
+video {
+  object-fit: cover !important;
+}
+
