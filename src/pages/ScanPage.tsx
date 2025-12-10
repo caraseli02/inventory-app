@@ -92,7 +92,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
               </div>
 
               {/* Scanner Area */}
-              <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
+              <div className="absolute inset-0 bg-black rounded-lg overflow-hidden h-fit">
                 <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
               </div>
 
