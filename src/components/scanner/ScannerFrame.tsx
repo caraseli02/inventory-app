@@ -35,14 +35,14 @@ export const ScannerFrame = ({
 
   return (
     <div>
-      {/* Scanner Frame - using main's working approach with smaller size */}
-      <div className="relative mx-auto w-full max-w-xs aspect-square">
+      {/* Scanner Frame - using main's working approach */}
+      <div className="relative mx-auto w-full max-w-lg aspect-square">
         {/* Corner Brackets */}
         <div className="absolute inset-0 pointer-events-none z-10">
-          <div className="absolute top-0 left-0 w-16 h-16 border-l-[3px] border-t-[3px] border-stone-700" />
-          <div className="absolute top-0 right-0 w-16 h-16 border-r-[3px] border-t-[3px] border-stone-700" />
-          <div className="absolute bottom-0 left-0 w-16 h-16 border-l-[3px] border-b-[3px] border-stone-700" />
-          <div className="absolute bottom-0 right-0 w-16 h-16 border-r-[3px] border-b-[3px] border-stone-700" />
+          <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
+          <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
+          <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
+          <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
           <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
         </div>
 

@@ -90,10 +90,4 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Make scanner video fill container - override library's inline styles */
-video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
 
