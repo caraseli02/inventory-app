@@ -96,14 +96,13 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   }, [regionId]);
 
   return (
-    <div className="w-full h-full overflow-hidden bg-black relative scanner-container">
+    <div className="w-full h-full overflow-hidden bg-black relative">
       <div id={regionId} className="w-full h-full bg-black"></div>
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-red-500 p-4 text-center">
           {error}
         </div>
       )}
-      {/* Hide library's built-in UI with CSS - see index.css for .scanner-container styles */}
     </div>
   );
 };

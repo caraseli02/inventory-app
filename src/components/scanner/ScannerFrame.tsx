@@ -35,26 +35,25 @@ export const ScannerFrame = ({
 
   return (
     <div>
-      {/* Scanner Frame with Corner Brackets - mobile uses aspect-video for reduced height */}
-      <div className="relative mx-auto w-full max-w-xs aspect-video md:aspect-square max-h-[45dvh] md:max-h-none overflow-hidden">
+      {/* Scanner Frame - using main's working approach with smaller size */}
+      <div className="relative mx-auto w-full max-w-xs aspect-square">
         {/* Corner Brackets */}
         <div className="absolute inset-0 pointer-events-none z-10">
-          <div className="absolute top-0 left-0 w-16 h-16 border-l-[3px] border-t-[3px] border-white rounded-tl-lg" />
-          <div className="absolute top-0 right-0 w-16 h-16 border-r-[3px] border-t-[3px] border-white rounded-tr-lg" />
-          <div className="absolute bottom-0 left-0 w-16 h-16 border-l-[3px] border-b-[3px] border-white rounded-bl-lg" />
-          <div className="absolute bottom-0 right-0 w-16 h-16 border-r-[3px] border-b-[3px] border-white rounded-br-lg" />
-          {/* Scan Line */}
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-white/70" />
+          <div className="absolute top-0 left-0 w-16 h-16 border-l-[3px] border-t-[3px] border-stone-700" />
+          <div className="absolute top-0 right-0 w-16 h-16 border-r-[3px] border-t-[3px] border-stone-700" />
+          <div className="absolute bottom-0 left-0 w-16 h-16 border-l-[3px] border-b-[3px] border-stone-700" />
+          <div className="absolute bottom-0 right-0 w-16 h-16 border-r-[3px] border-b-[3px] border-stone-700" />
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
         </div>
 
-        {/* Scanner - Always visible, contained within brackets */}
-        <div className="absolute inset-0 rounded-lg overflow-hidden">
+        {/* Scanner - Always visible */}
+        <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
           <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
         </div>
 
         {/* Loading Overlay */}
         {isPending && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20 rounded-lg">
+          <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
             <Spinner size="md" label="Searching…" />
           </div>
         )}
