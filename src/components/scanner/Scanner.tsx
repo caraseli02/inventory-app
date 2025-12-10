@@ -37,35 +37,70 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
 
         const config = {
           formatsToSupport: formatsToSupport,
-          fps: 10,
-          aspectRatio: 1.0,
+          fps: 30, // Increased from 10 to 30 for better iPad camera detection
+          qrbox: { width: 250, height: 250 }, // Define scanning box to help camera focus
+          // Removed aspectRatio constraint to allow camera native aspect ratio
         };
 
-        await scanner.start(
-          { facingMode: 'environment' },
-          config,
-          (decodedText) => {
-            // Prevent duplicate scans within 2 seconds
-            const now = Date.now();
-            if (
-              lastScanRef.current &&
-              lastScanRef.current.code === decodedText &&
-              now - lastScanRef.current.timestamp < 2000
-            ) {
-              return; // Ignore duplicate scan
-            }
+        // Enhanced camera constraints for iOS Safari compatibility
+        // Request higher resolution for better barcode detection on iPad
+        const cameraConstraints = {
+          facingMode: { exact: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        };
 
-            lastScanRef.current = { code: decodedText, timestamp: now };
-            onScanSuccessRef.current(decodedText);
-          },
-          () => {
-            // parse error, ignore specific errors like "no QR code found" to avoid log spam
-            // use the error if needed or log only severe ones
-          }
-        );
+        try {
+          // Try with enhanced constraints first (for iOS/iPad)
+          await scanner.start(
+            cameraConstraints,
+            config,
+            (decodedText) => {
+              // Prevent duplicate scans within 2 seconds
+              const now = Date.now();
+              if (
+                lastScanRef.current &&
+                lastScanRef.current.code === decodedText &&
+                now - lastScanRef.current.timestamp < 2000
+              ) {
+                return; // Ignore duplicate scan
+              }
+
+              lastScanRef.current = { code: decodedText, timestamp: now };
+              onScanSuccessRef.current(decodedText);
+            },
+            () => {
+              // parse error, ignore specific errors like "no QR code found" to avoid log spam
+              // use the error if needed or log only severe ones
+            }
+          );
+        } catch (advancedErr) {
+          console.warn('Advanced camera constraints failed, trying fallback:', advancedErr);
+          // Fallback to basic constraints if advanced fails
+          await scanner.start(
+            { facingMode: 'environment' },
+            config,
+            (decodedText) => {
+              const now = Date.now();
+              if (
+                lastScanRef.current &&
+                lastScanRef.current.code === decodedText &&
+                now - lastScanRef.current.timestamp < 2000
+              ) {
+                return;
+              }
+
+              lastScanRef.current = { code: decodedText, timestamp: now };
+              onScanSuccessRef.current(decodedText);
+            },
+            () => {
+              // parse error callback
+            }
+          );
+        }
       } catch (err) {
         setError('Failed to start scanner. Please check camera permissions.');
-        console.error(err);
+        console.error('Scanner initialization failed:', err);
       }
     };
 
