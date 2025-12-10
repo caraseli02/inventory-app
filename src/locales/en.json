@@ -137,6 +137,7 @@
     "totalWithCount": "Total ({{count}} items)",
     "nextProduct": "Next Product",
     "finish": "Finish",
+    "completeCheckout": "Complete Checkout",
     "checkout": "Checkout",
     "checkoutComplete": "Checkout Complete!",
     "processing": "Processing...",

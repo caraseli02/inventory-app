@@ -694,7 +694,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                         onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
-                        {state.isCheckingOut ? t('cart.processing') : t('cart.finish')}
+                        {state.isCheckingOut ? t('cart.processing') : t('cart.completeCheckout')}
                       </Button>
                     </div>
                   </div>
@@ -760,7 +760,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                       onClick={handleCheckoutClick}
                       disabled={pendingItems.length === 0 || state.isCheckingOut}
                     >
-                      {state.isCheckingOut ? t('cart.processing') : t('cart.finish')}
+                      {state.isCheckingOut ? t('cart.processing') : t('cart.completeCheckout')}
                     </Button>
                   </div>
                 </div>
