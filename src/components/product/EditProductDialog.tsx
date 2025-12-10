@@ -78,7 +78,17 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto relative">
+        {/* Loading Overlay */}
+        {mutation.isPending && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 border-4 border-stone-200 border-t-[var(--color-forest)] rounded-full animate-spin"></div>
+              <p className="text-stone-900 font-semibold text-lg">{t('product.saveChanges')}...</p>
+            </div>
+          </div>
+        )}
+
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
         </DialogHeader>

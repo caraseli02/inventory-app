@@ -66,7 +66,17 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[450px] border-2 border-red-200 bg-red-50">
+      <DialogContent className="sm:max-w-[450px] border-2 border-red-200 bg-red-50 relative">
+        {/* Loading Overlay */}
+        {mutation.isPending && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 border-4 border-red-200 border-t-[var(--color-terracotta)] rounded-full animate-spin"></div>
+              <p className="text-[var(--color-terracotta)] font-semibold text-lg">{t('dialogs.deleteConfirm.deleting')}...</p>
+            </div>
+          </div>
+        )}
+
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-[var(--color-terracotta)] flex items-center gap-2">
             <span className="text-3xl">⚠️</span>

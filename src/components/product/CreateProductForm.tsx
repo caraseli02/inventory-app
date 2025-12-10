@@ -125,7 +125,17 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
   };
 
   return (
-    <Card className="w-full max-w-lg mx-auto animate-in slide-in-from-bottom-5 duration-300 shadow-lg border-2 border-stone-200">
+    <Card className="w-full max-w-lg mx-auto animate-in slide-in-from-bottom-5 duration-300 shadow-lg border-2 border-stone-200 relative">
+      {/* Loading Overlay */}
+      {mutation.isPending && (
+        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin"></div>
+            <p className="text-stone-900 font-semibold text-lg">{t('product.createAndStock')}...</p>
+          </div>
+        </div>
+      )}
+
       <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200">
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl font-bold text-stone-900">
