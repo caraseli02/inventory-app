@@ -257,6 +257,7 @@
     "stackTrace": "Rastreo de Pila:",
     "componentStack": "Pila de Componentes:",
     "tryRefreshing": "Intenta actualizar la página",
-    "unknownError": "Ocurrió un error desconocido"
+    "unknownError": "Ocurrió un error desconocido",
+    "productCreationFailed": "Error al crear el producto."
   }
 }

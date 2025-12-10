@@ -257,6 +257,7 @@
     "stackTrace": "Stack Trace:",
     "componentStack": "Component Stack:",
     "tryRefreshing": "Try refreshing the page",
-    "unknownError": "Unknown error occurred"
+    "unknownError": "Unknown error occurred",
+    "productCreationFailed": "Failed to create product."
   }
 }

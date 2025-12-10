@@ -70,17 +70,18 @@ h1, h2, h3, h4, h5, h6 {
     appearance: none;
   }
 
-  /* Prevent text selection on UI elements (except inputs) */
-  * {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    user-select: none;
-  }
-
+  /* Allow text selection on content, but disable on interactive UI elements */
   input, textarea {
     -webkit-user-select: text;
     -moz-user-select: text;
     user-select: text;
+  }
+
+  /* Only disable selection on UI chrome (buttons, controls), not content */
+  button, label, [role="button"], [role="tab"] {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
   }
 
   /* Smooth scrolling for iOS */

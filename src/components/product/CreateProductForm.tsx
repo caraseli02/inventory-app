@@ -157,7 +157,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
               <div className="w-40 h-40 rounded-2xl overflow-hidden border-2 border-stone-300 bg-gradient-to-br from-stone-50 to-stone-100 relative shadow-md">
                 <img
                   src={formData.imageUrl}
-                  alt="Product Preview"
+                  alt={t('product.preview')}
                   className="w-full h-full object-contain p-2"
                   onError={(e) => {
                     const img = e.target;
@@ -278,7 +278,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
         {mutation.isError && (
           <div className="mt-6 text-red-700 text-sm bg-red-50 p-4 rounded-lg border-2 border-red-200 font-medium flex items-start gap-2">
             <span className="text-lg">⚠️</span>
-            <span>{mutation.error.message || 'Failed to create product.'}</span>
+            <span>{mutation.error.message || t('errors.productCreationFailed')}</span>
           </div>
         )}
       </CardContent>
