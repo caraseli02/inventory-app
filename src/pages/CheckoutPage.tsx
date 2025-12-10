@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
 import { QuickAddSection } from '../components/cart/QuickAddSection';
@@ -279,6 +280,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
 
 const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
 
   // Hook for looking up products
@@ -487,6 +489,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     if (failedItems.length === 0 && mergedResults.length > 0) {
       dispatch({ type: 'COMPLETE_CHECKOUT' });
       playSound('success');
+
+      // Invalidate products cache to ensure inventory list shows updated quantities
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+
+      logger.info('Checkout completed successfully, products cache invalidated', {
+        itemsProcessed: mergedResults.length,
+        timestamp: new Date().toISOString(),
+      });
     } else {
       dispatch({ type: 'SET_CART', cart: mergedResults });
       dispatch({ type: 'CANCEL_CHECKOUT' });
