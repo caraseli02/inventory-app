@@ -35,19 +35,26 @@ export const ScannerFrame = ({
 
   return (
     <div>
-      {/* Scanner Frame - Clean design */}
-      <div className="relative mx-auto w-full max-w-lg aspect-[4/3] md:aspect-square max-h-[45dvh] md:max-h-none rounded-xl overflow-hidden">
-        {/* Scanner - Always visible */}
-        <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
-
-        {/* Simple scan line overlay */}
+      {/* Scanner Frame with Corner Brackets */}
+      <div className="relative mx-auto w-full max-w-sm aspect-square">
+        {/* Corner Brackets */}
         <div className="absolute inset-0 pointer-events-none z-10">
-          <div className="absolute left-4 right-4 top-1/2 -translate-y-1/2 h-0.5 bg-white/50 rounded-full" />
+          <div className="absolute top-0 left-0 w-16 h-16 border-l-[3px] border-t-[3px] border-white rounded-tl-lg" />
+          <div className="absolute top-0 right-0 w-16 h-16 border-r-[3px] border-t-[3px] border-white rounded-tr-lg" />
+          <div className="absolute bottom-0 left-0 w-16 h-16 border-l-[3px] border-b-[3px] border-white rounded-bl-lg" />
+          <div className="absolute bottom-0 right-0 w-16 h-16 border-r-[3px] border-b-[3px] border-white rounded-br-lg" />
+          {/* Scan Line */}
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-white/70" />
+        </div>
+
+        {/* Scanner - Always visible, contained within brackets */}
+        <div className="absolute inset-0 rounded-lg overflow-hidden">
+          <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
         </div>
 
         {/* Loading Overlay */}
         {isPending && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
+          <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20 rounded-lg">
             <Spinner size="md" label="Searching…" />
           </div>
         )}
