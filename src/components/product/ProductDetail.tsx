@@ -82,7 +82,7 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
   });
 
   return (
-    <Card className="w-full max-w-5xl mx-auto animate-in fade-in duration-500 shadow-none border-none border-stone-200 relative">
+    <Card className="w-full animate-in fade-in duration-500 shadow-none border-none border-stone-200 relative">
       {/* Loading Overlay for Stock Operations */}
       {loadingAction !== null && (
         <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
