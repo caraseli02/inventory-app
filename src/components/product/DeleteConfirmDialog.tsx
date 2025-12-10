@@ -66,7 +66,10 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[450px] border-2 border-red-200 bg-red-50 relative">
+      <DialogContent
+        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full h-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-6 gap-0 !rounded-none border-2 border-red-200 bg-red-50 relative sm:!inset-0 sm:!left-0 sm:!top-0 sm:!translate-x-0 sm:!translate-y-0 sm:!max-w-full sm:!rounded-none"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         {/* Loading Overlay */}
         {mutation.isPending && (
           <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
@@ -77,7 +80,8 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
           </div>
         )}
 
-        <DialogHeader>
+        <div className="h-full flex flex-col items-center justify-center max-w-lg mx-auto">
+        <DialogHeader className="mb-6">
           <DialogTitle className="text-2xl font-bold text-[var(--color-terracotta)] flex items-center gap-2">
             <span className="text-3xl">⚠️</span>
             {t('dialogs.deleteConfirm.title')}
@@ -150,14 +154,13 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
           </div>
         )}
 
-        <DialogFooter className="gap-3">
+        <DialogFooter className="gap-3 mt-6">
           <Button
             type="button"
             onClick={() => handleOpenChange(false)}
             variant="outline"
-            className="border-2 border-stone-300 hover:bg-stone-100 flex-1 sm:flex-initial"
+            className="border-2 border-stone-300 hover:bg-stone-100 flex-1 h-12 font-semibold"
             disabled={mutation.isPending}
-            autoFocus
           >
             {t('dialogs.deleteConfirm.cancel')}
           </Button>
@@ -165,15 +168,16 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
             type="button"
             onClick={handleDelete}
             disabled={!confirmed || mutation.isPending}
-            className="font-bold bg-gradient-to-br from-[var(--color-terracotta)] to-[var(--color-terracotta-dark)] hover:opacity-90 text-white disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-initial"
+            className="font-bold bg-gradient-to-br from-[var(--color-terracotta)] to-[var(--color-terracotta-dark)] hover:opacity-90 text-white disabled:opacity-50 disabled:cursor-not-allowed flex-1 h-12"
           >
             {mutation.isPending ? (
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             ) : (
               t('dialogs.deleteConfirm.confirm')
             )}
           </Button>
         </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
