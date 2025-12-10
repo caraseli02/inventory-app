@@ -59,24 +59,24 @@ export const ProductDetailDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Mobile: Vertical Stack | Tablet/Desktop: Three Column Layout */}
-        <div className="px-6 pb-6 sm:px-0 sm:pb-0 sm:flex sm:gap-6">
-          {/* Left Column: Image (only on tablet+) */}
+        {/* Mobile/Portrait: Vertical Stack | Landscape/Desktop: Three Column Layout */}
+        <div className="px-6 pb-6 lg:px-0 lg:pb-0 lg:flex lg:gap-6">
+          {/* Left Column: Image (only on lg+) */}
           {imageUrl && (
-            <div className="flex justify-center sm:justify-start sm:flex-shrink-0 mb-6 sm:mb-0">
+            <div className="flex justify-center lg:justify-start lg:flex-shrink-0 mb-6 lg:mb-0">
               <img
                 src={imageUrl}
                 alt={product.fields.Name}
-                className="max-h-48 sm:max-h-none sm:h-auto sm:w-48 lg:w-56 rounded-lg border-2 border-stone-200 object-contain"
+                className="max-h-48 lg:max-h-none lg:h-auto lg:w-48 xl:w-56 rounded-lg border-2 border-stone-200 object-contain"
               />
             </div>
           )}
 
           {/* Middle Column: Product Details */}
-          <div className="flex-1 space-y-6 sm:overflow-y-auto sm:max-h-[calc(90vh-120px)]">
+          <div className="flex-1 space-y-6 lg:overflow-y-auto lg:max-h-[calc(90vh-120px)]">
             {/* Product Name */}
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
+              <h2 className="text-2xl lg:text-3xl font-bold text-stone-900 mb-2">
                 {product.fields.Name}
               </h2>
               {product.fields.Category && (
@@ -170,8 +170,8 @@ export const ProductDetailDialog = ({
             )}
             </div>
 
-            {/* Close Button - Mobile Only */}
-            <div className="sm:hidden flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
+            {/* Close Button - Mobile/Portrait Only */}
+            <div className="lg:hidden flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
               <Button
                 variant="outline"
                 onClick={onClose}
@@ -183,9 +183,9 @@ export const ProductDetailDialog = ({
             </div>
           </div>
 
-          {/* Right Column: Stock Movement History (only on tablet+) */}
-          <div className="hidden sm:flex sm:flex-col sm:w-80 lg:w-96">
-            <div className="space-y-4 overflow-y-auto sm:max-h-[calc(90vh-120px)]">
+          {/* Right Column: Stock Movement History (only on lg+) */}
+          <div className="hidden lg:flex lg:flex-col lg:w-80 xl:w-96">
+            <div className="space-y-4 overflow-y-auto lg:max-h-[calc(90vh-120px)]">
               <h3 className="text-lg font-bold text-stone-900 sticky top-0 bg-white py-2">
                 {t('dialogs.productDetail.recentMovements')}
               </h3>
@@ -232,8 +232,8 @@ export const ProductDetailDialog = ({
               )}
             </div>
 
-            {/* Close Button - Tablet+ Only */}
-            <div className="flex justify-end pt-4 mt-4 border-t border-stone-200">
+            {/* Close Button - Landscape/Desktop Only */}
+            <div className="hidden lg:flex justify-end pt-4 mt-4 border-t border-stone-200">
               <Button
                 variant="outline"
                 onClick={onClose}
