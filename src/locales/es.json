@@ -141,6 +141,7 @@
     "checkoutComplete": "¡Pago Completado!",
     "processing": "Procesando...",
     "complete": "Completado",
+    "insufficientStock": "No se pueden agregar más. Solo hay {{available}} unidades disponibles en stock.",
     "quickAdd": {
       "title": "Agregar Rápido",
       "placeholder": "Escanear o ingresar código",

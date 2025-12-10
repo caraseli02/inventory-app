@@ -141,6 +141,7 @@
     "checkoutComplete": "Checkout Complete!",
     "processing": "Processing...",
     "complete": "Complete",
+    "insufficientStock": "Cannot add more. Only {{available}} unit(s) available in stock.",
     "quickAdd": {
       "title": "Quick Add",
       "placeholder": "Scan or enter code",

@@ -58,7 +58,7 @@ interface CheckoutState {
 type CheckoutAction =
   // Cart actions
   | { type: 'ADD_TO_CART'; product: Product }
-  | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number }
+  | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number; errorMessage?: string }
   | { type: 'SET_CART'; cart: CartItem[] }
   | { type: 'CLEAR_CART' }
   | { type: 'START_CHECKOUT' }
@@ -135,12 +135,32 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
 
     case 'UPDATE_CART_ITEM_QUANTITY': {
       const newCart = [...state.cart];
-      newCart[action.index].quantity += action.delta;
-      newCart[action.index].status = 'idle';
-      newCart[action.index].statusMessage = undefined;
+      const item = newCart[action.index];
+      const newQuantity = item.quantity + action.delta;
+      const availableStock = item.product.fields['Current Stock Level'] ?? 0;
 
-      if (newCart[action.index].quantity <= 0) {
-        newCart.splice(action.index, 1);
+      // If removing items (negative delta), allow it
+      if (action.delta < 0) {
+        if (newQuantity <= 0) {
+          newCart.splice(action.index, 1);
+        } else {
+          item.quantity = newQuantity;
+          item.status = 'idle';
+          item.statusMessage = undefined;
+        }
+      }
+      // If adding items (positive delta), check stock availability
+      else if (action.delta > 0) {
+        if (newQuantity > availableStock) {
+          // Prevent update and show error (use provided message or fallback)
+          item.status = 'failed';
+          item.statusMessage = action.errorMessage || `Cannot add more. Only ${availableStock} unit(s) available in stock.`;
+        } else {
+          // Allow update
+          item.quantity = newQuantity;
+          item.status = 'idle';
+          item.statusMessage = undefined;
+        }
       }
 
       return {
@@ -377,12 +397,26 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   /**
    * Updates quantity for a cart item by the given delta
+   * - Validates stock availability before allowing increases
    * - Removes item if quantity reaches zero
    * - Resets item status to 'idle' to allow re-checkout
    * @param index - Cart item index
    * @param delta - Quantity change (+1 or -1)
    */
   const updateQuantity = (index: number, delta: number) => {
+    // Pre-check stock availability for increases to provide translated error message
+    if (delta > 0) {
+      const item = state.cart[index];
+      const newQuantity = item.quantity + delta;
+      const availableStock = item.product.fields['Current Stock Level'] ?? 0;
+
+      if (newQuantity > availableStock) {
+        const errorMessage = t('cart.insufficientStock', { available: availableStock });
+        dispatch({ type: 'UPDATE_CART_ITEM_QUANTITY', index, delta, errorMessage });
+        return;
+      }
+    }
+
     dispatch({ type: 'UPDATE_CART_ITEM_QUANTITY', index, delta });
   };
 
