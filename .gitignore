@@ -174,3 +174,6 @@ debug-*.log
 !CONTRIBUTING.md
 !LICENSE.md
 !claude-progress.md
+!USER_ACCEPTANCE_TESTING_PLAN.md
+!UAT_CHECKLIST.md
+!QUICK_START_GUIDE.md
