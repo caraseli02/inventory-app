@@ -36,24 +36,16 @@ export const ScannerFrame = ({
   return (
     <div>
       {/* Scanner Frame */}
-      <div className="relative mx-auto w-full max-w-lg aspect-square">
+      <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
         {/* Corner Brackets */}
         <div className="absolute inset-0 pointer-events-none z-10">
-          {/* Top Left */}
-          <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
-          {/* Top Right */}
-          <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
-          {/* Bottom Left */}
-          <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
-          {/* Bottom Right */}
-          <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
-
+         
           {/* Scan Line */}
           <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
         </div>
 
-        {/* Scanner - Always visible */}
-        <div className="absolute inset-0 bg-black rounded-lg overflow-hidden">
+        {/* Scanner - relative to define container height */}
+        <div className="relative bg-black rounded-lg overflow-hidden">
           <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
         </div>
 

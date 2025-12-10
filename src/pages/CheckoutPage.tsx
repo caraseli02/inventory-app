@@ -59,7 +59,7 @@ interface CheckoutState {
  */
 type CheckoutAction =
   // Cart actions
-  | { type: 'ADD_TO_CART'; product: Product }
+  | { type: 'ADD_TO_CART'; product: Product; insufficientStockMessage?: string; zeroStockMessage?: string }
   | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number; errorMessage?: string }
   | { type: 'SET_CART'; cart: CartItem[] }
   | { type: 'CLEAR_CART' }
@@ -115,15 +115,40 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
     // Cart actions
     case 'ADD_TO_CART': {
       const existingItemIndex = state.cart.findIndex(item => item.product.id === action.product.id);
+      const availableStock = action.product.fields['Current Stock Level'] ?? 0;
 
       if (existingItemIndex >= 0) {
         const newCart = [...state.cart];
-        newCart[existingItemIndex].quantity += 1;
-        newCart[existingItemIndex].status = undefined;
-        newCart[existingItemIndex].statusMessage = undefined;
+        const item = newCart[existingItemIndex];
+        const newQuantity = item.quantity + 1;
+
+        // Validate stock before allowing increase
+        if (newQuantity > availableStock) {
+          item.status = 'failed';
+          item.statusMessage = action.insufficientStockMessage;
+          return {
+            ...state,
+            cart: newCart,
+            checkoutComplete: false,
+          };
+        }
+
+        // Stock available, allow increase
+        item.quantity = newQuantity;
+        item.status = undefined;
+        item.statusMessage = undefined;
         return {
           ...state,
           cart: newCart,
+          checkoutComplete: false,
+        };
+      }
+
+      // For new items, check if we can add at least 1 unit
+      if (availableStock < 1) {
+        return {
+          ...state,
+          cart: [...state.cart, { product: action.product, quantity: 1, status: 'failed' as const, statusMessage: action.zeroStockMessage }],
           checkoutComplete: false,
         };
       }
@@ -325,8 +350,30 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       const existingItem = state.cart.find(item => item.product.id === product.id);
       const isNewItem = !existingItem;
       const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+      const availableStock = product.fields['Current Stock Level'] ?? 0;
 
-      dispatch({ type: 'ADD_TO_CART', product });
+      // Validate stock availability before adding to cart
+      // Note: This is client-side validation against cached stock data.
+      // For absolute accuracy with concurrent checkouts, a backend proxy should validate this.
+      if (newQuantity > availableStock) {
+        playSound('error');
+        toast.error(t('cart.insufficientStock', { available: availableStock }), {
+          description: t('cart.insufficientStockDescription', {
+            name: product.fields.Name,
+            requested: newQuantity,
+            available: availableStock
+          }),
+        });
+        dispatch({ type: 'LOOKUP_SUCCESS' });
+        return;
+      }
+
+      dispatch({
+        type: 'ADD_TO_CART',
+        product,
+        insufficientStockMessage: t('cart.insufficientStock', { available: availableStock }),
+        zeroStockMessage: t('cart.zeroStock'),
+      });
       playSound('success');
 
       // Show toast notification
@@ -573,10 +620,15 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       dispatch({ type: 'COMPLETE_CHECKOUT' });
       playSound('success');
 
-      // Invalidate products cache to ensure inventory list shows updated quantities
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      // Invalidate all related caches to ensure fresh data after checkout
+      // - Product list queries (prefix match for any products query)
+      // - Individual product lookups
+      // - Stock movement history
+      queryClient.invalidateQueries({ queryKey: ['products'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['product'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['stockMovements'], exact: false });
 
-      logger.info('Checkout completed successfully, products cache invalidated', {
+      logger.info('Checkout completed successfully, related caches invalidated', {
         itemsProcessed: mergedResults.length,
         timestamp: new Date().toISOString(),
       });

@@ -52,31 +52,31 @@ export const ProductDetailDialog = ({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="h-dvh w-full max-w-none sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6">
-        <DialogHeader className="pt-[max(1.5rem,env(safe-area-inset-top))] px-6 pb-4 sm:p-0 sm:pb-4">
-          <DialogTitle className="text-2xl font-bold text-stone-900 flex items-center gap-2">
-            <Package className="h-6 w-6" />
+        <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-2 sm:p-0 sm:pb-2 flex-row items-center justify-between gap-4">
+          <DialogTitle className="text-xl font-bold text-stone-900 flex items-center gap-2">
+            <Package className="h-5 w-5" />
             {t('dialogs.productDetail.title')}
           </DialogTitle>
         </DialogHeader>
 
-        {/* Mobile: Vertical Stack | Tablet/Desktop: Horizontal Layout */}
-        <div className="px-6 pb-6 sm:px-0 sm:pb-0 sm:flex sm:gap-6">
-          {/* Left Column: Image (only on tablet+) */}
+        {/* Mobile/Portrait: Vertical Stack | Landscape/Desktop: Three Column Layout */}
+        <div className="px-6 pb-6 lg:px-0 lg:pb-0 lg:flex lg:gap-6">
+          {/* Left Column: Image (only on lg+) */}
           {imageUrl && (
-            <div className="flex justify-center sm:justify-start sm:flex-shrink-0 mb-6 sm:mb-0">
+            <div className="flex justify-center lg:justify-start lg:flex-shrink-0 mb-6 lg:mb-0">
               <img
                 src={imageUrl}
                 alt={product.fields.Name}
-                className="max-h-48 sm:max-h-none sm:h-auto sm:w-64 lg:w-80 rounded-lg border-2 border-stone-200 object-contain"
+                className="max-h-48 lg:max-h-none lg:h-auto lg:w-48 xl:w-56 rounded-lg border-2 border-stone-200 object-contain"
               />
             </div>
           )}
 
-          {/* Right Column: All Details */}
-          <div className="flex-1 space-y-6 sm:overflow-y-auto sm:max-h-[calc(90vh-120px)]">
+          {/* Middle Column: Product Details */}
+          <div className="flex-1 space-y-6 lg:overflow-y-auto lg:max-h-[calc(90vh-120px)]">
             {/* Product Name */}
             <div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
+              <h2 className="text-2xl lg:text-3xl font-bold text-stone-900 mb-2">
                 {product.fields.Name}
               </h2>
               {product.fields.Category && (
@@ -168,11 +168,25 @@ export const ProductDetailDialog = ({
                 </div>
               </div>
             )}
+            </div>
+
+            {/* Close Button - Mobile/Portrait Only */}
+            <div className="lg:hidden flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="border-2 border-stone-300"
+              >
+                <X className="h-4 w-4 mr-2" />
+                {t('dialogs.productDetail.close')}
+              </Button>
+            </div>
           </div>
 
-            {/* Stock Movement History */}
-            <div>
-              <h3 className="text-lg font-bold text-stone-900 mb-3">
+          {/* Right Column: Stock Movement History (only on lg+) */}
+          <div className="hidden lg:flex lg:flex-col lg:w-80 xl:w-96">
+            <div className="space-y-4 overflow-y-auto lg:max-h-[calc(90vh-120px)]">
+              <h3 className="text-lg font-bold text-stone-900 sticky top-0 bg-white py-2">
                 {t('dialogs.productDetail.recentMovements')}
               </h3>
               {loadingMovements ? (
@@ -180,7 +194,7 @@ export const ProductDetailDialog = ({
                   <Spinner size="md" label={t('dialogs.productDetail.loadingMovements')} />
                 </div>
               ) : movements.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
                   {movements.map((movement) => (
                     <div
                       key={movement.id}
@@ -218,8 +232,8 @@ export const ProductDetailDialog = ({
               )}
             </div>
 
-            {/* Close Button */}
-            <div className="flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0 border-t border-stone-200">
+            {/* Close Button - Landscape/Desktop Only */}
+            <div className="hidden lg:flex justify-end pt-4 mt-4 border-t border-stone-200">
               <Button
                 variant="outline"
                 onClick={onClose}

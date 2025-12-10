@@ -29,6 +29,13 @@
     "addButton": "Agregar",
     "emptyState": "Apunta la cámara al código de barras o ingrésalo manualmente"
   },
+  "scannerFrame": {
+    "enterManually": "O ingresa el código de barras manualmente:",
+    "barcodePlaceholder": "1234567890",
+    "adding": "Agregando...",
+    "add": "Agregar",
+    "notFound": "No Encontrado"
+  },
   "product": {
     "newProduct": "Nuevo Producto",
     "createProduct": "Crear Producto",
@@ -144,6 +151,8 @@
     "processing": "Procesando...",
     "complete": "Completado",
     "insufficientStock": "No se pueden agregar más. Solo hay {{available}} unidades disponibles en stock.",
+    "insufficientStockDescription": "{{name}}: solicitado {{requested}}, solo {{available}} disponibles",
+    "zeroStock": "No se puede agregar. El artículo tiene 0 stock.",
     "itemAdded": "Artículo Agregado al Carrito",
     "itemAddedDescription": "{{name}} ha sido agregado a tu carrito",
     "quantityUpdated": "Cantidad Actualizada",
@@ -257,6 +266,7 @@
     "stackTrace": "Rastreo de Pila:",
     "componentStack": "Pila de Componentes:",
     "tryRefreshing": "Intenta actualizar la página",
-    "unknownError": "Ocurrió un error desconocido"
+    "unknownError": "Ocurrió un error desconocido",
+    "productCreationFailed": "Error al crear el producto."
   }
 }
