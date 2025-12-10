@@ -138,10 +138,16 @@
     "totalWithCount": "Total ({{count}} items)",
     "nextProduct": "Next Product",
     "finish": "Finish",
+    "completeCheckout": "Complete Checkout",
     "checkout": "Checkout",
     "checkoutComplete": "Checkout Complete!",
     "processing": "Processing...",
     "complete": "Complete",
+    "insufficientStock": "Cannot add more. Only {{available}} unit(s) available in stock.",
+    "itemAdded": "Item Added to Cart",
+    "itemAddedDescription": "{{name}} has been added to your cart",
+    "quantityUpdated": "Quantity Updated",
+    "quantityUpdatedDescription": "{{name}} quantity updated to {{quantity}}",
     "quickAdd": {
       "title": "Quick Add",
       "placeholder": "Scan or enter code",
@@ -157,7 +163,10 @@
     "confirmMessage": "Complete checkout for {{count}} items? Total: {{total}}",
     "confirmMessageWithMissing": "Complete checkout for {{count}} items? Priced subtotal: {{total}}. {{missing}} item(s) are missing price data and will be processed without totals.",
     "confirm": "Confirm",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "insufficientStockTitle": "Insufficient Stock",
+    "insufficientStockDescription": "Cannot complete checkout. {{count}} item(s) exceed available stock:",
+    "needsQuantity": "needs {{quantity}}, only {{available}} available"
   },
   "dialogs": {
     "productDetail": {
