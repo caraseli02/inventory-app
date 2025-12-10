@@ -80,8 +80,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
         {/* Scanner Section */}
         {!scannedCode && (
           <div className="px-6 pt-4 space-y-4">
-            {/* Scanner Frame with Corner Brackets */}
-            <div className="relative mx-auto w-full max-w-xs aspect-square">
+            {/* Scanner Frame with Corner Brackets - mobile uses aspect-video for reduced height */}
+            <div className="relative mx-auto w-full max-w-xs aspect-video md:aspect-square max-h-[45dvh] md:max-h-none overflow-hidden">
               {/* Corner Brackets */}
               <div className="absolute inset-0 pointer-events-none z-10">
                 <div className="absolute top-0 left-0 w-16 h-16 border-l-[3px] border-t-[3px] border-white rounded-tl-lg" />
@@ -166,7 +166,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           {/* Left Column: Scanner (only visible when no scanned code) */}
           {!scannedCode && (
             <div className="w-[45%] flex flex-col gap-6">
-              {/* Scanner Frame with Corner Brackets */}
+              {/* Scanner Frame with Corner Brackets - desktop uses full aspect-square */}
               <div className="relative mx-auto w-full max-w-xs aspect-square">
                 {/* Corner Brackets */}
                 <div className="absolute inset-0 pointer-events-none z-10">

@@ -13,7 +13,6 @@ import { ProductSkeleton } from './ProductSkeleton';
 import EditProductDialog from './EditProductDialog';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
 import type { Product } from '../../types';
-import { Separator } from '@radix-ui/react-select';
 
 interface ProductDetailProps {
   barcode: string;
@@ -70,17 +69,8 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
 
   const handleStockButton = (type: 'IN' | 'OUT') => {
     const qty = parseInt(stockQuantity);
-    console.log('[ProductDetail] Initiating stock change:', { qty, type, currentStock, calculatedStock });
     handleStockChange(qty, type);
   };
-
-  // Debug: Log current stock value
-  console.log('[ProductDetail] Rendering with stock:', {
-    airtableStock: product.fields['Current Stock Level'],
-    calculatedStock,
-    currentStock,
-    movementCount: history?.length
-  });
 
   return (
     <Card className="w-full animate-in fade-in duration-500 shadow-none border-none border-stone-200 relative">
@@ -193,8 +183,6 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
                 </Button>
               </div>
             </div>
-            
-            <Separator className="my-4 lg:my-6" />
 
             {/* Action Buttons - larger on desktop */}
             <div className="grid grid-cols-2 gap-2 lg:gap-3 mb-3 lg:mb-4">

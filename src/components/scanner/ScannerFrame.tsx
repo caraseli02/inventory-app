@@ -35,8 +35,8 @@ export const ScannerFrame = ({
 
   return (
     <div>
-      {/* Scanner Frame with Corner Brackets */}
-      <div className="relative mx-auto w-full max-w-xs aspect-square">
+      {/* Scanner Frame with Corner Brackets - mobile uses aspect-video for reduced height */}
+      <div className="relative mx-auto w-full max-w-xs aspect-video md:aspect-square max-h-[45dvh] md:max-h-none overflow-hidden">
         {/* Corner Brackets */}
         <div className="absolute inset-0 pointer-events-none z-10">
           <div className="absolute top-0 left-0 w-16 h-16 border-l-[3px] border-t-[3px] border-white rounded-tl-lg" />
