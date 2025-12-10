@@ -39,7 +39,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
           formatsToSupport: formatsToSupport,
           fps: 30, // Increased from 10 to 30 for better iPad camera detection
           qrbox: { width: 250, height: 250 }, // Define scanning box to help camera focus
-          aspectRatio: 1.0, // Request square camera feed to match container
+          // Removed aspectRatio constraint to allow camera native aspect ratio
         };
 
         // Camera constraint for rear camera
@@ -103,6 +103,9 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
           {error}
         </div>
       )}
+      <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm pointer-events-none">
+        Align code within frame
+      </div>
     </div>
   );
 };

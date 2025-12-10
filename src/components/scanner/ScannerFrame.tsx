@@ -1,5 +1,4 @@
 import type { FormEvent } from 'react';
-import { useTranslation } from 'react-i18next';
 import Scanner from './Scanner';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -32,19 +31,24 @@ export const ScannerFrame = ({
   onClearError,
   size = 'default',
 }: ScannerFrameProps) => {
-  const { t } = useTranslation();
   const textSize = size === 'small' ? 'text-sm' : '';
 
   return (
     <div>
-      {/* Scanner Frame - using main's working approach */}
+      {/* Scanner Frame */}
       <div className="relative mx-auto w-full max-w-lg aspect-square">
         {/* Corner Brackets */}
         <div className="absolute inset-0 pointer-events-none z-10">
+          {/* Top Left */}
           <div className="absolute top-0 left-0 w-20 h-20 border-l-[3px] border-t-[3px] border-stone-700" />
+          {/* Top Right */}
           <div className="absolute top-0 right-0 w-20 h-20 border-r-[3px] border-t-[3px] border-stone-700" />
+          {/* Bottom Left */}
           <div className="absolute bottom-0 left-0 w-20 h-20 border-l-[3px] border-b-[3px] border-stone-700" />
+          {/* Bottom Right */}
           <div className="absolute bottom-0 right-0 w-20 h-20 border-r-[3px] border-b-[3px] border-stone-700" />
+
+          {/* Scan Line */}
           <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
         </div>
 
@@ -65,7 +69,7 @@ export const ScannerFrame = ({
       <div className="mt-4">
         <div className="bg-gradient-to-br from-stone-50 to-stone-100 border-2 border-stone-200 rounded-lg p-4">
           <label className={`text-stone-700 font-semibold mb-2 block ${textSize}`}>
-            {t('scannerFrame.enterManually')}
+            Or enter barcode manually:
           </label>
           <form onSubmit={onManualSubmit} className="flex gap-2">
             <Input
@@ -73,7 +77,7 @@ export const ScannerFrame = ({
               value={manualCode}
               onChange={(e) => onManualCodeChange(e.target.value)}
               className={`flex-1 font-mono tracking-wider border-2 border-stone-300 focus-visible:ring-stone-400 ${textSize}`}
-              placeholder={t('scannerFrame.barcodePlaceholder')}
+              placeholder="1234567890"
               disabled={isPending}
             />
             <Button
@@ -84,7 +88,7 @@ export const ScannerFrame = ({
                 background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
               }}
             >
-              {isPending ? t('scannerFrame.adding') : t('scannerFrame.add')}
+              {isPending ? 'Adding...' : 'Add'}
             </Button>
           </form>
         </div>
@@ -95,7 +99,7 @@ export const ScannerFrame = ({
         <div className="mt-4 bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm flex items-start gap-2">
           <WarningIcon className="h-5 w-5 shrink-0 mt-0.5 text-red-600" />
           <div className="flex-1">
-            <p className="font-semibold">{t('scannerFrame.notFound')}</p>
+            <p className="font-semibold">Not Found</p>
             <p className="text-red-800 text-xs mt-1">{error}</p>
           </div>
           <Button
