@@ -59,7 +59,7 @@ export const ProductDetailDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Mobile: Vertical Stack | Tablet/Desktop: Horizontal Layout */}
+        {/* Mobile: Vertical Stack | Tablet/Desktop: Three Column Layout */}
         <div className="px-6 pb-6 sm:px-0 sm:pb-0 sm:flex sm:gap-6">
           {/* Left Column: Image (only on tablet+) */}
           {imageUrl && (
@@ -67,12 +67,12 @@ export const ProductDetailDialog = ({
               <img
                 src={imageUrl}
                 alt={product.fields.Name}
-                className="max-h-48 sm:max-h-none sm:h-auto sm:w-64 lg:w-80 rounded-lg border-2 border-stone-200 object-contain"
+                className="max-h-48 sm:max-h-none sm:h-auto sm:w-48 lg:w-56 rounded-lg border-2 border-stone-200 object-contain"
               />
             </div>
           )}
 
-          {/* Right Column: All Details */}
+          {/* Middle Column: Product Details */}
           <div className="flex-1 space-y-6 sm:overflow-y-auto sm:max-h-[calc(90vh-120px)]">
             {/* Product Name */}
             <div>
@@ -168,11 +168,25 @@ export const ProductDetailDialog = ({
                 </div>
               </div>
             )}
+            </div>
+
+            {/* Close Button - Mobile Only */}
+            <div className="sm:hidden flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
+              <Button
+                variant="outline"
+                onClick={onClose}
+                className="border-2 border-stone-300"
+              >
+                <X className="h-4 w-4 mr-2" />
+                {t('dialogs.productDetail.close')}
+              </Button>
+            </div>
           </div>
 
-            {/* Stock Movement History */}
-            <div>
-              <h3 className="text-lg font-bold text-stone-900 mb-3">
+          {/* Right Column: Stock Movement History (only on tablet+) */}
+          <div className="hidden sm:flex sm:flex-col sm:w-80 lg:w-96">
+            <div className="space-y-4 overflow-y-auto sm:max-h-[calc(90vh-120px)]">
+              <h3 className="text-lg font-bold text-stone-900 sticky top-0 bg-white py-2">
                 {t('dialogs.productDetail.recentMovements')}
               </h3>
               {loadingMovements ? (
@@ -180,7 +194,7 @@ export const ProductDetailDialog = ({
                   <Spinner size="md" label={t('dialogs.productDetail.loadingMovements')} />
                 </div>
               ) : movements.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2">
                   {movements.map((movement) => (
                     <div
                       key={movement.id}
@@ -218,8 +232,8 @@ export const ProductDetailDialog = ({
               )}
             </div>
 
-            {/* Close Button */}
-            <div className="flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0 border-t border-stone-200">
+            {/* Close Button - Tablet+ Only */}
+            <div className="flex justify-end pt-4 mt-4 border-t border-stone-200">
               <Button
                 variant="outline"
                 onClick={onClose}
