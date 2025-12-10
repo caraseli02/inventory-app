@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
@@ -59,7 +60,7 @@ interface CheckoutState {
 type CheckoutAction =
   // Cart actions
   | { type: 'ADD_TO_CART'; product: Product }
-  | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number }
+  | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number; errorMessage?: string }
   | { type: 'SET_CART'; cart: CartItem[] }
   | { type: 'CLEAR_CART' }
   | { type: 'START_CHECKOUT' }
@@ -136,12 +137,32 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
 
     case 'UPDATE_CART_ITEM_QUANTITY': {
       const newCart = [...state.cart];
-      newCart[action.index].quantity += action.delta;
-      newCart[action.index].status = 'idle';
-      newCart[action.index].statusMessage = undefined;
+      const item = newCart[action.index];
+      const newQuantity = item.quantity + action.delta;
+      const availableStock = item.product.fields['Current Stock Level'] ?? 0;
 
-      if (newCart[action.index].quantity <= 0) {
-        newCart.splice(action.index, 1);
+      // If removing items (negative delta), allow it
+      if (action.delta < 0) {
+        if (newQuantity <= 0) {
+          newCart.splice(action.index, 1);
+        } else {
+          item.quantity = newQuantity;
+          item.status = 'idle';
+          item.statusMessage = undefined;
+        }
+      }
+      // If adding items (positive delta), check stock availability
+      else if (action.delta > 0) {
+        if (newQuantity > availableStock) {
+          // Prevent update and show error (use provided message or fallback)
+          item.status = 'failed';
+          item.statusMessage = action.errorMessage || `Cannot add more. Only ${availableStock} unit(s) available in stock.`;
+        } else {
+          // Allow update
+          item.quantity = newQuantity;
+          item.status = 'idle';
+          item.statusMessage = undefined;
+        }
       }
 
       return {
@@ -300,8 +321,28 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
     // Product found successfully
     if (product) {
+      // Check if product already exists in cart to show appropriate toast
+      const existingItem = state.cart.find(item => item.product.id === product.id);
+      const isNewItem = !existingItem;
+      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+
       dispatch({ type: 'ADD_TO_CART', product });
       playSound('success');
+
+      // Show toast notification
+      if (isNewItem) {
+        toast.success(t('cart.itemAdded'), {
+          description: t('cart.itemAddedDescription', { name: product.fields.Name }),
+        });
+      } else {
+        toast.success(t('cart.quantityUpdated'), {
+          description: t('cart.quantityUpdatedDescription', {
+            name: product.fields.Name,
+            quantity: newQuantity
+          }),
+        });
+      }
+
       dispatch({ type: 'LOOKUP_SUCCESS' });
       // Auto-collapse cart on mobile ONLY if barcode came from scanner, not QuickAdd
       if (state.barcodeSource === 'scanner') {
@@ -347,7 +388,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource]);
+  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource, state.cart, t]);
 
   /**
    * Handles successful barcode scan by initiating product lookup
@@ -379,12 +420,26 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   /**
    * Updates quantity for a cart item by the given delta
+   * - Validates stock availability before allowing increases
    * - Removes item if quantity reaches zero
    * - Resets item status to 'idle' to allow re-checkout
    * @param index - Cart item index
    * @param delta - Quantity change (+1 or -1)
    */
   const updateQuantity = (index: number, delta: number) => {
+    // Pre-check stock availability for increases to provide translated error message
+    if (delta > 0) {
+      const item = state.cart[index];
+      const newQuantity = item.quantity + delta;
+      const availableStock = item.product.fields['Current Stock Level'] ?? 0;
+
+      if (newQuantity > availableStock) {
+        const errorMessage = t('cart.insufficientStock', { available: availableStock });
+        dispatch({ type: 'UPDATE_CART_ITEM_QUANTITY', index, delta, errorMessage });
+        return;
+      }
+    }
+
     dispatch({ type: 'UPDATE_CART_ITEM_QUANTITY', index, delta });
   };
 
@@ -412,10 +467,38 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   /**
    * Shows confirmation dialog before processing checkout
-   * Calculates total and formats confirmation message
+   * Validates stock availability and calculates total
    */
   const handleCheckoutClick = () => {
     if (pendingItems.length === 0) return;
+
+    // Validate stock availability for all items
+    const itemsWithInsufficientStock: Array<{ name: string; quantity: number; available: number }> = [];
+
+    for (const item of pendingItems) {
+      const availableStock = item.product.fields['Current Stock Level'] ?? 0;
+      if (item.quantity > availableStock) {
+        itemsWithInsufficientStock.push({
+          name: item.product.fields.Name,
+          quantity: item.quantity,
+          available: availableStock
+        });
+      }
+    }
+
+    // If any items have insufficient stock, show error and prevent checkout
+    if (itemsWithInsufficientStock.length > 0) {
+      const errorMessages = itemsWithInsufficientStock
+        .map(item => `• ${item.name}: ${t('checkout.needsQuantity', { quantity: item.quantity, available: item.available })}`)
+        .join('\n');
+
+      toast.error(t('checkout.insufficientStockTitle'), {
+        description: t('checkout.insufficientStockDescription', { count: itemsWithInsufficientStock.length }) + '\n\n' + errorMessages,
+        duration: 6000, // Show longer for multiple items
+      });
+
+      return;
+    }
 
     const { total, missingPrices } = calculateTotals();
     const totalLabel = `€${total.toFixed(2)}`;
@@ -621,7 +704,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                         onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
-                        {state.isCheckingOut ? t('cart.processing') : t('cart.finish')}
+                        {state.isCheckingOut ? t('cart.processing') : t('cart.completeCheckout')}
                       </Button>
                     </div>
                   </div>
@@ -642,8 +725,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
         {/* Two Column Layout */}
         <div className="flex flex-row gap-6 h-[calc(100dvh-72px)] px-6 py-6">
-          {/* Left Column: Scanner */}
-          <div className="w-[45%] flex flex-col gap-4">
+          {/* Left Column: Scanner (~30% width reduction from original 45%) */}
+          <div className="w-[32%] flex flex-col gap-4">
             <ScannerFrame
               scannerId="desktop-reader"
               onScanSuccess={handleScanSuccess}
@@ -657,8 +740,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
             />
           </div>
 
-          {/* Right Column: Cart */}
-          <div className="w-[55%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
+          {/* Right Column: Cart (expanded to use more space) */}
+          <div className="w-[65%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
             <Cart
               cart={state.cart}
               total={total}
@@ -687,7 +770,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                       onClick={handleCheckoutClick}
                       disabled={pendingItems.length === 0 || state.isCheckingOut}
                     >
-                      {state.isCheckingOut ? t('cart.processing') : t('cart.finish')}
+                      {state.isCheckingOut ? t('cart.processing') : t('cart.completeCheckout')}
                     </Button>
                   </div>
                 </div>

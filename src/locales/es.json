@@ -137,10 +137,16 @@
     "totalWithCount": "Total ({{count}} artículos)",
     "nextProduct": "Siguiente Producto",
     "finish": "Finalizar",
+    "completeCheckout": "Completar Pago",
     "checkout": "Pagar",
     "checkoutComplete": "¡Pago Completado!",
     "processing": "Procesando...",
     "complete": "Completado",
+    "insufficientStock": "No se pueden agregar más. Solo hay {{available}} unidades disponibles en stock.",
+    "itemAdded": "Artículo Agregado al Carrito",
+    "itemAddedDescription": "{{name}} ha sido agregado a tu carrito",
+    "quantityUpdated": "Cantidad Actualizada",
+    "quantityUpdatedDescription": "Cantidad de {{name}} actualizada a {{quantity}}",
     "quickAdd": {
       "title": "Agregar Rápido",
       "placeholder": "Escanear o ingresar código",
@@ -156,7 +162,10 @@
     "confirmMessage": "¿Completar el pago de {{count}} artículos? Total: {{total}}",
     "confirmMessageWithMissing": "¿Completar el pago de {{count}} artículos? Subtotal con precio: {{total}}. {{missing}} artículo(s) no tienen precio y se procesarán sin totales.",
     "confirm": "Confirmar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "insufficientStockTitle": "Stock Insuficiente",
+    "insufficientStockDescription": "No se puede completar el pago. {{count}} artículo(s) exceden el stock disponible:",
+    "needsQuantity": "necesita {{quantity}}, solo {{available}} disponibles"
   },
   "dialogs": {
     "productDetail": {
