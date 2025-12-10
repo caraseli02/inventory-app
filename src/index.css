@@ -24,8 +24,67 @@ body {
   min-width: 320px;
   min-height: 100dvh;
   background: var(--color-cream);
+
+  /* Safari-specific: Use safe area insets for notch/home indicator */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
+}
+
+/* Safari-specific fixes for iOS */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent Safari from zooming on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Remove iOS input shadows and rounded corners */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="search"],
+  select,
+  textarea {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: 0;
+  }
+
+  /* Disable tap highlight on buttons and links */
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Fix button styling in Safari */
+  button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  /* Prevent text selection on UI elements (except inputs) */
+  * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+  }
+
+  input, textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+  }
+
+  /* Smooth scrolling for iOS */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
 }

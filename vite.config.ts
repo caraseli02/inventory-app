@@ -53,9 +53,10 @@ export default defineConfig({
         short_name: 'Inventory',
         description: 'Manage grocery stock and barcodes',
         theme_color: '#0f172a',
-        background_color: '#0f172a',
+        background_color: '#FAFAF9',
         display: 'standalone',
-        orientation: 'portrait',
+        display_override: ['standalone', 'fullscreen'],
+        orientation: 'any', // Changed from 'portrait' to support iPad landscape
         scope: '/',
         start_url: '/',
         icons: [
@@ -74,6 +75,12 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
+          },
+          {
+            src: 'apple-touch-icon.png',
+            sizes: '180x180',
+            type: 'image/png',
+            purpose: 'any'
           }
         ]
       },

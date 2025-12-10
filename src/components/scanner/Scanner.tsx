@@ -37,10 +37,13 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
 
         const config = {
           formatsToSupport: formatsToSupport,
-          fps: 10,
-          aspectRatio: 1.0,
+          fps: 30, // Increased from 10 to 30 for better iPad camera detection
+          qrbox: { width: 250, height: 250 }, // Define scanning box to help camera focus
+          // Removed aspectRatio constraint to allow camera native aspect ratio
         };
 
+        // Camera constraint for rear camera
+        // html5-qrcode requires exactly 1 key in the constraint object
         await scanner.start(
           { facingMode: 'environment' },
           config,
@@ -65,7 +68,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
         );
       } catch (err) {
         setError('Failed to start scanner. Please check camera permissions.');
-        console.error(err);
+        console.error('Scanner initialization failed:', err);
       }
     };
 
