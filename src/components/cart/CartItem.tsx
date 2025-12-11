@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { CartItem as CartItemType } from '../../types';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { BoxIcon, CheckCircleIcon } from '../ui/Icons';
 import { Spinner } from '../ui/spinner';
 
@@ -65,38 +66,29 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 borderColor: status === 'processing' ? 'var(--color-lavender)' : undefined,
               }}
             >
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
                 onClick={() => onUpdateQuantity(index, -1)}
-                className="w-7 h-7 flex items-center justify-center rounded-md bg-white hover:text-white transition-colors font-bold text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  '--hover-bg': 'var(--color-forest)',
-                } as React.CSSProperties}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--color-forest)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white';
-                }}
+                className="w-7 h-7 rounded-md bg-white hover:bg-[var(--color-forest)] hover:text-white hover:border-[var(--color-forest)] transition-colors font-bold text-base border-stone-300"
                 disabled={status === 'processing'}
               >
                 −
-              </button>
+              </Button>
               <span className="font-bold text-base min-w-[1.5rem] text-center">
                 {item.quantity}
               </span>
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
                 onClick={() => onUpdateQuantity(index, 1)}
-                className="w-7 h-7 flex items-center justify-center rounded-md bg-white hover:text-white transition-colors font-bold text-base disabled:opacity-50 disabled:cursor-not-allowed"
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--color-forest)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white';
-                }}
+                className="w-7 h-7 rounded-md bg-white hover:bg-[var(--color-forest)] hover:text-white hover:border-[var(--color-forest)] transition-colors font-bold text-base border-stone-300"
                 disabled={status === 'processing'}
               >
                 +
-              </button>
+              </Button>
             </div>
           </div>
         </div>

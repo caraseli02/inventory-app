@@ -105,14 +105,14 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   }, [regionId]);
 
   return (
-    <div className="w-full h-full overflow-hidden bg-black relative">
-      <div id={regionId} className="w-full h-full bg-black"></div>
+    <div className="w-full h-full overflow-hidden bg-black relative flex flex-col">
+      <div id={regionId} className="w-full flex-1 bg-black"></div>
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-red-500 p-4 text-center">
           {error}
         </div>
       )}
-      <div className="absolute bottom-4 left-0 right-0 text-center text-white text-sm pointer-events-none">
+      <div className="bg-stone-100 py-2 text-center text-stone-700 text-sm">
         Align code within frame
       </div>
     </div>

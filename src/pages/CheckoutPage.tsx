@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useReducer, type FormEvent } from 'react';
+import { useCallback, useEffect, useReducer, useRef, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
-import { QuickAddSection } from '../components/cart/QuickAddSection';
+// import { QuickAddSection } from '../components/cart/QuickAddSection';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
@@ -118,28 +118,31 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       const availableStock = action.product.fields['Current Stock Level'] ?? 0;
 
       if (existingItemIndex >= 0) {
-        const newCart = [...state.cart];
-        const item = newCart[existingItemIndex];
-        const newQuantity = item.quantity + 1;
+        const existingItem = state.cart[existingItemIndex];
+        const newQuantity = existingItem.quantity + 1;
 
         // Validate stock before allowing increase
         if (newQuantity > availableStock) {
-          item.status = 'failed';
-          item.statusMessage = action.insufficientStockMessage;
+          // Immutable update - create new item object
           return {
             ...state,
-            cart: newCart,
+            cart: state.cart.map((cartItem, i) =>
+              i === existingItemIndex
+                ? { ...cartItem, status: 'failed' as const, statusMessage: action.insufficientStockMessage }
+                : cartItem
+            ),
             checkoutComplete: false,
           };
         }
 
-        // Stock available, allow increase
-        item.quantity = newQuantity;
-        item.status = undefined;
-        item.statusMessage = undefined;
+        // Stock available, allow increase - immutable update
         return {
           ...state,
-          cart: newCart,
+          cart: state.cart.map((cartItem, i) =>
+            i === existingItemIndex
+              ? { ...cartItem, quantity: newQuantity, status: undefined, statusMessage: undefined }
+              : cartItem
+          ),
           checkoutComplete: false,
         };
       }
@@ -161,39 +164,58 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
     }
 
     case 'UPDATE_CART_ITEM_QUANTITY': {
-      const newCart = [...state.cart];
-      const item = newCart[action.index];
+      const item = state.cart[action.index];
       const newQuantity = item.quantity + action.delta;
       const availableStock = item.product.fields['Current Stock Level'] ?? 0;
 
       // If removing items (negative delta), allow it
       if (action.delta < 0) {
         if (newQuantity <= 0) {
-          newCart.splice(action.index, 1);
-        } else {
-          item.quantity = newQuantity;
-          item.status = 'idle';
-          item.statusMessage = undefined;
+          // Remove item from cart - create new array without the item
+          return {
+            ...state,
+            cart: state.cart.filter((_, i) => i !== action.index),
+          };
         }
+        // Create new item object with updated quantity (immutable update)
+        return {
+          ...state,
+          cart: state.cart.map((cartItem, i) =>
+            i === action.index
+              ? { ...cartItem, quantity: newQuantity, status: 'idle' as const, statusMessage: undefined }
+              : cartItem
+          ),
+        };
       }
       // If adding items (positive delta), check stock availability
-      else if (action.delta > 0) {
+      if (action.delta > 0) {
         if (newQuantity > availableStock) {
-          // Prevent update and show error (use provided message or fallback)
-          item.status = 'failed';
-          item.statusMessage = action.errorMessage || `Cannot add more. Only ${availableStock} unit(s) available in stock.`;
-        } else {
-          // Allow update
-          item.quantity = newQuantity;
-          item.status = 'idle';
-          item.statusMessage = undefined;
+          // Prevent update and show error (immutable update)
+          return {
+            ...state,
+            cart: state.cart.map((cartItem, i) =>
+              i === action.index
+                ? {
+                    ...cartItem,
+                    status: 'failed' as const,
+                    statusMessage: action.errorMessage || `Cannot add more. Only ${availableStock} unit(s) available in stock.`,
+                  }
+                : cartItem
+            ),
+          };
         }
+        // Allow update (immutable update)
+        return {
+          ...state,
+          cart: state.cart.map((cartItem, i) =>
+            i === action.index
+              ? { ...cartItem, quantity: newQuantity, status: 'idle' as const, statusMessage: undefined }
+              : cartItem
+          ),
+        };
       }
 
-      return {
-        ...state,
-        cart: newCart,
-      };
+      return state;
     }
 
     case 'SET_CART':
@@ -333,6 +355,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   const { data: product, isLoading, error } = useProductLookup(state.scannedCode);
   const isPendingLookup = isLoading || state.lookupRequested;
 
+  // Track which barcode we've already processed to prevent double-adds from StrictMode
+  const processedBarcodeRef = useRef<string | null>(null);
+
   // Sound effect helper
   const playSound = useCallback((type: 'success' | 'error') => {
     // Placeholder for sound logic. In a real PWA we'd use Audio()
@@ -343,6 +368,11 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
   useEffect(() => {
     if (!state.scannedCode) return;
+
+    // Prevent double-processing from React StrictMode or re-renders
+    if (processedBarcodeRef.current === state.scannedCode) {
+      return;
+    }
 
     // Product found successfully
     if (product) {
@@ -367,6 +397,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
         dispatch({ type: 'LOOKUP_SUCCESS' });
         return;
       }
+
+      // Mark this barcode as processed BEFORE dispatching to prevent re-entry
+      processedBarcodeRef.current = state.scannedCode;
 
       dispatch({
         type: 'ADD_TO_CART',
@@ -395,11 +428,14 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       if (state.barcodeSource === 'scanner') {
         dispatch({ type: 'SET_CART_EXPANDED', expanded: false });
       }
+      // Clear the ref after LOOKUP_SUCCESS clears scannedCode, so we can re-scan same barcode
+      processedBarcodeRef.current = null;
       return;
     }
 
     // Product not found (null returned, no error)
     if (!isLoading && !product && !error) {
+      processedBarcodeRef.current = state.scannedCode; // Mark as processed even for errors
       playSound('error');
       logger.warn('Product not found in checkout', {
         barcode: state.scannedCode,
@@ -435,7 +471,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource, state.cart, t]);
+  // Note: state.cart is intentionally NOT in deps - cart updates should not re-trigger this effect
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource, t]);
 
   /**
    * Handles successful barcode scan by initiating product lookup
@@ -730,26 +768,26 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 customFooter={
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
                     {/* Quick Add Section */}
-                    <QuickAddSection
+                    {/* <QuickAddSection
                       onAddItem={(code) => handleScanSuccess(code, 'quick-add')}
                       isPending={isPendingLookup}
-                    />
+                    /> */}
 
                     {/* Total */}
-                    <div className="flex items-center justify-between pb-2">
+                    {/* <div className="flex items-center justify-between pb-2">
                       <span className="text-lg font-semibold text-gray-700">{t('cart.total')}</span>
                       <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
-                    </div>
+                    </div> */}
 
                     {/* Action Buttons */}
                     <div className="space-y-3">
-                      <Button
+                      {/* <Button
                         variant="outline"
                         className="w-full h-10 text-base font-medium border-2 hover:bg-gray-50"
                         onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: false })}
                       >
                         {t('cart.nextProduct')}
-                      </Button>
+                      </Button> */}
 
                       <Button
                         className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
