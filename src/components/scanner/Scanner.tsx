@@ -48,18 +48,27 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
           { facingMode: 'environment' },
           config,
           (decodedText) => {
+            // Validate barcode length - standard barcodes are 8, 12, or 13 digits
+            // UPC-E: 8 digits, UPC-A: 12 digits, EAN-13: 13 digits, EAN-8: 8 digits
+            const cleanCode = decodedText.trim();
+            const validLengths = [8, 12, 13];
+            if (!validLengths.includes(cleanCode.length)) {
+              console.warn(`Ignored partial/invalid barcode: ${cleanCode} (length: ${cleanCode.length})`);
+              return; // Ignore partial or invalid barcodes
+            }
+
             // Prevent duplicate scans within 2 seconds
             const now = Date.now();
             if (
               lastScanRef.current &&
-              lastScanRef.current.code === decodedText &&
+              lastScanRef.current.code === cleanCode &&
               now - lastScanRef.current.timestamp < 2000
             ) {
               return; // Ignore duplicate scan
             }
 
-            lastScanRef.current = { code: decodedText, timestamp: now };
-            onScanSuccessRef.current(decodedText);
+            lastScanRef.current = { code: cleanCode, timestamp: now };
+            onScanSuccessRef.current(cleanCode);
           },
           () => {
             // parse error, ignore specific errors like "no QR code found" to avoid log spam

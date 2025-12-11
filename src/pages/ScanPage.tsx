@@ -5,6 +5,7 @@ import { useProductLookup } from '../hooks/useProductLookup';
 import { useToast } from '../hooks/useToast';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
+import ProductSkeleton from '../components/product/ProductSkeleton';
 import { PageHeader } from '../components/ui/PageHeader';
 import {
   ShoppingCartIcon,
@@ -59,8 +60,10 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
 
   const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (manualCode.trim().length > 3) {
-      handleScanSuccess(manualCode.trim());
+    const code = manualCode.trim();
+    // Allow manual codes of 4+ chars (custom codes) or standard barcode lengths (8, 12, 13)
+    if (code.length >= 4) {
+      handleScanSuccess(code);
     }
   };
 
@@ -91,15 +94,6 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
               <div className="relative bg-black rounded-lg overflow-hidden">
                 <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
               </div>
-
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
-                  <p className="text-stone-900 text-sm font-medium">{t('scanner.searching')}</p>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Manual Entry */}
@@ -141,7 +135,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
             </div>
           ) : (
             /* Content - Full screen without border/shadow */
-            <div className="h-full overflow-y-auto">
+            <div className="h-full overflow-y-auto p-4">
+              {isLoading && scannedCode && <ProductSkeleton />}
               {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
               {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
             </div>
@@ -171,15 +166,6 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                 <div className="relative bg-black rounded-lg overflow-hidden">
                   <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
                 </div>
-
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin h-10 w-10 border-4 border-stone-200 border-t-stone-700 rounded-full" />
-                    <p className="text-stone-900 text-sm font-medium">{t('scanner.searching')}</p>
-                  </div>
-                </div>
-              )}
               </div>
 
               {/* Manual Entry */}
@@ -212,7 +198,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
               </div>
             ) : (
               /* Content - Full height without footer */
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto p-4">
+                {isLoading && scannedCode && <ProductSkeleton />}
                 {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
                 {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
               </div>
