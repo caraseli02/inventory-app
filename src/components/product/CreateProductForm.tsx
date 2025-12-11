@@ -1,4 +1,4 @@
-import { useState, useEffect, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useEffect, useRef, useId, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createProduct, addStockMovement } from '../../lib/api';
 import { suggestProductDetails } from '../../lib/ai';
@@ -11,6 +11,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
+import { Skeleton } from '../ui/skeleton';
 
 interface CreateProductFormProps {
   barcode: string;
@@ -21,6 +22,8 @@ interface CreateProductFormProps {
 const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  const formId = useId();
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     category: 'General',
@@ -29,6 +32,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
     initialStock: '1',
     imageUrl: '',
   });
+  const [nameError, setNameError] = useState(false);
 
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -117,41 +121,90 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Prevent double submission
+    if (mutation.isPending) return;
+
+    // Manual validation since we use formNoValidate to avoid browser focus errors
+    const nameValue = formData.name.trim();
+    if (!nameValue) {
+      setNameError(true);
+      // Focus the name input and show toast
+      nameInputRef.current?.focus();
+      toast.error(t('toast.validationError'), {
+        description: t('product.nameRequired'),
+      });
+      return;
+    }
+    setNameError(false);
+
     mutation.mutate(formData);
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
     <Card className="w-full max-w-lg mx-auto animate-in slide-in-from-bottom-5 duration-300 shadow-lg border-2 border-stone-200 relative">
-      {/* Loading Overlay */}
+      {/* Loading Overlay - Skeleton with progress indicator */}
       {mutation.isPending && (
-        <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin"></div>
-            <p className="text-stone-900 font-semibold text-lg">{t('product.createAndStock')}...</p>
+        <div className="absolute inset-0 bg-white/98 backdrop-blur-sm z-50 flex flex-col rounded-xl overflow-hidden pointer-events-auto">
+          {/* Progress bar at top */}
+          <div className="h-1 bg-stone-200 w-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-stone-500 to-stone-700 animate-[progress_1.5s_ease-in-out_infinite]" style={{ width: '40%' }} />
+          </div>
+
+          {/* Skeleton content */}
+          <div className="flex-1 p-6 space-y-6">
+            {/* Header skeleton */}
+            <div className="flex items-center justify-between pb-4 border-b border-stone-200">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
+
+            {/* Image skeleton */}
+            <div className="flex justify-center">
+              <Skeleton className="w-32 h-32 rounded-2xl" />
+            </div>
+
+            {/* Form fields skeleton */}
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-10 rounded-md" />
+                <Skeleton className="h-10 rounded-md" />
+              </div>
+            </div>
+
+            {/* Status message */}
+            <div className="flex flex-col items-center gap-3 pt-4">
+              <div className="w-10 h-10 border-4 border-stone-200 border-t-stone-700 rounded-full animate-spin" />
+              <p className="text-stone-700 font-semibold text-base">{t('product.createAndStock')}...</p>
+              <p className="text-stone-500 text-sm">{t('product.pleaseWait')}</p>
+            </div>
           </div>
         </div>
       )}
 
-      <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold text-stone-900">
-            {t('product.createProduct')}
-          </CardTitle>
-          {aiLoading && (
-            <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-2 border-amber-200 shadow-sm">
-              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-2"></span>
-              {t('product.searching')}
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
+      <CardHeader className={`bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 ${mutation.isPending ? 'invisible' : ''}`}>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-2xl font-bold text-stone-900">
+              {t('product.createProduct')}
+            </CardTitle>
+            {aiLoading && (
+              <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-2 border-amber-200 shadow-sm">
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-2"></span>
+                {t('product.searching')}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
 
-      <CardContent className="px-6 py-6 max-h-[calc(100dvh-280px)] md:max-h-none overflow-y-auto">
-        <form onSubmit={handleSubmit} className="space-y-6" id="create-product-form">
+        <CardContent className={`px-6 py-6 max-h-[calc(100dvh-280px)] md:max-h-none overflow-y-auto ${mutation.isPending ? 'invisible' : ''}`}>
+          <form onSubmit={handleSubmit} className="space-y-6" id={formId}>
           {formData.imageUrl && (
             <div className="flex flex-col items-center gap-2 pb-4 border-b border-stone-200">
               <div className="w-40 h-40 rounded-2xl overflow-hidden border-2 border-stone-300 bg-gradient-to-br from-stone-50 to-stone-100 relative shadow-md">
@@ -185,19 +238,31 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
             </div>
 
             <div>
-              <Label htmlFor="name" className="text-stone-700 font-semibold text-sm">
+              <Label htmlFor="name" className={`text-stone-700 font-semibold text-sm ${nameError ? 'text-red-600' : ''}`}>
                 {t('product.name')} <span className="text-red-500">*</span>
               </Label>
               <Input
+                ref={nameInputRef}
                 id="name"
                 type="text"
                 name="name"
                 required
                 value={formData.name}
-                onChange={handleChange}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData(prev => ({ ...prev, name: value }));
+                  if (nameError && value.trim()) {
+                    setNameError(false);
+                  }
+                }}
                 placeholder={t('product.namePlaceholder')}
-                className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                className={`mt-2 border-2 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)] ${
+                  nameError ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500' : 'border-stone-300'
+                }`}
               />
+              {nameError && (
+                <p className="mt-1 text-sm text-red-600">{t('product.nameRequired')}</p>
+              )}
             </div>
           </div>
 
@@ -281,30 +346,27 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
             <span>{mutation.error.message || t('errors.productCreationFailed')}</span>
           </div>
         )}
-      </CardContent>
+        </CardContent>
 
-      <CardFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-6 border-t-2 border-stone-200 flex gap-3 fixed md:static bottom-0 w-full">
-        <Button
-          type="button"
-          onClick={onCancel}
-          variant="outline"
-          className="flex-1 border-2 border-stone-300 hover:bg-stone-100 font-semibold h-12"
-        >
-          {t('product.cancel')}
-        </Button>
-        <Button
-          type="submit"
-          form="create-product-form"
-          disabled={mutation.isPending}
-          className="flex-1 font-bold bg-gradient-to-br from-stone-900 to-stone-800 hover:opacity-90 text-white h-12 shadow-md"
-        >
-          {mutation.isPending ? (
-            <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-          ) : (
-            t('product.createAndStock')
-          )}
-        </Button>
-      </CardFooter>
+        <CardFooter className={`bg-gradient-to-br from-stone-50 to-stone-100/50 p-6 border-t-2 border-stone-200 flex gap-3 fixed md:static bottom-0 w-full ${mutation.isPending ? 'invisible' : ''}`}>
+          <Button
+            type="button"
+            onClick={onCancel}
+            variant="outline"
+            className="flex-1 border-2 border-stone-300 hover:bg-stone-100 font-semibold h-12"
+          >
+            {t('product.cancel')}
+          </Button>
+          <Button
+            type="submit"
+            form={formId}
+            formNoValidate
+            disabled={mutation.isPending}
+            className="flex-1 font-bold bg-gradient-to-br from-stone-900 to-stone-800 hover:opacity-90 text-white h-12 shadow-md disabled:opacity-50"
+          >
+            {t('product.createAndStock')}
+          </Button>
+        </CardFooter>
     </Card>
   );
 };
