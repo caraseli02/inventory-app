@@ -121,12 +121,26 @@ The EditProductDialog supports two methods for adding product images:
 **Camera Capture Flow**:
 - Camera photos are captured as base64 data URLs
 - Airtable requires actual URLs (can't accept data URLs)
-- Photos are automatically uploaded to imgbb.com
-- The returned URL is saved to Airtable
+- Photos are uploaded to storage and URL is saved to Airtable
 
-**Required Environment Variable**:
+**Image Storage (Vercel Blob + imgbb fallback)**:
+```
+Production (Vercel):
+  └── Uses Vercel Blob storage via /api/upload serverless function
+  └── Add BLOB_READ_WRITE_TOKEN in Vercel dashboard
+
+Development (Local):
+  └── Falls back to imgbb.com (free image hosting)
+  └── Add VITE_IMGBB_API_KEY to .env
+```
+
+**Environment Variables**:
 ```bash
+# Development: imgbb fallback
 VITE_IMGBB_API_KEY=your_api_key_here  # Get free key at https://api.imgbb.com/
+
+# Production: Vercel Blob (set in Vercel dashboard)
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
 ```
 
 **Barcode Scanner in Edit Dialog**:
