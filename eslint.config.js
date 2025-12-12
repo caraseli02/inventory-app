@@ -1,23 +1,28 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
+import prettier from 'eslint-config-prettier'
+import vue from 'eslint-plugin-vue'
 import tseslint from 'typescript-eslint'
-import { defineConfig, globalIgnores } from 'eslint/config'
 
-export default defineConfig([
-  globalIgnores(['dist']),
+export default tseslint.config(
   {
-    files: ['**/*.{ts,tsx}'],
+    ignores: ['.nuxt/**/*', 'dist/**/*'],
+  },
+  {
+    files: ['**/*.{js,jsx,ts,tsx,vue}'],
     extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
+      ...vue.configs['flat/essential'],
+      ...tseslint.configs.recommended,
+      prettier,
     ],
     languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: ['.vue'],
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
     },
-  },
-])
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  }
+)
