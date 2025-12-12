@@ -264,7 +264,9 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                             )}
                           </td>
                           <td className="px-3 py-2 text-right">
-                            {product.Price !== undefined ? `€${product.Price.toFixed(2)}` : '-'}
+                            {(product.price70 ?? product.Price) !== undefined
+                              ? `€${(product.price70 ?? product.Price)!.toFixed(2)}`
+                              : '-'}
                           </td>
                           <td className="px-3 py-2 text-right">
                             {product.currentStock ?? '-'}

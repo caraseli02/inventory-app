@@ -187,11 +187,12 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         }
 
         // Create new product (only include fields that exist in Airtable)
+        // Use 70% markup price as the main price (most common use case)
         await createProduct({
           Name: imported.Name,
           Barcode: imported.Barcode,
           Category: imported.Category,
-          Price: imported.Price ?? imported.price70, // Use 70% markup as default if no base price
+          Price: imported.price70 ?? imported.Price, // Prefer 70% markup, fallback to base price
           'Expiry Date': imported.expiryDate,
         });
 
