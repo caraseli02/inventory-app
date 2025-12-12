@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, Upload } from 'lucide-react';
+import { RefreshCw, Upload, Package } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
 import { Spinner } from '../components/ui/spinner';
@@ -19,6 +19,7 @@ import type { ImportedProduct } from '../lib/xlsx';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../hooks/useToast';
 import type { Product } from '../types';
+import { logger } from '../lib/logger';
 
 interface InventoryListPageProps {
   onBack: () => void;
@@ -134,6 +135,18 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         3000
       );
     } catch (err) {
+      // Log error with full context
+      logger.error('Stock adjustment failed', {
+        productId,
+        productName: product.fields.Name,
+        quantity,
+        type,
+        currentStock,
+        errorMessage: err instanceof Error ? err.message : String(err),
+        errorStack: err instanceof Error ? err.stack : undefined,
+        timestamp: new Date().toISOString(),
+      });
+
       // Rollback on error
       if (previousData) {
         queryClient.setQueryData(['products', 'all'], previousData);
@@ -174,6 +187,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     let successCount = 0;
     let skipCount = 0;
     let errorCount = 0;
+    const failedProducts: Array<{ name: string; error: string }> = [];
 
     for (const imported of importedProducts) {
       try {
@@ -207,7 +221,20 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
         successCount++;
       } catch (err) {
-        console.error(`Failed to import ${imported.Name}:`, err);
+        // Log error with proper context
+        logger.error('Product import failed', {
+          productName: imported.Name,
+          barcode: imported.Barcode,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorStack: err instanceof Error ? err.stack : undefined,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Track failed products for user notification
+        failedProducts.push({
+          name: imported.Name,
+          error: err instanceof Error ? err.message : t('errors.unknownError'),
+        });
         errorCount++;
       }
     }
@@ -215,13 +242,22 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     // Refresh the product list
     await refetch();
 
-    // Show result toast
+    // Show result toast with detailed error information
     if (successCount > 0) {
+      let message = t('import.successMessage', { count: successCount, skipped: skipCount, errors: errorCount });
+
+      // Append failed products details if any
+      if (failedProducts.length > 0) {
+        const failedList = failedProducts.slice(0, 3).map(f => `• ${f.name}: ${f.error}`).join('\n');
+        const remaining = failedProducts.length > 3 ? `\n... and ${failedProducts.length - 3} more` : '';
+        message += `\n\n${t('import.failedProducts', 'Failed products')}:\n${failedList}${remaining}`;
+      }
+
       showToast(
-        'success',
+        errorCount > 0 ? 'warning' : 'success',
         t('import.success'),
-        t('import.successMessage', { count: successCount, skipped: skipCount, errors: errorCount }),
-        5000
+        message,
+        8000
       );
     } else if (skipCount > 0) {
       showToast(
@@ -231,11 +267,20 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         5000
       );
     } else {
+      let message = t('import.failedMessage', { count: errorCount });
+
+      // Show failed products details
+      if (failedProducts.length > 0) {
+        const failedList = failedProducts.slice(0, 3).map(f => `• ${f.name}: ${f.error}`).join('\n');
+        const remaining = failedProducts.length > 3 ? `\n... and ${failedProducts.length - 3} more` : '';
+        message += `\n\n${failedList}${remaining}`;
+      }
+
       showToast(
         'error',
         t('import.failed'),
-        t('import.failedMessage', { count: errorCount }),
-        5000
+        message,
+        8000
       );
     }
   }, [refetch, showToast, t]);
@@ -323,7 +368,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                   ))
                 ) : (
                   <div className="bg-white rounded-2xl border-2 border-stone-200 p-12 text-center">
-                    <div className="text-6xl mb-4">📦</div>
+                    <Package className="h-24 w-24 text-stone-300 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-stone-900 mb-2">
                       {t('inventory.noProducts')}
                     </h3>

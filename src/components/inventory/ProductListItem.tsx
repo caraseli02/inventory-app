@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Minus, AlertTriangle, Edit2, Trash2, Package } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -29,6 +29,7 @@ const ProductListItemComponent = ({
   const minStock = product.fields['Min Stock Level'] ?? 0;
   const isLowStock = currentStock < minStock && minStock > 0;
   const imageUrl = product.fields.Image?.[0]?.url;
+  const displayPrice = getProductDisplayPrice(product.fields);
 
   return (
     <Card
@@ -45,7 +46,7 @@ const ProductListItemComponent = ({
           />
         ) : (
           <div className="h-20 w-20 rounded-lg bg-stone-100 flex items-center justify-center border border-stone-200">
-            <span className="text-2xl text-stone-400">📦</span>
+            <Package className="h-10 w-10 text-stone-400" />
           </div>
         )}
 
@@ -66,30 +67,27 @@ const ProductListItemComponent = ({
               variant="secondary"
               className="bg-stone-100 border-stone-200 text-xs mb-2"
             >
-              {t(`categories.${product.fields.Category}`)}
+              {t(`categories.${product.fields.Category}`, product.fields.Category)}
             </Badge>
           )}
 
           {/* Stock and Price */}
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-stone-600">{t('product.stock')}</span>
+              <span className="text-sm text-stone-600">{t('product.stock')}:</span>
               <span
-                className={`font-bold ${
+                className={`text-2xl font-bold ${
                   isLowStock ? 'text-[var(--color-terracotta)]' : 'text-stone-900'
                 }`}
               >
                 {currentStock}
               </span>
             </div>
-            {(() => {
-              const displayPrice = getProductDisplayPrice(product.fields);
-              return displayPrice != null ? (
-                <span className="text-lg font-bold text-stone-900">
-                  €{displayPrice.toFixed(2)}
-                </span>
-              ) : null;
-            })()}
+            {displayPrice != null && (
+              <span className="text-lg font-bold text-stone-900">
+                €{displayPrice.toFixed(2)}
+              </span>
+            )}
           </div>
 
           {/* Quick Adjust Buttons */}
@@ -101,7 +99,7 @@ const ProductListItemComponent = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 flex-1 border-2 border-stone-300"
+                className="min-h-11 flex-1 border-2 border-stone-300"
                 onClick={() => onQuickAdjust(product.id, -1)}
                 disabled={isLoading || currentStock === 0}
               >
@@ -117,7 +115,7 @@ const ProductListItemComponent = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 flex-1 border-2 border-stone-300"
+                className="min-h-11 flex-1 border-2 border-stone-300"
                 onClick={() => onQuickAdjust(product.id, 1)}
                 disabled={isLoading}
               >
@@ -143,7 +141,7 @@ const ProductListItemComponent = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 flex-1 border-2 border-stone-300 hover:bg-stone-100"
+                  className="min-h-11 flex-1 border-2 border-stone-300 hover:bg-stone-100"
                   onClick={() => onEdit(product)}
                 >
                   <Edit2 className="h-3.5 w-3.5 mr-1.5" />
@@ -154,7 +152,7 @@ const ProductListItemComponent = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 flex-1 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
+                  className="min-h-11 flex-1 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
                   onClick={() => onDelete(product)}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
