@@ -244,7 +244,10 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
           ) : (
             <>
               <Button
-                onClick={handleRetake}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRetake();
+                }}
                 variant="outline"
                 className="flex-1 h-12 border-2 border-stone-400 text-white font-semibold hover:bg-stone-700 hover:text-white"
               >
@@ -252,7 +255,10 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
                 {t('camera.retake')}
               </Button>
               <Button
-                onClick={handleConfirm}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleConfirm();
+                }}
                 className="flex-1 h-12 bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] text-white font-semibold"
               >
                 <Check className="w-5 h-5 mr-2" />

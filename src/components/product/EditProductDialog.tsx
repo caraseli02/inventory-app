@@ -378,25 +378,24 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
             </Button>
           </DialogFooter>
         </div>
+
+        {/* Nested dialogs - must be inside DialogContent to prevent click-outside issues */}
+        <BarcodeScannerDialog
+          open={scannerOpen}
+          onOpenChange={setScannerOpen}
+          onScanSuccess={(barcode) => {
+            setFormData({ ...formData, barcode });
+          }}
+        />
+
+        <CameraCaptureDialog
+          open={cameraOpen}
+          onOpenChange={setCameraOpen}
+          onCapture={(imageDataUrl) => {
+            setFormData({ ...formData, imageUrl: imageDataUrl });
+          }}
+        />
       </DialogContent>
-
-      {/* Barcode Scanner Dialog */}
-      <BarcodeScannerDialog
-        open={scannerOpen}
-        onOpenChange={setScannerOpen}
-        onScanSuccess={(barcode) => {
-          setFormData({ ...formData, barcode });
-        }}
-      />
-
-      {/* Camera Capture Dialog */}
-      <CameraCaptureDialog
-        open={cameraOpen}
-        onOpenChange={setCameraOpen}
-        onCapture={(imageDataUrl) => {
-          setFormData({ ...formData, imageUrl: imageDataUrl });
-        }}
-      />
     </Dialog>
   );
 };
