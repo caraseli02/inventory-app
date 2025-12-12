@@ -174,25 +174,21 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none bg-black flex flex-col overflow-hidden"
-        style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <DialogHeader className="px-4 py-3 border-b border-stone-700 flex-row items-center justify-between bg-stone-900 shrink-0">
-          <DialogTitle className="text-lg font-semibold text-white">{t('scanner.title')}</DialogTitle>
+      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+        <DialogHeader className="px-4 py-3 border-b border-stone-200 flex-row items-center justify-between">
+          <DialogTitle className="text-lg font-semibold">{t('scanner.title')}</DialogTitle>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onOpenChange(false)}
-            className="h-8 w-8 text-white hover:bg-stone-700"
+            className="h-8 w-8"
           >
             <X className="h-4 w-4" />
           </Button>
         </DialogHeader>
 
-        <div className="relative bg-black flex-1 min-h-0 flex items-center justify-center overflow-hidden">
-          <div id={regionId} className="w-full h-full" style={{ maxHeight: 'calc(100dvh - 120px)' }} />
+        <div className="relative bg-black aspect-square">
+          <div id={regionId} className="w-full h-full" />
 
           {isInitializing && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/80">
@@ -220,7 +216,7 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
           )}
         </div>
 
-        <div className="px-4 py-4 bg-stone-900 border-t border-stone-700 text-center text-sm text-stone-300 shrink-0">
+        <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-600">
           {t('scanner.emptyState')}
         </div>
       </DialogContent>
