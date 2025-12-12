@@ -7,6 +7,7 @@ Central index for the Grocery Inventory App documentation. Start here to find au
 - [Launch Checklist](../LAUNCH_CHECKLIST.md) — **ship to production this week** (step-by-step guide).
 - [Lean MVP Scope](specs/mvp_scope_lean.md) — **ACTIVE** - what ships this week.
 - [Environment Configuration](../.env.example) — required variables and safety reminders.
+- [React → Nuxt Migration Notes](migration/react-to-nuxt.md) — contributor changelog for the framework transition.
 
 ## Documentation Index
 | Document | Purpose | Status | Owner | Last Reviewed | Authority |

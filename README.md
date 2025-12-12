@@ -25,14 +25,15 @@ cp .env.example .env
 # Edit .env and add your Airtable credentials
 ```
 
-**3. Run locally:**
+**3. Run locally (Nuxt):**
 ```bash
-pnpm dev
+pnpm nuxi dev
 ```
 
-**4. Deploy to production:**
+**4. Deploy to production (Nuxt + Vercel):**
 ```bash
-pnpm build                    # Test build
+pnpm nuxi build               # Generate production build
+pnpm nuxi preview             # Smoke-test the build locally (optional)
 vercel                        # Deploy (see LAUNCH_CHECKLIST.md)
 ```
 
@@ -53,11 +54,11 @@ Required for both local and production:
 
 ## Tech Stack
 
-- React 19 + TypeScript + Vite
+- Nuxt 3 (Vue 3) + TypeScript + Vite
 - TailwindCSS v4
 - Airtable (backend)
 - html5-qrcode (scanner)
-- React Query (data)
+- Vue Query (TanStack Query for Vue)
 - PWA ready
 
 ## Documentation
