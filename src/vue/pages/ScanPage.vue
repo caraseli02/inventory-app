@@ -1,0 +1,124 @@
+<template>
+  <div class="min-h-screen bg-gradient-to-br from-stone-100 to-stone-200 p-4 lg:p-8">
+    <PageHeader :title="headerTitle" :description="t('scanner.helper')" @back="emit('back')" />
+    <div class="grid gap-6 lg:grid-cols-2">
+      <CardPanel :title="t('scanner.title')" :description="t('scanner.subtitle')" aria-label="scanner">
+        <div class="space-y-4">
+          <ScannerFrame scanner-id="vue-scan" @scan="handleScan" />
+          <form class="flex gap-2" @submit.prevent="handleManualSubmit">
+            <BaseInput v-model="manualCode" :placeholder="t('scanner.manualEntry')" class="flex-1" />
+            <BaseButton type="submit" :disabled="manualCode.trim().length < 3">{{ t('scanner.addButton') }}</BaseButton>
+          </form>
+        </div>
+      </CardPanel>
+
+      <CardPanel
+        :title="panelTitle"
+        :description="panelSubtitle"
+        aria-label="scan results"
+      >
+        <SkeletonBlock v-if="productQuery.isFetching.value" height="lg" />
+        <ProductSummary
+          v-else-if="productQuery.data.value && scannedCode"
+          :product="productQuery.data.value"
+          @reset="resetScan"
+        />
+        <ProductCreatePanel
+          v-else-if="scannedCode"
+          :barcode="scannedCode"
+          @created="resetScan"
+          @cancel="resetScan"
+        />
+        <EmptyState
+          v-else
+          :title="t('scanner.emptyState')"
+          :description="t('scanner.startHint')"
+        />
+      </CardPanel>
+    </div>
+    <ToastHost />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useQuery } from '@tanstack/vue-query';
+import { getProductByBarcode } from '@/lib/api';
+import PageHeader from '../components/ui/PageHeader.vue';
+import CardPanel from '../components/ui/CardPanel.vue';
+import BaseButton from '../components/ui/BaseButton.vue';
+import BaseInput from '../components/ui/BaseInput.vue';
+import ProductSummary from '../components/product/ProductSummary.vue';
+import ProductCreatePanel from '../components/product/ProductCreatePanel.vue';
+import EmptyState from '../components/ui/EmptyState.vue';
+import SkeletonBlock from '../components/ui/SkeletonBlock.vue';
+import ScannerFrame from '../components/scanner/ScannerFrame.vue';
+import ToastHost from '../components/ui/ToastHost.vue';
+import { useToast } from '../composables/useToast';
+
+const emit = defineEmits<{ (e: 'back'): void }>();
+
+const { t } = useI18n();
+const { showToast } = useToast();
+const scannedCode = ref<string | null>(null);
+const manualCode = ref('');
+
+const productQuery = useQuery({
+  queryKey: computed(() => ['vue', 'scan', scannedCode.value]),
+  queryFn: () => getProductByBarcode(scannedCode.value || ''),
+  enabled: computed(() => Boolean(scannedCode.value)),
+  retry: 0,
+});
+
+const headerTitle = computed(() =>
+  scannedCode.value
+    ? productQuery.data.value
+      ? t('product.manageStock')
+      : t('product.newProduct')
+    : t('scanner.title')
+);
+
+const panelTitle = computed(() =>
+  productQuery.data.value
+    ? productQuery.data.value.fields.Name
+    : scannedCode.value
+      ? t('product.newProduct')
+      : t('scanner.awaitingScan')
+);
+
+const panelSubtitle = computed(() => {
+  if (productQuery.isFetching.value) return t('loading.scanner');
+  if (productQuery.error.value) return t('toast.lookupFailed');
+  if (productQuery.data.value) return t('product.manageStock');
+  if (scannedCode.value) return t('product.createFromScan');
+  return t('scanner.startHint');
+});
+
+watch(
+  () => productQuery.error.value,
+  (err) => {
+    if (err && scannedCode.value) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast('error', t('toast.lookupFailed'), message);
+    }
+  }
+);
+
+const handleScan = (code: string) => {
+  scannedCode.value = code;
+  manualCode.value = code;
+  if (navigator.vibrate) navigator.vibrate(160);
+};
+
+const handleManualSubmit = () => {
+  if (manualCode.value.trim().length >= 3) {
+    handleScan(manualCode.value.trim());
+  }
+};
+
+const resetScan = () => {
+  scannedCode.value = null;
+  manualCode.value = '';
+};
+</script>
