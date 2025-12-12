@@ -411,8 +411,8 @@ export const useStockMutation = (product: Product) => {
 Before deploying to production, verify:
 
 ### Environment Variables
-- [ ] `VITE_AIRTABLE_API_KEY` is set in hosting platform
-- [ ] `VITE_AIRTABLE_BASE_ID` is set in hosting platform
+- [ ] `NUXT_PUBLIC_AIRTABLE_API_KEY` is set in hosting platform
+- [ ] `NUXT_PUBLIC_AIRTABLE_BASE_ID` is set in hosting platform
 
 ### CSP Headers (vercel.json)
 - [ ] `connect-src` includes `https://api.airtable.com`

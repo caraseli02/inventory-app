@@ -17,8 +17,8 @@ Complete guide for deploying the Grocery Inventory App to production.
 Set these in your hosting platform (Vercel, Netlify, etc.):
 
 ```bash
-VITE_AIRTABLE_API_KEY=your_personal_access_token_here
-VITE_AIRTABLE_BASE_ID=appXXXXXXXXXXXXXX
+NUXT_PUBLIC_AIRTABLE_API_KEY=your_personal_access_token_here
+NUXT_PUBLIC_AIRTABLE_BASE_ID=appXXXXXXXXXXXXXX
 ```
 
 ### Getting Your Airtable Credentials
@@ -60,8 +60,8 @@ VITE_AIRTABLE_BASE_ID=appXXXXXXXXXXXXXX
 
 4. **Add Environment Variables:**
    - Go to Project Settings → Environment Variables
-   - Add `VITE_AIRTABLE_API_KEY`
-   - Add `VITE_AIRTABLE_BASE_ID`
+   - Add `NUXT_PUBLIC_AIRTABLE_API_KEY`
+   - Add `NUXT_PUBLIC_AIRTABLE_BASE_ID`
    - Scope: Production, Preview, Development
 
 5. **Deploy:**

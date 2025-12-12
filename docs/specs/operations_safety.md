@@ -73,7 +73,7 @@ Document operational safeguards to prevent accidental data exposure, clarify sec
 - Provide example `.env.example` with placeholders and no secrets.
 
 ## Deployment Checklist
-- Verify `.env` exists locally and in hosting secrets with `VITE_AIRTABLE_API_KEY`, `VITE_AIRTABLE_BASE_ID`, and proxy URL/token values populated.
+- Verify `.env` exists locally and in hosting secrets with `NUXT_PUBLIC_AIRTABLE_API_KEY`, `NUXT_PUBLIC_AIRTABLE_BASE_ID`, and proxy URL/token values populated.
 - Confirm Airtable base tables and field names match `src/lib/api.ts` expectations or updated backend proxy contract.
 - Ensure the backend proxy enforces authentication (shared secret token or per-user auth) and rate limiting before enabling client writes.
 - Run `pnpm lint`, `pnpm test` (once added), and `pnpm build` in CI; block release on failures.

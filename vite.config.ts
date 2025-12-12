@@ -7,6 +7,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  envPrefix: ['NUXT_PUBLIC_', 'NUXT_'],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

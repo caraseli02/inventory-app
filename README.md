@@ -39,8 +39,8 @@ vercel                        # Deploy (see LAUNCH_CHECKLIST.md)
 ## Environment Variables
 
 Required for both local and production:
-- `VITE_AIRTABLE_API_KEY` - Your Airtable personal access token
-- `VITE_AIRTABLE_BASE_ID` - Your Airtable base ID
+- `NUXT_PUBLIC_AIRTABLE_API_KEY` - Your Airtable personal access token
+- `NUXT_PUBLIC_AIRTABLE_BASE_ID` - Your Airtable base ID
 
 **Never commit `.env` files.** They're gitignored by default.
 

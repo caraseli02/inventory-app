@@ -1633,7 +1633,7 @@ Your inventory app is **architecturally excellent** but has **critical gaps** be
 **Current State**:
 ```typescript
 // lib/airtable.ts - EXPOSED IN BUNDLE
-const apiKey = import.meta.env.VITE_AIRTABLE_API_KEY; // ❌ Visible to all users
+const apiKey = import.meta.env.NUXT_PUBLIC_AIRTABLE_API_KEY; // ❌ Visible to all users
 ```
 
 **Production Standard**:

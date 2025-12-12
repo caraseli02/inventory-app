@@ -115,8 +115,8 @@ export default function ScanPage() {
 ```ts
 import Airtable from "airtable";
 
-const base = new Airtable({ apiKey: import.meta.env.VITE_AIRTABLE_KEY })
-  .base(import.meta.env.VITE_AIRTABLE_BASE);
+const base = new Airtable({ apiKey: import.meta.env.NUXT_PUBLIC_AIRTABLE_KEY })
+  .base(import.meta.env.NUXT_PUBLIC_AIRTABLE_BASE);
 
 export default base;
 ```

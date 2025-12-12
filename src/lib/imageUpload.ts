@@ -9,7 +9,7 @@
 
 import { logger } from './logger';
 
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
+const IMGBB_API_KEY = import.meta.env.NUXT_PUBLIC_IMGBB_API_KEY;
 
 /**
  * Check if a string is a base64 data URL
@@ -50,7 +50,7 @@ async function uploadToVercelBlob(imageDataUrl: string): Promise<string> {
 async function uploadToImgbb(imageDataUrl: string): Promise<string> {
   if (!IMGBB_API_KEY) {
     throw new Error(
-      'Image upload not configured. In development, add VITE_IMGBB_API_KEY to .env. ' +
+      'Image upload not configured. In development, add NUXT_PUBLIC_IMGBB_API_KEY to .env. ' +
       'In production on Vercel, add BLOB_READ_WRITE_TOKEN.'
     );
   }
@@ -145,7 +145,7 @@ export async function uploadImage(imageUrl: string): Promise<string> {
       throw new Error(
         'Image upload failed. ' +
         'In production, ensure BLOB_READ_WRITE_TOKEN is set. ' +
-        'In development, ensure VITE_IMGBB_API_KEY is set.'
+        'In development, ensure NUXT_PUBLIC_IMGBB_API_KEY is set.'
       );
     }
   }
