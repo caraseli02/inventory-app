@@ -129,6 +129,17 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
       <DialogContent
         className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full h-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none relative sm:!inset-0 sm:!left-0 sm:!top-0 sm:!translate-x-0 sm:!translate-y-0 sm:!max-w-full sm:!rounded-none"
         onOpenAutoFocus={(e) => e.preventDefault()}
+        // Prevent parent dialog from closing when nested dialogs (scanner/camera) are open
+        onPointerDownOutside={(e) => {
+          if (scannerOpen || cameraOpen) {
+            e.preventDefault();
+          }
+        }}
+        onInteractOutside={(e) => {
+          if (scannerOpen || cameraOpen) {
+            e.preventDefault();
+          }
+        }}
       >
         {/* Loading Overlay */}
         {mutation.isPending && (
