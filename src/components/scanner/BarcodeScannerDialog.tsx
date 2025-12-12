@@ -174,20 +174,24 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-4 py-3 border-b border-stone-200 flex-row items-center justify-between">
-          <DialogTitle className="text-lg font-semibold">{t('scanner.title')}</DialogTitle>
+      <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden bg-black border-none [&>button]:hidden">
+        {/* Hidden title for accessibility */}
+        <DialogHeader className="sr-only">
+          <DialogTitle>{t('scanner.title')}</DialogTitle>
+        </DialogHeader>
+
+        <div className="relative w-full" style={{ aspectRatio: '1/1' }}>
+          {/* Close button - floating */}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onOpenChange(false)}
-            className="h-8 w-8"
+            className="absolute top-2 right-2 z-20 h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full"
           >
             <X className="h-4 w-4" />
           </Button>
-        </DialogHeader>
 
-        <div className="relative bg-black aspect-square">
+          {/* Scanner container */}
           <div id={regionId} className="w-full h-full" />
 
           {isInitializing && (
@@ -214,10 +218,6 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
               </div>
             </div>
           )}
-        </div>
-
-        <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-600">
-          {t('scanner.emptyState')}
         </div>
       </DialogContent>
     </Dialog>
