@@ -37,7 +37,8 @@
     "retake": "Retake",
     "usePhoto": "Use Photo",
     "starting": "Starting camera...",
-    "error": "Failed to access camera. Check permissions."
+    "error": "Failed to access camera. Check permissions.",
+    "uploadError": "Failed to upload image. Please try using a URL instead."
   },
   "scannerFrame": {
     "enterManually": "Or enter barcode manually:",

@@ -37,7 +37,8 @@
     "retake": "Volver a Tomar",
     "usePhoto": "Usar Foto",
     "starting": "Iniciando cámara...",
-    "error": "No se pudo acceder a la cámara. Verifica los permisos."
+    "error": "No se pudo acceder a la cámara. Verifica los permisos.",
+    "uploadError": "Error al subir la imagen. Intenta usar una URL en su lugar."
   },
   "scannerFrame": {
     "enterManually": "O ingresa el código de barras manualmente:",

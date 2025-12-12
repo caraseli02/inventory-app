@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateProduct } from '../../lib/api';
+import { uploadImage, isDataUrl } from '../../lib/imageUpload';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { logger } from '../../lib/logger';
@@ -62,13 +63,19 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      // Upload image if it's a data URL (from camera capture)
+      let imageUrl = data.imageUrl || undefined;
+      if (imageUrl && isDataUrl(imageUrl)) {
+        imageUrl = await uploadImage(imageUrl);
+      }
+
       return await updateProduct(product.id, {
         Name: data.name,
         Barcode: data.barcode || undefined, // Only update if provided
         Category: data.category,
         Markup: data.markup,
         'Expiry Date': data.expiryDate || undefined,
-        Image: data.imageUrl || undefined,
+        Image: imageUrl,
       });
     },
     onSuccess: (updatedProduct) => {
