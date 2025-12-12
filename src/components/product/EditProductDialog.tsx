@@ -23,19 +23,32 @@ interface EditProductDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** Helper to create initial form data from product */
+const getInitialFormData = (product: Product) => ({
+  name: product.fields.Name,
+  barcode: product.fields.Barcode || '',
+  category: product.fields.Category || 'General',
+  markup: (product.fields.Markup as MarkupPercentage) || 70,
+  expiryDate: product.fields['Expiry Date'] || '',
+  imageUrl: product.fields.Image?.[0]?.url || '',
+});
+
 const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
+  // Track which product the form is for (to reset on product change)
+  const [trackedProductId, setTrackedProductId] = useState(product.id);
+
   // Initialize form with current product values
-  const [formData, setFormData] = useState({
-    name: product.fields.Name,
-    barcode: product.fields.Barcode || '',
-    category: product.fields.Category || 'General',
-    markup: (product.fields.Markup as MarkupPercentage) || 70,
-    expiryDate: product.fields['Expiry Date'] || '',
-    imageUrl: product.fields.Image?.[0]?.url || '',
-  });
+  const [formData, setFormData] = useState(getInitialFormData(product));
+
+  // Reset form when product changes (React-recommended pattern: store prev props)
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  if (product.id !== trackedProductId) {
+    setTrackedProductId(product.id);
+    setFormData(getInitialFormData(product));
+  }
 
   // Check if barcode is editable (only when empty)
   const isBarcodeEditable = !product.fields.Barcode;

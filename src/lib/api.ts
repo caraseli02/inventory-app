@@ -1,6 +1,6 @@
 import type { Attachment, FieldSet, Record as AirtableRecord } from 'airtable';
 import base, { TABLES } from './airtable';
-import type { Product, ProductFields, StockMovement } from '../types';
+import type { Product, ProductFields, StockMovement, MarkupPercentage } from '../types';
 import { logger } from './logger';
 
 // Custom error types for better error handling
@@ -91,7 +91,7 @@ export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Produ
       'Price 50%': record.fields['Price 50%'] as number | undefined,
       'Price 70%': record.fields['Price 70%'] as number | undefined,
       'Price 100%': record.fields['Price 100%'] as number | undefined,
-      Markup: record.fields.Markup as number | undefined,
+      Markup: record.fields.Markup as MarkupPercentage | undefined,
       'Expiry Date': record.fields['Expiry Date'] as string | undefined,
       'Current Stock Level': record.fields['Current Stock Level'] as number | undefined,
       'Ideal Stock': record.fields['Ideal Stock'] as number | undefined,
@@ -157,7 +157,7 @@ export interface CreateProductDTO {
   'Price 50%'?: number;
   'Price 70%'?: number;
   'Price 100%'?: number;
-  Markup?: number; // Active markup percentage (50, 70, or 100)
+  Markup?: MarkupPercentage; // Active markup percentage (50, 70, or 100)
   'Expiry Date'?: string;
   Image?: string; // URL string
 }

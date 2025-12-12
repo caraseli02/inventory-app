@@ -44,7 +44,7 @@ export const APP_TO_XLSX_MAPPING: Record<string, string> = {
 // Only Name is truly required - Barcode can be added later via edit dialog
 export const REQUIRED_FIELDS = ['Name'] as const;
 
-// Export column order (only fields that exist in Airtable)
+// Export column order (matches APP_TO_XLSX_MAPPING order)
 export const EXPORT_COLUMN_ORDER = [
   'Barcode',
   'Name',
@@ -54,6 +54,8 @@ export const EXPORT_COLUMN_ORDER = [
   'price70',
   'price100',
   'currentStock',
+  'minStock',
+  'Supplier',
   'expiryDate',
 ] as const;
 

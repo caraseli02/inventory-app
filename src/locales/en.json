@@ -38,6 +38,9 @@
     "usePhoto": "Use Photo",
     "starting": "Starting camera...",
     "error": "Failed to access camera. Check permissions.",
+    "permissionDenied": "Camera permission denied. Please allow camera access.",
+    "notFound": "No camera found on this device.",
+    "inUse": "Camera is in use by another application.",
     "uploadError": "Failed to upload image. Please try using a URL instead."
   },
   "scannerFrame": {
@@ -308,6 +311,7 @@
     "button": "Export",
     "title": "Export Inventory",
     "success": "Export Successful",
-    "successMessage": "Inventory exported to Excel file"
+    "successMessage": "Exported {{count}} products to Excel file",
+    "failed": "Export Failed"
   }
 }

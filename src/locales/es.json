@@ -38,6 +38,9 @@
     "usePhoto": "Usar Foto",
     "starting": "Iniciando cámara...",
     "error": "No se pudo acceder a la cámara. Verifica los permisos.",
+    "permissionDenied": "Permiso de cámara denegado. Por favor permite el acceso a la cámara.",
+    "notFound": "No se encontró cámara en este dispositivo.",
+    "inUse": "La cámara está siendo usada por otra aplicación.",
     "uploadError": "Error al subir la imagen. Intenta usar una URL en su lugar."
   },
   "scannerFrame": {
@@ -308,6 +311,7 @@
     "button": "Exportar",
     "title": "Exportar Inventario",
     "success": "Exportación Exitosa",
-    "successMessage": "Inventario exportado a archivo Excel"
+    "successMessage": "Se exportaron {{count}} productos a archivo Excel",
+    "failed": "Exportación Fallida"
   }
 }

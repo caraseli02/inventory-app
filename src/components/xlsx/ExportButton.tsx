@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { exportToXlsx, type ExportProduct } from '@/lib/xlsx';
 import { Download, Loader2 } from 'lucide-react';
@@ -23,6 +24,8 @@ function mapProductToExport(product: Product): ExportProduct {
     price70: product.fields['Price 70%'],
     price100: product.fields['Price 100%'],
     currentStock: product.fields['Current Stock Level'],
+    minStock: product.fields['Min Stock Level'],
+    Supplier: product.fields.Supplier,
     expiryDate: product.fields['Expiry Date'],
   };
 }
@@ -41,8 +44,15 @@ export function ExportButton({ products, className }: ExportButtonProps) {
 
       // Generate and download xlsx file
       exportToXlsx(exportProducts);
+
+      toast.success(t('export.success'), {
+        description: t('export.successMessage', { count: products.length }),
+      });
     } catch (error) {
       console.error('Export failed:', error);
+      toast.error(t('export.failed'), {
+        description: error instanceof Error ? error.message : t('errors.unknownError'),
+      });
     } finally {
       setIsExporting(false);
     }

@@ -70,7 +70,18 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
         setIsInitializing(false);
       } catch (err) {
         console.error('Camera init error:', err);
-        setError(t('camera.error') || 'Failed to access camera. Check permissions.');
+        const errorMessage = err instanceof Error ? err.message : '';
+
+        // Provide specific error messages based on error type
+        if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission')) {
+          setError(t('camera.permissionDenied') || 'Camera permission denied. Please allow camera access.');
+        } else if (errorMessage.includes('NotFoundError')) {
+          setError(t('camera.notFound') || 'No camera found on this device.');
+        } else if (errorMessage.includes('NotReadableError') || errorMessage.includes('in use')) {
+          setError(t('camera.inUse') || 'Camera is in use by another application.');
+        } else {
+          setError(t('camera.error') || 'Failed to access camera. Check permissions.');
+        }
         setIsInitializing(false);
       }
     };
@@ -130,7 +141,8 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
       }
 
       setIsInitializing(false);
-    } catch {
+    } catch (err) {
+      console.error('Camera restart error:', err);
       setError(t('camera.error') || 'Failed to restart camera.');
       setIsInitializing(false);
     }

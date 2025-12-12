@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
@@ -14,6 +14,11 @@ interface BarcodeScannerDialogProps {
 /**
  * Compact barcode scanner dialog for use in forms
  * Opens camera, scans barcode, and returns result
+ *
+ * FIXES APPLIED:
+ * - Abort flag prevents race condition on unmount
+ * - useRef for callbacks prevents unnecessary re-initialization
+ * - Improved error callback with consecutive error tracking
  */
 const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScannerDialogProps) => {
   const { t } = useTranslation();
@@ -21,31 +26,48 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const regionId = 'barcode-scanner-dialog';
-  const prevOpenRef = useRef(open);
 
+  // Use refs for callbacks to prevent useEffect re-runs when parent re-renders
+  const onScanSuccessRef = useRef(onScanSuccess);
+  const onOpenChangeRef = useRef(onOpenChange);
+
+  // Keep callback refs up to date
   useEffect(() => {
-    // Handle cleanup when dialog closes
-    if (!open && prevOpenRef.current) {
-      if (scannerRef.current) {
+    onScanSuccessRef.current = onScanSuccess;
+    onOpenChangeRef.current = onOpenChange;
+  }, [onScanSuccess, onOpenChange]);
+
+  // Cleanup helper with better error context
+  const cleanupScanner = useCallback(async () => {
+    if (scannerRef.current) {
+      try {
         if (scannerRef.current.isScanning) {
-          scannerRef.current.stop().then(() => {
-            scannerRef.current?.clear();
-            scannerRef.current = null;
-          }).catch(console.error);
-        } else {
-          scannerRef.current.clear();
-          scannerRef.current = null;
+          await scannerRef.current.stop();
         }
+        scannerRef.current.clear();
+      } catch (err) {
+        console.error('Failed to clean up barcode scanner:', err);
+      } finally {
+        scannerRef.current = null;
       }
     }
-    prevOpenRef.current = open;
+  }, []);
+
+  useEffect(() => {
+    // Track if this effect has been aborted
+    let isAborted = false;
 
     if (!open) {
+      // Cleanup when dialog closes
+      cleanupScanner();
       return;
     }
 
     // Initialize scanner when dialog opens
     const initScanner = async () => {
+      // Check abort flag before starting
+      if (isAborted) return;
+
       try {
         // Reset state at start of async operation
         setIsInitializing(true);
@@ -60,6 +82,13 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
         ];
 
         const scanner = new Html5Qrcode(regionId);
+
+        // Check abort flag after creating scanner
+        if (isAborted) {
+          scanner.clear();
+          return;
+        }
+
         scannerRef.current = scanner;
 
         const config = {
@@ -68,28 +97,65 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
           qrbox: { width: 200, height: 200 },
         };
 
+        // Track consecutive errors for debugging
+        let consecutiveErrors = 0;
+        const MAX_CONSECUTIVE_ERRORS = 50;
+
         await scanner.start(
           { facingMode: 'environment' },
           config,
           (decodedText) => {
+            // Check abort flag before handling success
+            if (isAborted) return;
+
             const cleanCode = decodedText.trim();
             const validLengths = [8, 12, 13];
             if (!validLengths.includes(cleanCode.length)) {
               return; // Ignore invalid barcodes
             }
 
-            // Success - stop scanner and return result
-            onScanSuccess(cleanCode);
-            onOpenChange(false);
+            consecutiveErrors = 0; // Reset on success
+
+            // Success - use refs to avoid stale closures
+            onScanSuccessRef.current(cleanCode);
+            onOpenChangeRef.current(false);
           },
-          () => {
-            // Ignore scan errors (no barcode found)
+          (errorMessage) => {
+            // "No barcode found" is expected during continuous scanning
+            if (errorMessage?.includes('No barcode') || errorMessage?.includes('NotFoundException')) {
+              return;
+            }
+
+            // Track unexpected errors for debugging
+            consecutiveErrors++;
+            if (consecutiveErrors === MAX_CONSECUTIVE_ERRORS) {
+              console.warn('Barcode scanner experiencing repeated errors:', errorMessage);
+            }
           }
         );
 
+        // Check abort flag after starting
+        if (isAborted) {
+          await cleanupScanner();
+          return;
+        }
+
         setIsInitializing(false);
       } catch (err) {
-        setError(t('scanner.cameraError') || 'Failed to start camera. Check permissions.');
+        // Don't set error if aborted
+        if (isAborted) return;
+
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+
+        // Provide specific error messages
+        if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission')) {
+          setError(t('scanner.cameraError') || 'Camera permission denied. Please allow camera access.');
+        } else if (errorMessage.includes('NotFoundError')) {
+          setError(t('scanner.cameraNotFound') || 'No camera found on this device.');
+        } else {
+          setError(t('scanner.cameraError') || 'Failed to start camera. Check permissions.');
+        }
+
         setIsInitializing(false);
         console.error('Scanner init error:', err);
       }
@@ -97,8 +163,14 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
 
     // Delay to ensure DOM is ready
     const timer = setTimeout(initScanner, 200);
-    return () => clearTimeout(timer);
-  }, [open, onOpenChange, onScanSuccess, t]);
+
+    // Cleanup function
+    return () => {
+      isAborted = true;
+      clearTimeout(timer);
+      cleanupScanner();
+    };
+  }, [open, cleanupScanner, t]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

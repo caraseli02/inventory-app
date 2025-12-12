@@ -51,6 +51,8 @@ export interface ExportProduct {
   price70?: number;
   price100?: number;
   currentStock?: number;
+  minStock?: number;
+  Supplier?: string;
   expiryDate?: string;
 }
 
@@ -279,46 +281,56 @@ function convertValue(rawValue: unknown, fieldName: string): unknown {
 
 /**
  * Export products to an xlsx file
+ * @throws {Error} If export fails (e.g., browser restrictions, invalid data)
  */
 export function exportToXlsx(products: ExportProduct[], filename?: string): void {
-  // Create worksheet data with headers
-  const headers = EXPORT_COLUMN_ORDER.map(field => APP_TO_XLSX_MAPPING[field] || field);
+  if (!products || products.length === 0) {
+    throw new Error('No products to export');
+  }
 
-  const data = products.map(product => {
-    return EXPORT_COLUMN_ORDER.map(field => {
-      const value = product[field as keyof ExportProduct];
-      return value ?? '';
+  try {
+    // Create worksheet data with headers
+    const headers = EXPORT_COLUMN_ORDER.map(field => APP_TO_XLSX_MAPPING[field] || field);
+
+    const data = products.map(product => {
+      return EXPORT_COLUMN_ORDER.map(field => {
+        const value = product[field as keyof ExportProduct];
+        return value ?? '';
+      });
     });
-  });
 
-  // Create worksheet
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    // Create worksheet
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
 
-  // Set column widths
-  const colWidths = [
-    { wch: 18 }, // Barcode
-    { wch: 30 }, // Name
-    { wch: 12 }, // Category
-    { wch: 10 }, // Price
-    { wch: 12 }, // price50
-    { wch: 12 }, // price70
-    { wch: 12 }, // price100
-    { wch: 12 }, // currentStock
-    { wch: 12 }, // minStock
-    { wch: 20 }, // Supplier
-    { wch: 14 }, // expiryDate
-  ];
-  ws['!cols'] = colWidths;
+    // Set column widths
+    const colWidths = [
+      { wch: 18 }, // Barcode
+      { wch: 30 }, // Name
+      { wch: 12 }, // Category
+      { wch: 10 }, // Price
+      { wch: 12 }, // price50
+      { wch: 12 }, // price70
+      { wch: 12 }, // price100
+      { wch: 12 }, // currentStock
+      { wch: 12 }, // minStock
+      { wch: 20 }, // Supplier
+      { wch: 14 }, // expiryDate
+    ];
+    ws['!cols'] = colWidths;
 
-  // Create workbook
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
 
-  // Generate filename with timestamp
-  const exportFilename = filename || `inventory-${new Date().toISOString().split('T')[0]}.xlsx`;
+    // Generate filename with timestamp
+    const exportFilename = filename || `inventory-${new Date().toISOString().split('T')[0]}.xlsx`;
 
-  // Download file
-  XLSX.writeFile(wb, exportFilename);
+    // Download file
+    XLSX.writeFile(wb, exportFilename);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown export error';
+    throw new Error(`Export failed: ${message}`);
+  }
 }
 
 /**
@@ -327,6 +339,19 @@ export function exportToXlsx(products: ExportProduct[], filename?: string): void
 export async function loadXlsxFromUrl(url: string): Promise<ImportResult> {
   try {
     const response = await fetch(url);
+
+    // Check for network errors (404, 500, etc.)
+    if (!response.ok) {
+      return {
+        success: false,
+        products: [],
+        errors: [{ row: 0, message: `Failed to fetch file: HTTP ${response.status} ${response.statusText}` }],
+        warnings: [],
+        totalRows: 0,
+        validRows: 0,
+      };
+    }
+
     const blob = await response.blob();
     const file = new File([blob], 'data.xlsx', { type: blob.type });
     return parseXlsxFile(file);
