@@ -7,6 +7,8 @@
  * Converts base64 data URLs to actual URLs that Airtable can fetch
  */
 
+import { logger } from './logger';
+
 const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY;
 
 /**
@@ -100,15 +102,46 @@ export async function uploadImage(imageUrl: string): Promise<string> {
 
   try {
     // Try Vercel Blob first (production)
-    return await uploadToVercelBlob(imageUrl);
+    const url = await uploadToVercelBlob(imageUrl);
+    logger.info('Image uploaded successfully via Vercel Blob', {
+      url,
+      uploadMethod: 'vercel-blob',
+      timestamp: new Date().toISOString(),
+    });
+    return url;
   } catch (vercelError) {
-    console.log('Vercel Blob upload failed, trying imgbb fallback:', vercelError);
+    logger.warn('Vercel Blob upload failed, attempting imgbb fallback', {
+      errorMessage: vercelError instanceof Error ? vercelError.message : String(vercelError),
+      errorStack: vercelError instanceof Error ? vercelError.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
 
     try {
       // Fall back to imgbb (development)
-      return await uploadToImgbb(imageUrl);
+      const url = await uploadToImgbb(imageUrl);
+      logger.info('Image uploaded successfully via imgbb fallback', {
+        url,
+        uploadMethod: 'imgbb',
+        timestamp: new Date().toISOString(),
+      });
+
+      // Warn in production that fallback was used
+      if (import.meta.env.PROD) {
+        logger.error('Production using imgbb fallback - Vercel Blob should be configured!', {
+          vercelError: vercelError instanceof Error ? vercelError.message : String(vercelError),
+        });
+      }
+
+      return url;
     } catch (imgbbError) {
-      console.error('All image upload methods failed:', { vercelError, imgbbError });
+      logger.error('All image upload methods failed', {
+        vercelError: vercelError instanceof Error ? vercelError.message : String(vercelError),
+        imgbbError: imgbbError instanceof Error ? imgbbError.message : String(imgbbError),
+        vercelStack: vercelError instanceof Error ? vercelError.stack : undefined,
+        imgbbStack: imgbbError instanceof Error ? imgbbError.stack : undefined,
+        timestamp: new Date().toISOString(),
+      });
+
       throw new Error(
         'Image upload failed. ' +
         'In production, ensure BLOB_READ_WRITE_TOKEN is set. ' +

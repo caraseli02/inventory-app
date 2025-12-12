@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { logger } from '../../lib/logger';
 
 interface ScannerProps {
   onScanSuccess: (decodedText: string) => void;
@@ -53,7 +54,11 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
             const cleanCode = decodedText.trim();
             const validLengths = [8, 12, 13];
             if (!validLengths.includes(cleanCode.length)) {
-              console.warn(`Ignored partial/invalid barcode: ${cleanCode} (length: ${cleanCode.length})`);
+              logger.warn('Ignored partial/invalid barcode', {
+                barcode: cleanCode,
+                length: cleanCode.length,
+                scannerId: regionId,
+              });
               return; // Ignore partial or invalid barcodes
             }
 
@@ -70,14 +75,51 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
             lastScanRef.current = { code: cleanCode, timestamp: now };
             onScanSuccessRef.current(cleanCode);
           },
-          () => {
-            // parse error, ignore specific errors like "no QR code found" to avoid log spam
-            // use the error if needed or log only severe ones
+          (errorMessage: string) => {
+            // Filter out expected "no code found" messages to avoid spam
+            const isExpectedError =
+              errorMessage.includes('No MultiFormat Readers') ||
+              errorMessage.includes('NotFoundException') ||
+              errorMessage.includes('No barcode or QR code detected');
+
+            if (!isExpectedError) {
+              // Log unexpected parse errors for debugging
+              logger.warn('Scanner parse error (unexpected)', {
+                errorMessage,
+                scannerId: regionId,
+                timestamp: new Date().toISOString(),
+              });
+            }
           }
         );
       } catch (err) {
-        setError('Failed to start scanner. Please check camera permissions.');
-        console.error('Scanner initialization failed:', err);
+        logger.error('Scanner initialization failed', {
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorStack: err instanceof Error ? err.stack : undefined,
+          scannerId: regionId,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Provide specific error messages based on error type
+        let userMessage = 'Failed to start scanner. ';
+
+        if (err instanceof Error) {
+          if (err.name === 'NotAllowedError' || err.message.includes('permission')) {
+            userMessage += 'Please grant camera permissions in your browser settings.';
+          } else if (err.name === 'NotFoundError' || err.message.includes('not found')) {
+            userMessage += 'No camera found. Please connect a camera or use manual entry.';
+          } else if (err.name === 'NotReadableError' || err.message.includes('in use')) {
+            userMessage += 'Camera is already in use. Close other apps using the camera.';
+          } else if (err.message.includes('HTTPS') || err.message.includes('secure')) {
+            userMessage += 'Camera requires a secure connection (HTTPS).';
+          } else {
+            userMessage += `Error: ${err.message}`;
+          }
+        } else {
+          userMessage += 'Please check camera permissions and try again.';
+        }
+
+        setError(userMessage);
       }
     };
 
@@ -90,12 +132,34 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
       clearTimeout(timer);
       if (scannerRef.current) {
         if (scannerRef.current.isScanning) {
-          scannerRef.current.stop().then(() => {
-            scannerRef.current?.clear();
-            scannerRef.current = null;
-          }).catch(err => {
-            console.error("Failed to stop scanner during cleanup", err);
-          });
+          scannerRef.current
+            .stop()
+            .then(() => {
+              scannerRef.current?.clear();
+              scannerRef.current = null;
+              logger.debug('Scanner stopped successfully');
+            })
+            .catch((err) => {
+              logger.error('Failed to stop scanner during cleanup', {
+                errorMessage: err instanceof Error ? err.message : String(err),
+                errorStack: err instanceof Error ? err.stack : undefined,
+                timestamp: new Date().toISOString(),
+              });
+
+              // Still try to clear even if stop failed
+              try {
+                scannerRef.current?.clear();
+              } catch (clearError) {
+                logger.error('Failed to clear scanner after stop failure', {
+                  errorMessage: clearError instanceof Error ? clearError.message : String(clearError),
+                });
+              }
+
+              scannerRef.current = null;
+
+              // Set error state to inform user
+              setError('Camera cleanup failed. You may need to reload the page to use the scanner again.');
+            });
         } else {
           scannerRef.current.clear();
           scannerRef.current = null;

@@ -73,6 +73,7 @@ const InventoryTableComponent = ({
             const isLowStock = currentStock < minStock && minStock > 0;
             const imageUrl = product.fields.Image?.[0]?.url;
             const isLoading = loadingProductIds.has(product.id);
+            const displayPrice = getProductDisplayPrice(product.fields);
 
             return (
               <TableRow
@@ -123,7 +124,7 @@ const InventoryTableComponent = ({
                 <TableCell>
                   {product.fields.Category ? (
                     <Badge variant="secondary" className="bg-stone-100 border-stone-200">
-                      {t(`categories.${product.fields.Category}`)}
+                      {t(`categories.${product.fields.Category}`, product.fields.Category)}
                     </Badge>
                   ) : (
                     <span className="text-stone-400 text-sm">—</span>
@@ -145,16 +146,13 @@ const InventoryTableComponent = ({
 
                 {/* Price (based on product's markup) */}
                 <TableCell className="text-right">
-                  {(() => {
-                    const displayPrice = getProductDisplayPrice(product.fields);
-                    return displayPrice != null ? (
-                      <span className="font-bold text-stone-900 text-base lg:text-lg">
-                        €{displayPrice.toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="text-stone-400">—</span>
-                    );
-                  })()}
+                  {displayPrice != null ? (
+                    <span className="font-bold text-stone-900 text-base lg:text-lg">
+                      €{displayPrice.toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-stone-400">—</span>
+                  )}
                 </TableCell>
 
                 {/* Actions */}

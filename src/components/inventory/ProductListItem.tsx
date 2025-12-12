@@ -29,6 +29,7 @@ const ProductListItemComponent = ({
   const minStock = product.fields['Min Stock Level'] ?? 0;
   const isLowStock = currentStock < minStock && minStock > 0;
   const imageUrl = product.fields.Image?.[0]?.url;
+  const displayPrice = getProductDisplayPrice(product.fields);
 
   return (
     <Card
@@ -66,7 +67,7 @@ const ProductListItemComponent = ({
               variant="secondary"
               className="bg-stone-100 border-stone-200 text-xs mb-2"
             >
-              {t(`categories.${product.fields.Category}`)}
+              {t(`categories.${product.fields.Category}`, product.fields.Category)}
             </Badge>
           )}
 
@@ -82,14 +83,11 @@ const ProductListItemComponent = ({
                 {currentStock}
               </span>
             </div>
-            {(() => {
-              const displayPrice = getProductDisplayPrice(product.fields);
-              return displayPrice != null ? (
-                <span className="text-lg font-bold text-stone-900">
-                  €{displayPrice.toFixed(2)}
-                </span>
-              ) : null;
-            })()}
+            {displayPrice != null && (
+              <span className="text-lg font-bold text-stone-900">
+                €{displayPrice.toFixed(2)}
+              </span>
+            )}
           </div>
 
           {/* Quick Adjust Buttons */}
