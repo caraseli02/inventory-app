@@ -1,9 +1,9 @@
 # Claude Progress Tracker
 
 **Project**: Inventory App - Grocery Management System
-**Last Updated**: 2025-12-07
-**Current Phase**: MVP Launch
-**Version**: 1.0.0
+**Last Updated**: 2025-12-12
+**Current Phase**: Phase 1 - xlsx Integration
+**Version**: 1.1.0
 
 ---
 
@@ -65,6 +65,74 @@
 | F020 | Manual Barcode Entry | ❌ | ❌ | Post-MVP |
 
 **Summary**: Post-MVP features deferred until user validation (Week 2+).
+
+---
+
+## 📊 Phase 1: xlsx Integration (0 of 3 Started)
+
+| ID | Feature | Status | Tested | Priority |
+|----|---------|--------|--------|----------|
+| F021 | Excel Import (xlsx) | ❌ | ❌ | Phase-1 |
+| F022 | Excel Export (xlsx) | ❌ | ❌ | Phase-1 |
+| F023 | Pricing Tiers Support | ❌ | ❌ | Phase-1 |
+
+**Summary**: xlsx integration enables customer to use their existing Excel workflow with the app.
+
+### xlsx Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Customer Workflow                         │
+│  Excel (magazin.xlsx) ←→ Import/Export ←→ Inventory App     │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                      Phase 1 (Current)                      │
+│  SheetJS (xlsx read/write) + Airtable (database)           │
+│  - Import products from xlsx                                │
+│  - Export inventory back to xlsx                            │
+│  - Support pricing tiers (50%, 70%, 100%)                  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   Phase 2 (Future)                          │
+│  SheetJS + Dexie.js (IndexedDB local database)             │
+│  - Replace Airtable with local-first storage               │
+│  - Full offline support                                     │
+│  - xlsx as backup/sync mechanism                            │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                   Phase 3 (Optional)                        │
+│  SheetJS + Dexie.js + Supabase                             │
+│  - Multi-device sync                                        │
+│  - User authentication                                      │
+│  - Real-time collaboration                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### xlsx Column Mapping
+
+| xlsx Column | App Field | Required |
+|-------------|-----------|----------|
+| Cod de bare (Barcode) | `Barcode` | **Yes** |
+| Denumirea produsului | `Name` | **Yes** |
+| Categorie | `Category` | No |
+| Preț (euro) | `Price` | No |
+| Cost preț magazin 50% | `price50` | No |
+| Cost preț magazin 70% | `price70` | No |
+| Cost preț magazin 100% | `price100` | No |
+| Stock curent | `Current Stock Level` | No |
+| Stock minim | `Min Stock Level` | No |
+| Furnizor | `Supplier` | No |
+| Data expirare | `Expiry Date` | No |
+
+### Sample xlsx File
+
+Located at: `public/magazin.xlsx`
+- 12 products with test data
+- All columns populated
+- Ready for import testing
 
 ---
 
@@ -312,6 +380,36 @@
 ---
 
 ## 📝 Recent Activity Log
+
+### 2025-12-12
+#### xlsx Integration Planning & Documentation ✅ (Current Session)
+- 📊 **Analyzed customer xlsx file** (`public/magazin.xlsx`)
+  - Romanian-language price calculation spreadsheet
+  - 12 products with pricing formulas (50%, 70%, 100% markup)
+  - Used for tracking purchases and calculating store prices
+- 🔍 **Research completed**:
+  - Evaluated xlsx as database backend (NOT recommended - no concurrency, data integrity)
+  - Researched SheetJS for browser-based xlsx read/write
+  - Compared Airtable vs Supabase for future migration
+  - Explored Dexie.js for IndexedDB offline-first storage
+- 📝 **Updated xlsx file** with new columns:
+  - L: Cod de bare (Barcode) - Required for scanner lookup
+  - M: Categorie - Product categorization
+  - N: Stock curent - Current inventory level
+  - O: Stock minim - Reorder threshold
+  - P: Furnizor - Supplier name
+  - Q: Data expirare - Expiry date
+  - Added test data for all 12 products
+- 📋 **Created Phase 1 implementation plan**:
+  - F021: Excel Import (xlsx) - Import products from xlsx
+  - F022: Excel Export (xlsx) - Export inventory to xlsx
+  - F023: Pricing Tiers Support - Multiple price levels
+- 📚 **Updated documentation**:
+  - `feature_list.json` - Added F021, F022, F023
+  - `claude-progress.md` - Added xlsx integration section
+  - Created `docs/specs/xlsx_integration.md` spec
+- 🌿 **Branch**: `feature/xlsx-integration` (to be created)
+- 🎯 **Next**: Create branch and implement SheetJS import/export
 
 ### 2025-12-08
 #### Performance & Error Handling Optimizations ✅ (Latest Session)

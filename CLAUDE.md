@@ -69,6 +69,46 @@ src/
 - Fallback to "General" category if no match found
 - Returns: name, category, imageUrl, source
 
+### xlsx Integration (Phase 1)
+
+The app supports importing/exporting product data from Excel files, enabling customers to use their existing xlsx workflow for pricing while benefiting from the app's inventory tracking.
+
+**Spec**: `docs/specs/xlsx_integration.md`
+
+**Features**:
+- F021: Excel Import - Import products from xlsx files
+- F022: Excel Export - Export inventory to xlsx
+- F023: Pricing Tiers - Support 50%, 70%, 100% markup prices
+
+**Sample xlsx File**: `public/magazin.xlsx`
+
+**Column Mapping**:
+| xlsx Column | App Field | Required |
+|-------------|-----------|----------|
+| Cod de bare (Barcode) | `Barcode` | **Yes** |
+| Denumirea produsului | `Name` | **Yes** |
+| Categorie | `Category` | No |
+| Preț (euro) | `Price` | No |
+| Cost preț magazin 50% | `price50` | No |
+| Cost preț magazin 70% | `price70` | No |
+| Cost preț magazin 100% | `price100` | No |
+| Stock curent | `Current Stock Level` | No |
+| Stock minim | `Min Stock Level` | No |
+| Furnizor | `Supplier` | No |
+| Data expirare | `Expiry Date` | No |
+
+**Architecture Roadmap**:
+```
+Phase 1 (Current): SheetJS + Airtable
+  └── Import/Export xlsx, keep Airtable as database
+
+Phase 2 (Future): SheetJS + Dexie.js (IndexedDB)
+  └── Replace Airtable with local-first storage, full offline
+
+Phase 3 (Optional): SheetJS + Dexie.js + Supabase
+  └── Multi-device sync, user auth, cloud backup
+```
+
 ## Spec-Driven Development
 
 This project follows a **spec-driven development** approach. All features and cross-cutting concerns are documented as specifications in `docs/specs/` before implementation.

@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "version": "1.0.0",
-    "last_updated": "2025-12-07",
+    "version": "1.1.0",
+    "last_updated": "2025-12-12",
     "project": "Inventory App - Grocery Management",
     "warning": "⚠️ STRICTLY DO NOT REMOVE OR MODIFY ANYTHING IN THIS FILE BEYOND MARKING FEATURES AS IMPLEMENTED"
   },
@@ -916,6 +916,175 @@
         },
         {
           "scenario": "Validate barcode format",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F021",
+      "name": "Excel Import (xlsx)",
+      "category": "Data Integration",
+      "priority": "Phase-1",
+      "spec": "docs/specs/xlsx_integration.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Install SheetJS library",
+          "completed": false
+        },
+        {
+          "step": 2,
+          "description": "Create xlsx service with column mapping",
+          "completed": false
+        },
+        {
+          "step": 3,
+          "description": "Build file upload component (drag & drop)",
+          "completed": false
+        },
+        {
+          "step": 4,
+          "description": "Preview imported data before confirming",
+          "completed": false
+        },
+        {
+          "step": 5,
+          "description": "Handle duplicate products by barcode",
+          "completed": false
+        },
+        {
+          "step": 6,
+          "description": "Import products to database",
+          "completed": false
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Import products from xlsx file",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Preview data before import confirmation",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle duplicate barcode during import",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Map xlsx columns to product fields correctly",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F022",
+      "name": "Excel Export (xlsx)",
+      "category": "Data Integration",
+      "priority": "Phase-1",
+      "spec": "docs/specs/xlsx_integration.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create export function with all product fields",
+          "completed": false
+        },
+        {
+          "step": 2,
+          "description": "Include current stock levels from app",
+          "completed": false
+        },
+        {
+          "step": 3,
+          "description": "Add pricing tiers (50%, 70%, 100%)",
+          "completed": false
+        },
+        {
+          "step": 4,
+          "description": "Build export button in inventory list",
+          "completed": false
+        },
+        {
+          "step": 5,
+          "description": "Download file with proper filename",
+          "completed": false
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Export all products to xlsx",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Exported file contains correct stock levels",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Exported file contains pricing tiers",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "File downloads with correct filename",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F023",
+      "name": "Pricing Tiers Support",
+      "category": "Data Integration",
+      "priority": "Phase-1",
+      "spec": "docs/specs/xlsx_integration.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Add price tier fields to Product type",
+          "completed": false
+        },
+        {
+          "step": 2,
+          "description": "Store markup percentages (50%, 70%, 100%)",
+          "completed": false
+        },
+        {
+          "step": 3,
+          "description": "Display active price tier in product views",
+          "completed": false
+        },
+        {
+          "step": 4,
+          "description": "Add price tier selector in settings",
+          "completed": false
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Display different price tiers for products",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Switch between price tiers",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Price tier persists across sessions",
           "tested": false,
           "test_file": null
         }

@@ -34,6 +34,7 @@ Central index for the Grocery Inventory App documentation. Start here to find au
 | [Operations & Safety](specs/operations_safety.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Launch checklist covers MVP needs |
 | [Observability](specs/observability.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Console logging sufficient for MVP |
 | [PWA Offline](specs/pwa_offline.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Online-only for MVP validation |
+| [**xlsx Integration**](specs/xlsx_integration.md) | **1.0.0** | **IN_PROGRESS** | TBD | 2025-12-12 | **Phase 1 - Import/Export with SheetJS** |
 
 Versioning uses semantic versions for specs: `0.x` indicates drafts or partial implementations; `1.0.0` will mark fully implemented, validated specs.
 
