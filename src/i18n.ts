@@ -6,20 +6,25 @@ import ro from './locales/ro.json';
 import ru from './locales/ru.json';
 
 const supportedLanguages = ['es', 'en', 'ro', 'ru'] as const;
+type SupportedLanguage = (typeof supportedLanguages)[number];
 
 const getInitialLanguage = () => {
   if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('preferredLanguage');
+    try {
+      const stored = localStorage.getItem('preferredLanguage');
 
-    if (stored && supportedLanguages.includes(stored as (typeof supportedLanguages)[number])) {
-      return stored;
-    }
+      if (stored && supportedLanguages.includes(stored as SupportedLanguage)) {
+        return stored;
+      }
 
-    const browserLanguage = navigator.languages?.[0] ?? navigator.language;
-    const normalized = browserLanguage?.split('-')[0];
+      const browserLanguage = navigator.languages?.[0] ?? navigator.language;
+      const normalized = browserLanguage?.split('-')[0];
 
-    if (normalized && supportedLanguages.includes(normalized as (typeof supportedLanguages)[number])) {
-      return normalized;
+      if (normalized && supportedLanguages.includes(normalized as SupportedLanguage)) {
+        return normalized;
+      }
+    } catch (e) {
+      console.warn('Failed to read from localStorage:', e);
     }
   }
 
@@ -54,8 +59,12 @@ i18n
   });
 
 i18n.on('languageChanged', (lng) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('preferredLanguage', lng);
+  if (typeof window !== 'undefined' && supportedLanguages.includes(lng as SupportedLanguage)) {
+    try {
+      localStorage.setItem('preferredLanguage', lng);
+    } catch (e) {
+      console.warn('Failed to save language preference:', e);
+    }
   }
 });
 
