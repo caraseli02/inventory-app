@@ -25,7 +25,7 @@ The Grocery Inventory App MVP is a tablet-friendly PWA designed to streamline st
 
 ## How to Test
 1. **Configure Environment**:
-   - Create `.env` with `VITE_AIRTABLE_API_KEY` and `VITE_AIRTABLE_BASE_ID`.
+   - Create `.env` with `NUXT_PUBLIC_AIRTABLE_API_KEY` and `NUXT_PUBLIC_AIRTABLE_BASE_ID`.
 2. **Run Locally**:
    ```bash
    npm run dev
