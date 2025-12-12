@@ -162,6 +162,9 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
         className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none bg-black flex flex-col overflow-hidden"
         style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        // Prevent clicks from bubbling to parent dialog
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="px-4 py-3 border-b border-stone-700 flex-row items-center justify-between bg-stone-900 shrink-0">
           <DialogTitle className="text-lg font-semibold text-white">{t('camera.title')}</DialogTitle>
@@ -243,9 +246,9 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
               <Button
                 onClick={handleRetake}
                 variant="outline"
-                className="flex-1 h-12 border-2 border-stone-300 font-semibold"
+                className="flex-1 h-12 border-2 border-stone-400 text-white font-semibold hover:bg-stone-700 hover:text-white"
               >
-                <RotateCcw className="w-5 h-5 mr-2" />
+                <RotateCcw className="w-5 h-5 mr-2 text-white" />
                 {t('camera.retake')}
               </Button>
               <Button
