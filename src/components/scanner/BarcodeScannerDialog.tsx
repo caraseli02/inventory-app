@@ -94,7 +94,7 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
         const config = {
           formatsToSupport: formatsToSupport,
           fps: 30,
-          qrbox: { width: 200, height: 200 },
+          qrbox: { width: 250, height: 250 },
         };
 
         // Track consecutive errors for debugging
@@ -174,50 +174,53 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden bg-black border-none [&>button]:hidden">
+      <DialogContent className="sm:max-w-md md:max-w-lg p-0 gap-0 overflow-hidden bg-black border-none rounded-2xl [&>button]:hidden">
         {/* Hidden title for accessibility */}
         <DialogHeader className="sr-only">
           <DialogTitle>{t('scanner.title')}</DialogTitle>
         </DialogHeader>
 
-        <div className="relative w-full" style={{ aspectRatio: '1/1' }}>
-          {/* Close button - floating */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onOpenChange(false)}
-            className="absolute top-2 right-2 z-20 h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        {/* Close button - floating */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onOpenChange(false)}
+          className="absolute top-2 right-2 z-20 h-8 w-8 bg-black/50 hover:bg-black/70 text-white rounded-full"
+        >
+          <X className="h-4 w-4" />
+        </Button>
 
-          {/* Scanner container */}
-          <div id={regionId} className="w-full h-full" />
+        {/* Scanner container */}
+        <div id={regionId} className="w-full bg-black" style={{ aspectRatio: '4/3' }} />
 
-          {isInitializing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                <p className="text-white text-sm">{t('loading.scanner')}</p>
-              </div>
+        {isInitializing && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-2xl">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+              <p className="text-white text-sm">{t('loading.scanner')}</p>
             </div>
-          )}
+          </div>
+        )}
 
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/90 p-4">
-              <div className="text-center">
-                <p className="text-red-400 mb-3">{error}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  className="text-white border-white/50"
-                >
-                  {t('product.cancel')}
-                </Button>
-              </div>
+        {error && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/90 p-4 rounded-2xl">
+            <div className="text-center">
+              <p className="text-red-400 mb-3">{error}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="text-white border-white/50"
+              >
+                {t('product.cancel')}
+              </Button>
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Bottom text */}
+        <div className="bg-stone-100 py-2 text-center text-stone-700 text-sm rounded-b-2xl">
+          {t('scanner.emptyState')}
         </div>
       </DialogContent>
     </Dialog>
