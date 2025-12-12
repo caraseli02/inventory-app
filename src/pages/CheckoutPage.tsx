@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
-// import { QuickAddSection } from '../components/cart/QuickAddSection';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useProductLookup } from '../hooks/useProductLookup';
 import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
@@ -767,28 +766,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 onUpdateQuantity={updateQuantity}
                 customFooter={
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
-                    {/* Quick Add Section */}
-                    {/* <QuickAddSection
-                      onAddItem={(code) => handleScanSuccess(code, 'quick-add')}
-                      isPending={isPendingLookup}
-                    /> */}
-
-                    {/* Total */}
-                    {/* <div className="flex items-center justify-between pb-2">
-                      <span className="text-lg font-semibold text-gray-700">{t('cart.total')}</span>
-                      <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
-                    </div> */}
-
-                    {/* Action Buttons */}
                     <div className="space-y-3">
-                      {/* <Button
-                        variant="outline"
-                        className="w-full h-10 text-base font-medium border-2 hover:bg-gray-50"
-                        onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: false })}
-                      >
-                        {t('cart.nextProduct')}
-                      </Button> */}
-
                       <Button
                         className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
                         onClick={handleCheckoutClick}

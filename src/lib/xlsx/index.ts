@@ -333,36 +333,3 @@ export function exportToXlsx(products: ExportProduct[], filename?: string): void
   }
 }
 
-/**
- * Read xlsx file from a URL (for loading sample data)
- */
-export async function loadXlsxFromUrl(url: string): Promise<ImportResult> {
-  try {
-    const response = await fetch(url);
-
-    // Check for network errors (404, 500, etc.)
-    if (!response.ok) {
-      return {
-        success: false,
-        products: [],
-        errors: [{ row: 0, message: `Failed to fetch file: HTTP ${response.status} ${response.statusText}` }],
-        warnings: [],
-        totalRows: 0,
-        validRows: 0,
-      };
-    }
-
-    const blob = await response.blob();
-    const file = new File([blob], 'data.xlsx', { type: blob.type });
-    return parseXlsxFile(file);
-  } catch (error) {
-    return {
-      success: false,
-      products: [],
-      errors: [{ row: 0, message: `Failed to load file: ${error instanceof Error ? error.message : 'Unknown error'}` }],
-      warnings: [],
-      totalRows: 0,
-      validRows: 0,
-    };
-  }
-}
