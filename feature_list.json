@@ -1,8 +1,11 @@
 {
   "metadata": {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "last_updated": "2025-12-12",
     "project": "Inventory App - Grocery Management",
+    "total_features": 26,
+    "implemented": 21,
+    "tested": 20,
     "warning": "⚠️ STRICTLY DO NOT REMOVE OR MODIFY ANYTHING IN THIS FILE BEYOND MARKING FEATURES AS IMPLEMENTED"
   },
   "features": [
@@ -1085,6 +1088,135 @@
         },
         {
           "scenario": "Price tier persists in Airtable",
+          "tested": true,
+          "test_file": "manual-test"
+        }
+      ]
+    },
+    {
+      "id": "F024",
+      "name": "Optional Barcode Import",
+      "category": "Data Integration",
+      "priority": "Phase-1",
+      "spec": "docs/specs/xlsx_integration.md",
+      "implemented": true,
+      "tested": true,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Make Barcode column optional in xlsx import",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Only require Name column for import",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Show warning for products without barcodes",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Import products without barcodes",
+          "tested": true,
+          "test_file": "manual-test"
+        },
+        {
+          "scenario": "Warning shown for missing barcodes",
+          "tested": true,
+          "test_file": "manual-test"
+        }
+      ]
+    },
+    {
+      "id": "F025",
+      "name": "Barcode Scanner in Edit Dialog",
+      "category": "Core Feature",
+      "priority": "Phase-1",
+      "spec": "docs/specs/scanner.md",
+      "implemented": true,
+      "tested": true,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create compact BarcodeScannerDialog component",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Add scanner button to edit dialog (for products without barcodes)",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Scan barcode and populate field",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Prevent editing barcode once set",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Scan barcode from edit dialog",
+          "tested": true,
+          "test_file": "manual-test"
+        },
+        {
+          "scenario": "Barcode field disabled after setting",
+          "tested": true,
+          "test_file": "manual-test"
+        }
+      ]
+    },
+    {
+      "id": "F026",
+      "name": "Camera Capture for Product Images",
+      "category": "Core Feature",
+      "priority": "Phase-1",
+      "spec": "docs/specs/product_management.md",
+      "implemented": true,
+      "tested": true,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create CameraCaptureDialog component",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Capture photo from device camera",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Upload image to imgbb.com hosting",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Save image URL to Airtable",
+          "completed": true
+        },
+        {
+          "step": 5,
+          "description": "Add camera button to edit dialog",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Capture product photo with camera",
+          "tested": true,
+          "test_file": "manual-test"
+        },
+        {
+          "scenario": "Image uploads to imgbb and saves to Airtable",
           "tested": true,
           "test_file": "manual-test"
         }
