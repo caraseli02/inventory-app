@@ -159,7 +159,8 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full h-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none bg-black flex flex-col"
+        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none bg-black flex flex-col"
+        style={{ height: '100dvh' }}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <DialogHeader className="px-4 py-3 border-b border-stone-700 flex-row items-center justify-between bg-stone-900 shrink-0">
