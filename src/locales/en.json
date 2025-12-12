@@ -27,7 +27,17 @@
     "searching": "Searching…",
     "manualEntry": "Enter barcode manually",
     "addButton": "Add",
-    "emptyState": "Point camera at barcode or enter manually"
+    "emptyState": "Point camera at barcode or enter manually",
+    "cameraError": "Failed to start camera. Check permissions.",
+    "scanBarcode": "Scan"
+  },
+  "camera": {
+    "title": "Take Photo",
+    "capture": "Take Photo",
+    "retake": "Retake",
+    "usePhoto": "Use Photo",
+    "starting": "Starting camera...",
+    "error": "Failed to access camera. Check permissions."
   },
   "scannerFrame": {
     "enterManually": "Or enter barcode manually:",

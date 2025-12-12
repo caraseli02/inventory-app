@@ -9,6 +9,9 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import BarcodeScannerDialog from '../scanner/BarcodeScannerDialog';
+import CameraCaptureDialog from '../camera/CameraCaptureDialog';
+import { ScanBarcode, Camera } from 'lucide-react';
 import type { Product } from '../../types';
 
 type MarkupPercentage = 50 | 70 | 100;
@@ -35,6 +38,10 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
 
   // Check if barcode is editable (only when empty)
   const isBarcodeEditable = !product.fields.Barcode;
+
+  // Scanner and camera dialog states
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
 
   // Get store price based on selected markup
   const getStorePrice = (markupValue: MarkupPercentage): number | undefined => {
@@ -144,20 +151,32 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
           <div className="space-y-4">
             <div>
               <Label htmlFor="barcode" className="text-stone-700 font-semibold text-sm">{t('product.barcode')}</Label>
-              <Input
-                id="barcode"
-                type="text"
-                name="barcode"
-                value={isBarcodeEditable ? formData.barcode : (product.fields.Barcode || '')}
-                onChange={isBarcodeEditable ? handleChange : undefined}
-                disabled={!isBarcodeEditable}
-                placeholder={isBarcodeEditable ? '1234567890123' : ''}
-                className={`mt-2 border-2 ${
-                  isBarcodeEditable
-                    ? 'border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]'
-                    : 'bg-stone-50 border-stone-300 text-stone-600 cursor-not-allowed'
-                }`}
-              />
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="barcode"
+                  type="text"
+                  name="barcode"
+                  value={isBarcodeEditable ? formData.barcode : (product.fields.Barcode || '')}
+                  onChange={isBarcodeEditable ? handleChange : undefined}
+                  disabled={!isBarcodeEditable}
+                  placeholder={isBarcodeEditable ? '1234567890123' : ''}
+                  className={`flex-1 border-2 ${
+                    isBarcodeEditable
+                      ? 'border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]'
+                      : 'bg-stone-50 border-stone-300 text-stone-600 cursor-not-allowed'
+                  }`}
+                />
+                {isBarcodeEditable && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setScannerOpen(true)}
+                    className="h-10 px-3 border-2 border-stone-300 hover:bg-stone-100 hover:border-[var(--color-lavender)]"
+                  >
+                    <ScanBarcode className="w-5 h-5 text-stone-600" />
+                  </Button>
+                )}
+              </div>
               <p className="text-xs text-stone-500 mt-1.5">
                 {isBarcodeEditable
                   ? t('product.barcodeAddNow')
@@ -273,15 +292,25 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
 
             <div>
               <Label htmlFor="imageUrl" className="text-stone-700 font-semibold text-sm">{t('product.imageUrl')}</Label>
-              <Input
-                id="imageUrl"
-                type="url"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder={t('product.imageUrlPlaceholder')}
-                className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
-              />
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="imageUrl"
+                  type="url"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  placeholder={t('product.imageUrlPlaceholder')}
+                  className="flex-1 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCameraOpen(true)}
+                  className="h-10 px-3 border-2 border-stone-300 hover:bg-stone-100 hover:border-[var(--color-lavender)]"
+                >
+                  <Camera className="w-5 h-5 text-stone-600" />
+                </Button>
+              </div>
             </div>
           </div>
         </form>
@@ -319,6 +348,24 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
           </DialogFooter>
         </div>
       </DialogContent>
+
+      {/* Barcode Scanner Dialog */}
+      <BarcodeScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScanSuccess={(barcode) => {
+          setFormData({ ...formData, barcode });
+        }}
+      />
+
+      {/* Camera Capture Dialog */}
+      <CameraCaptureDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onCapture={(imageDataUrl) => {
+          setFormData({ ...formData, imageUrl: imageDataUrl });
+        }}
+      />
     </Dialog>
   );
 };
