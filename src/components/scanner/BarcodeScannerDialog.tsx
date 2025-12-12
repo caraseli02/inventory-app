@@ -161,8 +161,8 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
       }
     };
 
-    // Delay to ensure DOM is ready
-    const timer = setTimeout(initScanner, 200);
+    // Delay to ensure DOM is ready (dialog animation takes ~300ms)
+    const timer = setTimeout(initScanner, 350);
 
     // Cleanup function
     return () => {
@@ -174,20 +174,23 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-4 py-3 border-b border-stone-200 flex-row items-center justify-between">
-          <DialogTitle className="text-lg font-semibold">{t('scanner.title')}</DialogTitle>
+      <DialogContent
+        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full h-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none bg-black flex flex-col"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="px-4 py-3 border-b border-stone-700 flex-row items-center justify-between bg-stone-900 shrink-0">
+          <DialogTitle className="text-lg font-semibold text-white">{t('scanner.title')}</DialogTitle>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onOpenChange(false)}
-            className="h-8 w-8"
+            className="h-8 w-8 text-white hover:bg-stone-700"
           >
             <X className="h-4 w-4" />
           </Button>
         </DialogHeader>
 
-        <div className="relative bg-black aspect-square max-h-[60vh]">
+        <div className="relative bg-black flex-1 flex items-center justify-center">
           <div id={regionId} className="w-full h-full" />
 
           {isInitializing && (
@@ -216,7 +219,7 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
           )}
         </div>
 
-        <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-center text-sm text-stone-600">
+        <div className="px-4 py-4 bg-stone-900 border-t border-stone-700 text-center text-sm text-stone-300 shrink-0">
           {t('scanner.emptyState')}
         </div>
       </DialogContent>
