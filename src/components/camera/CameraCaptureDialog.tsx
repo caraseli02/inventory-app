@@ -175,11 +175,12 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
           </Button>
         </DialogHeader>
 
-        <div className="relative bg-black flex-1 flex items-center justify-center">
+        <div className="relative bg-black flex-1 min-h-0 flex items-center justify-center overflow-hidden">
           {/* Live camera view */}
           <video
             ref={videoRef}
             className={`w-full h-full object-cover ${capturedImage ? 'hidden' : ''}`}
+            style={{ maxHeight: 'calc(100dvh - 130px)' }}
             playsInline
             muted
             autoPlay
@@ -191,6 +192,7 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
               src={capturedImage}
               alt="Captured"
               className="w-full h-full object-contain bg-stone-900"
+              style={{ maxHeight: 'calc(100dvh - 130px)' }}
             />
           )}
 

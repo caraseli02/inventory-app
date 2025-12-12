@@ -191,8 +191,8 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
           </Button>
         </DialogHeader>
 
-        <div className="relative bg-black flex-1 flex items-center justify-center">
-          <div id={regionId} className="w-full h-full" />
+        <div className="relative bg-black flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+          <div id={regionId} className="w-full h-full" style={{ maxHeight: 'calc(100dvh - 120px)' }} />
 
           {isInitializing && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/80">
