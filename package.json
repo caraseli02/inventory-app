@@ -8,6 +8,8 @@
     "build": "nuxt build",
     "generate": "nuxt generate",
     "lint": "eslint .",
+    "typecheck": "tsc -b --noEmit",
+    "test": "node --test",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
