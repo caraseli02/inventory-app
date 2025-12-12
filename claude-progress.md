@@ -301,7 +301,16 @@ Located at: `public/magazin.xlsx`
 *None currently identified.*
 
 ### Medium Priority (Fix if time allows)
-*None currently identified.*
+
+- [MEDIUM] Image update not working in EditProductDialog (discovered: 2025-12-12)
+  - Impact: Adding new image works, but updating existing image doesn't save
+  - Location: `src/components/product/EditProductDialog.tsx`, `src/lib/api.ts`
+  - Suspected cause: Image field update logic in `updateProduct` function
+  - To investigate:
+    1. Check if image URL is being passed correctly to updateProduct
+    2. Verify Airtable attachment format on update vs create
+    3. Check if existing image array is being replaced or merged
+  - Workaround: Delete image field manually in Airtable, then add new image
 
 ### Low Priority / Nice-to-Have
 *None currently identified.*
