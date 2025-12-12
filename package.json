@@ -12,6 +12,8 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@vercel/blob": "^2.0.0",
+    "@vercel/node": "^5.5.15",
     "nuxt": "^3.14.0"
   },
   "devDependencies": {
