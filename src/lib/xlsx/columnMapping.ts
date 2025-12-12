@@ -42,18 +42,13 @@ export const APP_TO_XLSX_MAPPING: Record<string, string> = {
 // Required fields for import validation
 export const REQUIRED_FIELDS = ['Barcode', 'Name'] as const;
 
-// Export column order
+// Export column order (only fields that exist in Airtable)
 export const EXPORT_COLUMN_ORDER = [
   'Barcode',
   'Name',
   'Category',
   'Price',
-  'price50',
-  'price70',
-  'price100',
   'currentStock',
-  'minStock',
-  'Supplier',
   'expiryDate',
 ] as const;
 

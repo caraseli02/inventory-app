@@ -159,9 +159,9 @@ export interface CreateProductDTO {
   Category?: string;
   Price?: number;
   'Expiry Date'?: string;
-  'Min Stock Level'?: number;
-  Supplier?: string;
   Image?: string; // URL string
+  // Note: Min Stock Level and Supplier fields are not in Airtable schema
+  // They are parsed from xlsx but not stored in Airtable (Phase 1)
 }
 
 /**
@@ -221,8 +221,6 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
   if (data.Category) fields.Category = data.Category;
   if (data.Price != null) fields.Price = data.Price;
   if (data['Expiry Date']) fields['Expiry Date'] = data['Expiry Date'];
-  if (data['Min Stock Level'] != null) fields['Min Stock Level'] = data['Min Stock Level'];
-  if (data.Supplier) fields.Supplier = data.Supplier;
 
   // Airtable requires attachments as array of objects with url
   if (data.Image) {

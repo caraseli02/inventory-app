@@ -186,15 +186,13 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           continue;
         }
 
-        // Create new product
+        // Create new product (only include fields that exist in Airtable)
         await createProduct({
           Name: imported.Name,
           Barcode: imported.Barcode,
           Category: imported.Category,
           Price: imported.Price ?? imported.price70, // Use 70% markup as default if no base price
-          Supplier: imported.Supplier,
           'Expiry Date': imported.expiryDate,
-          'Min Stock Level': imported.minStock,
         });
 
         // Add initial stock if provided

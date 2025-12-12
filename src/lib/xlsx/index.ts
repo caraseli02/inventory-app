@@ -47,12 +47,7 @@ export interface ExportProduct {
   Name: string;
   Category?: string;
   Price?: number;
-  price50?: number;
-  price70?: number;
-  price100?: number;
   currentStock?: number;
-  minStock?: number;
-  Supplier?: string;
   expiryDate?: string;
 }
 
