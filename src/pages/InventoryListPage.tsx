@@ -149,7 +149,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         return next;
       });
     }
-  }, [products, loadingProducts, queryClient, showToast]);
+  }, [products, loadingProducts, queryClient, showToast, t]);
 
   const handleRefresh = useCallback(() => {
     refetch();

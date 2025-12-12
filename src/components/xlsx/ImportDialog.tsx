@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { parseXlsxFile, type ImportedProduct, type ImportResult } from '@/lib/xlsx';
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -26,6 +27,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const resetState = useCallback(() => {
     setStep('upload');
@@ -87,6 +89,10 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
     }
   }, [handleFileSelect]);
 
+  const triggerFilePicker = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   const handleConfirmImport = useCallback(async () => {
     if (!importResult?.products.length) return;
 
@@ -124,9 +130,21 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
             <div className="space-y-4">
               {/* Drag & Drop Zone */}
               <div
+                role="button"
+                tabIndex={0}
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
+                onClick={(e) => {
+                  e.preventDefault();
+                  triggerFilePicker();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    triggerFilePicker();
+                  }
+                }}
                 className={`
                   border-2 border-dashed rounded-xl p-8 text-center transition-colors
                   ${isDragging
@@ -142,22 +160,21 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                 <p className="text-sm text-stone-500 mb-4">
                   or click to browse
                 </p>
-                <input
+                <Input
                   type="file"
                   accept=".xlsx,.xls"
                   onChange={handleFileInput}
                   className="hidden"
-                  id="file-upload"
+                  ref={fileInputRef}
                 />
-                <label htmlFor="file-upload">
-                  <Button
-                    variant="outline"
-                    className="cursor-pointer"
-                    onClick={() => document.getElementById('file-upload')?.click()}
-                  >
-                    Select File
-                  </Button>
-                </label>
+                <Button
+                  variant="outline"
+                  className="cursor-pointer"
+                  onClick={triggerFilePicker}
+                  type="button"
+                >
+                  Select File
+                </Button>
               </div>
 
               {/* Sample File Link */}
