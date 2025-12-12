@@ -73,9 +73,9 @@ const ProductListItemComponent = ({
           {/* Stock and Price */}
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-stone-600">{t('product.stock')}</span>
+              <span className="text-sm text-stone-600">{t('product.stock')}:</span>
               <span
-                className={`font-bold ${
+                className={`text-2xl font-bold ${
                   isLowStock ? 'text-[var(--color-terracotta)]' : 'text-stone-900'
                 }`}
               >
@@ -101,7 +101,7 @@ const ProductListItemComponent = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 flex-1 border-2 border-stone-300"
+                className="min-h-11 flex-1 border-2 border-stone-300"
                 onClick={() => onQuickAdjust(product.id, -1)}
                 disabled={isLoading || currentStock === 0}
               >
@@ -117,7 +117,7 @@ const ProductListItemComponent = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 flex-1 border-2 border-stone-300"
+                className="min-h-11 flex-1 border-2 border-stone-300"
                 onClick={() => onQuickAdjust(product.id, 1)}
                 disabled={isLoading}
               >
@@ -143,7 +143,7 @@ const ProductListItemComponent = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 flex-1 border-2 border-stone-300 hover:bg-stone-100"
+                  className="min-h-11 flex-1 border-2 border-stone-300 hover:bg-stone-100"
                   onClick={() => onEdit(product)}
                 >
                   <Edit2 className="h-3.5 w-3.5 mr-1.5" />
@@ -154,7 +154,7 @@ const ProductListItemComponent = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 flex-1 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
+                  className="min-h-11 flex-1 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
                   onClick={() => onDelete(product)}
                 >
                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
