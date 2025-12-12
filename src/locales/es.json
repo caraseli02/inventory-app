@@ -69,6 +69,11 @@
     "nameRequired": "El nombre del producto es obligatorio",
     "cancel": "Cancelar",
     "saveChanges": "Guardar Cambios",
+    "pricing": "Precios",
+    "basePrice": "Precio Base",
+    "basePriceHelp": "Costo original del proveedor",
+    "storePrice": "Precio Tienda",
+    "storePriceHelp": "Precio que pagarán los clientes",
     "insufficientStock": "Stock Insuficiente",
     "cannotRemove": "No se pueden quitar {{quantity}} unidades. Solo hay {{available}} unidades disponibles.",
     "updateProduct": "Actualizar Producto",
@@ -88,7 +93,11 @@
     "Snacks": "Snacks",
     "Beverages": "Bebidas",
     "Household": "Hogar",
+    "Conserve": "Conservas",
     "Uncategorized": "Sin categoría"
+  },
+  "markup": {
+    "label": "Margen"
   },
   "inventory": {
     "title": "Lista de Inventario",

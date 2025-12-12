@@ -47,6 +47,9 @@ export interface ExportProduct {
   Name: string;
   Category?: string;
   Price?: number;
+  price50?: number;
+  price70?: number;
+  price100?: number;
   currentStock?: number;
   expiryDate?: string;
 }

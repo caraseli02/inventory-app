@@ -11,6 +11,7 @@ import {
 } from '../ui/table';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { getProductDisplayPrice } from '@/hooks/useMarkupSetting';
 import type { Product } from '../../types';
 
 // Module-level constant to avoid creating new Set on every render
@@ -142,15 +143,18 @@ const InventoryTableComponent = ({
                   </span>
                 </TableCell>
 
-                {/* Price */}
+                {/* Price (based on product's markup) */}
                 <TableCell className="text-right">
-                  {product.fields.Price != null ? (
-                    <span className="font-bold text-stone-900 text-base lg:text-lg">
-                      €{product.fields.Price.toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-stone-400">—</span>
-                  )}
+                  {(() => {
+                    const displayPrice = getProductDisplayPrice(product.fields);
+                    return displayPrice != null ? (
+                      <span className="font-bold text-stone-900 text-base lg:text-lg">
+                        €{displayPrice.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-stone-400">—</span>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Actions */}

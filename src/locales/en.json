@@ -69,6 +69,11 @@
     "nameRequired": "Product name is required",
     "cancel": "Cancel",
     "saveChanges": "Save Changes",
+    "pricing": "Pricing",
+    "basePrice": "Base Price",
+    "basePriceHelp": "Original cost from supplier",
+    "storePrice": "Store Price",
+    "storePriceHelp": "Price customers will pay",
     "insufficientStock": "Insufficient Stock",
     "cannotRemove": "Cannot remove {{quantity}} unit(s). Only {{available}} unit(s) available.",
     "updateProduct": "Update Product",
@@ -88,7 +93,11 @@
     "Snacks": "Snacks",
     "Beverages": "Beverages",
     "Household": "Household",
+    "Conserve": "Canned Goods",
     "Uncategorized": "Uncategorized"
+  },
+  "markup": {
+    "label": "Markup"
   },
   "inventory": {
     "title": "Inventory List",

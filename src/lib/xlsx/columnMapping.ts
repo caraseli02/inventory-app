@@ -48,6 +48,9 @@ export const EXPORT_COLUMN_ORDER = [
   'Name',
   'Category',
   'Price',
+  'price50',
+  'price70',
+  'price100',
   'currentStock',
   'expiryDate',
 ] as const;

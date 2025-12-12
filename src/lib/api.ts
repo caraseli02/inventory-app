@@ -96,6 +96,10 @@ export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Produ
       Barcode: record.fields.Barcode,
       Category: record.fields.Category as string | undefined,
       Price: record.fields.Price as number | undefined,
+      'Price 50%': record.fields['Price 50%'] as number | undefined,
+      'Price 70%': record.fields['Price 70%'] as number | undefined,
+      'Price 100%': record.fields['Price 100%'] as number | undefined,
+      Markup: record.fields.Markup as number | undefined,
       'Expiry Date': record.fields['Expiry Date'] as string | undefined,
       'Current Stock Level': record.fields['Current Stock Level'] as number | undefined,
       'Ideal Stock': record.fields['Ideal Stock'] as number | undefined,
@@ -158,10 +162,12 @@ export interface CreateProductDTO {
   Barcode: string;
   Category?: string;
   Price?: number;
+  'Price 50%'?: number;
+  'Price 70%'?: number;
+  'Price 100%'?: number;
+  Markup?: number; // Active markup percentage (50, 70, or 100)
   'Expiry Date'?: string;
   Image?: string; // URL string
-  // Note: Min Stock Level and Supplier fields are not in Airtable schema
-  // They are parsed from xlsx but not stored in Airtable (Phase 1)
 }
 
 /**
@@ -220,6 +226,10 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
   // This prevents Airtable from storing empty strings and allows fields to remain unset
   if (data.Category) fields.Category = data.Category;
   if (data.Price != null) fields.Price = data.Price;
+  if (data['Price 50%'] != null) fields['Price 50%'] = data['Price 50%'];
+  if (data['Price 70%'] != null) fields['Price 70%'] = data['Price 70%'];
+  if (data['Price 100%'] != null) fields['Price 100%'] = data['Price 100%'];
+  if (data.Markup != null) fields.Markup = data.Markup;
   if (data['Expiry Date']) fields['Expiry Date'] = data['Expiry Date'];
 
   // Airtable requires attachments as array of objects with url
@@ -472,6 +482,10 @@ export const updateProduct = async (
   if (data.Name !== undefined) fields.Name = data.Name;
   if (data.Category !== undefined) fields.Category = data.Category;
   if (data.Price !== undefined) fields.Price = data.Price;
+  if (data['Price 50%'] !== undefined) fields['Price 50%'] = data['Price 50%'];
+  if (data['Price 70%'] !== undefined) fields['Price 70%'] = data['Price 70%'];
+  if (data['Price 100%'] !== undefined) fields['Price 100%'] = data['Price 100%'];
+  if (data.Markup !== undefined) fields.Markup = data.Markup;
   if (data['Expiry Date'] !== undefined) fields['Expiry Date'] = data['Expiry Date'];
 
   // Airtable requires attachments as array of objects with url

@@ -11,7 +11,7 @@ interface ExportButtonProps {
 }
 
 /**
- * Map Product to ExportProduct format (only fields that exist in Airtable)
+ * Map Product to ExportProduct format
  */
 function mapProductToExport(product: Product): ExportProduct {
   return {
@@ -19,6 +19,9 @@ function mapProductToExport(product: Product): ExportProduct {
     Name: product.fields.Name,
     Category: product.fields.Category,
     Price: product.fields.Price,
+    price50: product.fields['Price 50%'],
+    price70: product.fields['Price 70%'],
+    price100: product.fields['Price 100%'],
     currentStock: product.fields['Current Stock Level'],
     expiryDate: product.fields['Expiry Date'],
   };

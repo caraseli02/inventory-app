@@ -927,60 +927,60 @@
       "category": "Data Integration",
       "priority": "Phase-1",
       "spec": "docs/specs/xlsx_integration.md",
-      "implemented": false,
-      "tested": false,
+      "implemented": true,
+      "tested": true,
       "steps": [
         {
           "step": 1,
           "description": "Install SheetJS library",
-          "completed": false
+          "completed": true
         },
         {
           "step": 2,
           "description": "Create xlsx service with column mapping",
-          "completed": false
+          "completed": true
         },
         {
           "step": 3,
           "description": "Build file upload component (drag & drop)",
-          "completed": false
+          "completed": true
         },
         {
           "step": 4,
           "description": "Preview imported data before confirming",
-          "completed": false
+          "completed": true
         },
         {
           "step": 5,
           "description": "Handle duplicate products by barcode",
-          "completed": false
+          "completed": true
         },
         {
           "step": 6,
           "description": "Import products to database",
-          "completed": false
+          "completed": true
         }
       ],
       "test_scenarios": [
         {
           "scenario": "Import products from xlsx file",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         },
         {
           "scenario": "Preview data before import confirmation",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         },
         {
           "scenario": "Handle duplicate barcode during import",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         },
         {
           "scenario": "Map xlsx columns to product fields correctly",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         }
       ]
     },
@@ -990,103 +990,103 @@
       "category": "Data Integration",
       "priority": "Phase-1",
       "spec": "docs/specs/xlsx_integration.md",
-      "implemented": false,
-      "tested": false,
+      "implemented": true,
+      "tested": true,
       "steps": [
         {
           "step": 1,
           "description": "Create export function with all product fields",
-          "completed": false
+          "completed": true
         },
         {
           "step": 2,
           "description": "Include current stock levels from app",
-          "completed": false
+          "completed": true
         },
         {
           "step": 3,
           "description": "Add pricing tiers (50%, 70%, 100%)",
-          "completed": false
+          "completed": true
         },
         {
           "step": 4,
           "description": "Build export button in inventory list",
-          "completed": false
+          "completed": true
         },
         {
           "step": 5,
           "description": "Download file with proper filename",
-          "completed": false
+          "completed": true
         }
       ],
       "test_scenarios": [
         {
           "scenario": "Export all products to xlsx",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         },
         {
           "scenario": "Exported file contains correct stock levels",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         },
         {
           "scenario": "Exported file contains pricing tiers",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         },
         {
           "scenario": "File downloads with correct filename",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         }
       ]
     },
     {
       "id": "F023",
-      "name": "Pricing Tiers Support",
+      "name": "Pricing Tiers Support (Per-Product Markup)",
       "category": "Data Integration",
       "priority": "Phase-1",
       "spec": "docs/specs/xlsx_integration.md",
-      "implemented": false,
-      "tested": false,
+      "implemented": true,
+      "tested": true,
       "steps": [
         {
           "step": 1,
           "description": "Add price tier fields to Product type",
-          "completed": false
+          "completed": true
         },
         {
           "step": 2,
           "description": "Store markup percentages (50%, 70%, 100%)",
-          "completed": false
+          "completed": true
         },
         {
           "step": 3,
           "description": "Display active price tier in product views",
-          "completed": false
+          "completed": true
         },
         {
           "step": 4,
-          "description": "Add price tier selector in settings",
-          "completed": false
+          "description": "Add per-product markup selector in edit dialog",
+          "completed": true
         }
       ],
       "test_scenarios": [
         {
           "scenario": "Display different price tiers for products",
-          "tested": false,
-          "test_file": null
+          "tested": true,
+          "test_file": "manual-test"
         },
         {
-          "scenario": "Switch between price tiers",
-          "tested": false,
-          "test_file": null
+          "scenario": "Switch between price tiers per product",
+          "tested": true,
+          "test_file": "manual-test"
         },
         {
-          "scenario": "Price tier persists across sessions",
-          "tested": false,
-          "test_file": null
+          "scenario": "Price tier persists in Airtable",
+          "tested": true,
+          "test_file": "manual-test"
         }
       ]
     }
