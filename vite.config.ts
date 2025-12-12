@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
@@ -10,6 +11,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '~components': path.resolve(__dirname, './components'),
     },
   },
   build: {
@@ -43,6 +45,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
   },
   plugins: [
+    vue(),
     react(),
     tailwindcss(),
     VitePWA({

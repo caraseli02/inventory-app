@@ -19,7 +19,9 @@
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "~components/*": ["./components/*"],
+      "~composables/*": ["./composables/*"]
     },
 
     /* Linting */
@@ -30,5 +32,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src", "components", "composables"]
 }
