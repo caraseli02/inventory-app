@@ -54,7 +54,7 @@ export const useInventoryList = () => {
       result = result.filter(
         (product) =>
           product.fields.Name.toLowerCase().includes(searchLower) ||
-          product.fields.Barcode.toLowerCase().includes(searchLower)
+          (product.fields.Barcode?.toLowerCase().includes(searchLower) ?? false)
       );
     }
 

@@ -27,7 +27,21 @@
     "searching": "Buscando…",
     "manualEntry": "Ingresar código de barras manualmente",
     "addButton": "Agregar",
-    "emptyState": "Apunta la cámara al código de barras o ingrésalo manualmente"
+    "emptyState": "Apunta la cámara al código de barras o ingrésalo manualmente",
+    "cameraError": "No se pudo iniciar la cámara. Verifica los permisos.",
+    "scanBarcode": "Escanear"
+  },
+  "camera": {
+    "title": "Tomar Foto",
+    "capture": "Tomar Foto",
+    "retake": "Volver a Tomar",
+    "usePhoto": "Usar Foto",
+    "starting": "Iniciando cámara...",
+    "error": "No se pudo acceder a la cámara. Verifica los permisos.",
+    "permissionDenied": "Permiso de cámara denegado. Por favor permite el acceso a la cámara.",
+    "notFound": "No se encontró cámara en este dispositivo.",
+    "inUse": "La cámara está siendo usada por otra aplicación.",
+    "uploadError": "Error al subir la imagen. Intenta usar una URL en su lugar."
   },
   "scannerFrame": {
     "enterManually": "O ingresa el código de barras manualmente:",
@@ -42,6 +56,7 @@
     "manageStock": "Gestionar Stock",
     "barcode": "Código de Barras",
     "barcodeCannotChange": "El código de barras no se puede cambiar",
+    "barcodeAddNow": "Agrega un código de barras para habilitar el escaneo",
     "name": "Nombre del Producto",
     "namePlaceholder": "ej. Bananas Orgánicas",
     "category": "Categoría",
@@ -69,6 +84,11 @@
     "nameRequired": "El nombre del producto es obligatorio",
     "cancel": "Cancelar",
     "saveChanges": "Guardar Cambios",
+    "pricing": "Precios",
+    "basePrice": "Precio Base",
+    "basePriceHelp": "Costo original del proveedor",
+    "storePrice": "Precio Tienda",
+    "storePriceHelp": "Precio que pagarán los clientes",
     "insufficientStock": "Stock Insuficiente",
     "cannotRemove": "No se pueden quitar {{quantity}} unidades. Solo hay {{available}} unidades disponibles.",
     "updateProduct": "Actualizar Producto",
@@ -88,7 +108,11 @@
     "Snacks": "Snacks",
     "Beverages": "Bebidas",
     "Household": "Hogar",
+    "Conserve": "Conservas",
     "Uncategorized": "Sin categoría"
+  },
+  "markup": {
+    "label": "Margen"
   },
   "inventory": {
     "title": "Lista de Inventario",
@@ -271,5 +295,23 @@
     "tryRefreshing": "Intenta actualizar la página",
     "unknownError": "Ocurrió un error desconocido",
     "productCreationFailed": "Error al crear el producto."
+  },
+  "import": {
+    "button": "Importar",
+    "title": "Importar Productos desde Excel",
+    "description": "Sube un archivo xlsx para importar productos a tu inventario.",
+    "success": "Importación Exitosa",
+    "successMessage": "Se importaron {{count}} productos ({{skipped}} omitidos, {{errors}} errores)",
+    "allSkipped": "Todos los Productos Omitidos",
+    "allSkippedMessage": "{{count}} productos ya existen en el inventario",
+    "failed": "Importación Fallida",
+    "failedMessage": "{{count}} productos no se pudieron importar"
+  },
+  "export": {
+    "button": "Exportar",
+    "title": "Exportar Inventario",
+    "success": "Exportación Exitosa",
+    "successMessage": "Se exportaron {{count}} productos a archivo Excel",
+    "failed": "Exportación Fallida"
   }
 }

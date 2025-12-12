@@ -27,7 +27,21 @@
     "searching": "Searching…",
     "manualEntry": "Enter barcode manually",
     "addButton": "Add",
-    "emptyState": "Point camera at barcode or enter manually"
+    "emptyState": "Point camera at barcode or enter manually",
+    "cameraError": "Failed to start camera. Check permissions.",
+    "scanBarcode": "Scan"
+  },
+  "camera": {
+    "title": "Take Photo",
+    "capture": "Take Photo",
+    "retake": "Retake",
+    "usePhoto": "Use Photo",
+    "starting": "Starting camera...",
+    "error": "Failed to access camera. Check permissions.",
+    "permissionDenied": "Camera permission denied. Please allow camera access.",
+    "notFound": "No camera found on this device.",
+    "inUse": "Camera is in use by another application.",
+    "uploadError": "Failed to upload image. Please try using a URL instead."
   },
   "scannerFrame": {
     "enterManually": "Or enter barcode manually:",
@@ -42,6 +56,7 @@
     "manageStock": "Manage Stock",
     "barcode": "Barcode",
     "barcodeCannotChange": "Barcode cannot be changed",
+    "barcodeAddNow": "Add a barcode to enable scanning",
     "name": "Product Name",
     "namePlaceholder": "e.g. Organic Bananas",
     "category": "Category",
@@ -69,6 +84,11 @@
     "nameRequired": "Product name is required",
     "cancel": "Cancel",
     "saveChanges": "Save Changes",
+    "pricing": "Pricing",
+    "basePrice": "Base Price",
+    "basePriceHelp": "Original cost from supplier",
+    "storePrice": "Store Price",
+    "storePriceHelp": "Price customers will pay",
     "insufficientStock": "Insufficient Stock",
     "cannotRemove": "Cannot remove {{quantity}} unit(s). Only {{available}} unit(s) available.",
     "updateProduct": "Update Product",
@@ -88,7 +108,11 @@
     "Snacks": "Snacks",
     "Beverages": "Beverages",
     "Household": "Household",
+    "Conserve": "Canned Goods",
     "Uncategorized": "Uncategorized"
+  },
+  "markup": {
+    "label": "Markup"
   },
   "inventory": {
     "title": "Inventory List",
@@ -271,5 +295,23 @@
     "tryRefreshing": "Try refreshing the page",
     "unknownError": "Unknown error occurred",
     "productCreationFailed": "Failed to create product."
+  },
+  "import": {
+    "button": "Import",
+    "title": "Import Products from Excel",
+    "description": "Upload an xlsx file to import products into your inventory.",
+    "success": "Import Successful",
+    "successMessage": "Imported {{count}} products ({{skipped}} skipped, {{errors}} errors)",
+    "allSkipped": "All Products Skipped",
+    "allSkippedMessage": "{{count}} products already exist in inventory",
+    "failed": "Import Failed",
+    "failedMessage": "{{count}} products failed to import"
+  },
+  "export": {
+    "button": "Export",
+    "title": "Export Inventory",
+    "success": "Export Successful",
+    "successMessage": "Exported {{count}} products to Excel file",
+    "failed": "Export Failed"
   }
 }

@@ -4,6 +4,7 @@ import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { getProductDisplayPrice } from '@/hooks/useMarkupSetting';
 import type { Product } from '../../types';
 
 interface ProductListItemProps {
@@ -81,11 +82,14 @@ const ProductListItemComponent = ({
                 {currentStock}
               </span>
             </div>
-            {product.fields.Price != null && (
-              <span className="text-lg font-bold text-stone-900">
-                €{product.fields.Price.toFixed(2)}
-              </span>
-            )}
+            {(() => {
+              const displayPrice = getProductDisplayPrice(product.fields);
+              return displayPrice != null ? (
+                <span className="text-lg font-bold text-stone-900">
+                  €{displayPrice.toFixed(2)}
+                </span>
+              ) : null;
+            })()}
           </div>
 
           {/* Quick Adjust Buttons */}

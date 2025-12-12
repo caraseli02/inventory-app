@@ -69,6 +69,85 @@ src/
 - Fallback to "General" category if no match found
 - Returns: name, category, imageUrl, source
 
+### xlsx Integration (Phase 1)
+
+The app supports importing/exporting product data from Excel files, enabling customers to use their existing xlsx workflow for pricing while benefiting from the app's inventory tracking.
+
+**Spec**: `docs/specs/xlsx_integration.md`
+
+**Features**:
+- F021: Excel Import - Import products from xlsx files
+- F022: Excel Export - Export inventory to xlsx
+- F023: Pricing Tiers - Support 50%, 70%, 100% markup prices
+
+**Sample xlsx File**: `public/magazin.xlsx`
+
+**Column Mapping**:
+| xlsx Column | App Field | Required |
+|-------------|-----------|----------|
+| Cod de bare (Barcode) | `Barcode` | No (can add later via edit) |
+| Denumirea produsului | `Name` | **Yes** |
+| Categorie | `Category` | No |
+| Preț (euro) | `Price` | No |
+| Cost preț magazin 50% | `price50` | No |
+| Cost preț magazin 70% | `price70` | No |
+| Cost preț magazin 100% | `price100` | No |
+| Stock curent / Cantitatea | `currentStock` | No |
+| Stock minim | `Min Stock Level` | No |
+| Furnizor | `Supplier` | No |
+| Data expirare | `Expiry Date` | No |
+
+**Flexible Import**: Products can be imported without barcodes - add them later via the edit dialog using the barcode scanner button.
+
+**Architecture Roadmap**:
+```
+Phase 1 (Current): SheetJS + Airtable
+  └── Import/Export xlsx, keep Airtable as database
+
+Phase 2 (Future): SheetJS + Dexie.js (IndexedDB)
+  └── Replace Airtable with local-first storage, full offline
+
+Phase 3 (Optional): SheetJS + Dexie.js + Supabase
+  └── Multi-device sync, user auth, cloud backup
+```
+
+### Image Upload & Camera Capture
+
+The EditProductDialog supports two methods for adding product images:
+
+1. **URL Input** - Paste any image URL directly
+2. **Camera Capture** - Take a photo with device camera
+
+**Camera Capture Flow**:
+- Camera photos are captured as base64 data URLs
+- Airtable requires actual URLs (can't accept data URLs)
+- Photos are uploaded to storage and URL is saved to Airtable
+
+**Image Storage (Vercel Blob + imgbb fallback)**:
+```
+Production (Vercel):
+  └── Uses Vercel Blob storage via /api/upload serverless function
+  └── Add BLOB_READ_WRITE_TOKEN in Vercel dashboard
+
+Development (Local):
+  └── Falls back to imgbb.com (free image hosting)
+  └── Add VITE_IMGBB_API_KEY to .env
+```
+
+**Environment Variables**:
+```bash
+# Development: imgbb fallback
+VITE_IMGBB_API_KEY=your_api_key_here  # Get free key at https://api.imgbb.com/
+
+# Production: Vercel Blob (set in Vercel dashboard)
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
+```
+
+**Barcode Scanner in Edit Dialog**:
+- Products without barcodes show a scan button
+- Opens camera to scan barcode directly
+- Supports UPC-A, UPC-E, EAN-13, EAN-8, QR codes
+
 ## Spec-Driven Development
 
 This project follows a **spec-driven development** approach. All features and cross-cutting concerns are documented as specifications in `docs/specs/` before implementation.

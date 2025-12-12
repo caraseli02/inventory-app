@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateProduct } from '../../lib/api';
+import { uploadImage, isDataUrl } from '../../lib/imageUpload';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { logger } from '../../lib/logger';
@@ -9,7 +10,12 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import BarcodeScannerDialog from '../scanner/BarcodeScannerDialog';
+import CameraCaptureDialog from '../camera/CameraCaptureDialog';
+import { ScanBarcode, Camera } from 'lucide-react';
 import type { Product } from '../../types';
+
+type MarkupPercentage = 50 | 70 | 100;
 
 interface EditProductDialogProps {
   product: Product;
@@ -17,35 +23,77 @@ interface EditProductDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+/** Helper to create initial form data from product */
+const getInitialFormData = (product: Product) => ({
+  name: product.fields.Name,
+  barcode: product.fields.Barcode || '',
+  category: product.fields.Category || 'General',
+  markup: (product.fields.Markup as MarkupPercentage) || 70,
+  expiryDate: product.fields['Expiry Date'] || '',
+  imageUrl: product.fields.Image?.[0]?.url || '',
+});
+
 const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogProps) => {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
+  // Track which product the form is for (to reset on product change)
+  const [trackedProductId, setTrackedProductId] = useState(product.id);
+
   // Initialize form with current product values
-  const [formData, setFormData] = useState({
-    name: product.fields.Name,
-    category: product.fields.Category || 'General',
-    price: product.fields.Price?.toString() || '',
-    expiryDate: product.fields['Expiry Date'] || '',
-    imageUrl: product.fields.Image?.[0]?.url || '',
-  });
+  const [formData, setFormData] = useState(getInitialFormData(product));
+
+  // Reset form when product changes (React-recommended pattern: store prev props)
+  // See: https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
+  if (product.id !== trackedProductId) {
+    setTrackedProductId(product.id);
+    setFormData(getInitialFormData(product));
+  }
+
+  // Check if barcode is editable (only when empty)
+  const isBarcodeEditable = !product.fields.Barcode;
+
+  // Scanner and camera dialog states
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+
+  // Get store price based on selected markup
+  const getStorePrice = (markupValue: MarkupPercentage): number | undefined => {
+    switch (markupValue) {
+      case 50:
+        return product.fields['Price 50%'];
+      case 70:
+        return product.fields['Price 70%'];
+      case 100:
+        return product.fields['Price 100%'];
+      default:
+        return product.fields.Price;
+    }
+  };
+
+  const basePrice = product.fields.Price;
+  const storePrice = getStorePrice(formData.markup);
 
   const mutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const parsedPrice = data.price.trim() ? parseFloat(data.price) : undefined;
-      const safePrice = Number.isFinite(parsedPrice) ? parsedPrice : undefined;
+      // Upload image if it's a data URL (from camera capture)
+      let imageUrl = data.imageUrl || undefined;
+      if (imageUrl && isDataUrl(imageUrl)) {
+        imageUrl = await uploadImage(imageUrl);
+      }
 
       return await updateProduct(product.id, {
         Name: data.name,
+        Barcode: data.barcode || undefined, // Only update if provided
         Category: data.category,
-        Price: safePrice,
+        Markup: data.markup,
         'Expiry Date': data.expiryDate || undefined,
-        Image: data.imageUrl || undefined,
+        Image: imageUrl,
       });
     },
     onSuccess: (updatedProduct) => {
       // Invalidate queries to refetch updated data
-      queryClient.invalidateQueries({ queryKey: ['product', product.fields.Barcode] });
+      queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.fields.Barcode] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
 
       toast.success(t('toast.productUpdated'), {
@@ -123,14 +171,38 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
           <div className="space-y-4">
             <div>
               <Label htmlFor="barcode" className="text-stone-700 font-semibold text-sm">{t('product.barcode')}</Label>
-              <Input
-                id="barcode"
-                type="text"
-                value={product.fields.Barcode}
-                disabled
-                className="mt-2 bg-stone-50 border-2 border-stone-300 text-stone-600 cursor-not-allowed"
-              />
-              <p className="text-xs text-stone-500 mt-1.5">{t('product.barcodeCannotChange')}</p>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="barcode"
+                  type="text"
+                  name="barcode"
+                  value={isBarcodeEditable ? formData.barcode : (product.fields.Barcode || '')}
+                  onChange={isBarcodeEditable ? handleChange : undefined}
+                  disabled={!isBarcodeEditable}
+                  placeholder={isBarcodeEditable ? '1234567890123' : ''}
+                  className={`flex-1 border-2 ${
+                    isBarcodeEditable
+                      ? 'border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]'
+                      : 'bg-stone-50 border-stone-300 text-stone-600 cursor-not-allowed'
+                  }`}
+                />
+                {isBarcodeEditable && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setScannerOpen(true)}
+                    className="h-10 px-3 border-2 border-stone-300 hover:bg-stone-100 hover:border-[var(--color-lavender)]"
+                  >
+                    <ScanBarcode className="w-5 h-5 text-stone-600" />
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-stone-500 mt-1.5">
+                {isBarcodeEditable
+                  ? t('product.barcodeAddNow')
+                  : t('product.barcodeCannotChange')
+                }
+              </p>
             </div>
 
             <div>
@@ -152,44 +224,74 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
 
           {/* Product Details Section */}
           <div className="space-y-4 pt-4 border-t border-stone-200">
+            <div>
+              <Label htmlFor="category" className="text-stone-700 font-semibold text-sm">{t('product.category')}</Label>
+              <Select
+                value={formData.category}
+                onValueChange={(value) => setFormData({ ...formData, category: value })}
+              >
+                <SelectTrigger className="mt-2 border-2 border-stone-300 focus:ring-[var(--color-lavender)]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="General">{t('categories.General')}</SelectItem>
+                  <SelectItem value="Produce">{t('categories.Produce')}</SelectItem>
+                  <SelectItem value="Dairy">{t('categories.Dairy')}</SelectItem>
+                  <SelectItem value="Meat">{t('categories.Meat')}</SelectItem>
+                  <SelectItem value="Pantry">{t('categories.Pantry')}</SelectItem>
+                  <SelectItem value="Snacks">{t('categories.Snacks')}</SelectItem>
+                  <SelectItem value="Beverages">{t('categories.Beverages')}</SelectItem>
+                  <SelectItem value="Household">{t('categories.Household')}</SelectItem>
+                  <SelectItem value="Conserve">{t('categories.Conserve')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Pricing Section */}
+          <div className="space-y-4 pt-4 border-t border-stone-200">
+            <h3 className="font-semibold text-stone-900">{t('product.pricing')}</h3>
+
+            {/* Base Price (read-only) */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="category" className="text-stone-700 font-semibold text-sm">{t('product.category')}</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value })}
-                >
-                  <SelectTrigger className="mt-2 border-2 border-stone-300 focus:ring-[var(--color-lavender)]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="General">{t('categories.General')}</SelectItem>
-                    <SelectItem value="Produce">{t('categories.Produce')}</SelectItem>
-                    <SelectItem value="Dairy">{t('categories.Dairy')}</SelectItem>
-                    <SelectItem value="Meat">{t('categories.Meat')}</SelectItem>
-                    <SelectItem value="Pantry">{t('categories.Pantry')}</SelectItem>
-                    <SelectItem value="Snacks">{t('categories.Snacks')}</SelectItem>
-                    <SelectItem value="Beverages">{t('categories.Beverages')}</SelectItem>
-                    <SelectItem value="Household">{t('categories.Household')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-stone-700 font-semibold text-sm">{t('product.basePrice')}</Label>
+                <div className="mt-2 px-3 py-2 bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
+                  {basePrice != null ? `€${basePrice.toFixed(2)}` : '—'}
+                </div>
+                <p className="text-xs text-stone-500 mt-1">{t('product.basePriceHelp')}</p>
               </div>
               <div>
-                <Label htmlFor="price" className="text-stone-700 font-semibold text-sm">{t('product.price')}</Label>
-                <div className="relative mt-2">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-semibold">€</span>
-                  <Input
-                    id="price"
-                    type="number"
-                    name="price"
-                    step="0.01"
-                    min="0"
-                    value={formData.price}
-                    onChange={handleChange}
-                    placeholder="0.00"
-                    className="pl-8 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
-                  />
+                <Label className="text-stone-700 font-semibold text-sm">{t('product.storePrice')}</Label>
+                <div className="mt-2 px-3 py-2 bg-[var(--color-forest)]/10 border-2 border-[var(--color-forest)]/30 rounded-md text-[var(--color-forest)] font-bold text-lg">
+                  {storePrice != null ? `€${storePrice.toFixed(2)}` : '—'}
                 </div>
+                <p className="text-xs text-stone-500 mt-1">{t('product.storePriceHelp')}</p>
+              </div>
+            </div>
+
+            {/* Markup Selector */}
+            <div>
+              <Label className="text-stone-700 font-semibold text-sm">{t('markup.label')}</Label>
+              <div className="flex rounded-lg border-2 border-stone-200 bg-stone-50 p-1 mt-2">
+                {([50, 70, 100] as MarkupPercentage[]).map((option) => (
+                  <Button
+                    key={option}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, markup: option })}
+                    className={`
+                      flex-1 h-10 font-semibold transition-all
+                      ${formData.markup === option
+                        ? 'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-dark)] hover:text-white'
+                        : 'text-stone-600 hover:bg-stone-200 hover:text-stone-900'
+                      }
+                    `}
+                  >
+                    {option}%
+                  </Button>
+                ))}
               </div>
             </div>
           </div>
@@ -210,15 +312,25 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
 
             <div>
               <Label htmlFor="imageUrl" className="text-stone-700 font-semibold text-sm">{t('product.imageUrl')}</Label>
-              <Input
-                id="imageUrl"
-                type="url"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                placeholder={t('product.imageUrlPlaceholder')}
-                className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
-              />
+              <div className="flex gap-2 mt-2">
+                <Input
+                  id="imageUrl"
+                  type="url"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  placeholder={t('product.imageUrlPlaceholder')}
+                  className="flex-1 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCameraOpen(true)}
+                  className="h-10 px-3 border-2 border-stone-300 hover:bg-stone-100 hover:border-[var(--color-lavender)]"
+                >
+                  <Camera className="w-5 h-5 text-stone-600" />
+                </Button>
+              </div>
             </div>
           </div>
         </form>
@@ -256,6 +368,24 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
           </DialogFooter>
         </div>
       </DialogContent>
+
+      {/* Barcode Scanner Dialog */}
+      <BarcodeScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScanSuccess={(barcode) => {
+          setFormData({ ...formData, barcode });
+        }}
+      />
+
+      {/* Camera Capture Dialog */}
+      <CameraCaptureDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onCapture={(imageDataUrl) => {
+          setFormData({ ...formData, imageUrl: imageDataUrl });
+        }}
+      />
     </Dialog>
   );
 };
