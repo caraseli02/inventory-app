@@ -1,9 +1,17 @@
+import { defineNuxtConfig } from 'nuxt/config'
+
 export default defineNuxtConfig({
+  ssr: true,
   devtools: { enabled: true },
   typescript: {
     strict: true,
   },
   modules: ['@nuxtjs/tailwindcss'],
+  plugins: [
+    { src: './plugins/vue-query.client', mode: 'client' },
+    { src: './plugins/logger' },
+    { src: './plugins/i18n.client', mode: 'client' },
+  ],
   app: {
     head: {
       title: 'Inventory App | Nuxt Scaffold',
