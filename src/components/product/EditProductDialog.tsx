@@ -5,7 +5,7 @@ import { uploadImage, isDataUrl } from '../../lib/imageUpload';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { logger } from '../../lib/logger';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -154,6 +154,9 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
         <div className="h-full flex flex-col overflow-hidden">
           <DialogHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-6 py-6 flex-shrink-0">
             <DialogTitle className="text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
+            <DialogDescription className="text-stone-600 text-sm">
+              {t('dialogs.editProduct.description', 'Edit product details and save changes')}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">

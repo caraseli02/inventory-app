@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Package } from 'lucide-react';
 import { deleteProduct } from '../../lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -102,8 +103,8 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
                   className="w-12 h-12 object-cover rounded-lg border border-stone-200"
                 />
               ) : (
-                <div className="w-12 h-12 bg-stone-100 rounded-lg border border-stone-200 flex items-center justify-center text-2xl">
-                  📦
+                <div className="w-12 h-12 bg-stone-100 rounded-lg border border-stone-200 flex items-center justify-center">
+                  <Package className="h-6 w-6 text-stone-400" />
                 </div>
               )}
               <div className="flex-1">

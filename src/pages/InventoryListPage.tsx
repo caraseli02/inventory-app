@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, Upload } from 'lucide-react';
+import { RefreshCw, Upload, Package } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
 import { Spinner } from '../components/ui/spinner';
@@ -323,7 +323,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                   ))
                 ) : (
                   <div className="bg-white rounded-2xl border-2 border-stone-200 p-12 text-center">
-                    <div className="text-6xl mb-4">📦</div>
+                    <Package className="h-24 w-24 text-stone-300 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-stone-900 mb-2">
                       {t('inventory.noProducts')}
                     </h3>

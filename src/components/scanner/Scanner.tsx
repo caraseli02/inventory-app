@@ -108,8 +108,11 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
     <div className="w-full h-full overflow-hidden bg-black relative flex flex-col">
       <div id={regionId} className="w-full flex-1 bg-black"></div>
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-red-500 p-4 text-center">
-          {error}
+        <div className="absolute inset-0 flex items-center justify-center bg-red-50 border-4 border-red-500 text-red-900 p-6 text-center m-4 rounded-lg">
+          <div>
+            <p className="font-bold text-lg mb-2">Camera Error</p>
+            <p className="text-sm">{error}</p>
+          </div>
         </div>
       )}
       <div className="bg-stone-100 py-2 text-center text-stone-700 text-sm">

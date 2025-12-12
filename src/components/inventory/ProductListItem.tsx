@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Minus, AlertTriangle, Edit2, Trash2, Package } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -45,7 +45,7 @@ const ProductListItemComponent = ({
           />
         ) : (
           <div className="h-20 w-20 rounded-lg bg-stone-100 flex items-center justify-center border border-stone-200">
-            <span className="text-2xl text-stone-400">📦</span>
+            <Package className="h-10 w-10 text-stone-400" />
           </div>
         )}
 

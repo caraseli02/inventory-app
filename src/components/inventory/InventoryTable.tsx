@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Minus, AlertTriangle, Edit2, Trash2, Package } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -39,7 +39,7 @@ const InventoryTableComponent = ({
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
-        <div className="text-6xl mb-4">📦</div>
+        <Package className="h-24 w-24 text-stone-300 mb-4" />
         <h3 className="text-xl font-bold text-stone-900 mb-2">{t('inventory.noProducts')}</h3>
         <p className="text-stone-600">
           {t('inventory.adjustFilters')}
@@ -99,7 +99,7 @@ const InventoryTableComponent = ({
                     />
                   ) : (
                     <div className="h-12 w-12 lg:h-16 lg:w-16 rounded-lg bg-stone-100 flex items-center justify-center border border-stone-200">
-                      <span className="text-lg lg:text-2xl">📦</span>
+                      <Package className="h-6 w-6 lg:h-8 lg:w-8 text-stone-400" />
                     </div>
                   )}
                 </TableCell>
