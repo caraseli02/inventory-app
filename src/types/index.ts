@@ -2,7 +2,7 @@ import type { Attachment, FieldSet } from 'airtable';
 
 export interface ProductFields extends FieldSet {
   Name: string;
-  Barcode: string;
+  Barcode?: string;          // Optional - can be added later via edit dialog
   Category?: string;         // Optional - may not be set at creation
   Price?: number;            // Optional - base price in EUR
   'Price 50%'?: number;      // 50% markup price
@@ -22,7 +22,7 @@ export interface Product {
   createdTime: string;
   fields: {
     Name: string;
-    Barcode: string;
+    Barcode?: string;         // Optional - can be added later via edit dialog
     Category?: string;
     Price?: number;           // Base price in EUR
     'Price 50%'?: number;     // 50% markup price

@@ -42,6 +42,7 @@
     "manageStock": "Gestionar Stock",
     "barcode": "Código de Barras",
     "barcodeCannotChange": "El código de barras no se puede cambiar",
+    "barcodeAddNow": "Agrega un código de barras para habilitar el escaneo",
     "name": "Nombre del Producto",
     "namePlaceholder": "ej. Bananas Orgánicas",
     "category": "Categoría",

@@ -14,8 +14,8 @@ import {
 
 // Types for imported product data
 export interface ImportedProduct {
-  Barcode: string;
   Name: string;
+  Barcode?: string; // Optional - can be added later via edit dialog
   Category?: string;
   Price?: number;
   price50?: number;
@@ -43,7 +43,7 @@ export interface ImportError {
 }
 
 export interface ExportProduct {
-  Barcode: string;
+  Barcode?: string; // Optional - products may not have barcodes
   Name: string;
   Category?: string;
   Price?: number;
@@ -107,8 +107,11 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       const potentialHeaders = row.map(cell => String(cell || '').trim());
 
       // Check if this row contains recognizable headers
-      const mappedCount = potentialHeaders.filter(h => mapXlsxHeaderToAppField(h) !== null).length;
-      if (mappedCount >= 2) { // At least 2 recognizable columns
+      // At least 1 recognizable column (Name is required, Barcode recommended)
+      const mappedFields = potentialHeaders.map(h => mapXlsxHeaderToAppField(h)).filter(Boolean);
+      const hasNameColumn = mappedFields.includes('Name');
+
+      if (hasNameColumn || mappedFields.length >= 2) {
         headerRowIndex = i;
         headers = potentialHeaders;
         break;
@@ -137,7 +140,8 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       }
     });
 
-    // Check for required fields
+    // Check for required fields - only warn if Name column is missing
+    // Barcode is required per-row but column can be optional if provided elsewhere
     const mappedFields = Object.values(columnMapping);
     for (const required of REQUIRED_FIELDS) {
       if (!mappedFields.includes(required)) {
@@ -145,15 +149,21 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       }
     }
 
-    if (missingRequired.length > 0) {
+    // Only fail if Name column is completely missing
+    if (!mappedFields.includes('Name')) {
       return {
         success: false,
         products: [],
-        errors: [{ row: 0, message: `Missing required columns: ${missingRequired.join(', ')}` }],
+        errors: [{ row: 0, message: 'Missing required column: Name (Denumirea produsului). This column is required for import.' }],
         warnings: [],
         totalRows: 0,
         validRows: 0,
       };
+    }
+
+    // Info about optional columns not found
+    if (!mappedFields.includes('Barcode')) {
+      warnings.push('Barcode column not found. Products will be imported without barcodes - you can add them later via the edit dialog.');
     }
 
     // Process data rows

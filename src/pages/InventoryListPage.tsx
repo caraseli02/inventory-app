@@ -177,19 +177,20 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
     for (const imported of importedProducts) {
       try {
-        // Check if product with this barcode already exists
-        const existing = await getProductByBarcode(imported.Barcode);
-
-        if (existing) {
-          // Skip duplicates for now (could add update logic later)
-          skipCount++;
-          continue;
+        // Check if product with this barcode already exists (only if barcode is provided)
+        if (imported.Barcode) {
+          const existing = await getProductByBarcode(imported.Barcode);
+          if (existing) {
+            // Skip duplicates for now (could add update logic later)
+            skipCount++;
+            continue;
+          }
         }
 
         // Create new product with base price and all markup tiers
-        await createProduct({
+        const newProduct = await createProduct({
           Name: imported.Name,
-          Barcode: imported.Barcode,
+          Barcode: imported.Barcode, // May be undefined
           Category: imported.Category,
           Price: imported.Price, // Base price (Pret euro)
           'Price 50%': imported.price50,
@@ -199,12 +200,9 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           'Expiry Date': imported.expiryDate,
         });
 
-        // Add initial stock if provided
-        if (imported.currentStock && imported.currentStock > 0) {
-          const newProduct = await getProductByBarcode(imported.Barcode);
-          if (newProduct) {
-            await addStockMovement(newProduct.id, imported.currentStock, 'IN');
-          }
+        // Add initial stock if provided (use returned product ID directly)
+        if (imported.currentStock && imported.currentStock > 0 && newProduct) {
+          await addStockMovement(newProduct.id, imported.currentStock, 'IN');
         }
 
         successCount++;

@@ -26,11 +26,15 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
   // Initialize form with current product values
   const [formData, setFormData] = useState({
     name: product.fields.Name,
+    barcode: product.fields.Barcode || '',
     category: product.fields.Category || 'General',
     markup: (product.fields.Markup as MarkupPercentage) || 70,
     expiryDate: product.fields['Expiry Date'] || '',
     imageUrl: product.fields.Image?.[0]?.url || '',
   });
+
+  // Check if barcode is editable (only when empty)
+  const isBarcodeEditable = !product.fields.Barcode;
 
   // Get store price based on selected markup
   const getStorePrice = (markupValue: MarkupPercentage): number | undefined => {
@@ -53,6 +57,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
     mutationFn: async (data: typeof formData) => {
       return await updateProduct(product.id, {
         Name: data.name,
+        Barcode: data.barcode || undefined, // Only update if provided
         Category: data.category,
         Markup: data.markup,
         'Expiry Date': data.expiryDate || undefined,
@@ -61,7 +66,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
     },
     onSuccess: (updatedProduct) => {
       // Invalidate queries to refetch updated data
-      queryClient.invalidateQueries({ queryKey: ['product', product.fields.Barcode] });
+      queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.fields.Barcode] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
 
       toast.success(t('toast.productUpdated'), {
@@ -142,11 +147,23 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
               <Input
                 id="barcode"
                 type="text"
-                value={product.fields.Barcode}
-                disabled
-                className="mt-2 bg-stone-50 border-2 border-stone-300 text-stone-600 cursor-not-allowed"
+                name="barcode"
+                value={isBarcodeEditable ? formData.barcode : (product.fields.Barcode || '')}
+                onChange={isBarcodeEditable ? handleChange : undefined}
+                disabled={!isBarcodeEditable}
+                placeholder={isBarcodeEditable ? '1234567890123' : ''}
+                className={`mt-2 border-2 ${
+                  isBarcodeEditable
+                    ? 'border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]'
+                    : 'bg-stone-50 border-stone-300 text-stone-600 cursor-not-allowed'
+                }`}
               />
-              <p className="text-xs text-stone-500 mt-1.5">{t('product.barcodeCannotChange')}</p>
+              <p className="text-xs text-stone-500 mt-1.5">
+                {isBarcodeEditable
+                  ? t('product.barcodeAddNow')
+                  : t('product.barcodeCannotChange')
+                }
+              </p>
             </div>
 
             <div>

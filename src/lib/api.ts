@@ -63,24 +63,16 @@ const getCreatedTime = <TFields extends FieldSet>(record: AirtableRecord<TFields
  *
  * @param record - Raw Airtable record from the Products table
  * @returns Normalized Product object
- * @throws {ValidationError} If Name or Barcode is missing/invalid
+ * @throws {ValidationError} If Name is missing/invalid
  */
 export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Product => {
-  // Validate that required fields exist
+  // Validate that required fields exist (only Name is required)
   if (!record.fields.Name || typeof record.fields.Name !== 'string') {
     logger.error('Invalid product record: missing or invalid Name', {
       recordId: record.id,
       fields: record.fields,
     });
     throw new ValidationError(`Invalid product record from Airtable: Name is required and must be a string`);
-  }
-  if (!record.fields.Barcode || typeof record.fields.Barcode !== 'string') {
-    logger.error('Invalid product record: missing or invalid Barcode', {
-      recordId: record.id,
-      productName: record.fields.Name,
-      fields: record.fields,
-    });
-    throw new ValidationError(`Invalid product record from Airtable: Barcode is required and must be a string`);
   }
 
   // Normalize Image field from Airtable's Attachment format to our format
@@ -93,7 +85,7 @@ export const mapAirtableProduct = (record: AirtableRecord<ProductFields>): Produ
     createdTime: getCreatedTime(record),
     fields: {
       Name: record.fields.Name,
-      Barcode: record.fields.Barcode,
+      Barcode: record.fields.Barcode as string | undefined,
       Category: record.fields.Category as string | undefined,
       Price: record.fields.Price as number | undefined,
       'Price 50%': record.fields['Price 50%'] as number | undefined,
@@ -159,7 +151,7 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
 
 export interface CreateProductDTO {
   Name: string;
-  Barcode: string;
+  Barcode?: string; // Optional - can be added later via edit dialog
   Category?: string;
   Price?: number;
   'Price 50%'?: number;
@@ -174,7 +166,8 @@ export interface CreateProductDTO {
  * Creates a new product in Airtable
  *
  * Validation:
- * - Name and Barcode are required (non-empty strings)
+ * - Name is required (non-empty string)
+ * - Barcode is optional (can be added later via edit dialog)
  * - Price must be a finite number if provided
  * - Image URL is converted to Airtable attachment format
  *
@@ -186,17 +179,14 @@ export interface CreateProductDTO {
  * @example
  * const product = await createProduct({
  *   Name: 'Organic Bananas',
- *   Barcode: '123456789',
  *   Category: 'Produce',
  *   Price: 2.99,
- *   Image: 'https://example.com/banana.jpg'
  * });
  */
 export const createProduct = async (data: CreateProductDTO): Promise<Product> => {
-  // Validate required fields
+  // Validate required fields - only Name is required
   try {
     validateNonEmptyString(data.Name, 'Product name');
-    validateNonEmptyString(data.Barcode, 'Barcode');
   } catch (validationError) {
     logger.warn('Product creation validation failed', {
       errorMessage: validationError instanceof Error ? validationError.message : String(validationError),
@@ -211,7 +201,7 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
 
   logger.info('Creating new product', {
     name: data.Name,
-    barcode: data.Barcode,
+    barcode: data.Barcode || '(no barcode)',
     hasCategory: !!data.Category,
     hasPrice: data.Price != null,
     hasImage: !!data.Image,
@@ -219,11 +209,11 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
 
   const fields: Record<string, unknown> = {
     Name: data.Name,
-    Barcode: data.Barcode,
   };
 
   // Only add optional fields if they have values
   // This prevents Airtable from storing empty strings and allows fields to remain unset
+  if (data.Barcode) fields.Barcode = data.Barcode;
   if (data.Category) fields.Category = data.Category;
   if (data.Price != null) fields.Price = data.Price;
   if (data['Price 50%'] != null) fields['Price 50%'] = data['Price 50%'];
@@ -480,6 +470,7 @@ export const updateProduct = async (
 
   // Only add fields that are provided
   if (data.Name !== undefined) fields.Name = data.Name;
+  if (data.Barcode !== undefined) fields.Barcode = data.Barcode;
   if (data.Category !== undefined) fields.Category = data.Category;
   if (data.Price !== undefined) fields.Price = data.Price;
   if (data['Price 50%'] !== undefined) fields['Price 50%'] = data['Price 50%'];

@@ -19,6 +19,7 @@ export const XLSX_TO_APP_MAPPING: Record<string, string> = {
   'Cost pret magazin 100%': 'price100',
   'Cost preț magazin 100%': 'price100',
   'Stock curent': 'currentStock',
+  'Cantitatea': 'currentStock', // Alternative name from original xlsx (means "Quantity")
   'Stock minim': 'minStock',
   'Furnizor': 'Supplier',
   'Data expirare': 'expiryDate',
@@ -40,7 +41,8 @@ export const APP_TO_XLSX_MAPPING: Record<string, string> = {
 };
 
 // Required fields for import validation
-export const REQUIRED_FIELDS = ['Barcode', 'Name'] as const;
+// Only Name is truly required - Barcode can be added later via edit dialog
+export const REQUIRED_FIELDS = ['Name'] as const;
 
 // Export column order (only fields that exist in Airtable)
 export const EXPORT_COLUMN_ORDER = [

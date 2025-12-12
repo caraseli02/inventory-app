@@ -42,6 +42,7 @@
     "manageStock": "Manage Stock",
     "barcode": "Barcode",
     "barcodeCannotChange": "Barcode cannot be changed",
+    "barcodeAddNow": "Add a barcode to enable scanning",
     "name": "Product Name",
     "namePlaceholder": "e.g. Organic Bananas",
     "category": "Category",
