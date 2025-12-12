@@ -271,5 +271,22 @@
     "tryRefreshing": "Try refreshing the page",
     "unknownError": "Unknown error occurred",
     "productCreationFailed": "Failed to create product."
+  },
+  "import": {
+    "button": "Import",
+    "title": "Import Products from Excel",
+    "description": "Upload an xlsx file to import products into your inventory.",
+    "success": "Import Successful",
+    "successMessage": "Imported {{count}} products ({{skipped}} skipped, {{errors}} errors)",
+    "allSkipped": "All Products Skipped",
+    "allSkippedMessage": "{{count}} products already exist in inventory",
+    "failed": "Import Failed",
+    "failedMessage": "{{count}} products failed to import"
+  },
+  "export": {
+    "button": "Export",
+    "title": "Export Inventory",
+    "success": "Export Successful",
+    "successMessage": "Inventory exported to Excel file"
   }
 }

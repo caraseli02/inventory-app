@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Upload } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
 import { Spinner } from '../components/ui/spinner';
@@ -12,7 +12,10 @@ import { ProductDetailDialog } from '../components/inventory/ProductDetailDialog
 import EditProductDialog from '../components/product/EditProductDialog';
 import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { addStockMovement } from '../lib/api';
+import { ImportDialog } from '../components/xlsx/ImportDialog';
+import { ExportButton } from '../components/xlsx/ExportButton';
+import { addStockMovement, createProduct, getProductByBarcode } from '../lib/api';
+import type { ImportedProduct } from '../lib/xlsx';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../hooks/useToast';
 import type { Product } from '../types';
@@ -30,6 +33,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [loadingProducts, setLoadingProducts] = useState<Set<string>>(new Set());
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
@@ -165,6 +169,77 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     refetch();
   }, [refetch]);
 
+  // Handle import from xlsx
+  const handleImport = useCallback(async (importedProducts: ImportedProduct[]) => {
+    let successCount = 0;
+    let skipCount = 0;
+    let errorCount = 0;
+
+    for (const imported of importedProducts) {
+      try {
+        // Check if product with this barcode already exists
+        const existing = await getProductByBarcode(imported.Barcode);
+
+        if (existing) {
+          // Skip duplicates for now (could add update logic later)
+          skipCount++;
+          continue;
+        }
+
+        // Create new product
+        await createProduct({
+          Name: imported.Name,
+          Barcode: imported.Barcode,
+          Category: imported.Category,
+          Price: imported.Price ?? imported.price70, // Use 70% markup as default if no base price
+          Supplier: imported.Supplier,
+          'Expiry Date': imported.expiryDate,
+          'Min Stock Level': imported.minStock,
+        });
+
+        // Add initial stock if provided
+        if (imported.currentStock && imported.currentStock > 0) {
+          const newProduct = await getProductByBarcode(imported.Barcode);
+          if (newProduct) {
+            await addStockMovement(newProduct.id, imported.currentStock, 'IN');
+          }
+        }
+
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to import ${imported.Name}:`, err);
+        errorCount++;
+      }
+    }
+
+    // Refresh the product list
+    await refetch();
+
+    // Show result toast
+    if (successCount > 0) {
+      showToast(
+        'success',
+        t('import.success'),
+        t('import.successMessage', { count: successCount, skipped: skipCount, errors: errorCount }),
+        5000
+      );
+    } else if (skipCount > 0) {
+      showToast(
+        'info',
+        t('import.allSkipped'),
+        t('import.allSkippedMessage', { count: skipCount }),
+        5000
+      );
+    } else {
+      showToast(
+        'error',
+        t('import.failed'),
+        t('import.failedMessage', { count: errorCount }),
+        5000
+      );
+    }
+  }, [refetch, showToast, t]);
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
       <PageHeader
@@ -185,6 +260,23 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
             onRefresh={handleRefresh}
             isRefreshing={isLoading}
           />
+
+          {/* Import/Export Actions */}
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setImportDialogOpen(true)}
+              className="h-10 border-2 border-stone-300"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {t('import.button')}
+            </Button>
+            <ExportButton
+              products={products}
+              className="h-10 border-2 border-stone-300"
+            />
+          </div>
 
           {/* Loading State */}
           {isLoading && (
@@ -285,6 +377,13 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           onDeleteSuccess={handleDeleteSuccess}
         />
       )}
+
+      {/* Import Dialog */}
+      <ImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImport={handleImport}
+      />
     </div>
   );
 };

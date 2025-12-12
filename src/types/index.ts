@@ -4,13 +4,17 @@ export interface ProductFields extends FieldSet {
   Name: string;
   Barcode: string;
   Category?: string;         // Optional - may not be set at creation
-  Price?: number;            // Optional - may not be set at creation
+  Price?: number;            // Optional - base price in EUR
   'Expiry Date'?: string;    // Optional - may not be set at creation
   'Current Stock Level'?: number;  // Rollup field (calculated by Airtable)
   'Ideal Stock'?: number;
   'Min Stock Level'?: number;
   Supplier?: string;
   Image?: readonly Attachment[];
+  // Pricing tiers (from xlsx import)
+  price50?: number;          // 50% markup price
+  price70?: number;          // 70% markup price
+  price100?: number;         // 100% markup price
 }
 
 export interface Product {
@@ -20,13 +24,17 @@ export interface Product {
     Name: string;
     Barcode: string;
     Category?: string;
-    Price?: number;
+    Price?: number;           // Base price in EUR
     'Expiry Date'?: string;
     'Current Stock Level'?: number;
     'Ideal Stock'?: number;
     'Min Stock Level'?: number;
     Supplier?: string;
     Image?: Array<{ url: string }>;  // Normalized from Airtable's readonly Attachment[]
+    // Pricing tiers (from xlsx import)
+    price50?: number;         // 50% markup price
+    price70?: number;         // 70% markup price
+    price100?: number;        // 100% markup price
   };
 }
 

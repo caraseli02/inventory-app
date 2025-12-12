@@ -271,5 +271,22 @@
     "tryRefreshing": "Intenta actualizar la página",
     "unknownError": "Ocurrió un error desconocido",
     "productCreationFailed": "Error al crear el producto."
+  },
+  "import": {
+    "button": "Importar",
+    "title": "Importar Productos desde Excel",
+    "description": "Sube un archivo xlsx para importar productos a tu inventario.",
+    "success": "Importación Exitosa",
+    "successMessage": "Se importaron {{count}} productos ({{skipped}} omitidos, {{errors}} errores)",
+    "allSkipped": "Todos los Productos Omitidos",
+    "allSkippedMessage": "{{count}} productos ya existen en el inventario",
+    "failed": "Importación Fallida",
+    "failedMessage": "{{count}} productos no se pudieron importar"
+  },
+  "export": {
+    "button": "Exportar",
+    "title": "Exportar Inventario",
+    "success": "Exportación Exitosa",
+    "successMessage": "Inventario exportado a archivo Excel"
   }
 }
