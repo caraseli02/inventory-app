@@ -85,17 +85,19 @@ The app supports importing/exporting product data from Excel files, enabling cus
 **Column Mapping**:
 | xlsx Column | App Field | Required |
 |-------------|-----------|----------|
-| Cod de bare (Barcode) | `Barcode` | **Yes** |
+| Cod de bare (Barcode) | `Barcode` | No (can add later via edit) |
 | Denumirea produsului | `Name` | **Yes** |
 | Categorie | `Category` | No |
 | Preț (euro) | `Price` | No |
 | Cost preț magazin 50% | `price50` | No |
 | Cost preț magazin 70% | `price70` | No |
 | Cost preț magazin 100% | `price100` | No |
-| Stock curent | `Current Stock Level` | No |
+| Stock curent / Cantitatea | `currentStock` | No |
 | Stock minim | `Min Stock Level` | No |
 | Furnizor | `Supplier` | No |
 | Data expirare | `Expiry Date` | No |
+
+**Flexible Import**: Products can be imported without barcodes - add them later via the edit dialog using the barcode scanner button.
 
 **Architecture Roadmap**:
 ```
@@ -108,6 +110,29 @@ Phase 2 (Future): SheetJS + Dexie.js (IndexedDB)
 Phase 3 (Optional): SheetJS + Dexie.js + Supabase
   └── Multi-device sync, user auth, cloud backup
 ```
+
+### Image Upload & Camera Capture
+
+The EditProductDialog supports two methods for adding product images:
+
+1. **URL Input** - Paste any image URL directly
+2. **Camera Capture** - Take a photo with device camera
+
+**Camera Capture Flow**:
+- Camera photos are captured as base64 data URLs
+- Airtable requires actual URLs (can't accept data URLs)
+- Photos are automatically uploaded to imgbb.com
+- The returned URL is saved to Airtable
+
+**Required Environment Variable**:
+```bash
+VITE_IMGBB_API_KEY=your_api_key_here  # Get free key at https://api.imgbb.com/
+```
+
+**Barcode Scanner in Edit Dialog**:
+- Products without barcodes show a scan button
+- Opens camera to scan barcode directly
+- Supports UPC-A, UPC-E, EAN-13, EAN-8, QR codes
 
 ## Spec-Driven Development
 

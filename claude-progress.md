@@ -15,7 +15,7 @@
 ████████████████████████████████████████████████████████ 100%
 ```
 
-**Update**: Phase 1 xlsx integration complete! All 18 features implemented and tested (15 MVP + 3 Phase-1).
+**Update**: Phase 1 xlsx integration complete! All 21 features implemented and tested (15 MVP + 6 Phase-1).
 
 **Legend**:
 - ✅ Complete & Tested
@@ -68,15 +68,21 @@
 
 ---
 
-## 📊 Phase 1: xlsx Integration (3 of 3 Complete) ✅
+## 📊 Phase 1: xlsx Integration (6 of 6 Complete) ✅
 
 | ID | Feature | Status | Tested | Priority |
 |----|---------|--------|--------|----------|
 | F021 | Excel Import (xlsx) | ✅ | ✅ | Phase-1 |
 | F022 | Excel Export (xlsx) | ✅ | ✅ | Phase-1 |
 | F023 | Pricing Tiers (Per-Product Markup) | ✅ | ✅ | Phase-1 |
+| F024 | Optional Barcode Import | ✅ | ✅ | Phase-1 |
+| F025 | Barcode Scanner in Edit Dialog | ✅ | ✅ | Phase-1 |
+| F026 | Camera Capture for Images | ✅ | ✅ | Phase-1 |
 
-**Summary**: xlsx integration complete! Users can import/export products with per-product markup support.
+**Summary**: xlsx integration complete! Additional features:
+- Products can be imported without barcodes (add later via edit dialog)
+- Barcode scanner button in edit dialog for products without barcodes
+- Camera capture for product images (uploads to imgbb.com)
 
 ### xlsx Integration Architecture
 
