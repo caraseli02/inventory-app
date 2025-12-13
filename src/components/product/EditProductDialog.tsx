@@ -31,6 +31,8 @@ const getInitialFormData = (product: Product) => ({
   markup: (product.fields.Markup as MarkupPercentage) || 70,
   expiryDate: product.fields['Expiry Date'] || '',
   imageUrl: product.fields.Image?.[0]?.url || '',
+  minStockLevel: product.fields['Min Stock Level']?.toString() || '',
+  supplier: product.fields.Supplier || '',
 });
 
 const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogProps) => {
@@ -96,6 +98,8 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
         Category: data.category,
         Markup: data.markup,
         'Expiry Date': data.expiryDate || undefined,
+        'Min Stock Level': data.minStockLevel ? parseInt(data.minStockLevel, 10) : undefined,
+        Supplier: data.supplier || undefined,
         Image: imageUrl,
       });
     },
@@ -337,6 +341,58 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                   })}
                 </p>
               )}
+            </div>
+          </div>
+
+          {/* Stock Management Section */}
+          <div className="space-y-4 pt-4 border-t border-stone-200">
+            <h3 className="font-semibold text-stone-900">{t('product.stockManagement', 'Stock Management')}</h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="minStockLevel" className="text-stone-700 font-semibold text-sm">
+                  {t('product.minStockLevel', 'Min Stock Level')}
+                </Label>
+                <Input
+                  id="minStockLevel"
+                  type="number"
+                  name="minStockLevel"
+                  min={0}
+                  value={formData.minStockLevel}
+                  onChange={handleChange}
+                  placeholder="0"
+                  className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                />
+                <p className="text-xs text-stone-500 mt-1">
+                  {t('product.minStockLevelHelp', 'Alert when stock falls below this level')}
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="currentStock" className="text-stone-700 font-semibold text-sm">
+                  {t('product.currentStock', 'Current Stock')}
+                </Label>
+                <div className="mt-2 px-3 py-2 bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
+                  {product.fields['Current Stock Level'] ?? 0}
+                </div>
+                <p className="text-xs text-stone-500 mt-1">
+                  {t('product.currentStockHelp', 'Managed via stock movements')}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="supplier" className="text-stone-700 font-semibold text-sm">
+                {t('product.supplier', 'Supplier')}
+              </Label>
+              <Input
+                id="supplier"
+                type="text"
+                name="supplier"
+                value={formData.supplier}
+                onChange={handleChange}
+                placeholder={t('product.supplierPlaceholder', 'Enter supplier name')}
+                className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+              />
             </div>
           </div>
 
