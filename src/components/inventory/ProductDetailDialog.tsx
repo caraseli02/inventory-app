@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { X, Package, Barcode, Tag, Euro, Calendar, AlertTriangle } from 'lucide-react';
+import { X, Package, Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -48,6 +48,20 @@ export const ProductDetailDialog = ({
   const minStock = product.fields['Min Stock Level'] ?? 0;
   const isLowStock = currentStock < minStock && minStock > 0;
   const imageUrl = product.fields.Image?.[0]?.url;
+
+  // Calculate lifetime stock totals from movements in a single pass
+  const { lifetimeIn, lifetimeOut } = movements.reduce(
+    (totals, m) => {
+      const qty = Math.abs(m.fields.Quantity);
+      if (m.fields.Type === 'IN') {
+        totals.lifetimeIn += qty;
+      } else {
+        totals.lifetimeOut += qty;
+      }
+      return totals;
+    },
+    { lifetimeIn: 0, lifetimeOut: 0 }
+  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -170,12 +184,34 @@ export const ProductDetailDialog = ({
             )}
             </div>
 
+            {/* Lifetime Stock Statistics */}
+            {movements.length > 0 && (
+              <div className="mt-4 p-4 bg-gradient-to-br from-stone-50 to-stone-100/50 rounded-lg border border-stone-200">
+                <h4 className="text-sm font-semibold text-stone-700 mb-3">{t('dialogs.productDetail.lifetimeStats', 'Lifetime Statistics')}</h4>
+                <div className="flex gap-6">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--color-forest)]/20 text-[var(--color-forest)] text-xs font-bold">+</span>
+                    <div>
+                      <p className="text-xs text-stone-500">{t('dialogs.productDetail.totalIn', 'Total In')}</p>
+                      <p className="font-bold text-stone-900">{lifetimeIn}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-stone-300/50 text-stone-600 text-xs font-bold">−</span>
+                    <div>
+                      <p className="text-xs text-stone-500">{t('dialogs.productDetail.totalOut', 'Total Out')}</p>
+                      <p className="font-bold text-stone-900">{lifetimeOut}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Close Button - Mobile/Portrait Only */}
-            <div className="lg:hidden flex justify-end pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
+            <div className="lg:hidden flex justify-center pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
               <Button
-                variant="outline"
                 onClick={onClose}
-                className="border-2 border-stone-300"
+                className="w-full max-w-xs h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
               >
                 <X className="h-4 w-4 mr-2" />
                 {t('dialogs.productDetail.close')}
@@ -211,6 +247,11 @@ export const ProductDetailDialog = ({
                               : 'bg-stone-200 text-stone-900'
                           }
                         >
+                          {movement.fields.Type === 'IN' ? (
+                            <ArrowDownToLine className="h-3 w-3 mr-1" />
+                          ) : (
+                            <ArrowUpFromLine className="h-3 w-3 mr-1" />
+                          )}
                           {movement.fields.Type}
                         </Badge>
                         <span className="font-bold text-stone-900">

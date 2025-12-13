@@ -43,9 +43,12 @@ export const Cart = ({
       {/* Cart Items List */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3" />
-            <p className="text-sm">{t('cart.empty')}</p>
+          <div className="flex flex-col items-center justify-center h-full py-12 text-center">
+            <ShoppingCartIcon className="h-16 w-16 text-stone-300 mb-4" />
+            <p className="text-stone-600 font-medium">{t('cart.empty')}</p>
+            <p className="text-xs text-stone-400 mt-2">
+              {t('cart.emptyHint', 'Scan products to add them to your cart')}
+            </p>
           </div>
         ) : (
           cart.map((item, index) => (

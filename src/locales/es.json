@@ -28,7 +28,12 @@
     "manualEntry": "Ingresar código de barras manualmente",
     "addButton": "Agregar",
     "emptyState": "Apunta la cámara al código de barras o ingrésalo manualmente",
+    "emptyStateHint": "Escanea un código de barras o ingrésalo manualmente para comenzar",
     "cameraError": "No se pudo iniciar la cámara. Verifica los permisos.",
+    "cameraUnavailable": "Cámara No Disponible",
+    "retry": "Intentar de Nuevo",
+    "manualEntryHint": "Aún puedes ingresar códigos de barras manualmente abajo",
+    "alignCode": "Alinea el código dentro del marco",
     "scanBarcode": "Escanear"
   },
   "camera": {
@@ -78,6 +83,7 @@
     "recentActivity": "Actividad Reciente",
     "noRecentMovements": "Sin movimientos recientes",
     "preview": "Vista Previa",
+    "imageLoadFailed": "Error al cargar la imagen",
     "searching": "Buscando...",
     "createAndStock": "Crear y Almacenar",
     "pleaseWait": "Por favor espera...",
@@ -112,7 +118,9 @@
     "Uncategorized": "Sin categoría"
   },
   "markup": {
-    "label": "Margen"
+    "label": "Margen",
+    "explanation": "El precio de tienda se calcula agregando el % de margen al costo base",
+    "formula": "Precio Tienda = Base × (1 + {{percent}}%)"
   },
   "inventory": {
     "title": "Lista de Inventario",
@@ -121,6 +129,7 @@
     "tryAgain": "Intentar de Nuevo",
     "noProducts": "No se encontraron productos",
     "adjustFilters": "Intenta ajustar tus filtros o búsqueda",
+    "emptyStateHint": "Importa productos o créalos mediante el escáner",
     "refresh": "Actualizar",
     "refreshed": "Actualizado",
     "dataRefreshed": "Datos de inventario actualizados",
@@ -131,6 +140,7 @@
       "category": "Todas las categorías",
       "clearCategory": "Borrar filtro de categoría",
       "lowStock": "Stock Bajo",
+      "lowStockTooltip": "Mostrar productos con stock igual o menor al nivel mínimo",
       "sortBy": "Ordenar por",
       "sortByName": "Nombre",
       "sortByStock": "Stock",
@@ -167,6 +177,8 @@
     "title": "Mi Carrito",
     "items": "artículos",
     "empty": "El carrito está vacío",
+    "emptyHint": "Escanea productos para agregarlos a tu carrito",
+    "emptyCheckoutHint": "Escanea productos para agregarlos a tu carrito",
     "total": "Total",
     "totalWithCount": "Total ({{count}} artículos)",
     "nextProduct": "Siguiente Producto",
@@ -212,6 +224,9 @@
       "minStockLevel": "Nivel Mínimo de Stock",
       "expiryDate": "Fecha de Vencimiento",
       "supplier": "Proveedor",
+      "lifetimeStats": "Estadísticas Totales",
+      "totalIn": "Total Entradas",
+      "totalOut": "Total Salidas",
       "recentMovements": "Movimientos de Stock Recientes",
       "loadingMovements": "Cargando movimientos...",
       "noMovements": "No hay movimientos de stock registrados",
@@ -226,7 +241,7 @@
       "units": "unidades",
       "cannotUndo": "Esta acción no se puede deshacer.",
       "allDataDeleted": "Todos los datos del producto y el historial de movimientos de stock serán eliminados permanentemente.",
-      "confirmCheckbox": "Entiendo que esta acción es permanente y no se puede deshacer",
+      "confirmCheckbox": "Entiendo que es permanente",
       "confirm": "Eliminar Producto",
       "cancel": "Cancelar",
       "deleting": "Eliminando...",
@@ -312,6 +327,7 @@
     "title": "Exportar Inventario",
     "success": "Exportación Exitosa",
     "successMessage": "Se exportaron {{count}} productos a archivo Excel",
+    "downloadedHint": "Revisa tu carpeta de Descargas.",
     "failed": "Exportación Fallida"
   }
 }

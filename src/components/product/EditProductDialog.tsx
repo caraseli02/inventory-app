@@ -12,7 +12,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import BarcodeScannerDialog from '../scanner/BarcodeScannerDialog';
 import CameraCaptureDialog from '../camera/CameraCaptureDialog';
-import { ScanBarcode, Camera } from 'lucide-react';
+import { ScanBarcode, Camera, ImageOff } from 'lucide-react';
 import type { Product } from '../../types';
 
 type MarkupPercentage = 50 | 70 | 100;
@@ -56,6 +56,14 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
   // Scanner and camera dialog states
   const [scannerOpen, setScannerOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+  const [imageLoadFailed, setImageLoadFailed] = useState(false);
+  const [prevImageUrl, setPrevImageUrl] = useState(formData.imageUrl);
+
+  // Reset image load failure state when image URL changes
+  if (formData.imageUrl !== prevImageUrl) {
+    setPrevImageUrl(formData.imageUrl);
+    setImageLoadFailed(false);
+  }
 
   // Get store price based on selected markup
   const getStorePrice = (markupValue: MarkupPercentage): number | undefined => {
@@ -165,17 +173,27 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
           {formData.imageUrl && (
             <div className="flex flex-col items-center gap-2 pb-4 border-b border-stone-200">
               <div className="w-40 h-40 rounded-2xl overflow-hidden border-2 border-stone-300 bg-gradient-to-br from-stone-50 to-stone-100 relative shadow-md">
-                <img
-                  src={formData.imageUrl}
-                  alt={t('product.preview')}
-                  className="w-full h-full object-contain p-2"
-                  onError={(e) => {
-                    const img = e.target;
-                    if (img instanceof HTMLImageElement) {
-                      img.style.display = 'none';
-                    }
-                  }}
-                />
+                {imageLoadFailed ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-stone-400">
+                    <ImageOff className="h-10 w-10 mb-2" />
+                    <span className="text-xs text-center px-2">{t('product.imageLoadFailed', 'Image failed to load')}</span>
+                  </div>
+                ) : (
+                  <img
+                    src={formData.imageUrl}
+                    alt={t('product.preview')}
+                    className="w-full h-full object-contain p-2"
+                    onLoad={() => setImageLoadFailed(false)}
+                    onError={() => {
+                      setImageLoadFailed(true);
+                      logger.warn('Product image failed to load', {
+                        productId: product.id,
+                        imageUrl: formData.imageUrl,
+                        timestamp: new Date().toISOString(),
+                      });
+                    }}
+                  />
+                )}
               </div>
               <span className="text-xs text-stone-500 font-medium">{t('product.preview')}</span>
             </div>
@@ -287,7 +305,10 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
             {/* Markup Selector */}
             <div>
               <Label className="text-stone-700 font-semibold text-sm">{t('markup.label')}</Label>
-              <div className="flex rounded-lg border-2 border-stone-200 bg-stone-50 p-1 mt-2">
+              <p className="text-xs text-stone-500 mt-1 mb-2">
+                {t('markup.explanation', 'Select markup tier to set the store price. Higher markup = higher profit margin.')}
+              </p>
+              <div className="flex rounded-lg border-2 border-stone-200 bg-stone-50 p-1">
                 {([50, 70, 100] as MarkupPercentage[]).map((option) => (
                   <Button
                     key={option}
@@ -307,6 +328,15 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                   </Button>
                 ))}
               </div>
+              {basePrice != null && storePrice != null && (
+                <p className="text-xs text-[var(--color-forest)] font-medium mt-2">
+                  {t('markup.formula', '{{markup}}% markup: €{{base}} → €{{store}}', {
+                    markup: formData.markup,
+                    base: basePrice.toFixed(2),
+                    store: storePrice.toFixed(2)
+                  })}
+                </p>
+              )}
             </div>
           </div>
 

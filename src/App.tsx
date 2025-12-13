@@ -86,7 +86,11 @@ function App() {
         </div>
         <div className="flex items-center gap-3">
           {isTablet && (
-            <Badge variant="secondary" className="bg-stone-100 border-stone-200">
+            <Badge
+              variant="secondary"
+              className="bg-stone-100 border-stone-200 cursor-default"
+              title="Optimized layout for tablet-sized screens (768px+)"
+            >
               {t('app.tabletMode')}
             </Badge>
           )}

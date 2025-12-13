@@ -766,14 +766,19 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                 onUpdateQuantity={updateQuantity}
                 customFooter={
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       <Button
-                        className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                        className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white disabled:bg-stone-400"
                         onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
                         {state.isCheckingOut ? t('cart.processing') : t('cart.completeCheckout')}
                       </Button>
+                      {pendingItems.length === 0 && !state.isCheckingOut && (
+                        <p className="text-xs text-stone-500 text-center">
+                          {t('cart.emptyCheckoutHint', 'Scan products to add them to your cart')}
+                        </p>
+                      )}
                     </div>
                   </div>
                 }
@@ -834,12 +839,17 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
                     </Button>
 
                     <Button
-                      className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white"
+                      className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white disabled:bg-stone-400"
                       onClick={handleCheckoutClick}
                       disabled={pendingItems.length === 0 || state.isCheckingOut}
                     >
                       {state.isCheckingOut ? t('cart.processing') : t('cart.completeCheckout')}
                     </Button>
+                    {pendingItems.length === 0 && !state.isCheckingOut && (
+                      <p className="text-xs text-stone-500 text-center">
+                        {t('cart.emptyCheckoutHint', 'Scan products to add them to your cart')}
+                      </p>
+                    )}
                   </div>
                 </div>
               }

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { exportToXlsx, type ExportProduct } from '@/lib/xlsx';
 import { Download, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 import type { Product } from '@/types';
 
 interface ExportButtonProps {
@@ -46,10 +47,15 @@ export function ExportButton({ products, className }: ExportButtonProps) {
       exportToXlsx(exportProducts);
 
       toast.success(t('export.success'), {
-        description: t('export.successMessage', { count: products.length }),
+        description: t('export.successMessage', { count: products.length }) + ' ' + t('export.downloadedHint', 'Check your Downloads folder.'),
       });
     } catch (error) {
-      console.error('Export failed:', error);
+      logger.error('Export failed', {
+        productCount: products.length,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        timestamp: new Date().toISOString(),
+      });
       toast.error(t('export.failed'), {
         description: error instanceof Error ? error.message : t('errors.unknownError'),
       });

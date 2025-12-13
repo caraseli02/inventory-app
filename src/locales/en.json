@@ -28,7 +28,12 @@
     "manualEntry": "Enter barcode manually",
     "addButton": "Add",
     "emptyState": "Point camera at barcode or enter manually",
+    "emptyStateHint": "Scan a barcode or enter it manually to get started",
     "cameraError": "Failed to start camera. Check permissions.",
+    "cameraUnavailable": "Camera Unavailable",
+    "retry": "Try Again",
+    "manualEntryHint": "You can still enter barcodes manually below",
+    "alignCode": "Align code within frame",
     "scanBarcode": "Scan"
   },
   "camera": {
@@ -78,6 +83,7 @@
     "recentActivity": "Recent Activity",
     "noRecentMovements": "No recent movements",
     "preview": "Preview",
+    "imageLoadFailed": "Image failed to load",
     "searching": "Searching...",
     "createAndStock": "Create & Stock",
     "pleaseWait": "Please wait...",
@@ -112,7 +118,9 @@
     "Uncategorized": "Uncategorized"
   },
   "markup": {
-    "label": "Markup"
+    "label": "Markup",
+    "explanation": "Store price is calculated by adding markup % to the base cost",
+    "formula": "Store Price = Base × (1 + {{percent}}%)"
   },
   "inventory": {
     "title": "Inventory List",
@@ -121,6 +129,7 @@
     "tryAgain": "Try Again",
     "noProducts": "No products found",
     "adjustFilters": "Try adjusting your filters or search query",
+    "emptyStateHint": "Import products or create them via the scanner",
     "refresh": "Refresh",
     "refreshed": "Refreshed",
     "dataRefreshed": "Inventory data refreshed",
@@ -131,6 +140,7 @@
       "category": "All categories",
       "clearCategory": "Clear category filter",
       "lowStock": "Low Stock",
+      "lowStockTooltip": "Show products with stock at or below minimum level",
       "sortBy": "Sort by",
       "sortByName": "Name",
       "sortByStock": "Stock",
@@ -167,6 +177,8 @@
     "title": "My Cart",
     "items": "items",
     "empty": "Cart is empty",
+    "emptyHint": "Scan products to add them to your cart",
+    "emptyCheckoutHint": "Scan products to add them to your cart",
     "total": "Total",
     "totalWithCount": "Total ({{count}} items)",
     "nextProduct": "Next Product",
@@ -212,6 +224,9 @@
       "minStockLevel": "Min Stock Level",
       "expiryDate": "Expiry Date",
       "supplier": "Supplier",
+      "lifetimeStats": "Lifetime Statistics",
+      "totalIn": "Total In",
+      "totalOut": "Total Out",
       "recentMovements": "Recent Stock Movements",
       "loadingMovements": "Loading movements...",
       "noMovements": "No stock movements recorded",
@@ -226,7 +241,7 @@
       "units": "units",
       "cannotUndo": "This action cannot be undone.",
       "allDataDeleted": "All product data and stock movement history will be permanently deleted.",
-      "confirmCheckbox": "I understand this action is permanent and cannot be undone",
+      "confirmCheckbox": "I understand this is permanent",
       "confirm": "Delete Product",
       "cancel": "Cancel",
       "deleting": "Deleting...",
@@ -312,6 +327,7 @@
     "title": "Export Inventory",
     "success": "Export Successful",
     "successMessage": "Exported {{count}} products to Excel file",
+    "downloadedHint": "Check your Downloads folder.",
     "failed": "Export Failed"
   }
 }
