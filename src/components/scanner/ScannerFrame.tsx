@@ -37,22 +37,7 @@ export const ScannerFrame = ({
     <div>
       {/* Scanner Frame */}
       <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-        {/* Corner Brackets Overlay */}
-        <div className="absolute inset-0 pointer-events-none z-10">
-          {/* Top-Left Corner */}
-          <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-[var(--color-forest)] rounded-tl-lg" />
-          {/* Top-Right Corner */}
-          <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-[var(--color-forest)] rounded-tr-lg" />
-          {/* Bottom-Left Corner */}
-          <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-[var(--color-forest)] rounded-bl-lg" />
-          {/* Bottom-Right Corner */}
-          <div className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-[var(--color-forest)] rounded-br-lg" />
-
-          {/* Scan Line - animated */}
-          <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-transparent via-[var(--color-forest)] to-transparent animate-pulse" />
-        </div>
-
-        {/* Scanner - relative to define container height */}
+        {/* Scanner - includes built-in ScannerOverlay with corner brackets */}
         <div className="relative bg-black rounded-lg overflow-hidden">
           <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
         </div>

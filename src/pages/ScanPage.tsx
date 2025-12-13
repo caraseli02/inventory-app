@@ -97,24 +97,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
         {/* Scanner Section */}
         {!scannedCode && (
           <div className="px-6 pt-4 space-y-4">
-            {/* Scanner Frame */}
+            {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
             <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-              {/* Corner Brackets Overlay */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                {/* Top-Left Corner */}
-                <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-[var(--color-forest)] rounded-tl-lg" />
-                {/* Top-Right Corner */}
-                <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-[var(--color-forest)] rounded-tr-lg" />
-                {/* Bottom-Left Corner */}
-                <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-[var(--color-forest)] rounded-bl-lg" />
-                {/* Bottom-Right Corner */}
-                <div className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-[var(--color-forest)] rounded-br-lg" />
-
-                {/* Scan Line - animated */}
-                <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-transparent via-[var(--color-forest)] to-transparent animate-pulse" />
-              </div>
-
-              {/* Scanner Area - relative to define container height */}
               <div className="relative bg-black rounded-lg overflow-hidden">
                 <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
               </div>
@@ -187,23 +171,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           {/* Left Column: Scanner (only visible when no scanned code) */}
           {!scannedCode && (
             <div className="w-[40%] flex flex-col gap-6">
+              {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
               <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-                {/* Corner Brackets Overlay */}
-                <div className="absolute inset-0 pointer-events-none z-10">
-                  {/* Top-Left Corner */}
-                  <div className="absolute top-4 left-4 w-8 h-8 border-t-4 border-l-4 border-[var(--color-forest)] rounded-tl-lg" />
-                  {/* Top-Right Corner */}
-                  <div className="absolute top-4 right-4 w-8 h-8 border-t-4 border-r-4 border-[var(--color-forest)] rounded-tr-lg" />
-                  {/* Bottom-Left Corner */}
-                  <div className="absolute bottom-4 left-4 w-8 h-8 border-b-4 border-l-4 border-[var(--color-forest)] rounded-bl-lg" />
-                  {/* Bottom-Right Corner */}
-                  <div className="absolute bottom-4 right-4 w-8 h-8 border-b-4 border-r-4 border-[var(--color-forest)] rounded-br-lg" />
-
-                  {/* Scan Line - animated */}
-                  <div className="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-transparent via-[var(--color-forest)] to-transparent animate-pulse" />
-                </div>
-
-                {/* Scanner Area - relative to define container height */}
                 <div className="relative bg-black rounded-lg overflow-hidden">
                   <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
                 </div>
