@@ -21,6 +21,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { useI18n } from 'vue-i18n';
+import { logger } from '@/lib/logger';
 
 const props = withDefaults(defineProps<{ scannerId?: string }>(), { scannerId: 'vue-reader' });
 const emit = defineEmits<{ (e: 'scan', code: string): void }>();
@@ -31,6 +32,22 @@ const errorMessage = ref<string | null>(null);
 const lastScan = ref<{ code: string; timestamp: number } | null>(null);
 const regionId = props.scannerId;
 
+/**
+ * Map technical scanner errors to user-friendly messages
+ */
+function mapScannerError(error: string): string {
+  if (error.includes('NotAllowedError') || error.includes('Permission denied')) {
+    return t('camera.permissionDenied')
+  }
+  if (error.includes('NotReadableError') || error.includes('Could not start video')) {
+    return t('camera.inUse')
+  }
+  if (error.includes('NotFoundError') || error.includes('Requested device not found')) {
+    return t('camera.notFound')
+  }
+  return t('scanner.cameraError')
+}
+
 const stopScanner = async () => {
   if (scannerRef.value) {
     try {
@@ -39,7 +56,11 @@ const stopScanner = async () => {
       }
       await scannerRef.value.clear();
     } catch (err) {
-      console.error('Failed to stop scanner', err);
+      const message = err instanceof Error ? err.message : String(err);
+      logger.warn('Failed to stop scanner', {
+        scannerId: regionId,
+        error: message,
+      });
     } finally {
       scannerRef.value = null;
     }
@@ -81,13 +102,21 @@ onMounted(async () => {
           err.includes('NotFoundException') ||
           err.includes('No barcode or QR code detected');
         if (!expected) {
-          errorMessage.value = err;
+          logger.warn('Unexpected scanner error during operation', {
+            scannerId: regionId,
+            error: err,
+          });
+          errorMessage.value = mapScannerError(err);
         }
       }
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    errorMessage.value = message;
+    logger.error('Failed to start scanner', {
+      scannerId: regionId,
+      error: message,
+    });
+    errorMessage.value = mapScannerError(message);
   }
 });
 

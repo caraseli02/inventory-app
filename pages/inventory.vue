@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from '#app'
 import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { addStockMovement, getAllProducts } from '@/lib/api'
+import { logger } from '@/lib/logger'
 import type { Product } from '@/types'
 import PageHeader from '~/components/app/ui/PageHeader.vue'
 import CardPanel from '~/components/app/ui/CardPanel.vue'
@@ -29,6 +30,17 @@ const query = useQuery({
 })
 
 const products = computed(() => query.data.value || [])
+
+watch(
+  () => query.error.value,
+  (err) => {
+    if (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      logger.error('Failed to load inventory', { errorMessage: message })
+      showToast('error', t('toast.loadFailed'), message)
+    }
+  }
+)
 const filtered = computed(() => {
   const term = search.value.toLowerCase()
   if (!term) return products.value
@@ -44,6 +56,16 @@ const adjustMutation = useMutation({
     const type = delta > 0 ? 'IN' : 'OUT'
     const quantity = Math.abs(delta)
     await addStockMovement(product.id, quantity, type)
+    return { productId: product.id, delta }
+  },
+  onMutate: async ({ product, delta }) => {
+    // Cancel outgoing refetches
+    await queryClient.cancelQueries({ queryKey: ['inventory', 'all'] })
+
+    // Snapshot previous value for rollback
+    const previousProducts = queryClient.getQueryData<Product[]>(['inventory', 'all'])
+
+    // Optimistically update
     queryClient.setQueryData<Product[]>(['inventory', 'all'], (current = []) =>
       current.map((p) =>
         p.id === product.id
@@ -57,13 +79,24 @@ const adjustMutation = useMutation({
           : p
       )
     )
+
+    return { previousProducts }
+  },
+  onError: (err, variables, context) => {
+    // Rollback to previous state
+    if (context?.previousProducts) {
+      queryClient.setQueryData(['inventory', 'all'], context.previousProducts)
+    }
+    const message = err instanceof Error ? err.message : String(err)
+    logger.error('Stock adjustment failed', {
+      productId: variables.product.id,
+      delta: variables.delta,
+      error: message,
+    })
+    showToast('error', t('toast.updateFailed'), message)
   },
   onSuccess: () => {
     showToast('success', t('toast.stockUpdated'), t('toast.stockUpdatedMessage'))
-  },
-  onError: (err: unknown) => {
-    const message = err instanceof Error ? err.message : String(err)
-    showToast('error', t('toast.updateFailed'), message)
   },
 })
 
@@ -90,7 +123,7 @@ const quickAdjust = (product: Product, delta: number) => {
       <CardPanel :title="t('inventory.filters')" :description="t('inventory.quickSearch')" aria-label="filters">
         <div class="space-y-3">
           <BaseInput v-model="search" :placeholder="t('inventory.searchPlaceholder')" />
-          <p class="text-xs text-stone-500">{{ t('inventory.total', { count: products.value?.length || 0 }) }}</p>
+          <p class="text-xs text-stone-500">{{ t('inventory.total', { count: products.length }) }}</p>
         </div>
       </CardPanel>
 
@@ -98,6 +131,13 @@ const quickAdjust = (product: Product, delta: number) => {
         <div v-if="query.isFetching.value" class="space-y-3">
           <SkeletonBlock height="lg" />
           <SkeletonBlock height="lg" />
+        </div>
+        <div v-else-if="query.error.value" class="p-6 text-center">
+          <p class="text-rose-600 font-semibold">{{ t('inventory.failedToLoad') }}</p>
+          <p class="text-sm text-stone-500 mt-2">{{ query.error.value instanceof Error ? query.error.value.message : String(query.error.value) }}</p>
+          <BaseButton variant="secondary" class="mt-4" @click="query.refetch()">
+            {{ t('inventory.tryAgain') }}
+          </BaseButton>
         </div>
         <div v-else>
           <div class="overflow-x-auto">

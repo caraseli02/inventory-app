@@ -4,6 +4,7 @@ import { useRouter } from '#app'
 import { useI18n } from 'vue-i18n'
 import { useQuery } from '@tanstack/vue-query'
 import { getProductByBarcode } from '@/lib/api'
+import { logger } from '@/lib/logger'
 import PageHeader from '~/components/app/ui/PageHeader.vue'
 import CardPanel from '~/components/app/ui/CardPanel.vue'
 import BaseButton from '~/components/app/ui/BaseButton.vue'
@@ -31,17 +32,22 @@ const productQuery = useQuery({
   retry: 0,
 })
 
-const headerTitle = computed(() =>
-  scannedCode.value ? (productQuery.data.value ? t('product.manageStock') : t('product.newProduct')) : t('scanner.title')
-)
+const headerTitle = computed(() => {
+  if (!scannedCode.value) {
+    return t('scanner.title')
+  }
+  return productQuery.data.value ? t('product.manageStock') : t('product.newProduct')
+})
 
-const panelTitle = computed(() =>
-  productQuery.data.value
-    ? productQuery.data.value.fields.Name
-    : scannedCode.value
-      ? t('product.newProduct')
-      : t('scanner.awaitingScan')
-)
+const panelTitle = computed(() => {
+  if (productQuery.data.value) {
+    return productQuery.data.value.fields.Name
+  }
+  if (scannedCode.value) {
+    return t('product.newProduct')
+  }
+  return t('scanner.awaitingScan')
+})
 
 const panelSubtitle = computed(() => {
   if (productQuery.isFetching.value) return t('loading.scanner')
@@ -56,6 +62,10 @@ watch(
   (err) => {
     if (err && scannedCode.value) {
       const message = err instanceof Error ? err.message : String(err)
+      logger.error('Product lookup failed on scan page', {
+        barcode: scannedCode.value,
+        errorMessage: message,
+      })
       showToast('error', t('toast.lookupFailed'), message)
     }
   }

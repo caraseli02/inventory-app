@@ -4,6 +4,7 @@ import { useRouter } from '#app'
 import { useI18n } from 'vue-i18n'
 import { useMutation, useQuery } from '@tanstack/vue-query'
 import { addStockMovement, getProductByBarcode } from '@/lib/api'
+import { logger } from '@/lib/logger'
 import type { Product } from '@/types'
 import PageHeader from '~/components/app/ui/PageHeader.vue'
 import CardPanel from '~/components/app/ui/CardPanel.vue'
@@ -43,6 +44,19 @@ watch(
     if (product) {
       addItem(product)
       scannedCode.value = null
+    }
+  }
+)
+
+watch(
+  () => lookupQuery.error.value,
+  (err) => {
+    if (err && scannedCode.value) {
+      const message = err instanceof Error ? err.message : String(err)
+      logger.error('Checkout product lookup failed', {
+        barcode: scannedCode.value,
+        errorMessage: message,
+      })
     }
   }
 )
@@ -98,18 +112,59 @@ const updateQuantity = (index: number, delta: number) => {
   cart.value[index] = { ...entry, quantity: newQuantity, status: undefined }
 }
 
+interface CheckoutResult {
+  entry: CartEntry
+  success: boolean
+  error?: string
+}
+
 const checkoutMutation = useMutation({
-  mutationFn: async () => {
+  mutationFn: async (): Promise<CheckoutResult[]> => {
+    const results: CheckoutResult[] = []
+
     for (const entry of cart.value) {
-      await addStockMovement(entry.product.id, entry.quantity, 'OUT')
+      try {
+        await addStockMovement(entry.product.id, entry.quantity, 'OUT')
+        results.push({ entry, success: true })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        logger.error('Checkout item failed', {
+          productId: entry.product.id,
+          productName: entry.product.fields.Name,
+          quantity: entry.quantity,
+          error: message,
+        })
+        results.push({ entry, success: false, error: message })
+      }
+    }
+
+    return results
+  },
+  onSuccess: (results: CheckoutResult[]) => {
+    const successes = results.filter((r) => r.success)
+    const failures = results.filter((r) => !r.success)
+
+    // Remove successful items from cart, keep failed ones
+    const failedIds = new Set(failures.map((f) => f.entry.product.id))
+    cart.value = cart.value.filter((item) => failedIds.has(item.product.id))
+
+    if (failures.length === 0) {
+      showToast('success', t('toast.checkoutComplete'), t('toast.checkoutCompleteMessage'))
+    } else if (successes.length > 0) {
+      const failedNames = failures.map((f) => f.entry.product.fields.Name).join(', ')
+      showToast(
+        'warning',
+        t('toast.checkoutPartial', { success: successes.length, failed: failures.length }),
+        failedNames
+      )
+    } else {
+      showToast('error', t('toast.updateFailed'), failures[0]?.error || t('errors.unknownError'))
     }
   },
-  onSuccess: () => {
-    showToast('success', t('toast.checkoutComplete'), t('toast.checkoutCompleteMessage'))
-    cart.value = []
-  },
   onError: (err: unknown) => {
+    // This should rarely happen now as individual errors are caught
     const message = err instanceof Error ? err.message : String(err)
+    logger.error('Checkout mutation failed unexpectedly', { error: message })
     showToast('error', t('toast.updateFailed'), message)
   },
 })

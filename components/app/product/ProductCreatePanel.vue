@@ -51,15 +51,19 @@ const createMutation = useMutation<Product, unknown, CreateProductDTO>({
   },
 })
 
-const submit = () => {
-  const parsedPrice = form.price.trim() ? Number(form.price) : undefined
-  const price = parsedPrice != null && Number.isFinite(parsedPrice) ? parsedPrice : undefined
+function parsePrice(value: string): number | undefined {
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  const parsed = Number(trimmed)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
 
+function submit(): void {
   const payload: CreateProductDTO = {
     name: form.name,
     barcode: props.barcode,
     category: form.category || undefined,
-    price,
+    price: parsePrice(form.price),
   }
   createMutation.mutate(payload)
 }
