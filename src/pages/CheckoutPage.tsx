@@ -12,7 +12,9 @@ import { logger } from '../lib/logger';
 import {
   CheckCircleIcon,
   ShoppingCartIcon,
+  BoxIcon,
 } from '../components/ui/Icons';
+import { CheckoutProgress } from '../components/checkout/CheckoutProgress';
 import { Button } from '../components/ui/button';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import {
@@ -51,6 +53,7 @@ interface CheckoutState {
   isCartExpanded: boolean;
   showConfirmDialog: boolean;
   confirmDialogMessage: string;
+  showReviewModal: boolean;
 }
 
 /**
@@ -83,7 +86,9 @@ type CheckoutAction =
   | { type: 'TOGGLE_CART_EXPANDED' }
   | { type: 'SET_CART_EXPANDED'; expanded: boolean }
   | { type: 'SHOW_CONFIRM_DIALOG'; message: string }
-  | { type: 'HIDE_CONFIRM_DIALOG' };
+  | { type: 'HIDE_CONFIRM_DIALOG' }
+  | { type: 'SHOW_REVIEW_MODAL' }
+  | { type: 'HIDE_REVIEW_MODAL' };
 
 /**
  * Initial state for CheckoutPage
@@ -101,6 +106,7 @@ const initialState: CheckoutState = {
   isCartExpanded: false,
   showConfirmDialog: false,
   confirmDialogMessage: '',
+  showReviewModal: false,
 };
 
 /**
@@ -340,12 +346,24 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         confirmDialogMessage: '',
       };
 
+    case 'SHOW_REVIEW_MODAL':
+      return {
+        ...state,
+        showReviewModal: true,
+      };
+
+    case 'HIDE_REVIEW_MODAL':
+      return {
+        ...state,
+        showReviewModal: false,
+      };
+
     default:
       return state;
   }
 }
 
-const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
+function CheckoutPage({ onBack }: CheckoutPageProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
@@ -550,8 +568,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
   };
 
   /**
-   * Shows confirmation dialog before processing checkout
-   * Validates stock availability and calculates total
+   * Shows review modal before processing checkout
+   * Validates stock availability first
    */
   const handleCheckoutClick = () => {
     if (pendingItems.length === 0) return;
@@ -584,12 +602,21 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
       return;
     }
 
+    // Show review modal instead of confirm dialog
+    dispatch({ type: 'SHOW_REVIEW_MODAL' });
+  };
+
+  /**
+   * Proceeds from review to confirmation
+   */
+  const handleProceedToConfirm = () => {
     const { total, missingPrices } = calculateTotals();
     const totalLabel = `€${total.toFixed(2)}`;
     const confirmMessage = missingPrices
       ? t('checkout.confirmMessageWithMissing', { count: pendingItems.length, total: totalLabel, missing: missingPrices })
       : t('checkout.confirmMessage', { count: pendingItems.length, total: totalLabel });
 
+    dispatch({ type: 'HIDE_REVIEW_MODAL' });
     dispatch({ type: 'SHOW_CONFIRM_DIALOG', message: confirmMessage });
   };
 
@@ -676,7 +703,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     }
   };
 
-  const { total } = calculateTotals();
+  const { total, missingPrices } = calculateTotals();
 
   if (state.checkoutComplete) {
     return (
@@ -706,6 +733,8 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           onBack={onBack}
           variant="compact"
         />
+        {/* Progress Indicator */}
+        <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
 
         {/* Scanner Section - Hidden when cart is expanded on mobile */}
         {!state.isCartExpanded && (
@@ -795,9 +824,11 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           onBack={onBack}
           variant="compact"
         />
+        {/* Progress Indicator */}
+        <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
 
         {/* Two Column Layout */}
-        <div className="flex flex-row gap-6 h-[calc(100dvh-72px)] px-6 py-6">
+        <div className="flex flex-row gap-6 h-[calc(100dvh-140px)] px-6 py-4">
           {/* Left Column: Scanner (~30% width reduction from original 45%) */}
           <div className="w-[32%] flex flex-col gap-4">
             <ScannerFrame
@@ -857,6 +888,89 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
           </div>
         </div>
       </div>
+
+      {/* Review Order Modal */}
+      <Dialog open={state.showReviewModal} onOpenChange={(open) => !open && dispatch({ type: 'HIDE_REVIEW_MODAL' })}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="pb-4 border-b border-stone-200">
+            <DialogTitle className="text-xl font-bold text-stone-900">{t('checkout.reviewTitle')}</DialogTitle>
+            <DialogDescription className="text-stone-600">
+              {t('checkout.reviewSubtitle')}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Items List */}
+          <div className="flex-1 overflow-y-auto py-4 space-y-3 max-h-[40vh]">
+            {pendingItems.map((item, index) => {
+              const imageUrl = item.product.fields.Image?.[0]?.url;
+              const price = item.product.fields.Price;
+              return (
+                <div key={`${item.product.id}-${index}`} className="flex items-center gap-3 p-3 bg-stone-50 rounded-lg">
+                  {/* Product Image */}
+                  <div className="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center overflow-hidden shrink-0">
+                    {imageUrl ? (
+                      <img src={imageUrl} alt={item.product.fields.Name} className="w-full h-full object-cover" />
+                    ) : (
+                      <BoxIcon className="h-6 w-6 text-stone-400" />
+                    )}
+                  </div>
+                  {/* Product Info */}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-stone-900 truncate">{item.product.fields.Name}</h4>
+                    <p className="text-sm text-stone-500">
+                      {t('checkout.itemsCount', { count: item.quantity })}
+                      {price != null && ` × €${price.toFixed(2)}`}
+                    </p>
+                  </div>
+                  {/* Item Total */}
+                  <div className="text-right shrink-0">
+                    {price != null ? (
+                      <span className="font-bold text-stone-900">€{(price * item.quantity).toFixed(2)}</span>
+                    ) : (
+                      <span className="text-sm text-stone-400">—</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Totals Section */}
+          <div className="pt-4 border-t border-stone-200 space-y-2">
+            {missingPrices > 0 && (
+              <div className="flex justify-between text-sm text-amber-600">
+                <span>{t('checkout.missingPrices', { count: missingPrices })}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-medium text-stone-700">{t('checkout.subtotal')}</span>
+              <span className="text-2xl font-bold text-stone-900">€{total.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-stone-100">
+              <span className="text-xl font-bold text-stone-900">{t('checkout.grandTotal')}</span>
+              <span className="text-3xl font-bold text-[var(--color-forest)]">€{total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-3 sm:gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => dispatch({ type: 'HIDE_REVIEW_MODAL' })}
+              className="flex-1 sm:flex-none border-2"
+            >
+              {t('checkout.editCart')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleProceedToConfirm}
+              className="flex-1 sm:flex-none bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white font-semibold"
+            >
+              {t('checkout.proceedToCheckout')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Checkout Confirmation Dialog */}
       <Dialog open={state.showConfirmDialog} onOpenChange={(open) => !open && dispatch({ type: 'HIDE_CONFIRM_DIALOG' })}>
