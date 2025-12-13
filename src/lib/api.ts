@@ -159,6 +159,9 @@ export interface CreateProductDTO {
   'Price 100%'?: number;
   Markup?: MarkupPercentage; // Active markup percentage (50, 70, or 100)
   'Expiry Date'?: string;
+  'Min Stock Level'?: number; // Reorder threshold
+  'Ideal Stock'?: number; // Target stock level
+  Supplier?: string;
   Image?: string; // URL string
 }
 
@@ -221,6 +224,9 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
   if (data['Price 100%'] != null) fields['Price 100%'] = data['Price 100%'];
   if (data.Markup != null) fields.Markup = data.Markup;
   if (data['Expiry Date']) fields['Expiry Date'] = data['Expiry Date'];
+  if (data['Min Stock Level'] != null) fields['Min Stock Level'] = data['Min Stock Level'];
+  if (data['Ideal Stock'] != null) fields['Ideal Stock'] = data['Ideal Stock'];
+  if (data.Supplier) fields.Supplier = data.Supplier;
 
   // Airtable requires attachments as array of objects with url
   if (data.Image) {
@@ -478,6 +484,9 @@ export const updateProduct = async (
   if (data['Price 100%'] !== undefined) fields['Price 100%'] = data['Price 100%'];
   if (data.Markup !== undefined) fields.Markup = data.Markup;
   if (data['Expiry Date'] !== undefined) fields['Expiry Date'] = data['Expiry Date'];
+  if (data['Min Stock Level'] !== undefined) fields['Min Stock Level'] = data['Min Stock Level'];
+  if (data['Ideal Stock'] !== undefined) fields['Ideal Stock'] = data['Ideal Stock'];
+  if (data.Supplier !== undefined) fields.Supplier = data.Supplier;
 
   // Airtable requires attachments as array of objects with url
   if (data.Image !== undefined) {

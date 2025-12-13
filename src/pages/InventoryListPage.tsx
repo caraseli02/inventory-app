@@ -5,10 +5,12 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
 import { Spinner } from '../components/ui/spinner';
 import { useInventoryList } from '../hooks/useInventoryList';
+import { useLowStockAlerts } from '../hooks/useLowStockAlerts';
 import { InventoryFiltersBar } from '../components/inventory/InventoryFilters';
 import { ProductListItem } from '../components/inventory/ProductListItem';
 import { InventoryTable } from '../components/inventory/InventoryTable';
 import { ProductDetailDialog } from '../components/inventory/ProductDetailDialog';
+import { LowStockAlertsPanel } from '../components/inventory/LowStockAlertsPanel';
 import EditProductDialog from '../components/product/EditProductDialog';
 import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -49,6 +51,9 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     totalProducts,
     filteredCount,
   } = useInventoryList();
+
+  // Low stock alerts
+  const { lowStockProducts, hasAlerts } = useLowStockAlerts();
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -162,7 +167,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         return next;
       });
     }
-  }, [products, loadingProducts, queryClient, showToast]);
+  }, [products, loadingProducts, queryClient, showToast, t]);
 
   const handleRefresh = useCallback(() => {
     refetch();
@@ -181,6 +186,24 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     // Refresh the list after deletion
     refetch();
   }, [refetch]);
+
+  // Show toast when low stock alerts are first displayed
+  const handleAlertShown = useCallback(() => {
+    showToast(
+      'warning',
+      t('alerts.lowStockWarning', 'Low Stock Warning'),
+      t('alerts.lowStockMessage', '{{count}} products need reordering. Check the alerts panel above.', {
+        count: lowStockProducts.length,
+      }),
+      6000
+    );
+  }, [showToast, t, lowStockProducts.length]);
+
+  // Handle viewing a product from the alerts panel
+  const handleViewAlertProduct = useCallback((product: Product) => {
+    setSelectedProduct(product);
+    setDetailDialogOpen(true);
+  }, []);
 
   // Handle import from xlsx
   const handleImport = useCallback(async (importedProducts: ImportedProduct[]) => {
@@ -294,6 +317,15 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
       <div className="h-[calc(100dvh-64px)] overflow-y-auto p-6">
         <div className="max-w-7xl mx-auto space-y-6">
+          {/* Low Stock Alerts Panel */}
+          {hasAlerts && !isLoading && (
+            <LowStockAlertsPanel
+              lowStockProducts={lowStockProducts}
+              onViewProduct={handleViewAlertProduct}
+              onAlertShown={handleAlertShown}
+            />
+          )}
+
           {/* Filters */}
           <InventoryFiltersBar
             filters={filters}

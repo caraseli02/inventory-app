@@ -36,6 +36,12 @@
     "alignCode": "Align code within frame",
     "scanBarcode": "Scan"
   },
+  "scan": {
+    "productNotFound": "Product Not Found",
+    "barcodeNotRecognized": "The barcode was not recognized in your inventory.",
+    "tryAgain": "Try Again",
+    "addNewProduct": "Add New Product"
+  },
   "camera": {
     "title": "Take Photo",
     "capture": "Take Photo",
@@ -205,7 +211,7 @@
     }
   },
   "checkout": {
-    "title": "Scan the items barcode inside the square frame to add items to your cart",
+    "title": "Scan the item's barcode inside the square frame to add items to your cart",
     "complete": "Checkout Complete",
     "stockUpdated": "Stock has been updated for all items.",
     "backToHome": "Back to Home",

@@ -52,10 +52,10 @@ const InventoryTableComponent = ({
   }
 
   return (
-    <div className="rounded-lg border-2 border-stone-200 bg-white overflow-hidden">
+    <div className="rounded-lg border-2 border-stone-200 bg-white overflow-hidden max-h-[calc(100dvh-340px)] overflow-y-auto">
       <Table>
-        <TableHeader>
-          <TableRow className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200">
+        <TableHeader className="sticky top-0 z-10 bg-white">
+          <TableRow className="bg-gradient-to-br from-stone-50 to-stone-100 border-b-2 border-stone-200 shadow-sm">
             <TableHead className="w-[80px] lg:w-[100px]">{t('inventory.table.image')}</TableHead>
             <TableHead className="font-bold text-stone-900 text-base">{t('inventory.table.name')}</TableHead>
             <TableHead className="font-bold text-stone-900 text-base">{t('inventory.table.barcode')}</TableHead>
