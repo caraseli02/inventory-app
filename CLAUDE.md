@@ -126,18 +126,18 @@ The EditProductDialog supports two methods for adding product images:
 **Image Storage (Vercel Blob + imgbb fallback)**:
 ```
 Production (Vercel):
-  └── Uses Vercel Blob storage via /api/upload serverless function
+  └── Uses Vercel Blob storage via Nitro route `server/api/upload.post.ts`
   └── Add BLOB_READ_WRITE_TOKEN in Vercel dashboard
 
 Development (Local):
   └── Falls back to imgbb.com (free image hosting)
-  └── Add VITE_IMGBB_API_KEY to .env
+  └── Add NUXT_PUBLIC_IMGBB_API_KEY to .env
 ```
 
 **Environment Variables**:
 ```bash
 # Development: imgbb fallback
-VITE_IMGBB_API_KEY=your_api_key_here  # Get free key at https://api.imgbb.com/
+NUXT_PUBLIC_IMGBB_API_KEY=your_api_key_here  # Get free key at https://api.imgbb.com/
 
 # Production: Vercel Blob (set in Vercel dashboard)
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
@@ -249,12 +249,12 @@ To implement barcode scanning (from `docs/specs/scanner.md`):
 ## Security & Environment
 
 ### Required Environment Variables
-- `VITE_AIRTABLE_API_KEY`: Airtable personal access token (read/write)
-- `VITE_AIRTABLE_BASE_ID`: Base ID for inventory workspace
+- `NUXT_PUBLIC_AIRTABLE_API_KEY`: Airtable personal access token (read/write)
+- `NUXT_PUBLIC_AIRTABLE_BASE_ID`: Base ID for inventory workspace
 
 ### Planned (Not Yet Implemented)
-- `VITE_BACKEND_PROXY_URL`: Backend proxy to hide Airtable credentials
-- `VITE_PROXY_AUTH_TOKEN`: Auth token for proxy
+- `NUXT_PUBLIC_BACKEND_PROXY_URL`: Backend proxy to hide Airtable credentials
+- `NUXT_PROXY_AUTH_TOKEN`: Auth token for proxy
 
 **Important**: Never commit `.env` files. Currently, Airtable credentials are exposed client-side; backend proxy is planned per `docs/specs/backend_proxy.md`.
 
@@ -656,7 +656,7 @@ After each testing session, ensure:
 2. **Airtable field names**: Use exact field names from Airtable schema (e.g., `'Expiry Date'` not `expiryDate`)
 3. **Image attachments**: Must use `[{ url: string }]` format, not plain URL strings
 4. **Stock quantity signs**: Don't manually negate quantities; use type parameter in `addStockMovement`
-5. **Environment variables**: All Vite env vars must be prefixed with `VITE_`
+5. **Environment variables**: Public values must be prefixed with `NUXT_PUBLIC_`, and secrets with `NUXT_`
 6. **Table name typos**: Always import and use `TABLES` constants from `lib/airtable.ts`
 7. **Path aliases**: Import shadcn components using `@/components/ui/` not relative paths like `../../components/ui/`
 8. **Design consistency**: Follow the "Fresh Precision" aesthetic - use CSS variables for colors, maintain rounded corners, and apply gradients to headers/footers

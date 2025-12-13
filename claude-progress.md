@@ -400,13 +400,13 @@ Located at: `public/magazin.xlsx`
 #### Phase 1.5: Vercel Blob Integration ✅ (Latest)
 - 🚀 **Replaced imgbb.com with Vercel Blob for production image storage**
 - 📦 **New files**:
-  - `api/upload.ts` - Vercel serverless function for image uploads
+  - `server/api/upload.post.ts` - Nitro handler for image uploads
 - 🔧 **Updated files**:
   - `src/lib/imageUpload.ts` - Added Vercel Blob with imgbb fallback
   - `.env.example` - Added BLOB_READ_WRITE_TOKEN instructions
   - `CLAUDE.md` - Updated image storage documentation
 - 📝 **How it works**:
-  - Production: Uses Vercel Blob via `/api/upload` endpoint
+  - Production: Uses Vercel Blob via `/api/upload` Nitro endpoint
   - Development: Falls back to imgbb.com
   - Automatic fallback if Vercel Blob fails
 - ⚙️ **Setup for production**:

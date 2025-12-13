@@ -56,20 +56,20 @@ if [ ! -f ".env" ]; then
     if [ -f ".env.example" ]; then
         cp .env.example .env
         print_warning "Please edit .env and add your Airtable credentials:"
-        print_info "  - VITE_AIRTABLE_API_KEY"
-        print_info "  - VITE_AIRTABLE_BASE_ID"
+        print_info "  - NUXT_PUBLIC_AIRTABLE_API_KEY"
+        print_info "  - NUXT_PUBLIC_AIRTABLE_BASE_ID"
         echo ""
         read -p "Press Enter when you've updated .env..."
     else
         print_error ".env.example not found. Creating template..."
         cat > .env << 'ENVFILE'
 # Airtable Configuration
-VITE_AIRTABLE_API_KEY=your_api_key_here
-VITE_AIRTABLE_BASE_ID=your_base_id_here
+NUXT_PUBLIC_AIRTABLE_API_KEY=your_api_key_here
+NUXT_PUBLIC_AIRTABLE_BASE_ID=your_base_id_here
 
 # Optional: Backend Proxy (Post-MVP)
-# VITE_BACKEND_PROXY_URL=
-# VITE_PROXY_AUTH_TOKEN=
+# NUXT_PUBLIC_BACKEND_PROXY_URL=
+# NUXT_PROXY_AUTH_TOKEN=
 ENVFILE
         print_warning "Please edit .env and add your credentials, then run this script again."
         exit 1
@@ -81,7 +81,7 @@ fi
 # Check if credentials are set
 if grep -q "your_api_key_here" .env || grep -q "your_base_id_here" .env; then
     print_error "Airtable credentials not set in .env!"
-    print_info "Please update VITE_AIRTABLE_API_KEY and VITE_AIRTABLE_BASE_ID"
+    print_info "Please update NUXT_PUBLIC_AIRTABLE_API_KEY and NUXT_PUBLIC_AIRTABLE_BASE_ID"
     exit 1
 fi
 

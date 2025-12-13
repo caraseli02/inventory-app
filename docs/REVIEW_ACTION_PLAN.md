@@ -64,12 +64,12 @@
 **Required Variables**:
 ```env
 # Airtable Configuration (TEMPORARY - will be moved to backend proxy)
-VITE_AIRTABLE_API_KEY=your_airtable_personal_token_here
-VITE_AIRTABLE_BASE_ID=appXXXXXXXXXXXXXX
+NUXT_PUBLIC_AIRTABLE_API_KEY=your_airtable_personal_token_here
+NUXT_PUBLIC_AIRTABLE_BASE_ID=appXXXXXXXXXXXXXX
 
 # Backend Proxy (when implemented - see docs/specs/backend_proxy.md)
-# VITE_BACKEND_PROXY_URL=http://localhost:3001
-# VITE_PROXY_AUTH_TOKEN=your_secure_token_here
+# NUXT_PUBLIC_BACKEND_PROXY_URL=http://localhost:3001
+# NUXT_PROXY_AUTH_TOKEN=your_secure_token_here
 ```
 
 **Acceptance Criteria**:
@@ -262,7 +262,7 @@ operations_safety.md (deployment)
 5. Notify team
 
 ### Emergency Disable
-1. Set VITE_BACKEND_PROXY_URL to maintenance endpoint
+1. Set NUXT_PUBLIC_BACKEND_PROXY_URL to maintenance endpoint
 2. Deploy immediately
 3. Investigate issue
 4. Restore service after fix
@@ -485,7 +485,7 @@ const BARCODE_PATTERNS = {
 ```
 
 ## Redaction Rules
-- Redact API keys: `VITE_AIRTABLE_API_KEY` → `***REDACTED***`
+- Redact API keys: `NUXT_PUBLIC_AIRTABLE_API_KEY` → `***REDACTED***`
 - Redact PII: email, phone numbers
 - Preserve correlation IDs and barcodes (non-sensitive)
 ```

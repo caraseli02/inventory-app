@@ -1,0 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Fresh Precision Color Palette */
+  --color-cream: #FAFAF9;
+  --color-forest: #059669;
+  --color-forest-dark: #047857;
+  --color-terracotta: #EA580C;
+  --color-terracotta-dark: #C2410C;
+  --color-lavender: #8B5CF6;
+  --color-lavender-dark: #7C3AED;
+  --color-stone: #78716C;
+  --color-stone-dark: #57534E;
+
+  font-family: var(--font-body);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100dvh;
+  background: var(--color-cream);
+
+  /* Safari-specific: Use safe area insets for notch/home indicator */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+/* Safari-specific fixes for iOS */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent Safari from zooming on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Remove iOS input shadows and rounded corners */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="search"],
+  select,
+  textarea {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: 0;
+  }
+
+  /* Disable tap highlight on buttons and links */
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Fix button styling in Safari */
+  button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  /* Allow text selection on content, but disable on interactive UI elements */
+  input, textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+  }
+
+  /* Only disable selection on UI chrome (buttons, controls), not content */
+  button, label, [role="button"], [role="tab"] {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth scrolling for iOS */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Progress bar animation for loading states */
+@keyframes progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(150%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
