@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { CartItem as CartItemType } from '../../types';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { BoxIcon, CheckCircleIcon } from '../ui/Icons';
+import { BoxIcon, CheckCircleIcon, TrashIcon } from '../ui/Icons';
 import { Spinner } from '../ui/spinner';
 
 interface CartItemProps {
@@ -59,7 +59,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
           </div>
 
           {/* Bottom: Quantity Controls - Compact inline */}
-          <div className="mt-2">
+          <div className="mt-2 flex items-center gap-2">
             <div
               className="inline-flex items-center gap-2 bg-stone-50 border-2 border-stone-200 rounded-lg px-2 py-1 transition-colors"
               style={{
@@ -90,6 +90,19 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 +
               </Button>
             </div>
+            {/* Remove Item Button */}
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => onUpdateQuantity(index, -item.quantity)}
+              className="w-7 h-7 rounded-md bg-white border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)] hover:text-white transition-colors"
+              disabled={status === 'processing'}
+              title={t('cart.removeItem')}
+              aria-label={t('cart.removeItem')}
+            >
+              <TrashIcon className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>

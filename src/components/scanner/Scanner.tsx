@@ -4,6 +4,7 @@ import { Video, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { logger } from '../../lib/logger';
+import { ScannerOverlay } from './ScannerOverlay';
 
 interface ScannerProps {
   onScanSuccess: (decodedText: string) => void;
@@ -214,7 +215,10 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
           </div>
         </div>
       ) : (
-        <div id={regionId} className="w-full flex-1 bg-black"></div>
+        <div className="relative w-full flex-1 bg-black">
+          <div id={regionId} className="w-full h-full"></div>
+          <ScannerOverlay />
+        </div>
       )}
       <div className="bg-stone-100 py-2 text-center text-stone-700 text-sm">
         {t('scanner.alignCode', 'Align code within frame')}

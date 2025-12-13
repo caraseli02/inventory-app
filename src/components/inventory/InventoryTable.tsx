@@ -81,7 +81,7 @@ const InventoryTableComponent = ({
             return (
               <TableRow
                 key={product.id}
-                className="cursor-pointer hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-[var(--color-lavender)] focus:ring-inset h-16 lg:h-20"
+                className="group cursor-pointer hover:bg-stone-100/80 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-lavender)] focus:ring-inset h-16 lg:h-20 transition-all duration-150 border-l-4 border-l-transparent hover:border-l-[var(--color-forest)]"
                 onClick={() => onViewDetails(product)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {

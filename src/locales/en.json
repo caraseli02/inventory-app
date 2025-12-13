@@ -195,6 +195,9 @@
     "itemAddedDescription": "{{name}} has been added to your cart",
     "quantityUpdated": "Quantity Updated",
     "quantityUpdatedDescription": "{{name}} quantity updated to {{quantity}}",
+    "removeItem": "Remove item from cart",
+    "itemRemoved": "Item Removed",
+    "itemRemovedDescription": "{{name}} removed from cart",
     "quickAdd": {
       "title": "Quick Add",
       "placeholder": "Scan or enter code",
@@ -213,7 +216,21 @@
     "cancel": "Cancel",
     "insufficientStockTitle": "Insufficient Stock",
     "insufficientStockDescription": "Cannot complete checkout. {{count}} item(s) exceed available stock:",
-    "needsQuantity": "needs {{quantity}}, only {{available}} available"
+    "needsQuantity": "needs {{quantity}}, only {{available}} available",
+    "steps": {
+      "scan": "Scan Items",
+      "review": "Review",
+      "complete": "Complete"
+    },
+    "reviewTitle": "Review Order",
+    "reviewSubtitle": "Please review your items before completing checkout",
+    "itemsCount": "{{count}} item(s)",
+    "subtotal": "Subtotal",
+    "taxLabel": "Tax (estimated)",
+    "grandTotal": "Grand Total",
+    "proceedToCheckout": "Proceed to Checkout",
+    "editCart": "Edit Cart",
+    "missingPrices": "{{count}} item(s) missing price"
   },
   "dialogs": {
     "productDetail": {
