@@ -226,7 +226,7 @@
       "units": "unidades",
       "cannotUndo": "Esta acción no se puede deshacer.",
       "allDataDeleted": "Todos los datos del producto y el historial de movimientos de stock serán eliminados permanentemente.",
-      "confirmCheckbox": "Entiendo que esta acción es permanente y no se puede deshacer",
+      "confirmCheckbox": "Entiendo que es permanente",
       "confirm": "Eliminar Producto",
       "cancel": "Cancelar",
       "deleting": "Eliminando...",

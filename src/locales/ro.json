@@ -226,7 +226,7 @@
       "units": "unități",
       "cannotUndo": "Această acțiune nu poate fi anulată.",
       "allDataDeleted": "Toate datele produsului și istoricul mișcărilor de stoc vor fi șterse definitiv.",
-      "confirmCheckbox": "Înțeleg că această acțiune este permanentă și nu poate fi anulată",
+      "confirmCheckbox": "Înțeleg că este permanent",
       "confirm": "Șterge produsul",
       "cancel": "Anulează",
       "deleting": "Se șterge...",

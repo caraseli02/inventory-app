@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Search, X, ArrowUpDown, RefreshCw } from 'lucide-react';
+import { Search, X, ArrowUpDown, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -113,7 +113,9 @@ export const InventoryFiltersBar = ({
               ? 'bg-[var(--color-terracotta)] hover:bg-[var(--color-terracotta-dark)] text-white'
               : 'border-2 border-stone-300'
           }`}
+          title={t('inventory.filters.lowStockTooltip', 'Show products below their minimum stock level')}
         >
+          <AlertTriangle className="h-4 w-4 mr-1.5" />
           {t('inventory.filters.lowStock')}
         </Button>
 

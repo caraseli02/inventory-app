@@ -287,7 +287,10 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
             {/* Markup Selector */}
             <div>
               <Label className="text-stone-700 font-semibold text-sm">{t('markup.label')}</Label>
-              <div className="flex rounded-lg border-2 border-stone-200 bg-stone-50 p-1 mt-2">
+              <p className="text-xs text-stone-500 mt-1 mb-2">
+                {t('markup.explanation', 'Select markup tier to set the store price. Higher markup = higher profit margin.')}
+              </p>
+              <div className="flex rounded-lg border-2 border-stone-200 bg-stone-50 p-1">
                 {([50, 70, 100] as MarkupPercentage[]).map((option) => (
                   <Button
                     key={option}
@@ -307,6 +310,15 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                   </Button>
                 ))}
               </div>
+              {basePrice != null && storePrice != null && (
+                <p className="text-xs text-[var(--color-forest)] font-medium mt-2">
+                  {t('markup.formula', '{{markup}}% markup: €{{base}} → €{{store}}', {
+                    markup: formData.markup,
+                    base: basePrice.toFixed(2),
+                    store: storePrice.toFixed(2)
+                  })}
+                </p>
+              )}
             </div>
           </div>
 

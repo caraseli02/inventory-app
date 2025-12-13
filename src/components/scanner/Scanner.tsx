@@ -172,10 +172,20 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
     <div className="w-full h-full overflow-hidden bg-black relative flex flex-col">
       <div id={regionId} className="w-full flex-1 bg-black"></div>
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-50 border-4 border-red-500 text-red-900 p-6 text-center m-4 rounded-lg">
-          <div>
-            <p className="font-bold text-lg mb-2">Camera Error</p>
-            <p className="text-sm">{error}</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-amber-50 border-4 border-amber-400 text-amber-900 p-6 text-center m-4 rounded-lg">
+          <div className="space-y-3">
+            <div className="flex justify-center">
+              <svg className="h-10 w-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <p className="font-bold text-lg">Camera Unavailable</p>
+            <p className="text-sm text-amber-800">{error}</p>
+            <div className="pt-2 border-t border-amber-200">
+              <p className="text-xs text-amber-700 font-medium">
+                💡 You can still enter barcodes manually below
+              </p>
+            </div>
           </div>
         </div>
       )}

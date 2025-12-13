@@ -38,11 +38,14 @@ const InventoryTableComponent = ({
 
   if (products.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center">
-        <Package className="h-24 w-24 text-stone-300 mb-4" />
+      <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-lg border-2 border-stone-200">
+        <Package className="h-20 w-20 text-stone-300 mb-4" />
         <h3 className="text-xl font-bold text-stone-900 mb-2">{t('inventory.noProducts')}</h3>
-        <p className="text-stone-600">
+        <p className="text-stone-600 max-w-md">
           {t('inventory.adjustFilters')}
+        </p>
+        <p className="text-xs text-stone-400 mt-3">
+          {t('inventory.emptyStateHint', 'Try removing filters or importing products from an Excel file')}
         </p>
       </div>
     );
@@ -165,10 +168,11 @@ const InventoryTableComponent = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300"
+                            className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)] focus-visible:ring-offset-1"
                             onClick={() => onQuickAdjust(product.id, -1)}
                             disabled={isLoading || currentStock === 0}
                             title={t('inventory.table.removeUnit')}
+                            aria-label={t('inventory.table.removeUnit')}
                           >
                             {isLoading ? (
                               <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
@@ -179,10 +183,11 @@ const InventoryTableComponent = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300"
+                            className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)] focus-visible:ring-offset-1"
                             onClick={() => onQuickAdjust(product.id, 1)}
                             disabled={isLoading}
                             title={t('inventory.table.addUnit')}
+                            aria-label={t('inventory.table.addUnit')}
                           >
                             {isLoading ? (
                               <span className="animate-spin h-3 w-3 lg:h-4 lg:w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
@@ -200,9 +205,10 @@ const InventoryTableComponent = ({
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300 hover:bg-stone-100"
+                              className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-stone-300 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)] focus-visible:ring-offset-1"
                               onClick={() => onEdit(product)}
                               title={t('inventory.table.editProduct')}
+                              aria-label={t('inventory.table.editProduct')}
                             >
                               <Edit2 className="h-3 w-3 lg:h-4 lg:w-4" />
                             </Button>
@@ -211,9 +217,10 @@ const InventoryTableComponent = ({
                             <Button
                               variant="outline"
                               size="sm"
-                              className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
+                              className="h-8 lg:h-9 px-2 lg:px-3 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)] focus-visible:ring-offset-1"
                               onClick={() => onDelete(product)}
                               title={t('inventory.table.deleteProduct')}
+                              aria-label={t('inventory.table.deleteProduct')}
                             >
                               <Trash2 className="h-3 w-3 lg:h-4 lg:w-4" />
                             </Button>

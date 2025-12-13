@@ -193,8 +193,11 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
             {!scannedCode ? (
               /* Empty State */
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                <ShoppingCartIcon className="h-16 w-16 opacity-20 mb-3 text-gray-400" />
-                <p className="text-sm text-gray-500">{t('scanner.emptyState')}</p>
+                <ShoppingCartIcon className="h-16 w-16 text-stone-300 mb-4" />
+                <p className="text-stone-600 font-medium">{t('scanner.emptyState')}</p>
+                <p className="text-xs text-stone-400 mt-2">
+                  {t('scanner.emptyStateHint', 'Scan a barcode or enter it manually to get started')}
+                </p>
               </div>
             ) : (
               /* Content - Full height without footer */

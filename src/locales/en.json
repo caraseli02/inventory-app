@@ -226,7 +226,7 @@
       "units": "units",
       "cannotUndo": "This action cannot be undone.",
       "allDataDeleted": "All product data and stock movement history will be permanently deleted.",
-      "confirmCheckbox": "I understand this action is permanent and cannot be undone",
+      "confirmCheckbox": "I understand this is permanent",
       "confirm": "Delete Product",
       "cancel": "Cancel",
       "deleting": "Deleting...",

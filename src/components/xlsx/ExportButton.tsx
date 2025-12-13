@@ -46,7 +46,7 @@ export function ExportButton({ products, className }: ExportButtonProps) {
       exportToXlsx(exportProducts);
 
       toast.success(t('export.success'), {
-        description: t('export.successMessage', { count: products.length }),
+        description: t('export.successMessage', { count: products.length }) + ' ' + t('export.downloadedHint', 'Check your Downloads folder.'),
       });
     } catch (error) {
       console.error('Export failed:', error);
