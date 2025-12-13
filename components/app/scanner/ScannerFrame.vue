@@ -77,13 +77,12 @@ onMounted(async () => {
   ];
 
   try {
-    const scanner = new Html5Qrcode(regionId);
+    const scanner = new Html5Qrcode(regionId, { formatsToSupport, verbose: false });
     scannerRef.value = scanner;
 
     await scanner.start(
       { facingMode: 'environment' },
       {
-        formatsToSupport,
         fps: 24,
         qrbox: { width: 240, height: 240 },
       },

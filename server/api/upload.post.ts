@@ -40,8 +40,14 @@ export default defineEventHandler(async (event) => {
     const blob = await uploadBlobImage(event, finalFilename, buffer, `image/${mimeType}`);
     return { url: blob.url };
   } catch (error) {
-    console.error('Upload error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[UPLOAD_ERROR]', {
+      error: message,
+      errorStack: error instanceof Error ? error.stack : undefined,
+      filename: finalFilename,
+      contentType: `image/${mimeType}`,
+      timestamp: new Date().toISOString(),
+    });
     throw createError({ statusCode: 500, statusMessage: `Upload failed: ${message}` });
   }
 });

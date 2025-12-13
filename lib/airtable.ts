@@ -1,5 +1,6 @@
 import Airtable from 'airtable'
 import { useRuntimeConfig } from '#imports'
+import { logger } from './logger'
 
 let cachedBase: Airtable.Base | null = null
 
@@ -11,7 +12,11 @@ const resolveCredentials = () => {
   const baseId = runtimeConfig.public.airtableBaseId || process.env.NUXT_PUBLIC_AIRTABLE_BASE_ID
 
   if (!apiKey || !baseId) {
-    console.warn('Missing Airtable credentials. Please set NUXT_PUBLIC_AIRTABLE_API_KEY and NUXT_PUBLIC_AIRTABLE_BASE_ID.')
+    logger.error('Missing Airtable credentials', {
+      hasApiKey: Boolean(apiKey),
+      hasBaseId: Boolean(baseId),
+      requiredEnvVars: ['NUXT_PUBLIC_AIRTABLE_API_KEY', 'NUXT_PUBLIC_AIRTABLE_BASE_ID'],
+    })
   }
 
   return { apiKey, baseId }

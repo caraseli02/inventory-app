@@ -1,6 +1,7 @@
 import { defineNuxtPlugin } from '#app'
 import { watch } from 'vue'
 import { createI18n } from 'vue-i18n'
+import { logger } from '@/lib/logger'
 import es from '@/locales/es.json'
 import en from '@/locales/en.json'
 import ro from '@/locales/ro.json'
@@ -24,7 +25,9 @@ const getInitialLanguage = () => {
         return normalized
       }
     } catch (error) {
-      console.warn('Failed to read language from storage', error)
+      logger.warn('Failed to read language from storage', {
+        error: error instanceof Error ? error.message : String(error),
+      })
     }
   }
 
@@ -56,7 +59,10 @@ export default defineNuxtPlugin((nuxtApp) => {
           try {
             localStorage.setItem('preferredLanguage', locale)
           } catch (error) {
-            console.warn('Failed to persist language preference', error)
+            logger.warn('Failed to persist language preference', {
+              locale,
+              error: error instanceof Error ? error.message : String(error),
+            })
           }
         }
       },

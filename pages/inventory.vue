@@ -13,6 +13,12 @@ import BaseButton from '~/components/app/ui/BaseButton.vue'
 import SkeletonBlock from '~/components/app/ui/SkeletonBlock.vue'
 import EmptyState from '~/components/app/ui/EmptyState.vue'
 import ToastHost from '~/components/app/ui/ToastHost.vue'
+import Table from '@/components/ui/Table.vue'
+import TableHeader from '@/components/ui/TableHeader.vue'
+import TableBody from '@/components/ui/TableBody.vue'
+import TableRow from '@/components/ui/TableRow.vue'
+import TableHead from '@/components/ui/TableHead.vue'
+import TableCell from '@/components/ui/TableCell.vue'
 import { useToast } from '~/composables/useToast'
 
 const router = useRouter()
@@ -140,52 +146,50 @@ const quickAdjust = (product: Product, delta: number) => {
           </BaseButton>
         </div>
         <div v-else>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-left text-sm">
-              <thead class="text-xs uppercase tracking-wide text-stone-500">
-                <tr>
-                  <th class="py-2 pr-2">{{ t('product.name') }}</th>
-                  <th class="py-2 pr-2">{{ t('product.category') }}</th>
-                  <th class="py-2 pr-2">{{ t('product.stock') }}</th>
-                  <th class="py-2 pr-2">{{ t('product.price') }}</th>
-                  <th class="py-2 pr-2 text-right">{{ t('inventory.actions') }}</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-stone-100">
-                <tr v-for="product in filtered" :key="product.id" class="align-middle">
-                  <td class="py-3 pr-2 font-semibold text-stone-900">{{ product.fields.Name }}</td>
-                  <td class="py-3 pr-2 text-stone-600">{{ product.fields.Category || '—' }}</td>
-                  <td class="py-3 pr-2 text-stone-800">
-                    {{ product.fields['Current Stock Level'] ?? 0 }}
-                    <span v-if="product.fields['Min Stock Level'] != null" class="text-xs text-stone-500">
-                      / {{ product.fields['Min Stock Level'] }}
-                    </span>
-                  </td>
-                  <td class="py-3 pr-2 text-stone-800">€{{ (product.fields.Price ?? 0).toFixed(2) }}</td>
-                  <td class="py-3 pr-2 text-right">
-                    <div class="inline-flex items-center gap-2">
-                      <BaseButton
-                        variant="secondary"
-                        class="h-8 px-3"
-                        :disabled="adjustMutation.isPending.value"
-                        @click="quickAdjust(product, 1)"
-                      >
-                        {{ t('inventory.addOne') }}
-                      </BaseButton>
-                      <BaseButton
-                        variant="ghost"
-                        class="h-8 px-3"
-                        :disabled="adjustMutation.isPending.value"
-                        @click="quickAdjust(product, -1)"
-                      >
-                        {{ t('inventory.removeOne') }}
-                      </BaseButton>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader class="text-xs uppercase tracking-wide text-stone-500">
+              <TableRow>
+                <TableHead class="py-2 pr-2">{{ t('product.name') }}</TableHead>
+                <TableHead class="py-2 pr-2">{{ t('product.category') }}</TableHead>
+                <TableHead class="py-2 pr-2">{{ t('product.stock') }}</TableHead>
+                <TableHead class="py-2 pr-2">{{ t('product.price') }}</TableHead>
+                <TableHead class="py-2 pr-2 text-right">{{ t('inventory.actions') }}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="product in filtered" :key="product.id" class="align-middle">
+                <TableCell class="py-3 pr-2 font-semibold text-stone-900">{{ product.fields.Name }}</TableCell>
+                <TableCell class="py-3 pr-2 text-stone-600">{{ product.fields.Category || '—' }}</TableCell>
+                <TableCell class="py-3 pr-2 text-stone-800">
+                  {{ product.fields['Current Stock Level'] ?? 0 }}
+                  <span v-if="product.fields['Min Stock Level'] != null" class="text-xs text-stone-500">
+                    / {{ product.fields['Min Stock Level'] }}
+                  </span>
+                </TableCell>
+                <TableCell class="py-3 pr-2 text-stone-800">€{{ (product.fields.Price ?? 0).toFixed(2) }}</TableCell>
+                <TableCell class="py-3 pr-2 text-right">
+                  <div class="inline-flex items-center gap-2">
+                    <BaseButton
+                      variant="secondary"
+                      class="h-8 px-3"
+                      :disabled="adjustMutation.isPending.value"
+                      @click="quickAdjust(product, 1)"
+                    >
+                      {{ t('inventory.addOne') }}
+                    </BaseButton>
+                    <BaseButton
+                      variant="ghost"
+                      class="h-8 px-3"
+                      :disabled="adjustMutation.isPending.value"
+                      @click="quickAdjust(product, -1)"
+                    >
+                      {{ t('inventory.removeOne') }}
+                    </BaseButton>
+                  </div>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
           <EmptyState
             v-if="!filtered.length && !query.isFetching.value"
             :title="t('inventory.noResults')"

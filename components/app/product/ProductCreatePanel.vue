@@ -17,6 +17,7 @@ import { reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 import { createProduct, type CreateProductDTO } from '@/lib/api'
+import { logger } from '@/lib/logger'
 import type { Product } from '@/types'
 import BaseButton from '../ui/BaseButton.vue'
 import BaseInput from '../ui/BaseInput.vue'
@@ -47,6 +48,11 @@ const createMutation = useMutation<Product, unknown, CreateProductDTO>({
   },
   onError: (err) => {
     const message = err instanceof Error ? err.message : String(err)
+    logger.error('Failed to create product', {
+      barcode: props.barcode,
+      formData: { name: form.name, category: form.category },
+      errorMessage: message,
+    })
     showToast('error', t('toast.createFailed'), message)
   },
 })

@@ -57,6 +57,7 @@ watch(
         barcode: scannedCode.value,
         errorMessage: message,
       })
+      showToast('error', t('toast.lookupFailed'), message)
     }
   }
 )
