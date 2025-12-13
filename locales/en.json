@@ -22,8 +22,16 @@
       "badge": "Browse"
     }
   },
+  "common": {
+    "back": "Back"
+  },
   "scanner": {
     "title": "Scan Product",
+    "subtitle": "Use camera or enter barcode manually",
+    "helper": "Scan a barcode to look up or create products",
+    "awaitingScan": "Awaiting Scan",
+    "startHint": "Point camera at barcode or enter manually",
+    "alignHint": "Align barcode within the frame",
     "searching": "Searching…",
     "manualEntry": "Enter barcode manually",
     "addButton": "Add",
@@ -53,6 +61,7 @@
   "product": {
     "newProduct": "New Product",
     "createProduct": "Create Product",
+    "createFromScan": "Scanned barcode not found. Create a new product.",
     "manageStock": "Manage Stock",
     "barcode": "Barcode",
     "barcodeCannotChange": "Barcode cannot be changed",
@@ -124,7 +133,18 @@
     "refresh": "Refresh",
     "refreshed": "Refreshed",
     "dataRefreshed": "Inventory data refreshed",
-    "filters": {
+    "filters": "Filters",
+    "quickSearch": "Search by name or barcode",
+    "searchPlaceholder": "Search products...",
+    "total": "{count} products",
+    "listTitle": "Products",
+    "listSubtitle": "All inventory items",
+    "actions": "Actions",
+    "addOne": "+1",
+    "removeOne": "-1",
+    "noResults": "No products found",
+    "tryFilters": "Try a different search term",
+    "filterOptions": {
       "search": "Search products...",
       "searchPlaceholder": "Search by name or barcode...",
       "allCategories": "All Categories",
@@ -164,9 +184,12 @@
     }
   },
   "cart": {
-    "title": "My Cart",
-    "items": "items",
+    "title": "Cart",
+    "subtitle": "Items for checkout",
+    "items": "{count} items",
     "empty": "Cart is empty",
+    "clear": "Clear Cart",
+    "noStock": "This item has no stock available",
     "total": "Total",
     "totalWithCount": "Total ({{count}} items)",
     "nextProduct": "Next Product",
@@ -244,6 +267,9 @@
     "error": "Error",
     "warning": "Warning",
     "info": "Information",
+    "addedToCart": "Added to cart",
+    "checkoutComplete": "Checkout Complete",
+    "checkoutCompleteMessage": "All items have been processed and stock updated",
     "productCreated": "Product created",
     "productCreatedMessage": "{{name}} successfully added to inventory",
     "productUpdated": "Product updated",

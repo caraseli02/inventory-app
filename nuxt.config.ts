@@ -7,11 +7,11 @@ export default defineNuxtConfig({
     strict: true,
   },
   modules: ['@nuxtjs/tailwindcss'],
-  plugins: [
-    { src: './plugins/vue-query.client', mode: 'client' },
-    { src: './plugins/logger' },
-    { src: './plugins/i18n.client', mode: 'client' },
-  ],
+  routeRules: {
+    '/inventory': { ssr: false },
+    '/checkout': { ssr: false },
+    '/scan': { ssr: false },
+  },
   app: {
     head: {
       title: 'Inventory App | Nuxt Scaffold',

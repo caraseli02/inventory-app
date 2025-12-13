@@ -22,14 +22,22 @@
       "badge": "Browse"
     }
   },
+  "common": {
+    "back": "Назад"
+  },
   "scanner": {
-    "title": "Scan Product",
-    "searching": "Searching…",
-    "manualEntry": "Enter barcode manually",
-    "addButton": "Add",
-    "emptyState": "Point camera at barcode or enter manually",
-    "cameraError": "Failed to start camera. Check permissions.",
-    "scanBarcode": "Scan"
+    "title": "Сканировать товар",
+    "subtitle": "Используйте камеру или введите код вручную",
+    "helper": "Сканируйте штрих-код для поиска или создания товаров",
+    "awaitingScan": "Ожидание сканирования",
+    "startHint": "Направьте камеру на штрих-код или введите вручную",
+    "alignHint": "Выровняйте штрих-код в рамке",
+    "searching": "Поиск…",
+    "manualEntry": "Введите штрих-код вручную",
+    "addButton": "Добавить",
+    "emptyState": "Направьте камеру на штрих-код или введите вручную",
+    "cameraError": "Не удалось запустить камеру. Проверьте разрешения.",
+    "scanBarcode": "Сканировать"
   },
   "camera": {
     "title": "Take Photo",
@@ -51,9 +59,10 @@
     "notFound": "Not Found"
   },
   "product": {
-    "newProduct": "New Product",
-    "createProduct": "Create Product",
-    "manageStock": "Manage Stock",
+    "newProduct": "Новый товар",
+    "createProduct": "Создать товар",
+    "createFromScan": "Штрих-код не найден. Создайте новый товар.",
+    "manageStock": "Управление запасами",
     "barcode": "Barcode",
     "barcodeCannotChange": "Barcode cannot be changed",
     "barcodeAddNow": "Add a barcode to enable scanning",
@@ -115,16 +124,27 @@
     "label": "Markup"
   },
   "inventory": {
-    "title": "Inventory List",
-    "loading": "Loading inventory...",
-    "failedToLoad": "Failed to Load Inventory",
-    "tryAgain": "Try Again",
-    "noProducts": "No products found",
-    "adjustFilters": "Try adjusting your filters or search query",
-    "refresh": "Refresh",
-    "refreshed": "Refreshed",
-    "dataRefreshed": "Inventory data refreshed",
-    "filters": {
+    "title": "Список товаров",
+    "loading": "Загрузка инвентаря...",
+    "failedToLoad": "Ошибка загрузки инвентаря",
+    "tryAgain": "Попробовать снова",
+    "noProducts": "Товары не найдены",
+    "adjustFilters": "Попробуйте изменить фильтры или поиск",
+    "refresh": "Обновить",
+    "refreshed": "Обновлено",
+    "dataRefreshed": "Данные инвентаря обновлены",
+    "filters": "Фильтры",
+    "quickSearch": "Поиск по названию или коду",
+    "searchPlaceholder": "Искать товары...",
+    "total": "{count} товаров",
+    "listTitle": "Товары",
+    "listSubtitle": "Все товары в инвентаре",
+    "actions": "Действия",
+    "addOne": "+1",
+    "removeOne": "-1",
+    "noResults": "Товары не найдены",
+    "tryFilters": "Попробуйте другой поисковый запрос",
+    "filterOptions": {
       "search": "Search products...",
       "searchPlaceholder": "Search by name or barcode...",
       "allCategories": "All Categories",
@@ -164,9 +184,12 @@
     }
   },
   "cart": {
-    "title": "My Cart",
-    "items": "items",
-    "empty": "Cart is empty",
+    "title": "Корзина",
+    "subtitle": "Товары для оплаты",
+    "items": "{count} товаров",
+    "empty": "Корзина пуста",
+    "clear": "Очистить корзину",
+    "noStock": "Этот товар отсутствует на складе",
     "total": "Total",
     "totalWithCount": "Total ({{count}} items)",
     "nextProduct": "Next Product",
@@ -240,11 +263,14 @@
     }
   },
   "toast": {
-    "success": "Success",
-    "error": "Error",
-    "warning": "Warning",
-    "info": "Information",
-    "productCreated": "Product created",
+    "success": "Успех",
+    "error": "Ошибка",
+    "warning": "Предупреждение",
+    "info": "Информация",
+    "addedToCart": "Добавлено в корзину",
+    "checkoutComplete": "Оплата завершена",
+    "checkoutCompleteMessage": "Все товары обработаны и склад обновлён",
+    "productCreated": "Товар создан",
     "productCreatedMessage": "{{name}} successfully added to inventory",
     "productUpdated": "Product updated",
     "productUpdatedMessage": "{{name}} updated successfully",

@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['.nuxt/**/*', 'dist/**/*'],
+    ignores: ['.nuxt/**/*', 'dist/**/*', '.output/**/*'],
   },
   ...vue.configs['flat/essential'],
   ...tseslint.configs.recommended,

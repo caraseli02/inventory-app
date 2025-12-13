@@ -22,8 +22,16 @@
       "badge": "Răsfoire"
     }
   },
+  "common": {
+    "back": "Înapoi"
+  },
   "scanner": {
     "title": "Scanează produsul",
+    "subtitle": "Folosește camera sau introdu codul manual",
+    "helper": "Scanează un cod de bare pentru a căuta sau crea produse",
+    "awaitingScan": "În așteptarea scanării",
+    "startHint": "Îndreaptă camera spre codul de bare sau introdu-l manual",
+    "alignHint": "Aliniază codul de bare în cadru",
     "searching": "Se caută…",
     "manualEntry": "Introdu codul de bare manual",
     "addButton": "Adaugă",
@@ -53,6 +61,7 @@
   "product": {
     "newProduct": "Produs nou",
     "createProduct": "Creează produs",
+    "createFromScan": "Codul de bare nu a fost găsit. Creează un produs nou.",
     "manageStock": "Gestionează stoc",
     "barcode": "Cod de bare",
     "barcodeCannotChange": "Codul de bare nu poate fi modificat",
@@ -124,7 +133,18 @@
     "refresh": "Reîmprospătează",
     "refreshed": "Actualizat",
     "dataRefreshed": "Datele de inventar au fost actualizate",
-    "filters": {
+    "filters": "Filtre",
+    "quickSearch": "Caută după nume sau cod",
+    "searchPlaceholder": "Caută produse...",
+    "total": "{count} produse",
+    "listTitle": "Produse",
+    "listSubtitle": "Toate articolele din inventar",
+    "actions": "Acțiuni",
+    "addOne": "+1",
+    "removeOne": "-1",
+    "noResults": "Nu au fost găsite produse",
+    "tryFilters": "Încearcă un alt termen de căutare",
+    "filterOptions": {
       "search": "Caută produse...",
       "searchPlaceholder": "Caută după nume sau cod de bare...",
       "allCategories": "Toate categoriile",
@@ -164,9 +184,12 @@
     }
   },
   "cart": {
-    "title": "Coșul meu",
-    "items": "articole",
+    "title": "Coș",
+    "subtitle": "Articole pentru plată",
+    "items": "{count} articole",
     "empty": "Coșul este gol",
+    "clear": "Golește coșul",
+    "noStock": "Acest articol nu are stoc disponibil",
     "total": "Total",
     "totalWithCount": "Total ({{count}} articole)",
     "nextProduct": "Produsul următor",
@@ -244,6 +267,9 @@
     "error": "Eroare",
     "warning": "Avertizare",
     "info": "Informație",
+    "addedToCart": "Adăugat în coș",
+    "checkoutComplete": "Plată finalizată",
+    "checkoutCompleteMessage": "Toate articolele au fost procesate și stocul actualizat",
     "productCreated": "Produs creat",
     "productCreatedMessage": "{{name}} a fost adăugat în inventar",
     "productUpdated": "Produs actualizat",

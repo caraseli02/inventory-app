@@ -22,8 +22,16 @@
       "badge": "Navegar"
     }
   },
+  "common": {
+    "back": "Volver"
+  },
   "scanner": {
     "title": "Escanear Producto",
+    "subtitle": "Usa la cámara o ingresa el código manualmente",
+    "helper": "Escanea un código de barras para buscar o crear productos",
+    "awaitingScan": "Esperando Escaneo",
+    "startHint": "Apunta la cámara al código de barras o ingrésalo manualmente",
+    "alignHint": "Alinea el código de barras dentro del marco",
     "searching": "Buscando…",
     "manualEntry": "Ingresar código de barras manualmente",
     "addButton": "Agregar",
@@ -53,6 +61,7 @@
   "product": {
     "newProduct": "Nuevo Producto",
     "createProduct": "Crear Producto",
+    "createFromScan": "Código de barras no encontrado. Crea un nuevo producto.",
     "manageStock": "Gestionar Stock",
     "barcode": "Código de Barras",
     "barcodeCannotChange": "El código de barras no se puede cambiar",
@@ -124,7 +133,18 @@
     "refresh": "Actualizar",
     "refreshed": "Actualizado",
     "dataRefreshed": "Datos de inventario actualizados",
-    "filters": {
+    "filters": "Filtros",
+    "quickSearch": "Buscar por nombre o código",
+    "searchPlaceholder": "Buscar productos...",
+    "total": "{count} productos",
+    "listTitle": "Productos",
+    "listSubtitle": "Todos los artículos del inventario",
+    "actions": "Acciones",
+    "addOne": "+1",
+    "removeOne": "-1",
+    "noResults": "No se encontraron productos",
+    "tryFilters": "Intenta con un término diferente",
+    "filterOptions": {
       "search": "Buscar productos...",
       "searchPlaceholder": "Buscar por nombre o código de barras...",
       "allCategories": "Todas las categorías",
@@ -164,9 +184,12 @@
     }
   },
   "cart": {
-    "title": "Mi Carrito",
-    "items": "artículos",
+    "title": "Carrito",
+    "subtitle": "Artículos para pagar",
+    "items": "{count} artículos",
     "empty": "El carrito está vacío",
+    "clear": "Vaciar Carrito",
+    "noStock": "Este artículo no tiene stock disponible",
     "total": "Total",
     "totalWithCount": "Total ({{count}} artículos)",
     "nextProduct": "Siguiente Producto",
@@ -244,6 +267,9 @@
     "error": "Error",
     "warning": "Advertencia",
     "info": "Información",
+    "addedToCart": "Agregado al carrito",
+    "checkoutComplete": "Pago Completado",
+    "checkoutCompleteMessage": "Todos los artículos han sido procesados y el stock actualizado",
     "productCreated": "Producto creado",
     "productCreatedMessage": "{{name}} agregado exitosamente al inventario",
     "productUpdated": "Producto actualizado",
