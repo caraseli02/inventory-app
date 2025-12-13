@@ -363,7 +363,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
   }
 }
 
-const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
+function CheckoutPage({ onBack }: CheckoutPageProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
@@ -703,7 +703,7 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
     }
   };
 
-  const { total } = calculateTotals();
+  const { total, missingPrices } = calculateTotals();
 
   if (state.checkoutComplete) {
     return (
@@ -937,9 +937,9 @@ const CheckoutPage = ({ onBack }: CheckoutPageProps) => {
 
           {/* Totals Section */}
           <div className="pt-4 border-t border-stone-200 space-y-2">
-            {calculateTotals().missingPrices > 0 && (
+            {missingPrices > 0 && (
               <div className="flex justify-between text-sm text-amber-600">
-                <span>{t('checkout.missingPrices', { count: calculateTotals().missingPrices })}</span>
+                <span>{t('checkout.missingPrices', { count: missingPrices })}</span>
               </div>
             )}
             <div className="flex justify-between items-center">
