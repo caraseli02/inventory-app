@@ -100,7 +100,7 @@ function App() {
       <main className="w-full px-0 lg:px-0 flex-1 flex flex-col items-center">
         {view === 'home' ? (
           <div className="w-full max-w-5xl animate-in fade-in duration-300">
-            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:gap-8">
+            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:gap-8">
               <Card
                 className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
                 onClick={() => setView('manage')}
@@ -158,7 +158,7 @@ function App() {
                 </div>
               </Card>
               <Card
-                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 sm:col-span-2 md:col-span-1"
                 onClick={() => setView('inventory')}
                 role="button"
                 tabIndex={0}
