@@ -28,7 +28,12 @@
     "manualEntry": "Introdu codul de bare manual",
     "addButton": "Adaugă",
     "emptyState": "Îndreaptă camera spre codul de bare sau introdu-l manual",
+    "emptyStateHint": "Scanează un cod de bare sau introdu-l manual pentru a începe",
     "cameraError": "Camera nu a putut fi pornită. Verifică permisiunile.",
+    "cameraUnavailable": "Camera indisponibilă",
+    "retry": "Încearcă din nou",
+    "manualEntryHint": "Poți introduce coduri de bare manual mai jos",
+    "alignCode": "Aliniază codul în cadru",
     "scanBarcode": "Scanează"
   },
   "camera": {
@@ -78,6 +83,7 @@
     "recentActivity": "Activitate recentă",
     "noRecentMovements": "Fără mișcări recente",
     "preview": "Previzualizare",
+    "imageLoadFailed": "Imaginea nu a putut fi încărcată",
     "searching": "Se caută...",
     "createAndStock": "Creează și adaugă stoc",
     "pleaseWait": "Te rugăm să aștepți...",
@@ -112,7 +118,9 @@
     "Uncategorized": "Fără categorie"
   },
   "markup": {
-    "label": "Adaos"
+    "label": "Adaos",
+    "explanation": "Prețul din magazin se calculează adăugând procentul de adaos la costul de bază",
+    "formula": "Preț magazin = Bază × (1 + {{percent}}%)"
   },
   "inventory": {
     "title": "Listă inventar",
@@ -121,6 +129,7 @@
     "tryAgain": "Încearcă din nou",
     "noProducts": "Nu au fost găsite produse",
     "adjustFilters": "Încearcă să ajustezi filtrele sau căutarea",
+    "emptyStateHint": "Importă produse sau creează-le prin scanner",
     "refresh": "Reîmprospătează",
     "refreshed": "Actualizat",
     "dataRefreshed": "Datele de inventar au fost actualizate",
@@ -131,6 +140,7 @@
       "category": "Toate categoriile",
       "clearCategory": "Șterge filtrul de categorie",
       "lowStock": "Stoc scăzut",
+      "lowStockTooltip": "Afișează produsele cu stoc egal sau sub nivelul minim",
       "sortBy": "Sortează după",
       "sortByName": "Nume",
       "sortByStock": "Stoc",
@@ -167,6 +177,8 @@
     "title": "Coșul meu",
     "items": "articole",
     "empty": "Coșul este gol",
+    "emptyHint": "Scanează produse pentru a le adăuga în coș",
+    "emptyCheckoutHint": "Scanează produse pentru a le adăuga în coș",
     "total": "Total",
     "totalWithCount": "Total ({{count}} articole)",
     "nextProduct": "Produsul următor",
@@ -212,6 +224,9 @@
       "minStockLevel": "Nivel minim de stoc",
       "expiryDate": "Data expirării",
       "supplier": "Furnizor",
+      "lifetimeStats": "Statistici totale",
+      "totalIn": "Total intrări",
+      "totalOut": "Total ieșiri",
       "recentMovements": "Mișcări recente de stoc",
       "loadingMovements": "Se încarcă mișcările...",
       "noMovements": "Nu există mișcări de stoc înregistrate",
@@ -312,6 +327,7 @@
     "title": "Exportă inventarul",
     "success": "Export reușit",
     "successMessage": "Au fost exportate {{count}} produse în fișier Excel",
+    "downloadedHint": "Verifică folderul Descărcări.",
     "failed": "Export eșuat"
   }
 }

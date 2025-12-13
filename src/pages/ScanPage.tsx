@@ -47,7 +47,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [error, scannedCode, showToast]);
+  }, [error, scannedCode, showToast, t]);
 
   // Product not found is now handled by CreateProductForm in add mode
   // In unified interface, user can see stock level and choose whether to add or remove

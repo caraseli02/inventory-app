@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Video, RotateCcw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Button } from '../ui/button';
 import { logger } from '../../lib/logger';
 
 interface ScannerProps {
@@ -8,8 +11,10 @@ interface ScannerProps {
 }
 
 const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
+  const { t } = useTranslation();
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const regionId = scannerId;
   const lastScanRef = useRef<{ code: string; timestamp: number } | null>(null);
   const onScanSuccessRef = useRef(onScanSuccess);
@@ -18,6 +23,24 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   useEffect(() => {
     onScanSuccessRef.current = onScanSuccess;
   }, [onScanSuccess]);
+
+  // Retry handler to re-initialize the scanner
+  const handleRetry = useCallback(() => {
+    // Clean up existing scanner first
+    if (scannerRef.current) {
+      try {
+        if (scannerRef.current.isScanning) {
+          scannerRef.current.stop().catch(() => {});
+        }
+        scannerRef.current.clear();
+      } catch {
+        // Ignore cleanup errors
+      }
+      scannerRef.current = null;
+    }
+    setError(null);
+    setRetryCount((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     // strict mode safety check: if already initialized, don't re-init
@@ -166,31 +189,35 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
         }
       }
     };
-  }, [regionId]);
+  }, [regionId, retryCount]);
 
   return (
-    <div className="w-full h-full overflow-hidden bg-black relative flex flex-col">
-      <div id={regionId} className="w-full flex-1 bg-black"></div>
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-amber-50 border-4 border-amber-400 text-amber-900 p-6 text-center m-4 rounded-lg">
-          <div className="space-y-3">
-            <div className="flex justify-center">
-              <svg className="h-10 w-10 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <p className="font-bold text-lg">Camera Unavailable</p>
+    <div className="w-full h-full overflow-hidden bg-black relative flex flex-col min-h-[300px]">
+      {error ? (
+        <div className="flex-1 flex items-center justify-center bg-amber-50 border-4 border-amber-400 text-amber-900 p-6 text-center m-4 rounded-lg">
+          <div className="space-y-3 max-w-sm">
+            <Video className="h-10 w-10 text-amber-500 mx-auto" />
+            <p className="font-bold text-lg">{t('scanner.cameraUnavailable', 'Camera Unavailable')}</p>
             <p className="text-sm text-amber-800">{error}</p>
-            <div className="pt-2 border-t border-amber-200">
-              <p className="text-xs text-amber-700 font-medium">
-                💡 You can still enter barcodes manually below
-              </p>
-            </div>
+            <Button
+              onClick={handleRetry}
+              variant="outline"
+              size="sm"
+              className="mt-2 border-amber-400 text-amber-800 hover:bg-amber-100"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              {t('scanner.retry', 'Try Again')}
+            </Button>
+            <p className="text-xs text-amber-700 font-medium pt-2 border-t border-amber-200">
+              {t('scanner.manualEntryHint', 'You can still enter barcodes manually below')}
+            </p>
           </div>
         </div>
+      ) : (
+        <div id={regionId} className="w-full flex-1 bg-black"></div>
       )}
       <div className="bg-stone-100 py-2 text-center text-stone-700 text-sm">
-        Align code within frame
+        {t('scanner.alignCode', 'Align code within frame')}
       </div>
     </div>
   );

@@ -49,13 +49,19 @@ export const ProductDetailDialog = ({
   const isLowStock = currentStock < minStock && minStock > 0;
   const imageUrl = product.fields.Image?.[0]?.url;
 
-  // Calculate lifetime stock totals from movements
-  const lifetimeIn = movements
-    .filter(m => m.fields.Type === 'IN')
-    .reduce((sum, m) => sum + Math.abs(m.fields.Quantity), 0);
-  const lifetimeOut = movements
-    .filter(m => m.fields.Type === 'OUT')
-    .reduce((sum, m) => sum + Math.abs(m.fields.Quantity), 0);
+  // Calculate lifetime stock totals from movements in a single pass
+  const { lifetimeIn, lifetimeOut } = movements.reduce(
+    (totals, m) => {
+      const qty = Math.abs(m.fields.Quantity);
+      if (m.fields.Type === 'IN') {
+        totals.lifetimeIn += qty;
+      } else {
+        totals.lifetimeOut += qty;
+      }
+      return totals;
+    },
+    { lifetimeIn: 0, lifetimeOut: 0 }
+  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
