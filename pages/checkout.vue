@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter } from '#app'
 import CheckoutPage from '~/src/vue/pages/CheckoutPage.vue'
 
 const router = useRouter()

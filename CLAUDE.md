@@ -126,7 +126,7 @@ The EditProductDialog supports two methods for adding product images:
 **Image Storage (Vercel Blob + imgbb fallback)**:
 ```
 Production (Vercel):
-  └── Uses Vercel Blob storage via /api/upload serverless function
+  └── Uses Vercel Blob storage via Nitro route `server/api/upload.post.ts`
   └── Add BLOB_READ_WRITE_TOKEN in Vercel dashboard
 
 Development (Local):

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter } from '#app'
 import InventoryListPage from '~/src/vue/pages/InventoryListPage.vue'
 
 const router = useRouter()

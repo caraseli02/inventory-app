@@ -1,5 +1,5 @@
 import type { Attachment, FieldSet, Record as AirtableRecord } from 'airtable'
-import base, { TABLES } from './airtable'
+import { getAirtableBase, TABLES } from './airtable'
 import type { Product, ProductFields, StockMovement, MarkupPercentage } from '@/types'
 import { logger } from './logger'
 
@@ -27,7 +27,7 @@ export class AuthorizationError extends Error {
   }
 }
 
-const productsTable = base<ProductFields>(TABLES.PRODUCTS)
+const productsTable = () => getAirtableBase()<ProductFields>(TABLES.PRODUCTS)
 
 const escapeAirtableString = (value: string): string => value.replace(/'/g, "\\'")
 
@@ -87,7 +87,7 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
   const sanitizedBarcode = escapeAirtableString(barcode.trim())
 
   try {
-    const records = await productsTable
+    const records = await productsTable()
       .select({
         filterByFormula: `({Barcode} = '${sanitizedBarcode}')`,
         maxRecords: 1,
@@ -120,7 +120,7 @@ export const getProductByBarcode = async (barcode: string): Promise<Product | nu
 
 export const getAllProducts = async (): Promise<Product[]> => {
   try {
-    const records = await productsTable
+    const records = await productsTable()
       .select({
         sort: [{ field: 'Name', direction: 'asc' }],
         maxRecords: 200,
@@ -184,7 +184,7 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
   })
 
   try {
-    const created = await productsTable.create([{ fields }], { typecast: true })
+    const created = await productsTable().create([{ fields }], { typecast: true })
     return mapAirtableProduct(created[0])
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -196,6 +196,8 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
     throw error
   }
 }
+
+const stockMovementsTable = () => getAirtableBase()<StockMovement['fields']>(TABLES.STOCK_MOVEMENTS)
 
 export const addStockMovement = async (productId: string, quantity: number, type: 'IN' | 'OUT'): Promise<StockMovement> => {
   if (!productId || !productId.trim()) {
@@ -214,7 +216,7 @@ export const addStockMovement = async (productId: string, quantity: number, type
   const dateStr = new Date().toISOString().split('T')[0]
 
   try {
-    const records = await base(TABLES.STOCK_MOVEMENTS).create(
+    const records = await stockMovementsTable().create(
       [
         {
           fields: {
@@ -258,7 +260,7 @@ export const getStockMovements = async (productId: string): Promise<StockMovemen
   try {
     const escapedProductId = escapeAirtableString(productId)
 
-    const allRecords = await base(TABLES.STOCK_MOVEMENTS)
+    const allRecords = await stockMovementsTable()
       .select({
         sort: [{ field: 'Date', direction: 'desc' }],
         maxRecords: 100,
