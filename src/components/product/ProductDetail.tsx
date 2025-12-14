@@ -4,11 +4,11 @@ import { getStockMovements } from '../../lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useStockMutation } from '../../hooks/useStockMutation';
 import { useProductLookup } from '../../hooks/useProductLookup';
-import { BoxIcon } from '../ui/Icons';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
+import { ProductImage } from '../ui/product-image';
 import { ProductSkeleton } from './ProductSkeleton';
 import EditProductDialog from './EditProductDialog';
 import DeleteConfirmDialog from './DeleteConfirmDialog';
@@ -90,24 +90,12 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
       <CardHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 py-3 lg:px-6 lg:py-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-14 h-14 lg:w-16 lg:h-16 bg-white rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-stone-200 shadow-sm">
-              {product.fields.Image && product.fields.Image.length > 0 ? (
-                <img
-                  src={product.fields.Image[0].url}
-                  alt={product.fields.Name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const img = e.target;
-                    if (img instanceof HTMLImageElement) {
-                      img.style.display = 'none';
-                      img.nextElementSibling?.classList.remove('hidden');
-                    }
-                  }}
-                />
-              ) : (
-                <BoxIcon className="h-6 w-6 text-stone-400" />
-              )}
-            </div>
+            <ProductImage
+              src={product.fields.Image?.[0]?.url}
+              alt={product.fields.Name}
+              size="sm"
+              className="lg:w-16 lg:h-16 shadow-sm"
+            />
             <div className="flex-1 min-w-0">
               <h2 className="text-lg lg:text-xl font-bold text-stone-900 leading-tight mb-0.5 truncate">{product.fields.Name}</h2>
               <Badge variant="secondary" className="bg-stone-100 text-stone-700 border-stone-300 text-xs">

@@ -1,9 +1,10 @@
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Minus, AlertTriangle, Edit2, Trash2, Package } from 'lucide-react';
+import { Plus, Minus, AlertTriangle, Edit2, Trash2 } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { ProductImage } from '../ui/product-image';
 import { getProductDisplayPrice } from '@/hooks/useMarkupSetting';
 import type { Product } from '../../types';
 
@@ -50,20 +51,13 @@ const ProductListItemComponent = ({
       aria-label={t('inventory.table.viewDetails', { name: product.fields.Name })}
     >
       <div className="flex gap-3">
-        {/* Product Image - Fixed 56px square */}
-        <div className="w-14 h-14 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 flex-shrink-0">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={product.fields.Name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Package className="h-6 w-6 text-stone-400" />
-            </div>
-          )}
-        </div>
+        {/* Product Image - Fixed 56px square with standardized styling */}
+        <ProductImage
+          src={imageUrl}
+          alt={product.fields.Name}
+          size="sm"
+          className="rounded-lg border-stone-200"
+        />
 
         {/* Product Info */}
         <div className="flex-1 min-w-0">
