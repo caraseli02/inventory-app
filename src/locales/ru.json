@@ -19,8 +19,28 @@
     "viewInventory": {
       "title": "View Inventory",
       "description": "Browse all products, check stock levels, and adjust quantities.",
-      "badge": "Browse"
+      "badge": "Browse",
+      "alertBadge": "Низкий запас!",
+      "alertDescription": "{{count}} товаров требуют пополнения",
+      "errorBadge": "Ошибка"
     }
+  },
+  "alerts": {
+    "reorderAlerts": "Оповещения о пополнении",
+    "itemsNeedReorder": "{{count}} товаров требуют пополнения",
+    "stockLevel": "Запас: {{current}}/{{min}}",
+    "need": "Нужно",
+    "totalDeficit": "Всего необходимо единиц:",
+    "lowStockWarning": "Предупреждение о низком запасе",
+    "lowStockMessage": "{{count}} товаров требуют пополнения. Проверьте панель оповещений выше.",
+    "loadError": "Не удалось проверить уровни запасов",
+    "loadErrorDescription": "Не удалось загрузить оповещения о низком запасе. Пожалуйста, обновите страницу."
+  },
+  "scan": {
+    "productNotFound": "Товар не найден",
+    "barcodeNotRecognized": "Штрих-код не распознан в вашем инвентаре.",
+    "tryAgain": "Попробовать снова",
+    "addNewProduct": "Добавить новый товар"
   },
   "scanner": {
     "title": "Scan Product",
@@ -103,7 +123,15 @@
     "stock": "Stock:",
     "add": "Add",
     "remove": "Remove",
-    "edit": "Edit"
+    "edit": "Edit",
+    "stockManagement": "Управление запасами",
+    "minStockLevel": "Мин. уровень запаса",
+    "minStockLevelHelp": "Оповещение при падении запаса ниже этого уровня",
+    "minStockLevelInvalid": "Минимальный уровень запаса должен быть неотрицательным числом",
+    "currentStock": "Текущий запас",
+    "currentStockHelp": "Управляется через движение запасов",
+    "supplier": "Поставщик",
+    "supplierPlaceholder": "Введите имя поставщика"
   },
   "categories": {
     "General": "General",
@@ -195,6 +223,9 @@
     "itemAddedDescription": "{{name}} has been added to your cart",
     "quantityUpdated": "Quantity Updated",
     "quantityUpdatedDescription": "{{name}} quantity updated to {{quantity}}",
+    "removeItem": "Удалить товар из корзины",
+    "itemRemoved": "Товар удалён",
+    "itemRemovedDescription": "{{name}} удалён из корзины",
     "quickAdd": {
       "title": "Quick Add",
       "placeholder": "Scan or enter code",
@@ -213,7 +244,21 @@
     "cancel": "Cancel",
     "insufficientStockTitle": "Insufficient Stock",
     "insufficientStockDescription": "Cannot complete checkout. {{count}} item(s) exceed available stock:",
-    "needsQuantity": "needs {{quantity}}, only {{available}} available"
+    "needsQuantity": "needs {{quantity}}, only {{available}} available",
+    "steps": {
+      "scan": "Сканирование",
+      "review": "Проверка",
+      "complete": "Завершено"
+    },
+    "reviewTitle": "Проверка заказа",
+    "reviewSubtitle": "Пожалуйста, проверьте товары перед завершением оплаты",
+    "itemsCount": "{{count}} товар(ов)",
+    "subtotal": "Подытог",
+    "taxLabel": "Налог (оценка)",
+    "grandTotal": "Итого",
+    "proceedToCheckout": "Перейти к оплате",
+    "editCart": "Редактировать корзину",
+    "missingPrices": "{{count}} товар(ов) без цены"
   },
   "dialogs": {
     "productDetail": {
@@ -251,7 +296,8 @@
       "deleteFailedMessage": "Failed to delete product. Please try again."
     },
     "editProduct": {
-      "title": "Edit Product"
+      "title": "Edit Product",
+      "description": "Редактировать данные товара и сохранить изменения"
     }
   },
   "toast": {

@@ -19,8 +19,28 @@
     "viewInventory": {
       "title": "Ver Inventario",
       "description": "Navega todos los productos, consulta niveles de stock y ajusta cantidades.",
-      "badge": "Navegar"
+      "badge": "Navegar",
+      "alertBadge": "¡Stock Bajo!",
+      "alertDescription": "{{count}} artículos necesitan reabastecimiento",
+      "errorBadge": "Error"
     }
+  },
+  "alerts": {
+    "reorderAlerts": "Alertas de Reabastecimiento",
+    "itemsNeedReorder": "{{count}} artículos necesitan reabastecimiento",
+    "stockLevel": "Stock: {{current}}/{{min}}",
+    "need": "Necesita",
+    "totalDeficit": "Total de unidades necesarias:",
+    "lowStockWarning": "Advertencia de Stock Bajo",
+    "lowStockMessage": "{{count}} productos necesitan reabastecimiento. Revisa el panel de alertas arriba.",
+    "loadError": "No se pudo verificar los niveles de stock",
+    "loadErrorDescription": "No se pudieron cargar las alertas de stock bajo. Por favor actualiza para intentar de nuevo."
+  },
+  "scan": {
+    "productNotFound": "Producto No Encontrado",
+    "barcodeNotRecognized": "El código de barras no fue reconocido en tu inventario.",
+    "tryAgain": "Intentar de Nuevo",
+    "addNewProduct": "Agregar Nuevo Producto"
   },
   "scanner": {
     "title": "Escanear Producto",
@@ -103,7 +123,15 @@
     "stock": "Stock:",
     "add": "Agregar",
     "remove": "Quitar",
-    "edit": "Editar"
+    "edit": "Editar",
+    "stockManagement": "Gestión de Stock",
+    "minStockLevel": "Nivel Mínimo de Stock",
+    "minStockLevelHelp": "Alerta cuando el stock caiga por debajo de este nivel",
+    "minStockLevelInvalid": "El nivel mínimo de stock debe ser un número no negativo",
+    "currentStock": "Stock Actual",
+    "currentStockHelp": "Gestionado mediante movimientos de stock",
+    "supplier": "Proveedor",
+    "supplierPlaceholder": "Ingresa el nombre del proveedor"
   },
   "categories": {
     "General": "General",
@@ -195,6 +223,9 @@
     "itemAddedDescription": "{{name}} ha sido agregado a tu carrito",
     "quantityUpdated": "Cantidad Actualizada",
     "quantityUpdatedDescription": "Cantidad de {{name}} actualizada a {{quantity}}",
+    "removeItem": "Quitar artículo del carrito",
+    "itemRemoved": "Artículo Eliminado",
+    "itemRemovedDescription": "{{name}} eliminado del carrito",
     "quickAdd": {
       "title": "Agregar Rápido",
       "placeholder": "Escanear o ingresar código",
@@ -213,7 +244,21 @@
     "cancel": "Cancelar",
     "insufficientStockTitle": "Stock Insuficiente",
     "insufficientStockDescription": "No se puede completar el pago. {{count}} artículo(s) exceden el stock disponible:",
-    "needsQuantity": "necesita {{quantity}}, solo {{available}} disponibles"
+    "needsQuantity": "necesita {{quantity}}, solo {{available}} disponibles",
+    "steps": {
+      "scan": "Escanear Artículos",
+      "review": "Revisar",
+      "complete": "Completado"
+    },
+    "reviewTitle": "Revisar Pedido",
+    "reviewSubtitle": "Por favor revisa tus artículos antes de completar el pago",
+    "itemsCount": "{{count}} artículo(s)",
+    "subtotal": "Subtotal",
+    "taxLabel": "Impuesto (estimado)",
+    "grandTotal": "Total General",
+    "proceedToCheckout": "Proceder al Pago",
+    "editCart": "Editar Carrito",
+    "missingPrices": "{{count}} artículo(s) sin precio"
   },
   "dialogs": {
     "productDetail": {
@@ -251,7 +296,8 @@
       "deleteFailedMessage": "No se pudo eliminar el producto. Por favor, intenta de nuevo."
     },
     "editProduct": {
-      "title": "Editar Producto"
+      "title": "Editar Producto",
+      "description": "Edita los detalles del producto y guarda los cambios"
     }
   },
   "toast": {
