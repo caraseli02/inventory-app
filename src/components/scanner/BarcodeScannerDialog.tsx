@@ -181,12 +181,12 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
         </Button>
 
         {/* Scanner container */}
-        <div className="relative w-full bg-black" style={{ aspectRatio: '4/3' }}>
-          <div id={regionId} className="w-full h-full" />
+        <div className="relative w-full bg-black overflow-hidden" style={{ aspectRatio: '4/3' }}>
+          <div id={regionId} className="absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover" />
           <ScannerOverlay />
 
           {isInitializing && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
               <div className="flex flex-col items-center gap-3">
                 <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                 <p className="text-white text-sm">{t('loading.scanner')}</p>
@@ -195,7 +195,7 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
           )}
 
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/90 p-4">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/90 p-4 z-20">
               <div className="text-center">
                 <p className="text-red-400 mb-3">{error}</p>
                 <Button
@@ -209,11 +209,11 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
               </div>
             </div>
           )}
-        </div>
 
-        {/* Bottom text */}
-        <div className="bg-stone-100 py-2 text-center text-stone-700 text-sm rounded-b-2xl">
-          {t('scanner.emptyState')}
+          {/* Bottom text inside scanner */}
+          <div className="absolute bottom-0 left-0 right-0 bg-stone-100/90 py-1.5 text-center text-stone-700 text-xs z-10">
+            {t('scanner.alignCode', 'Align code within frame')}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
