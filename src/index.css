@@ -16,6 +16,30 @@
   --color-stone: #78716C;
   --color-stone-dark: #57534E;
 
+  /* Layout constraints */
+  --max-width-desktop: 1280px;
+  --max-width-tablet: 900px;
+  --container-padding: 1.5rem;
+  --container-padding-lg: 2rem;
+
+  /* Spacing scale (consistent rhythm) */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Typography scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+
   font-family: var(--font-body);
 }
 
@@ -103,4 +127,136 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ============================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================ */
+
+/* Visible focus states for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--color-lavender);
+  outline-offset: 2px;
+}
+
+/* Remove default outline (we use focus-visible instead) */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Enhanced focus for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--color-lavender);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15);
+}
+
+/* Skip link for keyboard users */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.75rem 1.5rem;
+  background: var(--color-forest);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  z-index: 9999;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Ensure minimum touch target size (44px) */
+@media (pointer: coarse) {
+  button,
+  a,
+  input[type="checkbox"],
+  input[type="radio"],
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --color-forest: #047857;
+    --color-terracotta: #C2410C;
+  }
+
+  button,
+  input,
+  select {
+    border-width: 2px;
+  }
+}
+
+/* ============================================
+   HTML5-QRCODE LIBRARY OVERRIDES
+   Hide default library borders - we use custom ScannerOverlay
+   ============================================ */
+
+/* Target the qrbox region created by html5-qrcode - it uses inline styles */
+/* The library creates nested divs with border styles for the scanning box */
+[id$="-reader"] div,
+[id*="reader"] div {
+  border: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Specifically hide the qr-shaded-region which has the dashed border */
+div[id*="qr-shaded-region"] {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Hide any element with inline border-style (library uses this) */
+[id*="reader"] div[style*="border-style"],
+[id*="reader"] div[style*="border-width"],
+[id*="reader"] div[style*="border-color"] {
+  border: none !important;
+  border-width: 0 !important;
+  border-style: none !important;
+}
+
+/* Ensure the video fills the container properly */
+[id*="reader"] video {
+  object-fit: cover !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* Hide any dashboard or controls the library might add */
+[id*="reader__dashboard"],
+[id*="reader__header_message"],
+[id*="reader__filescan_input"] {
+  display: none !important;
+}
+
+/* Hide canvas overlay if present */
+[id*="reader"] canvas {
+  display: none !important;
+}
 

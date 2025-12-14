@@ -13,6 +13,7 @@
     "checkoutMode": {
       "title": "Modo Caja",
       "description": "Escaneo por lotes para pago con controles móviles simplificados.",
+      "badge": "Caja",
       "badgeMobile": "Móvil",
       "badgeTablet": "Tableta"
     },
@@ -166,6 +167,8 @@
     "noProducts": "No se encontraron productos",
     "adjustFilters": "Intenta ajustar tus filtros o búsqueda",
     "emptyStateHint": "Importa productos o créalos mediante el escáner",
+    "lowStock": "Bajo",
+    "noBarcodeTooltip": "Sin código de barras",
     "refresh": "Actualizar",
     "refreshed": "Actualizado",
     "dataRefreshed": "Datos de inventario actualizados",
@@ -211,6 +214,7 @@
   },
   "cart": {
     "title": "Mi Carrito",
+    "item": "artículo",
     "items": "artículos",
     "empty": "El carrito está vacío",
     "emptyHint": "Escanea productos para agregarlos a tu carrito",

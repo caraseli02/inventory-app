@@ -174,9 +174,10 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
         )}
 
         <div className="h-full flex flex-col overflow-hidden">
-          <DialogHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-6 py-6 flex-shrink-0">
-            <DialogTitle className="text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
-            <DialogDescription className="text-stone-600 text-sm">
+          {/* Compact header - max 50px on mobile */}
+          <DialogHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 py-2 sm:px-6 sm:py-4 flex-shrink-0 min-h-0">
+            <DialogTitle className="text-lg sm:text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
+            <DialogDescription className="hidden sm:block text-stone-600 text-sm">
               {t('dialogs.editProduct.description', 'Edit product details and save changes')}
             </DialogDescription>
           </DialogHeader>
@@ -226,7 +227,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                   onChange={isBarcodeEditable ? handleChange : undefined}
                   disabled={!isBarcodeEditable}
                   placeholder={isBarcodeEditable ? '1234567890123' : ''}
-                  className={`flex-1 border-2 ${
+                  className={`flex-1 h-11 border-2 ${
                     isBarcodeEditable
                       ? 'border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]'
                       : 'bg-stone-50 border-stone-300 text-stone-600 cursor-not-allowed'
@@ -237,7 +238,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                     type="button"
                     variant="outline"
                     onClick={() => setScannerOpen(true)}
-                    className="h-10 px-3 border-2 border-stone-300 hover:bg-stone-100 hover:border-[var(--color-lavender)]"
+                    className="h-11 w-11 p-0 border-2 border-stone-300 hover:bg-stone-100 hover:border-[var(--color-lavender)]"
                   >
                     <ScanBarcode className="w-5 h-5 text-stone-600" />
                   </Button>
@@ -263,7 +264,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                 value={formData.name}
                 onChange={handleChange}
                 placeholder={t('product.namePlaceholder')}
-                className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
               />
             </div>
           </div>
@@ -276,7 +277,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                 value={formData.category}
                 onValueChange={(value) => setFormData({ ...formData, category: value })}
               >
-                <SelectTrigger className="mt-2 border-2 border-stone-300 focus:ring-[var(--color-lavender)]">
+                <SelectTrigger className="mt-2 h-11 border-2 border-stone-300 focus:ring-[var(--color-lavender)]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -302,14 +303,14 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-stone-700 font-semibold text-sm">{t('product.basePrice')}</Label>
-                <div className="mt-2 px-3 py-2 bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
+                <div className="mt-2 h-11 px-3 flex items-center bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
                   {basePrice != null ? `€${basePrice.toFixed(2)}` : '—'}
                 </div>
                 <p className="text-xs text-stone-500 mt-1">{t('product.basePriceHelp')}</p>
               </div>
               <div>
                 <Label className="text-stone-700 font-semibold text-sm">{t('product.storePrice')}</Label>
-                <div className="mt-2 px-3 py-2 bg-[var(--color-forest)]/10 border-2 border-[var(--color-forest)]/30 rounded-md text-[var(--color-forest)] font-bold text-lg">
+                <div className="mt-2 h-11 px-3 flex items-center bg-[var(--color-forest)]/10 border-2 border-[var(--color-forest)]/30 rounded-md text-[var(--color-forest)] font-bold text-lg">
                   {storePrice != null ? `€${storePrice.toFixed(2)}` : '—'}
                 </div>
                 <p className="text-xs text-stone-500 mt-1">{t('product.storePriceHelp')}</p>
@@ -371,7 +372,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                   value={formData.minStockLevel}
                   onChange={handleChange}
                   placeholder="0"
-                  className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                  className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                 />
                 <p className="text-xs text-stone-500 mt-1">
                   {t('product.minStockLevelHelp', 'Alert when stock falls below this level')}
@@ -381,7 +382,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                 <Label htmlFor="currentStock" className="text-stone-700 font-semibold text-sm">
                   {t('product.currentStock', 'Current Stock')}
                 </Label>
-                <div className="mt-2 px-3 py-2 bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
+                <div className="mt-2 h-11 px-3 flex items-center bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
                   {product.fields['Current Stock Level'] ?? 0}
                 </div>
                 <p className="text-xs text-stone-500 mt-1">
@@ -401,7 +402,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                 value={formData.supplier}
                 onChange={handleChange}
                 placeholder={t('product.supplierPlaceholder', 'Enter supplier name')}
-                className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
               />
             </div>
           </div>
@@ -416,7 +417,7 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                 name="expiryDate"
                 value={formData.expiryDate}
                 onChange={handleChange}
-                className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
               />
             </div>
 
@@ -430,13 +431,13 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                   value={formData.imageUrl}
                   onChange={handleChange}
                   placeholder={t('product.imageUrlPlaceholder')}
-                  className="flex-1 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                  className="flex-1 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                 />
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setCameraOpen(true)}
-                  className="h-10 px-3 border-2 border-stone-300 hover:bg-stone-100 hover:border-[var(--color-lavender)]"
+                  className="h-11 w-11 p-0 border-2 border-stone-300 hover:bg-stone-100 hover:border-[var(--color-lavender)]"
                 >
                   <Camera className="w-5 h-5 text-stone-600" />
                 </Button>
@@ -453,12 +454,13 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
         )}
           </div>
 
-          <DialogFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-6 border-t-2 border-stone-200 flex gap-3 flex-shrink-0">
+          {/* Compact footer - no Cancel on mobile */}
+          <DialogFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 sm:p-6 border-t-2 border-stone-200 flex gap-3 flex-shrink-0">
             <Button
               type="button"
               onClick={() => onOpenChange(false)}
               variant="outline"
-              className="flex-1 border-2 border-stone-300 hover:bg-stone-100 font-semibold h-12"
+              className="hidden sm:flex flex-1 border-2 border-stone-300 hover:bg-stone-100 font-semibold h-12"
               disabled={mutation.isPending}
             >
               {t('product.cancel')}

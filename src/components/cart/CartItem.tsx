@@ -4,6 +4,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { BoxIcon, CheckCircleIcon, TrashIcon } from '../ui/Icons';
 import { Spinner } from '../ui/spinner';
+import { Minus, Plus } from 'lucide-react';
 
 interface CartItemProps {
   item: CartItemType;
@@ -13,6 +14,7 @@ interface CartItemProps {
 
 /**
  * Enhanced cart item with category badges, hover effects, and status indicators
+ * Optimized for touch with 44px minimum touch targets
  */
 export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
   const { t } = useTranslation();
@@ -20,111 +22,128 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
   const price = item.product.fields.Price;
   const category = item.product.fields.Category ? t(`categories.${item.product.fields.Category}`) : t('categories.General');
   const { status, statusMessage } = item;
+  const isProcessing = status === 'processing';
 
   return (
-    <div className="bg-white border-2 border-stone-200 rounded-lg overflow-hidden transition-all duration-200 hover:shadow-lg lg:hover:-translate-y-1">
-      <div className="flex gap-0 h-full">
-        {/* Product Image - Full height on left with max 120px */}
-        <div className="w-20 lg:w-24 max-h-[120px] bg-stone-100 flex items-center justify-center shrink-0 overflow-hidden">
+    <div
+      className={`bg-white border-2 rounded-xl overflow-hidden transition-all duration-150 ${
+        status === 'failed'
+          ? 'border-red-200 bg-red-50/30'
+          : status === 'success'
+          ? 'border-green-200 bg-green-50/30'
+          : 'border-stone-200 hover:border-stone-300'
+      }`}
+    >
+      <div className="flex gap-0 items-stretch">
+        {/* Product Image - Fixed width, full height of card */}
+        <div className="w-24 min-h-[96px] bg-stone-100 flex items-center justify-center shrink-0 overflow-hidden">
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={item.product.fields.Name}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
           ) : (
-            <BoxIcon className="h-8 w-8 text-stone-400" />
+            <BoxIcon className="h-10 w-10 text-stone-400" />
           )}
         </div>
 
         {/* Product Info & Controls */}
-        <div className="flex-1 p-3 lg:p-4 flex flex-col justify-between">
-          {/* Top: Name and Category */}
-          <div>
-            <h3 className="font-semibold text-stone-900 text-sm lg:text-base leading-tight mb-1.5">
+        <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
+          {/* Top: Name, Category, Price */}
+          <div className="flex-1">
+            <h3 className="font-semibold text-stone-900 text-sm leading-tight line-clamp-2 mb-1">
               {item.product.fields.Name}
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Category Badge */}
-              <Badge variant="secondary" className="text-xs bg-stone-100 text-stone-700 hover:bg-stone-100">
+              <Badge variant="secondary" className="text-xs bg-stone-100 text-stone-600 hover:bg-stone-100 px-1.5 py-0">
                 {category}
               </Badge>
-              {/* Price */}
               {price != null && (
-                <span className="text-xs lg:text-sm font-bold" style={{ color: 'var(--color-forest)' }}>
-                  €{price.toFixed(2)}/kg
+                <span className="text-xs font-semibold text-[var(--color-forest)]">
+                  €{price.toFixed(2)}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Bottom: Quantity Controls - Compact inline */}
-          <div className="mt-2 flex items-center gap-2">
-            <div
-              className="inline-flex items-center gap-2 bg-stone-50 border-2 border-stone-200 rounded-lg px-2 py-1 transition-colors"
-              style={{
-                borderColor: status === 'processing' ? 'var(--color-lavender)' : undefined,
-              }}
-            >
+          {/* Bottom: Quantity Controls - 44px touch targets */}
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              {/* Decrease Button */}
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
                 onClick={() => onUpdateQuantity(index, -1)}
-                className="w-7 h-7 rounded-md bg-white hover:bg-[var(--color-forest)] hover:text-white hover:border-[var(--color-forest)] transition-colors font-bold text-base border-stone-300"
-                disabled={status === 'processing'}
+                className="h-10 w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
+                disabled={isProcessing}
+                aria-label={t('cart.decreaseQuantity', 'Decrease quantity')}
               >
-                −
+                <Minus className="h-4 w-4" />
               </Button>
-              <span className="font-bold text-base min-w-[1.5rem] text-center">
+
+              {/* Quantity Display */}
+              <span className="font-bold text-lg min-w-[2.5rem] text-center tabular-nums">
                 {item.quantity}
               </span>
+
+              {/* Increase Button */}
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
                 onClick={() => onUpdateQuantity(index, 1)}
-                className="w-7 h-7 rounded-md bg-white hover:bg-[var(--color-forest)] hover:text-white hover:border-[var(--color-forest)] transition-colors font-bold text-base border-stone-300"
-                disabled={status === 'processing'}
+                className="h-10 w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
+                disabled={isProcessing}
+                aria-label={t('cart.increaseQuantity', 'Increase quantity')}
               >
-                +
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
-            {/* Remove Item Button */}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => onUpdateQuantity(index, -item.quantity)}
-              className="w-7 h-7 rounded-md bg-white border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)] hover:text-white transition-colors"
-              disabled={status === 'processing'}
-              title={t('cart.removeItem')}
-              aria-label={t('cart.removeItem')}
-            >
-              <TrashIcon className="h-4 w-4" />
-            </Button>
+
+            {/* Item Total & Remove */}
+            <div className="flex items-center gap-2">
+              {price != null && (
+                <span className="font-bold text-stone-900 text-base tabular-nums">
+                  €{(price * item.quantity).toFixed(2)}
+                </span>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onUpdateQuantity(index, -item.quantity)}
+                className="h-10 w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-colors"
+                disabled={isProcessing}
+                title={t('cart.removeItem')}
+                aria-label={t('cart.removeItem')}
+              >
+                <TrashIcon className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Status Messages */}
       {status === 'processing' && (
-        <div className="px-3 pb-3 flex items-center gap-2 text-sm text-blue-700">
+        <div className="px-3 pb-3 flex items-center gap-2 text-sm text-[var(--color-lavender)] bg-[var(--color-lavender)]/5 border-t border-[var(--color-lavender)]/20">
           <Spinner size="sm" />
-          <span>{t('cart.processing')}</span>
+          <span className="font-medium">{t('cart.processing')}</span>
         </div>
       )}
       {status === 'failed' && statusMessage && (
-        <div className="px-3 pb-3">
-          <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded p-2">
+        <div className="px-3 pb-3 pt-2 border-t border-red-200">
+          <div className="text-sm text-red-700 bg-red-100/50 rounded-lg p-2">
             {statusMessage}
           </div>
         </div>
       )}
       {status === 'success' && (
-        <div className="px-3 pb-3 flex items-center gap-2 text-sm text-green-700">
+        <div className="px-3 pb-2 pt-1 flex items-center gap-2 text-sm text-green-700 border-t border-green-200">
           <CheckCircleIcon className="h-4 w-4" />
-          <span>{t('cart.complete')}</span>
+          <span className="font-medium">{t('cart.complete')}</span>
         </div>
       )}
     </div>

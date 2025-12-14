@@ -13,6 +13,7 @@
     "checkoutMode": {
       "title": "Checkout Mode",
       "description": "Batch scan for payment with simplified mobile controls.",
+      "badge": "Checkout",
       "badgeMobile": "Mobile",
       "badgeTablet": "Tablet"
     },
@@ -166,6 +167,8 @@
     "noProducts": "No products found",
     "adjustFilters": "Try adjusting your filters or search query",
     "emptyStateHint": "Import products or create them via the scanner",
+    "lowStock": "Low",
+    "noBarcodeTooltip": "No barcode assigned",
     "refresh": "Refresh",
     "refreshed": "Refreshed",
     "dataRefreshed": "Inventory data refreshed",
@@ -211,6 +214,7 @@
   },
   "cart": {
     "title": "My Cart",
+    "item": "item",
     "items": "items",
     "empty": "Cart is empty",
     "emptyHint": "Scan products to add them to your cart",

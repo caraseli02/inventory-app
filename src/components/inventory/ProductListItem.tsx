@@ -33,31 +33,53 @@ const ProductListItemComponent = ({
 
   return (
     <Card
-      className="group cursor-pointer border-2 border-stone-200 bg-white p-4 transition hover:border-stone-300 hover:shadow-lg"
+      className={`group cursor-pointer border-2 bg-white p-4 transition-all duration-150 rounded-xl ${
+        isLowStock
+          ? 'border-orange-200 bg-orange-50/30 hover:border-orange-300'
+          : 'border-stone-200 hover:border-stone-300'
+      } hover:shadow-md active:scale-[0.99]`}
       onClick={() => onViewDetails(product)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onViewDetails(product);
+        }
+      }}
+      aria-label={t('inventory.table.viewDetails', { name: product.fields.Name })}
     >
       <div className="flex gap-3">
-        {/* Product Image */}
-        {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={product.fields.Name}
-            className="h-20 w-20 rounded-lg object-cover border border-stone-200"
-          />
-        ) : (
-          <div className="h-20 w-20 rounded-lg bg-stone-100 flex items-center justify-center border border-stone-200">
-            <Package className="h-10 w-10 text-stone-400" />
-          </div>
-        )}
+        {/* Product Image - Fixed 56px square */}
+        <div className="w-14 h-14 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 flex-shrink-0">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.fields.Name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Package className="h-6 w-6 text-stone-400" />
+            </div>
+          )}
+        </div>
 
         {/* Product Info */}
         <div className="flex-1 min-w-0">
+          {/* Header: Name and Low Stock Badge */}
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-bold text-stone-900 truncate">
+            <h3 className="font-semibold text-stone-900 text-sm leading-tight line-clamp-2">
               {product.fields.Name}
             </h3>
             {isLowStock && (
-              <AlertTriangle className="h-5 w-5 text-[var(--color-terracotta)] flex-shrink-0" />
+              <Badge
+                variant="outline"
+                className="bg-orange-100 border-orange-300 text-orange-700 text-xs px-1.5 py-0 h-5 flex-shrink-0"
+              >
+                <AlertTriangle className="h-3 w-3 mr-0.5" />
+                {t('inventory.lowStock', 'Low')}
+              </Badge>
             )}
           </div>
 
@@ -71,12 +93,12 @@ const ProductListItemComponent = ({
             </Badge>
           )}
 
-          {/* Stock and Price */}
+          {/* Stock and Price Row */}
           <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-stone-600">{t('product.stock')}:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-stone-500">{t('product.stock')}:</span>
               <span
-                className={`text-2xl font-bold ${
+                className={`text-xl font-bold tabular-nums ${
                   isLowStock ? 'text-[var(--color-terracotta)]' : 'text-stone-900'
                 }`}
               >
@@ -84,85 +106,85 @@ const ProductListItemComponent = ({
               </span>
             </div>
             {displayPrice != null && (
-              <span className="text-lg font-bold text-stone-900">
+              <span className="text-base font-bold text-stone-900 tabular-nums">
                 €{displayPrice.toFixed(2)}
               </span>
             )}
           </div>
-
-          {/* Quick Adjust Buttons */}
-          {onQuickAdjust && (
-            <div
-              className="flex items-center gap-2 mt-3"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button
-                variant="outline"
-                size="sm"
-                className="min-h-11 flex-1 border-2 border-stone-300"
-                onClick={() => onQuickAdjust(product.id, -1)}
-                disabled={isLoading || currentStock === 0}
-              >
-                {isLoading ? (
-                  <span className="animate-spin h-4 w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
-                ) : (
-                  <>
-                    <Minus className="h-4 w-4 mr-1" />
-                    {t('product.remove')}
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="min-h-11 flex-1 border-2 border-stone-300"
-                onClick={() => onQuickAdjust(product.id, 1)}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <span className="animate-spin h-4 w-4 border-2 border-stone-400 border-t-stone-600 rounded-full"></span>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-1" />
-                    {t('product.add')}
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
-
-          {/* Edit and Delete Buttons */}
-          {(onEdit || onDelete) && (
-            <div
-              className="flex items-center gap-2 mt-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {onEdit && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11 flex-1 border-2 border-stone-300 hover:bg-stone-100"
-                  onClick={() => onEdit(product)}
-                >
-                  <Edit2 className="h-3.5 w-3.5 mr-1.5" />
-                  {t('product.edit')}
-                </Button>
-              )}
-              {onDelete && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11 flex-1 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50"
-                  onClick={() => onDelete(product)}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                  {t('product.delete')}
-                </Button>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Quick Adjust Buttons - 44px touch targets */}
+      {onQuickAdjust && (
+        <div
+          className="flex items-center gap-2 mt-3 pt-3 border-t border-stone-100"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Button
+            variant="outline"
+            className="h-11 flex-1 border-2 border-stone-300 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+            onClick={() => onQuickAdjust(product.id, -1)}
+            disabled={isLoading || currentStock === 0}
+            aria-label={t('inventory.table.removeUnit')}
+          >
+            {isLoading ? (
+              <span className="animate-spin h-4 w-4 border-2 border-stone-400 border-t-stone-600 rounded-full" />
+            ) : (
+              <>
+                <Minus className="h-4 w-4 mr-1.5" />
+                <span className="text-sm font-medium">{t('product.remove')}</span>
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 flex-1 border-2 border-stone-300 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+            onClick={() => onQuickAdjust(product.id, 1)}
+            disabled={isLoading}
+            aria-label={t('inventory.table.addUnit')}
+          >
+            {isLoading ? (
+              <span className="animate-spin h-4 w-4 border-2 border-stone-400 border-t-stone-600 rounded-full" />
+            ) : (
+              <>
+                <Plus className="h-4 w-4 mr-1.5" />
+                <span className="text-sm font-medium">{t('product.add')}</span>
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Edit and Delete Buttons */}
+      {(onEdit || onDelete) && (
+        <div
+          className="flex items-center gap-2 mt-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {onEdit && (
+            <Button
+              variant="outline"
+              className="h-11 flex-1 border-2 border-stone-300 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+              onClick={() => onEdit(product)}
+              aria-label={t('inventory.table.editProduct')}
+            >
+              <Edit2 className="h-4 w-4 mr-1.5" />
+              <span className="text-sm font-medium">{t('product.edit')}</span>
+            </Button>
+          )}
+          {onDelete && (
+            <Button
+              variant="outline"
+              className="h-11 flex-1 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]"
+              onClick={() => onDelete(product)}
+              aria-label={t('inventory.table.deleteProduct')}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              <span className="text-sm font-medium">{t('product.delete')}</span>
+            </Button>
+          )}
+        </div>
+      )}
     </Card>
   );
 };
