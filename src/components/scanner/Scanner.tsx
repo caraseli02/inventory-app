@@ -192,7 +192,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   }, [regionId, retryCount]);
 
   return (
-    <div className="w-full h-full overflow-hidden bg-black relative flex flex-col min-h-[300px]">
+    <div className="w-full overflow-hidden bg-black relative flex flex-col" style={{ aspectRatio: '4/3' }}>
       {error ? (
         <div className="flex-1 flex items-center justify-center bg-amber-50 border-4 border-amber-400 text-amber-900 p-6 text-center m-4 rounded-lg">
           <div className="space-y-3 max-w-sm">

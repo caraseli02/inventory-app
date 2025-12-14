@@ -39,9 +39,9 @@ export const ScannerFrame = ({
   return (
     <div className="flex flex-col gap-4">
       {/* Scanner Frame */}
-      <div className={`relative mx-auto w-full ${isSmall ? 'max-w-sm' : 'max-w-lg'}`}>
+      <div className={`relative mx-auto w-full ${isSmall ? 'max-w-xs' : 'max-w-sm'}`}>
         {/* Scanner - includes built-in ScannerOverlay with corner brackets */}
-        <div className="relative bg-black rounded-xl overflow-hidden aspect-[4/3]">
+        <div className="relative bg-black rounded-xl overflow-hidden">
           <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
         </div>
 

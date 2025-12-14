@@ -98,8 +98,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
         {!scannedCode && (
           <div className="px-6 pt-4 space-y-4">
             {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
-            <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-              <div className="relative bg-black rounded-lg overflow-hidden">
+            <div className="relative mx-auto w-full max-w-sm">
+              <div className="relative bg-black rounded-xl overflow-hidden">
                 <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
               </div>
           </div>
@@ -176,8 +176,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           {!scannedCode && (
             <div className="w-[40%] flex flex-col gap-6">
               {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
-              <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-                <div className="relative bg-black rounded-lg overflow-hidden">
+              <div className="relative mx-auto w-full max-w-md">
+                <div className="relative bg-black rounded-xl overflow-hidden">
                   <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
                 </div>
               </div>
