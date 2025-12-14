@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ProductImage } from '@/components/ui/product-image';
 import BarcodeScannerDialog from '../scanner/BarcodeScannerDialog';
 import CameraCaptureDialog from '../camera/CameraCaptureDialog';
-import { ScanBarcode, Camera, Package } from 'lucide-react';
+import { ScanBarcode, Camera, Package, AlertTriangle } from 'lucide-react';
 import type { Product } from '../../types';
 
 type MarkupPercentage = 50 | 70 | 100;
@@ -459,7 +459,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
 
             {mutation.isError && (
               <div className="mt-6 text-red-700 text-sm bg-red-50 p-4 rounded-lg border-2 border-red-200 font-medium flex items-start gap-2">
-                <span className="text-lg">⚠️</span>
+                <AlertTriangle className="h-5 w-5 flex-shrink-0" />
                 <span>{mutation.error instanceof Error ? mutation.error.message : t('product.updateFailed')}</span>
               </div>
             )}

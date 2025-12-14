@@ -15,7 +15,7 @@ import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { ProductImage } from '@/components/ui/product-image';
 import CameraCaptureDialog from '../camera/CameraCaptureDialog';
-import { Camera, Package } from 'lucide-react';
+import { Camera, Package, AlertTriangle } from 'lucide-react';
 
 type MarkupPercentage = 50 | 70 | 100;
 
@@ -460,7 +460,7 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
 
         {mutation.isError && (
           <div className="mt-6 text-red-700 text-sm bg-red-50 p-4 rounded-lg border-2 border-red-200 font-medium flex items-start gap-2">
-            <span className="text-lg">⚠️</span>
+            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
             <span>{mutation.error.message || t('errors.productCreationFailed')}</span>
           </div>
         )}

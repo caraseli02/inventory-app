@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle } from 'lucide-react';
 import { getStockMovements } from '../../lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useStockMutation } from '../../hooks/useStockMutation';
@@ -230,8 +231,9 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
             {/* Validation Warning */}
             {currentStock < parseInt(stockQuantity) && (
               <div className="mb-3 p-2 lg:p-3 bg-red-50 border-2 border-red-200 rounded-lg">
-                <p className="text-xs lg:text-sm text-red-700 font-medium">
-                  ⚠️ {t('product.cannotRemove', { quantity: stockQuantity, available: currentStock })}
+                <p className="text-xs lg:text-sm text-red-700 font-medium flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                  {t('product.cannotRemove', { quantity: stockQuantity, available: currentStock })}
                 </p>
               </div>
             )}
