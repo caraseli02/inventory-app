@@ -19,8 +19,28 @@
     "viewInventory": {
       "title": "Vizualizează inventarul",
       "description": "Răsfoiește toate produsele, verifică nivelurile de stoc și ajustează cantitățile.",
-      "badge": "Răsfoire"
+      "badge": "Răsfoire",
+      "alertBadge": "Stoc scăzut!",
+      "alertDescription": "{{count}} produse necesită reaprovizionare",
+      "errorBadge": "Eroare"
     }
+  },
+  "alerts": {
+    "reorderAlerts": "Alerte reaprovizionare",
+    "itemsNeedReorder": "{{count}} produse necesită reaprovizionare",
+    "stockLevel": "Stoc: {{current}}/{{min}}",
+    "need": "Necesar",
+    "totalDeficit": "Total unități necesare:",
+    "lowStockWarning": "Avertizare stoc scăzut",
+    "lowStockMessage": "{{count}} produse necesită reaprovizionare. Verifică panoul de alerte de mai sus.",
+    "loadError": "Nu s-au putut verifica nivelurile de stoc",
+    "loadErrorDescription": "Nu s-au putut încărca alertele de stoc scăzut. Te rugăm să reîmprospătezi pentru a încerca din nou."
+  },
+  "scan": {
+    "productNotFound": "Produs negăsit",
+    "barcodeNotRecognized": "Codul de bare nu a fost recunoscut în inventarul tău.",
+    "tryAgain": "Încearcă din nou",
+    "addNewProduct": "Adaugă produs nou"
   },
   "scanner": {
     "title": "Scanează produsul",
@@ -31,10 +51,18 @@
     "emptyStateHint": "Scanează un cod de bare sau introdu-l manual pentru a începe",
     "cameraError": "Camera nu a putut fi pornită. Verifică permisiunile.",
     "cameraUnavailable": "Camera indisponibilă",
+    "cameraNotFound": "Nu a fost găsită o cameră pe acest dispozitiv.",
     "retry": "Încearcă din nou",
     "manualEntryHint": "Poți introduce coduri de bare manual mai jos",
     "alignCode": "Aliniază codul în cadru",
-    "scanBarcode": "Scanează"
+    "scanBarcode": "Scanează",
+    "initFailed": "Nu s-a putut porni scannerul.",
+    "permissionError": "Te rugăm să acorzi permisiuni pentru cameră în setările browserului.",
+    "notFoundError": "Nu a fost găsită o cameră. Conectează o cameră sau folosește introducerea manuală.",
+    "inUseError": "Camera este folosită de o altă aplicație. Închide celelalte aplicații.",
+    "httpsError": "Camera necesită o conexiune securizată (HTTPS).",
+    "checkPermissions": "Te rugăm să verifici permisiunile pentru cameră și să încerci din nou.",
+    "cleanupFailed": "Curățarea camerei a eșuat. Este posibil să fie nevoie să reîmprospătezi pagina."
   },
   "camera": {
     "title": "Fă o fotografie",
@@ -103,7 +131,15 @@
     "stock": "Stoc:",
     "add": "Adaugă",
     "remove": "Elimină",
-    "edit": "Editează"
+    "edit": "Editează",
+    "stockManagement": "Gestionare stoc",
+    "minStockLevel": "Nivel minim de stoc",
+    "minStockLevelHelp": "Alertă când stocul scade sub acest nivel",
+    "minStockLevelInvalid": "Nivelul minim de stoc trebuie să fie un număr pozitiv",
+    "currentStock": "Stoc curent",
+    "currentStockHelp": "Gestionat prin mișcări de stoc",
+    "supplier": "Furnizor",
+    "supplierPlaceholder": "Introduceți numele furnizorului"
   },
   "categories": {
     "General": "General",
@@ -195,6 +231,9 @@
     "itemAddedDescription": "{{name}} a fost adăugat în coș",
     "quantityUpdated": "Cantitate actualizată",
     "quantityUpdatedDescription": "Cantitatea pentru {{name}} a fost actualizată la {{quantity}}",
+    "removeItem": "Elimină articolul din coș",
+    "itemRemoved": "Articol eliminat",
+    "itemRemovedDescription": "{{name}} a fost eliminat din coș",
     "quickAdd": {
       "title": "Adăugare rapidă",
       "placeholder": "Scanează sau introdu codul",
@@ -213,7 +252,21 @@
     "cancel": "Anulează",
     "insufficientStockTitle": "Stoc insuficient",
     "insufficientStockDescription": "Plata nu poate fi finalizată. {{count}} articol(e) depășesc stocul disponibil:",
-    "needsQuantity": "necesită {{quantity}}, doar {{available}} disponibile"
+    "needsQuantity": "necesită {{quantity}}, doar {{available}} disponibile",
+    "steps": {
+      "scan": "Scanează produse",
+      "review": "Revizuire",
+      "complete": "Finalizat"
+    },
+    "reviewTitle": "Revizuire comandă",
+    "reviewSubtitle": "Te rugăm să revizuiești articolele înainte de a finaliza plata",
+    "itemsCount": "{{count}} articol(e)",
+    "subtotal": "Subtotal",
+    "taxLabel": "Taxă (estimată)",
+    "grandTotal": "Total general",
+    "proceedToCheckout": "Continuă cu plata",
+    "editCart": "Editează coșul",
+    "missingPrices": "{{count}} articol(e) fără preț"
   },
   "dialogs": {
     "productDetail": {
@@ -251,7 +304,8 @@
       "deleteFailedMessage": "Ștergerea produsului a eșuat. Încearcă din nou."
     },
     "editProduct": {
-      "title": "Editează produsul"
+      "title": "Editează produsul",
+      "description": "Editează detaliile produsului și salvează modificările"
     }
   },
   "toast": {
@@ -315,12 +369,42 @@
     "button": "Importă",
     "title": "Importă produse din Excel",
     "description": "Încarcă un fișier xlsx pentru a importa produse în inventar.",
+    "reviewDescription": "Revizuiește produsele înainte de import.",
+    "importingDescription": "Se importă produsele...",
+    "completeDescription": "Importul a fost finalizat cu succes!",
+    "dragDrop": "Trage și lasă fișierul Excel aici",
+    "orClickToBrowse": "sau apasă pentru a căuta",
+    "selectFile": "Selectează fișier",
+    "needTemplate": "Ai nevoie de un șablon?",
+    "downloadSample": "Descarcă fișier exemplu",
+    "errorParsing": "Eroare la analizarea fișierului",
+    "rowError": "Rândul {{row}}: {{message}}",
+    "productsReady": "{{count}} produse gata de import",
+    "totalRowsFound": "{{count}} rânduri găsite în fișier",
+    "warnings": "Avertismente",
+    "rowsSkipped": "{{count}} rânduri omise din cauza erorilor",
+    "andMoreErrors": "...și încă {{count}} erori",
+    "showingProducts": "Se afișează {{showing}} din {{total}} produse",
+    "importingProducts": "Se importă produsele...",
+    "productProgress": "{{current}} din {{total}} produse",
+    "importComplete": "Import finalizat!",
+    "successfullyImported": "Au fost importate {{count}} produse cu succes",
+    "cancel": "Anulează",
+    "back": "Înapoi",
+    "importCount": "Importă {{count}} produse",
+    "done": "Gata",
     "success": "Import reușit",
     "successMessage": "Au fost importate {{count}} produse ({{skipped}} omise, {{errors}} erori)",
     "allSkipped": "Toate produsele au fost omise",
     "allSkippedMessage": "{{count}} produse există deja în inventar",
     "failed": "Import eșuat",
-    "failedMessage": "Importul a eșuat pentru {{count}} produse"
+    "failedMessage": "Importul a eșuat pentru {{count}} produse",
+    "failedProducts": "Produse eșuate",
+    "tableBarcode": "Cod de bare",
+    "tableName": "Nume",
+    "tableCategory": "Categorie",
+    "tablePrice": "Preț",
+    "tableStock": "Stoc"
   },
   "export": {
     "button": "Exportă",

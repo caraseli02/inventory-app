@@ -6,6 +6,7 @@ import { useToast } from '../hooks/useToast';
 import CreateProductForm from '../components/product/CreateProductForm';
 import ProductDetail from '../components/product/ProductDetail';
 import ProductSkeleton from '../components/product/ProductSkeleton';
+import { ProductNotFound } from '../components/product/ProductNotFound';
 import { PageHeader } from '../components/ui/PageHeader';
 import {
   ShoppingCartIcon,
@@ -21,6 +22,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
   const { t } = useTranslation();
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
+  const [showCreateMode, setShowCreateMode] = useState(false);
   const { showToast } = useToast();
 
   const handleScanSuccess = (code: string) => {
@@ -55,8 +57,18 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
   const handleReset = () => {
     setScannedCode(null);
     setManualCode('');
+    setShowCreateMode(false);
   };
 
+  const handleTryAgain = () => {
+    setScannedCode(null);
+    setManualCode('');
+    setShowCreateMode(false);
+  };
+
+  const handleAddNew = () => {
+    setShowCreateMode(true);
+  };
 
   const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -67,8 +79,10 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
     }
   };
 
-  // Show create form when product not found (unified interface allows adding new products)
-  const showCreateForm = !isLoading && !product && !error && scannedCode;
+  // State logic for displaying different views
+  const productNotFound = !isLoading && !product && !error && scannedCode;
+  const showNotFoundState = productNotFound && !showCreateMode;
+  const showCreateForm = productNotFound && showCreateMode;
   const showDetail = !isLoading && product && scannedCode;
 
   return (
@@ -76,21 +90,15 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
       {/* Mobile View */}
       <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
         <PageHeader
-          title={showCreateForm ? t('product.newProduct') : showDetail ? t('product.manageStock') : t('scanner.title')}
+          title={showCreateForm ? t('product.newProduct') : showDetail ? t('product.manageStock') : showNotFoundState ? t('scan.productNotFound', 'Product Not Found') : t('scanner.title')}
           onBack={onBack}
         />
 
         {/* Scanner Section */}
         {!scannedCode && (
           <div className="px-6 pt-4 space-y-4">
-            {/* Scanner Frame */}
+            {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
             <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-              {/* Scan Line */}
-              <div className="absolute inset-0 pointer-events-none z-10">
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
-              </div>
-
-              {/* Scanner Area - relative to define container height */}
               <div className="relative bg-black rounded-lg overflow-hidden">
                 <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
               </div>
@@ -138,6 +146,13 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
             <div className="h-full overflow-y-auto p-4">
               {isLoading && scannedCode && <ProductSkeleton />}
               {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
+              {showNotFoundState && scannedCode && (
+                <ProductNotFound
+                  barcode={scannedCode}
+                  onTryAgain={handleTryAgain}
+                  onAddNew={handleAddNew}
+                />
+              )}
               {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
             </div>
           )}
@@ -147,7 +162,7 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
       {/* Desktop/Tablet View */}
       <div className="hidden lg:block fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200">
         <PageHeader
-          title={showCreateForm ? t('product.newProduct') : showDetail ? t('product.manageStock') : t('scanner.title')}
+          title={showCreateForm ? t('product.newProduct') : showDetail ? t('product.manageStock') : showNotFoundState ? t('scan.productNotFound', 'Product Not Found') : t('scanner.title')}
           onBack={onBack}
         />
 
@@ -156,13 +171,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           {/* Left Column: Scanner (only visible when no scanned code) */}
           {!scannedCode && (
             <div className="w-[40%] flex flex-col gap-6">
+              {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
               <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-                {/* Scan Line */}
-                <div className="absolute inset-0 pointer-events-none z-10">
-                  <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-stone-700 shadow-lg" />
-                </div>
-
-                {/* Scanner Area - relative to define container height */}
                 <div className="relative bg-black rounded-lg overflow-hidden">
                   <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
                 </div>
@@ -204,6 +214,13 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoading && scannedCode && <ProductSkeleton />}
                 {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
+                {showNotFoundState && scannedCode && (
+                  <ProductNotFound
+                    barcode={scannedCode}
+                    onTryAgain={handleTryAgain}
+                    onAddNew={handleAddNew}
+                  />
+                )}
                 {showCreateForm && scannedCode && <CreateProductForm barcode={scannedCode} onSuccess={handleReset} onCancel={handleReset} />}
               </div>
             )}
