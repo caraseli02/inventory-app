@@ -34,9 +34,9 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
           : 'border-stone-200 hover:border-stone-300'
       }`}
     >
-      <div className="flex gap-0">
-        {/* Product Image - Fixed 80px square */}
-        <div className="w-20 h-20 bg-stone-100 flex items-center justify-center shrink-0 overflow-hidden">
+      <div className="flex gap-0 items-stretch">
+        {/* Product Image - Fixed width, full height of card */}
+        <div className="w-24 min-h-[96px] bg-stone-100 flex items-center justify-center shrink-0 overflow-hidden">
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -44,7 +44,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
               className="w-full h-full object-cover"
             />
           ) : (
-            <BoxIcon className="h-8 w-8 text-stone-400" />
+            <BoxIcon className="h-10 w-10 text-stone-400" />
           )}
         </div>
 

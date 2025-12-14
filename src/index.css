@@ -216,26 +216,36 @@ textarea:focus-visible,
    Hide default library borders - we use custom ScannerOverlay
    ============================================ */
 
-/* Hide the qrbox border created by html5-qrcode */
-[id*="reader"] > div,
-[id*="reader"] video {
+/* Target the qrbox region created by html5-qrcode - it uses inline styles */
+/* The library creates nested divs with border styles for the scanning box */
+[id$="-reader"] div,
+[id*="reader"] div {
   border: none !important;
-  outline: none !important;
+  border-color: transparent !important;
   box-shadow: none !important;
 }
 
-/* Hide the shaded region borders */
-[id*="reader__scan_region"],
-[id*="qr-shaded-region"] {
+/* Specifically hide the qr-shaded-region which has the dashed border */
+div[id*="qr-shaded-region"] {
   border: none !important;
   box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Hide any element with inline border-style (library uses this) */
+[id*="reader"] div[style*="border-style"],
+[id*="reader"] div[style*="border-width"],
+[id*="reader"] div[style*="border-color"] {
+  border: none !important;
+  border-width: 0 !important;
+  border-style: none !important;
 }
 
 /* Ensure the video fills the container properly */
 [id*="reader"] video {
   object-fit: cover !important;
-  width: 100% !important;
-  height: 100% !important;
+  border: none !important;
+  outline: none !important;
 }
 
 /* Hide any dashboard or controls the library might add */
@@ -245,14 +255,8 @@ textarea:focus-visible,
   display: none !important;
 }
 
-/* Style the scan region to have no visible borders */
+/* Hide canvas overlay if present */
 [id*="reader"] canvas {
   display: none !important;
-}
-
-/* Override the qrbox styling - remove white corners/borders */
-[id*="reader"] div[style*="border"] {
-  border-color: transparent !important;
-  border: none !important;
 }
 
