@@ -233,7 +233,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                 type="text"
                 value={barcode}
                 disabled
-                className="mt-2 bg-stone-50 border-2 border-stone-300 text-stone-600 cursor-not-allowed"
+                className="mt-2 h-11 bg-stone-50 border-2 border-stone-300 text-stone-600 cursor-not-allowed"
               />
             </div>
 
@@ -256,7 +256,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   }
                 }}
                 placeholder={t('product.namePlaceholder')}
-                className={`mt-2 border-2 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)] ${
+                className={`mt-2 h-11 border-2 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)] ${
                   nameError ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500' : 'border-stone-300'
                 }`}
               />
@@ -275,7 +275,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
-                  <SelectTrigger className="mt-2 border-2 border-stone-300 focus:ring-[var(--color-lavender)]">
+                  <SelectTrigger className="mt-2 h-11 border-2 border-stone-300 focus:ring-[var(--color-lavender)]">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -303,7 +303,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                     value={formData.price}
                     onChange={handleChange}
                     placeholder="0.00"
-                    className="pl-8 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                    className="h-11 pl-8 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                   />
                 </div>
               </div>
@@ -322,7 +322,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   min="0"
                   value={formData.initialStock}
                   onChange={handleChange}
-                  className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                  className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                 />
               </div>
               <div>
@@ -333,7 +333,7 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   name="expiryDate"
                   value={formData.expiryDate}
                   onChange={handleChange}
-                  className="mt-2 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
+                  className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                 />
               </div>
             </div>
