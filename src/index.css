@@ -211,4 +211,48 @@ textarea:focus-visible,
   }
 }
 
+/* ============================================
+   HTML5-QRCODE LIBRARY OVERRIDES
+   Hide default library borders - we use custom ScannerOverlay
+   ============================================ */
+
+/* Hide the qrbox border created by html5-qrcode */
+[id*="reader"] > div,
+[id*="reader"] video {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide the shaded region borders */
+[id*="reader__scan_region"],
+[id*="qr-shaded-region"] {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Ensure the video fills the container properly */
+[id*="reader"] video {
+  object-fit: cover !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Hide any dashboard or controls the library might add */
+[id*="reader__dashboard"],
+[id*="reader__header_message"],
+[id*="reader__filescan_input"] {
+  display: none !important;
+}
+
+/* Style the scan region to have no visible borders */
+[id*="reader"] canvas {
+  display: none !important;
+}
+
+/* Override the qrbox styling - remove white corners/borders */
+[id*="reader"] div[style*="border"] {
+  border-color: transparent !important;
+  border: none !important;
+}
 

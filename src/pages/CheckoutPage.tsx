@@ -721,7 +721,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
   return (
     <>
       {/* Mobile View */}
-      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden flex flex-col">
         <PageHeader
           title={t('checkout.title')}
           onBack={onBack}
@@ -729,8 +729,9 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
         />
 
         {/* Scanner Section - Hidden when cart is expanded on mobile */}
+        {/* Uses flex-1 with overflow to fit above cart toggle (approx 100px) */}
         {!state.isCartExpanded && (
-          <div className="px-6 pt-4 flex flex-col gap-3">
+          <div className="flex-1 px-4 pt-3 pb-[110px] overflow-y-auto flex flex-col gap-3">
             {/* Progress Indicator - At top, centered */}
             <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
             <ScannerFrame
@@ -742,6 +743,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
               isPending={isPendingLookup}
               error={state.lookupError}
               onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
+              size="small"
             />
           </div>
         )}
