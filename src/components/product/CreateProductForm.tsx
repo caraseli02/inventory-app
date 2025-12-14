@@ -189,14 +189,15 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
         </div>
       )}
 
-      <CardHeader className={`bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 ${mutation.isPending ? 'invisible' : ''}`}>
+      {/* Compact header - max 50px on mobile */}
+      <CardHeader className={`bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 py-2 sm:px-6 sm:py-4 ${mutation.isPending ? 'invisible' : ''}`}>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl font-bold text-stone-900">
+            <CardTitle className="text-lg sm:text-2xl font-bold text-stone-900">
               {t('product.createProduct')}
             </CardTitle>
             {aiLoading && (
-              <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-2 border-amber-200 shadow-sm">
-                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-2"></span>
+              <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-2 border-amber-200 shadow-sm text-xs">
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-1.5"></span>
                 {t('product.searching')}
               </Badge>
             )}
@@ -348,12 +349,13 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
         )}
         </CardContent>
 
-        <CardFooter className={`bg-gradient-to-br from-stone-50 to-stone-100/50 p-6 border-t-2 border-stone-200 flex gap-3 fixed md:static bottom-0 w-full ${mutation.isPending ? 'invisible' : ''}`}>
+        {/* Compact footer - no Cancel on mobile */}
+        <CardFooter className={`bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 sm:p-6 border-t-2 border-stone-200 flex gap-3 fixed md:static bottom-0 w-full ${mutation.isPending ? 'invisible' : ''}`}>
           <Button
             type="button"
             onClick={onCancel}
             variant="outline"
-            className="flex-1 border-2 border-stone-300 hover:bg-stone-100 font-semibold h-12"
+            className="hidden sm:flex flex-1 border-2 border-stone-300 hover:bg-stone-100 font-semibold h-12"
           >
             {t('product.cancel')}
           </Button>
