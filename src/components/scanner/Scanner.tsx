@@ -107,21 +107,11 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
             lastScanRef.current = { code: cleanCode, timestamp: now };
             onScanSuccessRef.current(cleanCode);
           },
-          (errorMessage: string) => {
-            // Filter out expected "no code found" messages to avoid spam
-            const isExpectedError =
-              errorMessage.includes('No MultiFormat Readers') ||
-              errorMessage.includes('NotFoundException') ||
-              errorMessage.includes('No barcode or QR code detected');
-
-            if (!isExpectedError) {
-              // Log unexpected parse errors for debugging
-              logger.warn('Scanner parse error (unexpected)', {
-                errorMessage,
-                scannerId: regionId,
-                timestamp: new Date().toISOString(),
-              });
-            }
+          () => {
+            // html5-qrcode calls this callback on EVERY frame without a valid barcode.
+            // This is normal behavior, not an error - simply means "no barcode in this frame".
+            // We intentionally ignore all these "errors" to prevent console spam.
+            // Real scanner errors are caught in the catch block below.
           }
         );
       } catch (err) {

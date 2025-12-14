@@ -97,10 +97,6 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
           qrbox: { width: 250, height: 250 },
         };
 
-        // Track consecutive errors for debugging
-        let consecutiveErrors = 0;
-        const MAX_CONSECUTIVE_ERRORS = 50;
-
         await scanner.start(
           { facingMode: 'environment' },
           config,
@@ -114,23 +110,13 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
               return; // Ignore invalid barcodes
             }
 
-            consecutiveErrors = 0; // Reset on success
-
             // Success - use refs to avoid stale closures
             onScanSuccessRef.current(cleanCode);
             onOpenChangeRef.current(false);
           },
-          (errorMessage) => {
-            // "No barcode found" is expected during continuous scanning
-            if (errorMessage?.includes('No barcode') || errorMessage?.includes('NotFoundException')) {
-              return;
-            }
-
-            // Track unexpected errors for debugging
-            consecutiveErrors++;
-            if (consecutiveErrors === MAX_CONSECUTIVE_ERRORS) {
-              console.warn('Barcode scanner experiencing repeated errors:', errorMessage);
-            }
+          () => {
+            // html5-qrcode calls this on EVERY frame without a valid barcode.
+            // This is normal behavior, not an error. Ignore to prevent console spam.
           }
         );
 
