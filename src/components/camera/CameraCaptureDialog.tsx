@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Camera, X, RotateCcw, Check } from 'lucide-react';
+import { logger } from '../../lib/logger';
 
 interface CameraCaptureDialogProps {
   open: boolean;
@@ -69,7 +70,11 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
 
         setIsInitializing(false);
       } catch (err) {
-        console.error('Camera init error:', err);
+        logger.error('Camera initialization failed', {
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorType: err instanceof Error ? err.name : typeof err,
+          timestamp: new Date().toISOString(),
+        });
         const errorMessage = err instanceof Error ? err.message : '';
 
         // Provide specific error messages based on error type
@@ -96,7 +101,15 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
 
   // Take photo
   const handleCapture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current || !canvasRef.current) {
+      logger.error('Camera capture failed: video or canvas ref not available', {
+        hasVideoRef: !!videoRef.current,
+        hasCanvasRef: !!canvasRef.current,
+        timestamp: new Date().toISOString(),
+      });
+      setError(t('camera.captureError', 'Failed to capture photo. Please close and reopen the camera.'));
+      return;
+    }
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
@@ -107,7 +120,15 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
 
     // Draw video frame to canvas
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      logger.error('Failed to get canvas 2D context for camera capture', {
+        canvasWidth: canvas.width,
+        canvasHeight: canvas.height,
+        timestamp: new Date().toISOString(),
+      });
+      setError(t('camera.captureError', 'Failed to capture photo. Please try again.'));
+      return;
+    }
 
     ctx.drawImage(video, 0, 0);
 
@@ -142,7 +163,10 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
 
       setIsInitializing(false);
     } catch (err) {
-      console.error('Camera restart error:', err);
+      logger.error('Camera restart failed', {
+        errorMessage: err instanceof Error ? err.message : String(err),
+        timestamp: new Date().toISOString(),
+      });
       setError(t('camera.error') || 'Failed to restart camera.');
       setIsInitializing(false);
     }

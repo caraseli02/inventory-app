@@ -25,7 +25,7 @@ interface CreateProductFormProps {
   onCancel: () => void;
 }
 
-const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormProps) => {
+function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const formId = useId();
@@ -84,7 +84,19 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
       // Upload image if it's a data URL (from camera capture)
       let imageUrl = data.imageUrl || undefined;
       if (imageUrl && isDataUrl(imageUrl)) {
-        imageUrl = await uploadImage(imageUrl);
+        try {
+          imageUrl = await uploadImage(imageUrl);
+        } catch (uploadError) {
+          logger.error('Failed to upload product image during creation', {
+            barcode,
+            errorMessage: uploadError instanceof Error ? uploadError.message : String(uploadError),
+            errorStack: uploadError instanceof Error ? uploadError.stack : undefined,
+            timestamp: new Date().toISOString(),
+          });
+          throw new Error(
+            t('errors.imageUploadFailed', 'Failed to upload product image. Please try again or proceed without an image.')
+          );
+        }
       }
 
       const newProduct = await createProduct({

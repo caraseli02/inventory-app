@@ -36,7 +36,7 @@ const getInitialFormData = (product: Product) => ({
   supplier: product.fields.Supplier || '',
 });
 
-const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogProps) => {
+function EditProductDialog({ product, open, onOpenChange }: EditProductDialogProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
 
@@ -81,7 +81,20 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
       // Upload image if it's a data URL (from camera capture)
       let imageUrl = data.imageUrl || undefined;
       if (imageUrl && isDataUrl(imageUrl)) {
-        imageUrl = await uploadImage(imageUrl);
+        try {
+          imageUrl = await uploadImage(imageUrl);
+        } catch (uploadError) {
+          logger.error('Failed to upload product image during update', {
+            productId: product.id,
+            productName: product.fields.Name,
+            errorMessage: uploadError instanceof Error ? uploadError.message : String(uploadError),
+            errorStack: uploadError instanceof Error ? uploadError.stack : undefined,
+            timestamp: new Date().toISOString(),
+          });
+          throw new Error(
+            t('errors.imageUploadFailed', 'Failed to upload product image. Please try again or proceed without an image.')
+          );
+        }
       }
 
       // Validate minStockLevel before sending to API

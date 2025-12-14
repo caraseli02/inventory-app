@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Package, ImageOff, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import {
   Dialog,
   DialogContent,
@@ -74,6 +75,12 @@ export function ProductImage({
   );
 
   const handleImageError = () => {
+    logger.warn('ProductImage failed to load', {
+      src: src?.substring(0, 100), // Truncate long URLs
+      alt,
+      size,
+      timestamp: new Date().toISOString(),
+    });
     setHasError(true);
   };
 
