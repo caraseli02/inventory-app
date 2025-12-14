@@ -258,7 +258,7 @@
     }
   },
   "checkout": {
-    "title": "Scanează codul de bare al produselor în cadrul pătrat pentru a le adăuga în coș",
+    "title": "Scanează coduri de bare pentru a adăuga în coș",
     "complete": "Plată finalizată",
     "stockUpdated": "Stocul a fost actualizat pentru toate articolele.",
     "backToHome": "Înapoi la început",

@@ -245,7 +245,7 @@
     }
   },
   "checkout": {
-    "title": "Escanea el código de barras de los artículos dentro del marco cuadrado para agregarlos a tu carrito",
+    "title": "Escanea códigos de barras para agregar al carrito",
     "complete": "Pago Completado",
     "stockUpdated": "El stock se ha actualizado para todos los artículos.",
     "backToHome": "Volver al Inicio",

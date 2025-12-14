@@ -258,7 +258,7 @@
     }
   },
   "checkout": {
-    "title": "Scan the item's barcode inside the square frame to add items to your cart",
+    "title": "Scan barcodes to add to cart",
     "complete": "Checkout Complete",
     "stockUpdated": "Stock has been updated for all items.",
     "backToHome": "Back to Home",
