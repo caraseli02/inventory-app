@@ -83,7 +83,7 @@ export const ScannerFrame = ({
             aria-label={isPending ? t('scannerFrame.adding') : t('scannerFrame.add')}
           >
             {isPending ? (
-              <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
+              <Spinner size="sm" className="border-white/30 border-t-white !h-4 !w-4" />
             ) : (
               <>
                 <Plus className={`${isSmall ? 'h-4 w-4' : 'h-5 w-5'} mr-1`} />

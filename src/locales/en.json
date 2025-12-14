@@ -214,6 +214,7 @@
   },
   "cart": {
     "title": "My Cart",
+    "item": "item",
     "items": "items",
     "empty": "Cart is empty",
     "emptyHint": "Scan products to add them to your cart",

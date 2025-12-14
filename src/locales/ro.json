@@ -214,6 +214,7 @@
   },
   "cart": {
     "title": "Coșul meu",
+    "item": "articol",
     "items": "articole",
     "empty": "Coșul este gol",
     "emptyHint": "Scanează produse pentru a le adăuga în coș",

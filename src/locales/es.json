@@ -214,6 +214,7 @@
   },
   "cart": {
     "title": "Mi Carrito",
+    "item": "artículo",
     "items": "artículos",
     "empty": "El carrito está vacío",
     "emptyHint": "Escanea productos para agregarlos a tu carrito",
