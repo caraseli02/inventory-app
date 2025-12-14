@@ -71,8 +71,8 @@ export function ScannerOverlay() {
         </div>
       </div>
 
-      {/* Scanning active indicator */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full">
+      {/* Scanning active indicator - positioned at top to avoid overlap with "Align code" text */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/50 px-3 py-1.5 rounded-full">
         <div className="w-2 h-2 bg-[var(--color-forest)] rounded-full animate-pulse" />
         <span className="text-white/90 text-xs font-medium">Scanning</span>
       </div>

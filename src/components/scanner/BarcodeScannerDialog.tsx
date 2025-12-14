@@ -182,7 +182,7 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
 
         {/* Scanner container */}
         <div className="relative w-full bg-black overflow-hidden" style={{ aspectRatio: '4/3' }}>
-          <div id={regionId} className="absolute inset-0 [&>video]:w-full [&>video]:h-full [&>video]:object-cover" />
+          <div id={regionId} className="absolute inset-0 [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover [&_video]:!max-w-none [&_video]:!max-h-none" />
           <ScannerOverlay />
 
           {isInitializing && (
