@@ -125,22 +125,22 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
         });
 
         // Provide specific error messages based on error type
-        let userMessage = 'Failed to start scanner. ';
+        let userMessage = t('scanner.initFailed') + ' ';
 
         if (err instanceof Error) {
           if (err.name === 'NotAllowedError' || err.message.includes('permission')) {
-            userMessage += 'Please grant camera permissions in your browser settings.';
+            userMessage += t('scanner.permissionError');
           } else if (err.name === 'NotFoundError' || err.message.includes('not found')) {
-            userMessage += 'No camera found. Please connect a camera or use manual entry.';
+            userMessage += t('scanner.notFoundError');
           } else if (err.name === 'NotReadableError' || err.message.includes('in use')) {
-            userMessage += 'Camera is already in use. Close other apps using the camera.';
+            userMessage += t('scanner.inUseError');
           } else if (err.message.includes('HTTPS') || err.message.includes('secure')) {
-            userMessage += 'Camera requires a secure connection (HTTPS).';
+            userMessage += t('scanner.httpsError');
           } else {
             userMessage += `Error: ${err.message}`;
           }
         } else {
-          userMessage += 'Please check camera permissions and try again.';
+          userMessage += t('scanner.checkPermissions');
         }
 
         setError(userMessage);
@@ -182,7 +182,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
               scannerRef.current = null;
 
               // Set error state to inform user
-              setError('Camera cleanup failed. You may need to reload the page to use the scanner again.');
+              setError(t('scanner.cleanupFailed'));
             });
         } else {
           scannerRef.current.clear();

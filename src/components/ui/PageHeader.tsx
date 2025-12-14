@@ -44,14 +44,14 @@ export const PageHeader = ({ title, onBack, onClose, variant = 'default' }: Page
     : 'text-stone-900 text-center text-base font-semibold';
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-white/50">
+    <div className="flex items-center justify-between px-4 border-b border-white/50 h-[50px]">
       <Button
         variant="ghost"
         size="icon"
         onClick={onBack}
-        className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
+        className="h-8 w-8 text-stone-700 hover:text-stone-900 hover:bg-white/30"
       >
-        <ArrowLeftIcon className="h-5 w-5" />
+        <ArrowLeftIcon className="h-4 w-4" />
       </Button>
       <p className={textClassName}>
         {title}
@@ -60,9 +60,9 @@ export const PageHeader = ({ title, onBack, onClose, variant = 'default' }: Page
         variant="ghost"
         size="icon"
         onClick={onClose || onBack}
-        className="h-10 w-10 text-stone-700 hover:text-stone-900 hover:bg-white/30"
+        className="h-8 w-8 text-stone-700 hover:text-stone-900 hover:bg-white/30"
       >
-        <CloseIcon className="h-5 w-5" />
+        <CloseIcon className="h-4 w-4" />
       </Button>
     </div>
   );

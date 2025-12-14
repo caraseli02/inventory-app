@@ -727,12 +727,12 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
           onBack={onBack}
           variant="compact"
         />
-        {/* Progress Indicator */}
-        <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
 
         {/* Scanner Section - Hidden when cart is expanded on mobile */}
         {!state.isCartExpanded && (
-          <div className="px-6 pt-4">
+          <div className="px-6 pt-4 flex flex-col gap-3">
+            {/* Progress Indicator - At top, centered */}
+            <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
             <ScannerFrame
               scannerId="mobile-reader"
               onScanSuccess={handleScanSuccess}
@@ -749,7 +749,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
         {/* Cart Toggle/Collapse */}
         <div
           className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out z-20 ${
-            state.isCartExpanded ? 'h-[calc(100dvh-73px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
+            state.isCartExpanded ? 'h-[calc(100dvh-50px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
           }`}
         >
           {/* Toggle Button */}
@@ -818,13 +818,13 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
           onBack={onBack}
           variant="compact"
         />
-        {/* Progress Indicator */}
-        <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
 
-        {/* Two Column Layout */}
-        <div className="flex flex-row gap-6 h-[calc(100dvh-140px)] px-6 py-4">
-          {/* Left Column: Scanner (~30% width reduction from original 45%) */}
+        {/* Two Column Layout - Header is 50px */}
+        <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-4">
+          {/* Left Column: Stepper → Scanner → Manual entry */}
           <div className="w-[32%] flex flex-col gap-4">
+            {/* Progress Indicator - At top, centered */}
+            <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
             <ScannerFrame
               scannerId="desktop-reader"
               onScanSuccess={handleScanSuccess}

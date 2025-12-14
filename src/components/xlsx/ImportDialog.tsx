@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ interface ImportDialogProps {
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
 export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<ImportStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -109,13 +111,13 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5 text-[var(--color-forest)]" />
-            Import Products from Excel
+            {t('import.title')}
           </DialogTitle>
           <DialogDescription>
-            {step === 'upload' && 'Upload an xlsx file to import products into your inventory.'}
-            {step === 'preview' && 'Review the products before importing.'}
-            {step === 'importing' && 'Importing products...'}
-            {step === 'complete' && 'Import completed successfully!'}
+            {step === 'upload' && t('import.description')}
+            {step === 'preview' && t('import.reviewDescription')}
+            {step === 'importing' && t('import.importingDescription')}
+            {step === 'complete' && t('import.completeDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -137,10 +139,10 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
               >
                 <Upload className="h-12 w-12 mx-auto text-stone-400 mb-4" />
                 <p className="text-lg font-medium text-stone-700 mb-2">
-                  Drag and drop your Excel file here
+                  {t('import.dragDrop')}
                 </p>
                 <p className="text-sm text-stone-500 mb-4">
-                  or click to browse
+                  {t('import.orClickToBrowse')}
                 </p>
                 <input
                   type="file"
@@ -155,20 +157,20 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                     className="cursor-pointer"
                     onClick={() => document.getElementById('file-upload')?.click()}
                   >
-                    Select File
+                    {t('import.selectFile')}
                   </Button>
                 </label>
               </div>
 
               {/* Sample File Link */}
               <p className="text-sm text-stone-500 text-center">
-                Need a template?{' '}
+                {t('import.needTemplate')}{' '}
                 <a
                   href="/magazin.xlsx"
                   download
                   className="text-[var(--color-forest)] hover:underline"
                 >
-                  Download sample file
+                  {t('import.downloadSample')}
                 </a>
               </p>
 
@@ -178,11 +180,11 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-red-700">Error parsing file</p>
+                      <p className="font-medium text-red-700">{t('import.errorParsing')}</p>
                       {importResult.errors.map((error, i) => (
                         <p key={i} className="text-sm text-red-600 mt-1">
-                          {error.row > 0 && `Row ${error.row}: `}
-                          {error.message}
+                          {error.row > 0 && t('import.rowError', { row: error.row, message: error.message })}
+                          {error.row === 0 && error.message}
                         </p>
                       ))}
                     </div>
@@ -199,10 +201,10 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                 <CheckCircle2 className="h-8 w-8 text-[var(--color-forest)]" />
                 <div>
                   <p className="font-semibold text-stone-900">
-                    {importResult.validRows} products ready to import
+                    {t('import.productsReady', { count: importResult.validRows })}
                   </p>
                   <p className="text-sm text-stone-500">
-                    {importResult.totalRows} total rows found in file
+                    {t('import.totalRowsFound', { count: importResult.totalRows })}
                   </p>
                 </div>
               </div>
@@ -210,7 +212,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
               {/* Warnings */}
               {importResult.warnings.length > 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <p className="font-medium text-amber-700 mb-2">Warnings</p>
+                  <p className="font-medium text-amber-700 mb-2">{t('import.warnings')}</p>
                   {importResult.warnings.map((warning, i) => (
                     <p key={i} className="text-sm text-amber-600">{warning}</p>
                   ))}
@@ -221,17 +223,17 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
               {importResult.errors.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="font-medium text-red-700 mb-2">
-                    {importResult.errors.length} rows skipped due to errors
+                    {t('import.rowsSkipped', { count: importResult.errors.length })}
                   </p>
                   <div className="max-h-32 overflow-auto">
                     {importResult.errors.slice(0, 10).map((error, i) => (
                       <p key={i} className="text-sm text-red-600">
-                        Row {error.row}: {error.message}
+                        {t('import.rowError', { row: error.row, message: error.message })}
                       </p>
                     ))}
                     {importResult.errors.length > 10 && (
                       <p className="text-sm text-red-500 mt-1">
-                        ...and {importResult.errors.length - 10} more errors
+                        {t('import.andMoreErrors', { count: importResult.errors.length - 10 })}
                       </p>
                     )}
                   </div>
@@ -244,11 +246,11 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                   <table className="w-full text-sm">
                     <thead className="bg-stone-100 sticky top-0">
                       <tr>
-                        <th className="px-3 py-2 text-left font-medium text-stone-700">Barcode</th>
-                        <th className="px-3 py-2 text-left font-medium text-stone-700">Name</th>
-                        <th className="px-3 py-2 text-left font-medium text-stone-700">Category</th>
-                        <th className="px-3 py-2 text-right font-medium text-stone-700">Price</th>
-                        <th className="px-3 py-2 text-right font-medium text-stone-700">Stock</th>
+                        <th className="px-3 py-2 text-left font-medium text-stone-700">{t('import.tableBarcode')}</th>
+                        <th className="px-3 py-2 text-left font-medium text-stone-700">{t('import.tableName')}</th>
+                        <th className="px-3 py-2 text-left font-medium text-stone-700">{t('import.tableCategory')}</th>
+                        <th className="px-3 py-2 text-right font-medium text-stone-700">{t('import.tablePrice')}</th>
+                        <th className="px-3 py-2 text-right font-medium text-stone-700">{t('import.tableStock')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-200">
@@ -278,7 +280,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                 </div>
                 {importResult.products.length > 10 && (
                   <div className="px-3 py-2 bg-stone-50 text-sm text-stone-500 text-center">
-                    Showing 10 of {importResult.products.length} products
+                    {t('import.showingProducts', { showing: 10, total: importResult.products.length })}
                   </div>
                 )}
               </div>
@@ -286,7 +288,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
               {/* Import Errors */}
               {importErrors.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="font-medium text-red-700">Import failed</p>
+                  <p className="font-medium text-red-700">{t('import.failed')}</p>
                   {importErrors.map((error, i) => (
                     <p key={i} className="text-sm text-red-600 mt-1">{error}</p>
                   ))}
@@ -299,10 +301,10 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-[var(--color-forest)] mb-4" />
               <p className="text-lg font-medium text-stone-700">
-                Importing products...
+                {t('import.importingProducts')}
               </p>
               <p className="text-sm text-stone-500 mt-2">
-                {importProgress.current} of {importProgress.total} products
+                {t('import.productProgress', { current: importProgress.current, total: importProgress.total })}
               </p>
             </div>
           )}
@@ -311,10 +313,10 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
             <div className="flex flex-col items-center justify-center py-12">
               <CheckCircle2 className="h-16 w-16 text-[var(--color-forest)] mb-4" />
               <p className="text-xl font-semibold text-stone-900 mb-2">
-                Import Complete!
+                {t('import.importComplete')}
               </p>
               <p className="text-stone-600">
-                Successfully imported {importResult?.validRows ?? 0} products
+                {t('import.successfullyImported', { count: importResult?.validRows ?? 0 })}
               </p>
             </div>
           )}
@@ -323,21 +325,21 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
         <DialogFooter>
           {step === 'upload' && (
             <Button variant="outline" onClick={handleClose}>
-              Cancel
+              {t('import.cancel')}
             </Button>
           )}
 
           {step === 'preview' && (
             <>
               <Button variant="outline" onClick={resetState}>
-                Back
+                {t('import.back')}
               </Button>
               <Button
                 onClick={handleConfirmImport}
                 className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
                 disabled={!importResult?.products.length}
               >
-                Import {importResult?.validRows ?? 0} Products
+                {t('import.importCount', { count: importResult?.validRows ?? 0 })}
               </Button>
             </>
           )}
@@ -347,7 +349,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
               onClick={handleClose}
               className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
             >
-              Done
+              {t('import.done')}
             </Button>
           )}
         </DialogFooter>
