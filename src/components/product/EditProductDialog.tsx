@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { logger } from '../../lib/logger';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -189,8 +190,17 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
-            <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto" id="edit-product-form">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
+            <form onSubmit={handleSubmit} className="max-w-2xl mx-auto" id="edit-product-form">
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="basic">{t('dialogs.editProduct.tabBasic', 'Basic')}</TabsTrigger>
+                  <TabsTrigger value="pricing">{t('dialogs.editProduct.tabPricing', 'Pricing')}</TabsTrigger>
+                  <TabsTrigger value="details">{t('dialogs.editProduct.tabDetails', 'Details')}</TabsTrigger>
+                </TabsList>
+
+                {/* TAB 1: BASIC INFO */}
+                <TabsContent value="basic" className="space-y-6">
               {/* Product Image Section */}
               <div className="flex flex-col items-center gap-3 pb-4 border-b border-stone-200">
                 {formData.imageUrl ? (
@@ -307,9 +317,12 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   <p className="text-xs text-stone-500 mt-1.5">{t('product.categoryHelp')}</p>
                 </div>
               </div>
+                </TabsContent>
 
+                {/* TAB 2: PRICING */}
+                <TabsContent value="pricing" className="space-y-6">
               {/* Pricing Section */}
-              <div className="space-y-4 pt-4 border-t border-stone-200">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-stone-900">{t('product.pricing')}</h3>
 
                 {/* Base Price (read-only) */}
@@ -364,9 +377,12 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   </div>
                 )}
               </div>
+                </TabsContent>
 
+                {/* TAB 3: DETAILS */}
+                <TabsContent value="details" className="space-y-6">
               {/* Stock Management Section */}
-              <div className="space-y-4 pt-4 border-t border-stone-200">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-stone-900">{t('product.stockManagement', 'Stock Management')}</h3>
 
                 <div>
@@ -417,7 +433,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
               </div>
 
               {/* Additional Details Section */}
-              <div className="space-y-4 pt-4 border-t border-stone-200">
+              <div className="space-y-4">
                 <div>
                   <Label htmlFor="expiryDate" className="text-stone-700 font-semibold text-sm">{t('product.expiryDate')}</Label>
                   <Input
@@ -455,6 +471,8 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   <p className="text-xs text-stone-500 mt-1.5">{t('product.imageHelp')}</p>
                 </div>
               </div>
+                </TabsContent>
+              </Tabs>
             </form>
 
             {mutation.isError && (
