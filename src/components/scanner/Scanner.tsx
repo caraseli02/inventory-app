@@ -71,7 +71,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
         const config = {
           formatsToSupport: formatsToSupport,
           fps: 30, // Increased from 10 to 30 for better iPad camera detection
-          qrbox: { width: 250, height: 250 }, // Define scanning box to help camera focus
+          qrbox: { width: 280, height: 200 }, // Match ScannerOverlay frame dimensions
           // Removed aspectRatio constraint to allow camera native aspect ratio
         };
 
@@ -192,13 +192,13 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   }, [regionId, retryCount]);
 
   return (
-    <div className="w-full h-full overflow-hidden bg-black relative flex flex-col min-h-[300px]">
+    <div className="w-full overflow-hidden bg-black relative" style={{ aspectRatio: '4/3' }}>
       {error ? (
-        <div className="flex-1 flex items-center justify-center bg-amber-50 border-4 border-amber-400 text-amber-900 p-6 text-center m-4 rounded-lg">
-          <div className="space-y-3 max-w-sm">
-            <Video className="h-10 w-10 text-amber-500 mx-auto" />
-            <p className="font-bold text-lg">{t('scanner.cameraUnavailable', 'Camera Unavailable')}</p>
-            <p className="text-sm text-amber-800">{error}</p>
+        <div className="absolute inset-0 flex items-center justify-center bg-amber-50 border-4 border-amber-400 text-amber-900 p-4 text-center m-2 rounded-lg">
+          <div className="space-y-2 max-w-sm">
+            <Video className="h-8 w-8 text-amber-500 mx-auto" />
+            <p className="font-bold text-base">{t('scanner.cameraUnavailable', 'Camera Unavailable')}</p>
+            <p className="text-xs text-amber-800">{error}</p>
             <Button
               onClick={handleRetry}
               variant="outline"
@@ -208,18 +208,17 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
               <RotateCcw className="h-4 w-4 mr-2" />
               {t('scanner.retry', 'Try Again')}
             </Button>
-            <p className="text-xs text-amber-700 font-medium pt-2 border-t border-amber-200">
-              {t('scanner.manualEntryHint', 'You can still enter barcodes manually below')}
-            </p>
           </div>
         </div>
       ) : (
-        <div className="relative w-full flex-1 bg-black">
-          <div id={regionId} className="w-full h-full"></div>
+        <>
+          {/* Scanner video container - html5-qrcode renders here */}
+          <div id={regionId} className="absolute inset-0 [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover [&_video]:!max-w-none [&_video]:!max-h-none" />
           <ScannerOverlay />
-        </div>
+        </>
       )}
-      <div className="bg-stone-100 py-2 text-center text-stone-700 text-sm">
+      {/* Bottom text - positioned at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 bg-stone-100 py-1.5 text-center text-stone-700 text-xs">
         {t('scanner.alignCode', 'Align code within frame')}
       </div>
     </div>

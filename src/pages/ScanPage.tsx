@@ -98,8 +98,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
         {!scannedCode && (
           <div className="px-6 pt-4 space-y-4">
             {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
-            <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-              <div className="relative bg-black rounded-lg overflow-hidden">
+            <div className="relative mx-auto w-full max-w-sm">
+              <div className="relative bg-black rounded-xl overflow-hidden">
                 <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
               </div>
           </div>
@@ -111,13 +111,17 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                 type="text"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                className="flex-1 min-w-0 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
                 placeholder={t('scanner.manualEntry')}
               />
               <Button
                 type="submit"
                 disabled={manualCode.length < 3}
-                className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
+                className={`flex-shrink-0 h-12 px-6 font-medium ${
+                  manualCode.length >= 3
+                    ? 'bg-stone-900 hover:bg-stone-800 text-white'
+                    : 'bg-stone-200 text-stone-500 hover:bg-stone-300'
+                }`}
               >
                 {t('scanner.addButton')}
               </Button>
@@ -172,8 +176,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           {!scannedCode && (
             <div className="w-[40%] flex flex-col gap-6">
               {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
-              <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
-                <div className="relative bg-black rounded-lg overflow-hidden">
+              <div className="relative mx-auto w-full max-w-md">
+                <div className="relative bg-black rounded-xl overflow-hidden">
                   <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
                 </div>
               </div>
@@ -184,13 +188,17 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                   type="text"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
-                  className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                  className="flex-1 min-w-0 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
                   placeholder={t('scanner.manualEntry')}
                 />
                 <Button
                   type="submit"
                   disabled={manualCode.length < 3}
-                  className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
+                  className={`flex-shrink-0 h-12 px-6 font-medium ${
+                    manualCode.length >= 3
+                      ? 'bg-stone-900 hover:bg-stone-800 text-white'
+                      : 'bg-stone-200 text-stone-500 hover:bg-stone-300'
+                  }`}
                 >
                   {t('scanner.addButton')}
                 </Button>

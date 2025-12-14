@@ -1,10 +1,11 @@
 import { useTranslation } from 'react-i18next';
-import { X, Package, Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { X, Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Package as PackageIcon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Spinner } from '../ui/spinner';
+import { ProductImage } from '../ui/product-image';
 import { getStockMovements } from '../../lib/api';
 import { logger } from '../../lib/logger';
 import type { Product } from '../../types';
@@ -65,26 +66,32 @@ export const ProductDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="h-dvh w-full max-w-none sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6">
+      <DialogContent
+        className="h-dvh w-full max-w-none sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6"
+        aria-describedby="product-detail-description"
+      >
         <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-2 sm:p-0 sm:pb-2 flex-row items-center justify-between gap-4">
           <DialogTitle className="text-xl font-bold text-stone-900 flex items-center gap-2">
-            <Package className="h-5 w-5" />
+            <PackageIcon className="h-5 w-5" />
             {t('dialogs.productDetail.title')}
           </DialogTitle>
+          <DialogDescription id="product-detail-description" className="sr-only">
+            {t('dialogs.productDetail.title')} - {product.fields.Name}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Mobile/Portrait: Vertical Stack | Landscape/Desktop: Three Column Layout */}
         <div className="px-6 pb-6 lg:px-0 lg:pb-0 lg:flex lg:gap-6">
-          {/* Left Column: Image (only on lg+) */}
-          {imageUrl && (
-            <div className="flex justify-center lg:justify-start lg:flex-shrink-0 mb-6 lg:mb-0">
-              <img
-                src={imageUrl}
-                alt={product.fields.Name}
-                className="max-h-48 lg:max-h-none lg:h-auto lg:w-48 xl:w-56 rounded-lg border-2 border-stone-200 object-contain"
-              />
-            </div>
-          )}
+          {/* Left Column: Image */}
+          <div className="flex justify-center lg:justify-start lg:flex-shrink-0 mb-6 lg:mb-0">
+            <ProductImage
+              src={imageUrl}
+              alt={product.fields.Name}
+              size="xl"
+              showZoom
+              className="lg:w-48 xl:w-56"
+            />
+          </div>
 
           {/* Middle Column: Product Details */}
           <div className="flex-1 space-y-6 lg:overflow-y-auto lg:max-h-[calc(90vh-120px)]">
@@ -128,7 +135,7 @@ export const ProductDetailDialog = ({
 
             {/* Current Stock */}
             <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
-              <Package className="h-5 w-5 text-stone-600 mt-0.5" />
+              <PackageIcon className="h-5 w-5 text-stone-600 mt-0.5" />
               <div>
                 <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.currentStock')}</p>
                 <div className="flex items-center gap-2">

@@ -39,9 +39,9 @@ export const ScannerFrame = ({
   return (
     <div className="flex flex-col gap-4">
       {/* Scanner Frame */}
-      <div className={`relative mx-auto w-full ${isSmall ? 'max-w-sm' : 'max-w-lg'}`}>
+      <div className={`relative mx-auto w-full ${isSmall ? 'max-w-xs' : 'max-w-sm'}`}>
         {/* Scanner - includes built-in ScannerOverlay with corner brackets */}
-        <div className="relative bg-black rounded-xl overflow-hidden aspect-[4/3]">
+        <div className="relative bg-black rounded-xl overflow-hidden">
           <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
         </div>
 
@@ -66,7 +66,7 @@ export const ScannerFrame = ({
             type="text"
             value={manualCode}
             onChange={(e) => onManualCodeChange(e.target.value)}
-            className={`flex-1 font-mono tracking-wider border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)] ${isSmall ? 'h-10 text-sm' : 'h-12 text-base'}`}
+            className={`flex-1 min-w-0 font-mono tracking-wider border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)] ${isSmall ? 'h-10 text-sm' : 'h-12 text-base'}`}
             placeholder={t('scannerFrame.barcodePlaceholder')}
             disabled={isPending}
             aria-label={t('scannerFrame.enterManually')}
@@ -74,16 +74,15 @@ export const ScannerFrame = ({
           <Button
             type="submit"
             disabled={manualCode.length < 3 || isPending}
-            className={`text-white font-semibold shadow-md hover:shadow-lg transition-shadow ${isSmall ? 'h-10 px-4 text-sm' : 'h-12 px-6 text-base'}`}
-            style={{
-              background: manualCode.length >= 3 && !isPending
-                ? 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))'
-                : undefined,
-            }}
+            className={`flex-shrink-0 font-semibold shadow-md transition-all ${isSmall ? 'h-10 px-4 text-sm' : 'h-12 px-6 text-base'} ${
+              manualCode.length >= 3 && !isPending
+                ? 'bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] text-white hover:opacity-90'
+                : 'bg-stone-200 text-stone-500 hover:bg-stone-300'
+            }`}
             aria-label={isPending ? t('scannerFrame.adding') : t('scannerFrame.add')}
           >
             {isPending ? (
-              <Spinner size="sm" className="border-white/30 border-t-white !h-4 !w-4" />
+              <Spinner size="sm" className="border-stone-400 border-t-stone-600 !h-4 !w-4" />
             ) : (
               <>
                 <Plus className={`${isSmall ? 'h-4 w-4' : 'h-5 w-5'} mr-1`} />
