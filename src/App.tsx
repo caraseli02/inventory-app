@@ -50,7 +50,7 @@ type ViewState = 'home' | 'manage' | 'checkout' | 'inventory';
 function App() {
   const { t } = useTranslation();
   const [view, setView] = useState<ViewState>('home');
-  const { lowStockCount, hasAlerts } = useLowStockAlerts();
+  const { lowStockCount, hasAlerts, error: lowStockError, isLoading: lowStockLoading } = useLowStockAlerts();
 
   const [isTablet, setIsTablet] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -162,7 +162,9 @@ function App() {
               </Card>
               <Card
                 className={`group relative cursor-pointer rounded-2xl border-2 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 sm:col-span-2 md:col-span-1 ${
-                  hasAlerts
+                  lowStockError
+                    ? 'border-stone-400 hover:border-stone-500'
+                    : hasAlerts
                     ? 'border-[var(--color-terracotta)] hover:border-[var(--color-terracotta-dark)]'
                     : 'border-stone-200 hover:border-stone-300'
                 }`}
@@ -176,33 +178,56 @@ function App() {
                 }}
               >
                 {/* Low Stock Alert Badge */}
-                {hasAlerts && (
+                {hasAlerts && !lowStockError && (
                   <div className="absolute -top-3 -right-3 flex items-center gap-1.5 bg-[var(--color-terracotta)] text-white px-3 py-1.5 rounded-full shadow-lg animate-pulse">
                     <AlertTriangle className="h-4 w-4" />
                     <span className="text-sm font-bold">{lowStockCount}</span>
                   </div>
                 )}
+                {/* Error indicator when alerts couldn't be loaded */}
+                {lowStockError && !lowStockLoading && (
+                  <div className="absolute -top-3 -right-3 flex items-center gap-1.5 bg-stone-600 text-white px-3 py-1.5 rounded-full shadow-lg">
+                    <span className="text-sm font-bold">!</span>
+                  </div>
+                )}
                 <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
                   <div className="flex items-start justify-between gap-3 sm:gap-4">
                     <div className={`flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl group-hover:scale-110 transition-all shadow-sm ${
-                      hasAlerts
+                      lowStockError
+                        ? 'bg-stone-200 text-stone-500 group-hover:bg-stone-300'
+                        : hasAlerts
                         ? 'bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] group-hover:bg-[var(--color-terracotta)]/20'
                         : 'bg-stone-100 text-stone-600 group-hover:bg-stone-200'
                     }`}>
                       <ListIcon className="h-6 w-6" />
                     </div>
                     <Badge variant="secondary" className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase ${
-                      hasAlerts
+                      lowStockError
+                        ? 'bg-stone-200 border-stone-300 text-stone-600'
+                        : hasAlerts
                         ? 'bg-[var(--color-terracotta)]/10 border-[var(--color-terracotta)]/30 text-[var(--color-terracotta)]'
                         : 'bg-stone-100 border-stone-200'
                     }`}>
-                      {hasAlerts ? t('home.viewInventory.alertBadge', 'Low Stock!') : t('home.viewInventory.badge')}
+                      {lowStockError
+                        ? t('home.viewInventory.errorBadge', 'Error')
+                        : hasAlerts
+                        ? t('home.viewInventory.alertBadge', 'Low Stock!')
+                        : t('home.viewInventory.badge')
+                      }
                     </Badge>
                   </div>
                   <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
                     <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{t('home.viewInventory.title')}</h2>
-                    <p className={`text-xs sm:text-sm font-medium ${hasAlerts ? 'text-[var(--color-terracotta)]' : 'text-stone-600'}`}>
-                      {hasAlerts
+                    <p className={`text-xs sm:text-sm font-medium ${
+                      lowStockError
+                        ? 'text-stone-500'
+                        : hasAlerts
+                        ? 'text-[var(--color-terracotta)]'
+                        : 'text-stone-600'
+                    }`}>
+                      {lowStockError
+                        ? t('alerts.loadError', 'Unable to check stock levels')
+                        : hasAlerts
                         ? t('home.viewInventory.alertDescription', '{{count}} items need reordering', { count: lowStockCount })
                         : t('home.viewInventory.description')
                       }

@@ -19,8 +19,22 @@
     "viewInventory": {
       "title": "View Inventory",
       "description": "Browse all products, check stock levels, and adjust quantities.",
-      "badge": "Browse"
+      "badge": "Browse",
+      "alertBadge": "Low Stock!",
+      "alertDescription": "{{count}} items need reordering",
+      "errorBadge": "Error"
     }
+  },
+  "alerts": {
+    "reorderAlerts": "Reorder Alerts",
+    "itemsNeedReorder": "{{count}} items need reordering",
+    "stockLevel": "Stock: {{current}}/{{min}}",
+    "need": "Need",
+    "totalDeficit": "Total units needed:",
+    "lowStockWarning": "Low Stock Warning",
+    "lowStockMessage": "{{count}} products need reordering. Check the alerts panel above.",
+    "loadError": "Unable to check stock levels",
+    "loadErrorDescription": "Could not load low stock alerts. Please refresh to try again."
   },
   "scanner": {
     "title": "Scan Product",
@@ -109,7 +123,15 @@
     "stock": "Stock:",
     "add": "Add",
     "remove": "Remove",
-    "edit": "Edit"
+    "edit": "Edit",
+    "stockManagement": "Stock Management",
+    "minStockLevel": "Min Stock Level",
+    "minStockLevelHelp": "Alert when stock falls below this level",
+    "minStockLevelInvalid": "Min Stock Level must be a non-negative number",
+    "currentStock": "Current Stock",
+    "currentStockHelp": "Managed via stock movements",
+    "supplier": "Supplier",
+    "supplierPlaceholder": "Enter supplier name"
   },
   "categories": {
     "General": "General",
@@ -274,7 +296,8 @@
       "deleteFailedMessage": "Failed to delete product. Please try again."
     },
     "editProduct": {
-      "title": "Edit Product"
+      "title": "Edit Product",
+      "description": "Edit product details and save changes"
     }
   },
   "toast": {

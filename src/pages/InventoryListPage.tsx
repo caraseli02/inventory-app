@@ -53,7 +53,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   } = useInventoryList();
 
   // Low stock alerts
-  const { lowStockProducts, hasAlerts } = useLowStockAlerts();
+  const { lowStockProducts, hasAlerts, error: lowStockError, isLoading: lowStockLoading } = useLowStockAlerts();
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -318,13 +318,23 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       <div className="h-[calc(100dvh-64px)] overflow-y-auto p-6">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Low Stock Alerts Panel */}
-          {hasAlerts && !isLoading && (
-            <LowStockAlertsPanel
-              lowStockProducts={lowStockProducts}
-              onViewProduct={handleViewAlertProduct}
-              onAlertShown={handleAlertShown}
-            />
-          )}
+          <ErrorBoundary>
+            {hasAlerts && !isLoading && !lowStockLoading && !lowStockError && (
+              <LowStockAlertsPanel
+                lowStockProducts={lowStockProducts}
+                onViewProduct={handleViewAlertProduct}
+                onAlertShown={handleAlertShown}
+              />
+            )}
+            {/* Error state for low stock alerts */}
+            {lowStockError && !lowStockLoading && (
+              <div className="bg-stone-100 rounded-2xl border-2 border-stone-300 p-4 text-center">
+                <p className="text-stone-600 text-sm">
+                  {t('alerts.loadError', 'Unable to check stock levels')}
+                </p>
+              </div>
+            )}
+          </ErrorBoundary>
 
           {/* Filters */}
           <InventoryFiltersBar

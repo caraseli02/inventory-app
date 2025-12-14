@@ -92,13 +92,23 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
         imageUrl = await uploadImage(imageUrl);
       }
 
+      // Validate minStockLevel before sending to API
+      let minStockLevel: number | undefined = undefined;
+      if (data.minStockLevel) {
+        const parsed = parseInt(data.minStockLevel, 10);
+        if (!Number.isFinite(parsed) || parsed < 0) {
+          throw new Error(t('product.minStockLevelInvalid', 'Min Stock Level must be a non-negative number'));
+        }
+        minStockLevel = parsed;
+      }
+
       return await updateProduct(product.id, {
         Name: data.name,
         Barcode: data.barcode || undefined, // Only update if provided
         Category: data.category,
         Markup: data.markup,
         'Expiry Date': data.expiryDate || undefined,
-        'Min Stock Level': data.minStockLevel ? parseInt(data.minStockLevel, 10) : undefined,
+        'Min Stock Level': minStockLevel,
         Supplier: data.supplier || undefined,
         Image: imageUrl,
       });
