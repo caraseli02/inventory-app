@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { ScannerOverlay } from './ScannerOverlay';
 import { X } from 'lucide-react';
 
 interface BarcodeScannerDialogProps {
@@ -94,7 +95,7 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
         const config = {
           formatsToSupport: formatsToSupport,
           fps: 30,
-          qrbox: { width: 250, height: 250 },
+          qrbox: { width: 280, height: 200 }, // Match ScannerOverlay frame dimensions
         };
 
         await scanner.start(
@@ -182,6 +183,7 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
         {/* Scanner container */}
         <div className="relative w-full bg-black" style={{ aspectRatio: '4/3' }}>
           <div id={regionId} className="w-full h-full" />
+          <ScannerOverlay />
 
           {isInitializing && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/80">
