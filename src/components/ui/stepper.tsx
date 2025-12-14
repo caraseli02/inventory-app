@@ -63,9 +63,18 @@ const Stepper = React.forwardRef<HTMLDivElement, StepperProps>(
   ({ steps, currentStep, className }, ref) => {
     const currentIndex = steps.findIndex((s) => s.id === currentStep);
 
+    // Validate that currentStep matches a valid step ID
+    if (currentIndex === -1 && process.env.NODE_ENV !== 'production') {
+      console.warn(
+        `[Stepper] Invalid currentStep "${currentStep}". Valid step IDs are: ${steps.map((s) => s.id).join(', ')}`
+      );
+    }
+
     function getStatus(index: number): 'completed' | 'active' | 'pending' {
-      if (index < currentIndex) return 'completed';
-      if (index === currentIndex) return 'active';
+      // If currentStep is invalid, default to first step being active
+      const effectiveIndex = currentIndex === -1 ? 0 : currentIndex;
+      if (index < effectiveIndex) return 'completed';
+      if (index === effectiveIndex) return 'active';
       return 'pending';
     }
 
