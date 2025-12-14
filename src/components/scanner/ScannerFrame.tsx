@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Spinner } from '../ui/spinner';
 import { CloseIcon, WarningIcon } from '../ui/Icons';
+import { Plus, RefreshCw } from 'lucide-react';
 
 interface ScannerFrameProps {
   scannerId: string;
@@ -33,69 +34,93 @@ export const ScannerFrame = ({
   size = 'default',
 }: ScannerFrameProps) => {
   const { t } = useTranslation();
-  const textSize = size === 'small' ? 'text-sm' : '';
+  const isSmall = size === 'small';
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
       {/* Scanner Frame */}
-      <div className="relative mx-auto w-full max-w-lg min-h-[300px]">
+      <div className={`relative mx-auto w-full ${isSmall ? 'max-w-sm' : 'max-w-lg'}`}>
         {/* Scanner - includes built-in ScannerOverlay with corner brackets */}
-        <div className="relative bg-black rounded-lg overflow-hidden">
+        <div className="relative bg-black rounded-xl overflow-hidden aspect-[4/3]">
           <Scanner onScanSuccess={onScanSuccess} scannerId={scannerId} />
         </div>
 
         {/* Loading Overlay */}
         {isPending && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/90 backdrop-blur-sm z-20">
-            <Spinner size="md" label={t('scanner.searching')} />
+          <div className="absolute inset-0 flex items-center justify-center bg-white/95 backdrop-blur-sm z-20 rounded-xl">
+            <div className="flex flex-col items-center gap-3">
+              <Spinner size="lg" />
+              <span className="text-stone-600 font-medium text-sm">{t('scanner.searching')}</span>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Always-visible Manual Input Section */}
-      <div className="mt-4">
-        <div className="bg-gradient-to-br from-stone-50 to-stone-100 border-2 border-stone-200 rounded-lg p-4">
-          <label className={`text-stone-700 font-semibold mb-2 block ${textSize}`}>
-            {t('scannerFrame.enterManually')}
-          </label>
-          <form onSubmit={onManualSubmit} className="flex gap-2">
-            <Input
-              type="text"
-              value={manualCode}
-              onChange={(e) => onManualCodeChange(e.target.value)}
-              className={`flex-1 font-mono tracking-wider border-2 border-stone-300 focus-visible:ring-stone-400 ${textSize}`}
-              placeholder={t('scannerFrame.barcodePlaceholder')}
-              disabled={isPending}
-            />
-            <Button
-              type="submit"
-              disabled={manualCode.length < 3 || isPending}
-              className={`text-white ${textSize}`}
-              style={{
-                background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-              }}
-            >
-              {isPending ? t('scannerFrame.adding') : t('scannerFrame.add')}
-            </Button>
-          </form>
-        </div>
+      {/* Manual Entry Section */}
+      <div className={`bg-white border-2 border-stone-200 rounded-xl ${isSmall ? 'p-3' : 'p-4'}`}>
+        <label className={`text-stone-700 font-semibold mb-2 block ${isSmall ? 'text-xs' : 'text-sm'}`}>
+          {t('scannerFrame.enterManually')}
+        </label>
+        <form onSubmit={onManualSubmit} className="flex gap-2">
+          <Input
+            type="text"
+            value={manualCode}
+            onChange={(e) => onManualCodeChange(e.target.value)}
+            className={`flex-1 font-mono tracking-wider border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)] ${isSmall ? 'h-10 text-sm' : 'h-12 text-base'}`}
+            placeholder={t('scannerFrame.barcodePlaceholder')}
+            disabled={isPending}
+            aria-label={t('scannerFrame.enterManually')}
+          />
+          <Button
+            type="submit"
+            disabled={manualCode.length < 3 || isPending}
+            className={`text-white font-semibold shadow-md hover:shadow-lg transition-shadow ${isSmall ? 'h-10 px-4 text-sm' : 'h-12 px-6 text-base'}`}
+            style={{
+              background: manualCode.length >= 3 && !isPending
+                ? 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))'
+                : undefined,
+            }}
+            aria-label={isPending ? t('scannerFrame.adding') : t('scannerFrame.add')}
+          >
+            {isPending ? (
+              <span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
+            ) : (
+              <>
+                <Plus className={`${isSmall ? 'h-4 w-4' : 'h-5 w-5'} mr-1`} />
+                {t('scannerFrame.add')}
+              </>
+            )}
+          </Button>
+        </form>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="mt-4 bg-red-50 border-2 border-red-200 text-red-900 p-3 rounded-lg text-sm flex items-start gap-2">
+        <div className="bg-red-50 border-2 border-red-200 text-red-900 p-4 rounded-xl flex items-start gap-3">
           <WarningIcon className="h-5 w-5 shrink-0 mt-0.5 text-red-600" />
-          <div className="flex-1">
-            <p className="font-semibold">{t('scannerFrame.notFound')}</p>
-            <p className="text-red-800 text-xs mt-1">{error}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm">{t('scannerFrame.notFound')}</p>
+            <p className="text-red-700 text-xs mt-1 break-words">{error}</p>
+            <div className="flex gap-2 mt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClearError}
+                className="border-red-300 text-red-700 hover:bg-red-100 h-9"
+              >
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                {t('scannerFrame.tryAgain', 'Try again')}
+              </Button>
+            </div>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={onClearError}
-            className="text-red-600 hover:text-red-900 h-8 w-8 p-0"
+            className="text-red-600 hover:text-red-900 hover:bg-red-100 h-8 w-8 p-0 flex-shrink-0"
+            aria-label={t('common.close', 'Close')}
           >
-            <CloseIcon className="h-5 w-5" />
+            <CloseIcon className="h-4 w-4" />
           </Button>
         </div>
       )}

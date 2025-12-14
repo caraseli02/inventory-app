@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import OfflineIndicator from './components/OfflineIndicator';
 import { ToastProvider } from './hooks/useToast';
@@ -52,27 +52,6 @@ function App() {
   const [view, setView] = useState<ViewState>('home');
   const { lowStockCount, hasAlerts, error: lowStockError, isLoading: lowStockLoading } = useLowStockAlerts();
 
-  const [isTablet, setIsTablet] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia('(min-width: 768px)').matches;
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const mediaQuery = window.matchMedia('(min-width: 768px)');
-    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
-      const isNowTablet = event.matches;
-      setIsTablet(isNowTablet);
-    };
-
-    handleChange(mediaQuery);
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-
   return (
     <ToastProvider>
       <>
@@ -80,32 +59,19 @@ function App() {
         <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
           <OfflineIndicator />
 
-      <header className="mb-6 lg:mb-12 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <Badge variant="outline" className="text-xs tracking-widest text-stone-400 uppercase font-bold bg-stone-50 border-stone-200 mb-2">
-            {t('app.subtitle')}
-          </Badge>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">{t('app.title')}</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          {isTablet && (
-            <Badge
-              variant="secondary"
-              className="bg-stone-100 border-stone-200 cursor-default"
-              title="Optimized layout for tablet-sized screens (768px+)"
-            >
-              {t('app.tabletMode')}
-            </Badge>
-          )}
-        </div>
+      <header className="mb-6 lg:mb-8 max-w-5xl mx-auto">
+        <Badge variant="outline" className="text-xs tracking-widest text-stone-400 uppercase font-bold bg-stone-50 border-stone-200 mb-2">
+          {t('app.subtitle')}
+        </Badge>
+        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">{t('app.title')}</h1>
       </header>
 
-      <main className="w-full px-0 lg:px-0 flex-1 flex flex-col items-center">
+      <main className="w-full flex-1 flex flex-col items-center">
         {view === 'home' ? (
           <div className="w-full max-w-5xl animate-in fade-in duration-300">
-            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 md:grid-cols-3 lg:gap-8">
+            <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 md:grid-cols-3">
               <Card
-                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-6 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 min-h-[180px] sm:min-h-[200px]"
                 onClick={() => setView('manage')}
                 role="button"
                 tabIndex={0}
@@ -115,25 +81,25 @@ function App() {
                   }
                 }}
               >
-                <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
-                  <div className="flex items-start justify-between gap-3 sm:gap-4">
-                    <div className="flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
+                <div className="flex h-full flex-col justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all">
                       <BoxIcon className="h-6 w-6" />
                     </div>
-                    <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
+                    <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2.5 py-1 text-xs font-semibold tracking-wide uppercase">
                       {t('home.manageStock.badge')}
                     </Badge>
                   </div>
-                  <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
-                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{t('home.manageStock.title')}</h2>
-                    <p className="text-xs sm:text-sm text-stone-600 font-medium">
+                  <div className="space-y-1">
+                    <h2 className="text-lg sm:text-xl font-bold text-stone-900">{t('home.manageStock.title')}</h2>
+                    <p className="text-sm text-stone-500 leading-snug">
                       {t('home.manageStock.description')}
                     </p>
                   </div>
                 </div>
               </Card>
               <Card
-                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900"
+                className="group relative cursor-pointer rounded-2xl border-2 border-stone-200 bg-white p-5 sm:p-6 text-left transition hover:border-stone-300 hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 min-h-[180px] sm:min-h-[200px]"
                 onClick={() => setView('checkout')}
                 role="button"
                 tabIndex={0}
@@ -143,25 +109,25 @@ function App() {
                   }
                 }}
               >
-                <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
-                  <div className="flex items-start justify-between gap-3 sm:gap-4">
-                    <div className="flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all shadow-sm">
+                <div className="flex h-full flex-col justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100 text-stone-600 group-hover:bg-stone-200 group-hover:scale-110 transition-all">
                       <ShoppingCartIcon className="h-6 w-6" />
                     </div>
-                    <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase">
-                      {isTablet ? t('home.checkoutMode.badgeTablet') : t('home.checkoutMode.badgeMobile')}
+                    <Badge variant="secondary" className="bg-stone-100 border-stone-200 px-2.5 py-1 text-xs font-semibold tracking-wide uppercase">
+                      {t('home.checkoutMode.badge')}
                     </Badge>
                   </div>
-                  <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
-                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{t('home.checkoutMode.title')}</h2>
-                    <p className="text-xs sm:text-sm text-stone-600 font-medium">
+                  <div className="space-y-1">
+                    <h2 className="text-lg sm:text-xl font-bold text-stone-900">{t('home.checkoutMode.title')}</h2>
+                    <p className="text-sm text-stone-500 leading-snug">
                       {t('home.checkoutMode.description')}
                     </p>
                   </div>
                 </div>
               </Card>
               <Card
-                className={`group relative cursor-pointer rounded-2xl border-2 bg-white p-5 sm:p-8 lg:p-10 text-left transition hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 sm:col-span-2 md:col-span-1 ${
+                className={`group relative cursor-pointer rounded-2xl border-2 bg-white p-5 sm:p-6 text-left transition hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 sm:col-span-2 md:col-span-1 min-h-[180px] sm:min-h-[200px] ${
                   lowStockError
                     ? 'border-stone-400 hover:border-stone-500'
                     : hasAlerts
@@ -179,20 +145,20 @@ function App() {
               >
                 {/* Low Stock Alert Badge */}
                 {hasAlerts && !lowStockError && (
-                  <div className="absolute -top-3 -right-3 flex items-center gap-1.5 bg-[var(--color-terracotta)] text-white px-3 py-1.5 rounded-full shadow-lg animate-pulse">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="text-sm font-bold">{lowStockCount}</span>
+                  <div className="absolute -top-2.5 -right-2.5 flex items-center gap-1 bg-[var(--color-terracotta)] text-white px-2.5 py-1 rounded-full shadow-lg animate-pulse">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span className="text-xs font-bold">{lowStockCount}</span>
                   </div>
                 )}
                 {/* Error indicator when alerts couldn't be loaded */}
                 {lowStockError && !lowStockLoading && (
-                  <div className="absolute -top-3 -right-3 flex items-center gap-1.5 bg-stone-600 text-white px-3 py-1.5 rounded-full shadow-lg">
-                    <span className="text-sm font-bold">!</span>
+                  <div className="absolute -top-2.5 -right-2.5 flex items-center gap-1 bg-stone-600 text-white px-2.5 py-1 rounded-full shadow-lg">
+                    <span className="text-xs font-bold">!</span>
                   </div>
                 )}
-                <div className="flex h-full flex-col justify-between gap-4 sm:gap-6 lg:gap-8">
-                  <div className="flex items-start justify-between gap-3 sm:gap-4">
-                    <div className={`flex h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 items-center justify-center rounded-xl sm:rounded-2xl group-hover:scale-110 transition-all shadow-sm ${
+                <div className="flex h-full flex-col justify-between gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-xl group-hover:scale-110 transition-all ${
                       lowStockError
                         ? 'bg-stone-200 text-stone-500 group-hover:bg-stone-300'
                         : hasAlerts
@@ -201,7 +167,7 @@ function App() {
                     }`}>
                       <ListIcon className="h-6 w-6" />
                     </div>
-                    <Badge variant="secondary" className={`px-2 py-1 sm:px-3 sm:py-1.5 text-xs font-bold tracking-wider uppercase ${
+                    <Badge variant="secondary" className={`px-2.5 py-1 text-xs font-semibold tracking-wide uppercase ${
                       lowStockError
                         ? 'bg-stone-200 border-stone-300 text-stone-600'
                         : hasAlerts
@@ -216,14 +182,14 @@ function App() {
                       }
                     </Badge>
                   </div>
-                  <div className="space-y-1.5 sm:space-y-2 lg:space-y-3">
-                    <h2 className="text-xl sm:text-xl lg:text-2xl font-bold text-stone-900">{t('home.viewInventory.title')}</h2>
-                    <p className={`text-xs sm:text-sm font-medium ${
+                  <div className="space-y-1">
+                    <h2 className="text-lg sm:text-xl font-bold text-stone-900">{t('home.viewInventory.title')}</h2>
+                    <p className={`text-sm leading-snug ${
                       lowStockError
                         ? 'text-stone-500'
                         : hasAlerts
                         ? 'text-[var(--color-terracotta)]'
-                        : 'text-stone-600'
+                        : 'text-stone-500'
                     }`}>
                       {lowStockError
                         ? t('alerts.loadError', 'Unable to check stock levels')

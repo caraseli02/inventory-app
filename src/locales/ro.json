@@ -13,6 +13,7 @@
     "checkoutMode": {
       "title": "Mod casă",
       "description": "Scanare în lot pentru plată cu controale mobile simplificate.",
+      "badge": "Casă",
       "badgeMobile": "Mobil",
       "badgeTablet": "Tabletă"
     },
@@ -166,6 +167,8 @@
     "noProducts": "Nu au fost găsite produse",
     "adjustFilters": "Încearcă să ajustezi filtrele sau căutarea",
     "emptyStateHint": "Importă produse sau creează-le prin scanner",
+    "lowStock": "Scăzut",
+    "noBarcodeTooltip": "Fără cod de bare",
     "refresh": "Reîmprospătează",
     "refreshed": "Actualizat",
     "dataRefreshed": "Datele de inventar au fost actualizate",
