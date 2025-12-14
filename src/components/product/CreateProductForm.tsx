@@ -13,7 +13,7 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
-import { ProductImage } from '../ui/product-image';
+import { ProductImage } from '@/components/ui/product-image';
 import CameraCaptureDialog from '../camera/CameraCaptureDialog';
 import { Camera, Package } from 'lucide-react';
 
@@ -225,14 +225,15 @@ const CreateProductForm = ({ barcode, onSuccess, onCancel }: CreateProductFormPr
                 showZoom
               />
             ) : (
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setCameraOpen(true)}
                 className="w-40 h-40 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 hover:border-stone-400 transition-colors flex flex-col items-center justify-center gap-2 text-stone-500"
               >
                 <Package className="h-10 w-10" />
                 <span className="text-xs font-medium">{t('product.tapToAddImage')}</span>
-              </button>
+              </Button>
             )}
             {formData.imageUrl && (
               <Button

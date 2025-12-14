@@ -10,7 +10,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { ProductImage } from '../ui/product-image';
+import { ProductImage } from '@/components/ui/product-image';
 import BarcodeScannerDialog from '../scanner/BarcodeScannerDialog';
 import CameraCaptureDialog from '../camera/CameraCaptureDialog';
 import { ScanBarcode, Camera, Package } from 'lucide-react';
@@ -188,14 +188,15 @@ const EditProductDialog = ({ product, open, onOpenChange }: EditProductDialogPro
                     showZoom
                   />
                 ) : (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => setCameraOpen(true)}
                     className="w-40 h-40 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 hover:border-stone-400 transition-colors flex flex-col items-center justify-center gap-2 text-stone-500"
                   >
                     <Package className="h-10 w-10" />
                     <span className="text-xs font-medium">{t('product.tapToAddImage')}</span>
-                  </button>
+                  </Button>
                 )}
                 {formData.imageUrl && (
                   <Button
