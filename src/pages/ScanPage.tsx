@@ -111,13 +111,17 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                 type="text"
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
-                className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                className="flex-1 min-w-0 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
                 placeholder={t('scanner.manualEntry')}
               />
               <Button
                 type="submit"
                 disabled={manualCode.length < 3}
-                className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
+                className={`flex-shrink-0 h-12 px-6 font-medium ${
+                  manualCode.length >= 3
+                    ? 'bg-stone-900 hover:bg-stone-800 text-white'
+                    : 'bg-stone-200 text-stone-500 hover:bg-stone-300'
+                }`}
               >
                 {t('scanner.addButton')}
               </Button>
@@ -184,13 +188,17 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                   type="text"
                   value={manualCode}
                   onChange={(e) => setManualCode(e.target.value)}
-                  className="flex-1 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                  className="flex-1 min-w-0 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
                   placeholder={t('scanner.manualEntry')}
                 />
                 <Button
                   type="submit"
                   disabled={manualCode.length < 3}
-                  className="h-12 px-6 bg-stone-900 hover:bg-stone-800 text-white font-medium"
+                  className={`flex-shrink-0 h-12 px-6 font-medium ${
+                    manualCode.length >= 3
+                      ? 'bg-stone-900 hover:bg-stone-800 text-white'
+                      : 'bg-stone-200 text-stone-500 hover:bg-stone-300'
+                  }`}
                 >
                   {t('scanner.addButton')}
                 </Button>

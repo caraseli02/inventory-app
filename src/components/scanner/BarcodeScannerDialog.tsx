@@ -160,7 +160,10 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md md:max-w-lg p-0 gap-0 overflow-hidden bg-black border-none rounded-2xl [&>button]:hidden">
+      <DialogContent
+        className="!fixed !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2 !w-[calc(100%-2rem)] !max-w-md !h-auto !rounded-2xl p-0 gap-0 overflow-hidden bg-black border-none [&>button]:hidden z-[100]"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         {/* Hidden title for accessibility */}
         <DialogHeader className="sr-only">
           <DialogTitle>{t('scanner.title')}</DialogTitle>
@@ -177,32 +180,34 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
         </Button>
 
         {/* Scanner container */}
-        <div id={regionId} className="w-full bg-black" style={{ aspectRatio: '4/3' }} />
+        <div className="relative w-full bg-black" style={{ aspectRatio: '4/3' }}>
+          <div id={regionId} className="w-full h-full" />
 
-        {isInitializing && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-2xl">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-              <p className="text-white text-sm">{t('loading.scanner')}</p>
+          {isInitializing && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-10 h-10 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                <p className="text-white text-sm">{t('loading.scanner')}</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/90 p-4 rounded-2xl">
-            <div className="text-center">
-              <p className="text-red-400 mb-3">{error}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                className="text-white border-white/50"
-              >
-                {t('product.cancel')}
-              </Button>
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/90 p-4">
+              <div className="text-center">
+                <p className="text-red-400 mb-3">{error}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="text-white border-white/50"
+                >
+                  {t('product.cancel')}
+                </Button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Bottom text */}
         <div className="bg-stone-100 py-2 text-center text-stone-700 text-sm rounded-b-2xl">
