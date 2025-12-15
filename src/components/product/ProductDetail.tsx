@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
-import { getStockMovements } from '../../lib/api';
+import { getStockMovements, getAllProducts } from '../../lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { useStockMutation } from '../../hooks/useStockMutation';
 import { useProductLookup } from '../../hooks/useProductLookup';
@@ -16,14 +16,35 @@ import DeleteConfirmDialog from './DeleteConfirmDialog';
 import type { Product } from '../../types';
 
 interface ProductDetailProps {
-  barcode: string;
+  /** Barcode to look up product (used for scanner flow) */
+  barcode?: string;
+  /** Product ID to look up product (used for search flow) */
+  productId?: string;
   onScanNew: () => void;
 }
 
-const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
+const ProductDetail = ({ barcode, productId, onScanNew }: ProductDetailProps) => {
   const { t } = useTranslation();
-  // Fetch product reactively - this ensures we always show fresh data from cache
-  const { data: product, isLoading } = useProductLookup(barcode);
+
+  // Fetch product by barcode (scanner flow)
+  const { data: productByBarcode, isLoading: isLoadingByBarcode } = useProductLookup(barcode ?? null);
+
+  // Fetch product by ID (search flow) - uses cached products list
+  const { data: allProducts, isLoading: isLoadingAllProducts } = useQuery({
+    queryKey: ['products', 'all'],
+    queryFn: getAllProducts,
+    staleTime: 1000 * 60 * 5,
+    enabled: !!productId && !barcode,
+  });
+
+  // Find product by ID from cached list
+  const productById = productId && !barcode
+    ? allProducts?.find(p => p.id === productId) ?? null
+    : null;
+
+  // Use the appropriate product based on lookup method
+  const product = barcode ? productByBarcode : productById;
+  const isLoading = barcode ? isLoadingByBarcode : isLoadingAllProducts;
 
   // Initialize hooks unconditionally (Rules of Hooks)
   const [stockQuantity, setStockQuantity] = useState<string>('1');
@@ -40,9 +61,9 @@ const ProductDetail = ({ barcode, onScanNew }: ProductDetailProps) => {
   // Only initialize mutation hook when product exists
   // Pass a dummy product during loading to satisfy hooks rule
   const dummyProduct: Product = {
-    id: '',
+    id: productId || '',
     createdTime: '',
-    fields: { Name: '', Barcode: barcode, 'Current Stock Level': 0 }
+    fields: { Name: '', Barcode: barcode ?? '', 'Current Stock Level': 0 }
   };
   const { handleStockChange, loadingAction } = useStockMutation(product || dummyProduct);
 

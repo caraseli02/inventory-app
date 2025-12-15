@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, type FormEvent } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,6 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import { ProductSearchDropdown } from '../components/search/ProductSearchDropdown';
+import { InputModeToggle, type InputMode } from '../components/search/InputModeToggle';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -367,6 +369,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
+  const [inputMode, setInputMode] = useState<InputMode>('search');
 
   // Hook for looking up products
   const { data: product, isLoading, error } = useProductLookup(state.scannedCode);
@@ -512,12 +515,64 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
     }
   }, [isLoading, state.lookupRequested, state.scannedCode]);
 
-  const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleManualSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (state.manualCode.trim().length > 3 && !isPendingLookup) {
       handleScanSuccess(state.manualCode.trim());
       dispatch({ type: 'SET_MANUAL_CODE', code: '' });
     }
+  };
+
+  /**
+   * Handles product selection from search dropdown
+   * - Directly adds product to cart without barcode lookup
+   * - Shows appropriate toast notifications
+   * @param product - Product selected from search
+   */
+  const handleProductSelect = (selectedProduct: Product) => {
+    // Check if product already exists in cart to show appropriate toast
+    const existingItem = state.cart.find(item => item.product.id === selectedProduct.id);
+    const isNewItem = !existingItem;
+    const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+    const availableStock = selectedProduct.fields['Current Stock Level'] ?? 0;
+
+    // Validate stock availability before adding to cart
+    if (newQuantity > availableStock) {
+      playSound('error');
+      toast.error(t('cart.insufficientStock', { available: availableStock }), {
+        description: t('cart.insufficientStockDescription', {
+          name: selectedProduct.fields.Name,
+          requested: newQuantity,
+          available: availableStock
+        }),
+      });
+      return;
+    }
+
+    dispatch({
+      type: 'ADD_TO_CART',
+      product: selectedProduct,
+      insufficientStockMessage: t('cart.insufficientStock', { available: availableStock }),
+      zeroStockMessage: t('cart.zeroStock'),
+    });
+    playSound('success');
+
+    // Show toast notification
+    if (isNewItem) {
+      toast.success(t('cart.itemAdded'), {
+        description: t('cart.itemAddedDescription', { name: selectedProduct.fields.Name }),
+      });
+    } else {
+      toast.success(t('cart.quantityUpdated'), {
+        description: t('cart.quantityUpdatedDescription', {
+          name: selectedProduct.fields.Name,
+          quantity: newQuantity
+        }),
+      });
+    }
+
+    // Vibrate for feedback
+    if (navigator.vibrate) navigator.vibrate(100);
   };
 
   /**
@@ -728,23 +783,43 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
           variant="compact"
         />
 
-        {/* Scanner Section - Hidden when cart is expanded on mobile */}
+        {/* Input Section - Hidden when cart is expanded on mobile */}
         {/* Uses flex-1 with overflow to fit above cart toggle (approx 100px) */}
         {!state.isCartExpanded && (
           <div className="flex-1 px-4 pt-3 pb-[110px] overflow-y-auto flex flex-col gap-3">
             {/* Progress Indicator - At top, centered */}
             <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
-            <ScannerFrame
-              scannerId="mobile-reader"
-              onScanSuccess={handleScanSuccess}
-              manualCode={state.manualCode}
-              onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
-              onManualSubmit={handleManualSubmit}
-              isPending={isPendingLookup}
-              error={state.lookupError}
-              onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
-              size="small"
-            />
+
+            {/* Mode Toggle */}
+            <div className="flex justify-center">
+              <InputModeToggle mode={inputMode} onModeChange={setInputMode} />
+            </div>
+
+            {/* Search Mode */}
+            {inputMode === 'search' && (
+              <div className="w-full">
+                <ProductSearchDropdown
+                  onProductSelect={handleProductSelect}
+                  placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {/* Scan Mode */}
+            {inputMode === 'scan' && (
+              <ScannerFrame
+                scannerId="mobile-reader"
+                onScanSuccess={handleScanSuccess}
+                manualCode={state.manualCode}
+                onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
+                onManualSubmit={handleManualSubmit}
+                isPending={isPendingLookup}
+                error={state.lookupError}
+                onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
+                size="small"
+              />
+            )}
           </div>
         )}
 
@@ -823,21 +898,41 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
         {/* Two Column Layout - Header is 50px */}
         <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-4">
-          {/* Left Column: Stepper → Scanner → Manual entry */}
+          {/* Left Column: Stepper → Toggle → Search/Scanner */}
           <div className="w-[32%] flex flex-col gap-4">
             {/* Progress Indicator - At top, centered */}
             <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
-            <ScannerFrame
-              scannerId="desktop-reader"
-              onScanSuccess={handleScanSuccess}
-              manualCode={state.manualCode}
-              onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
-              onManualSubmit={handleManualSubmit}
-              isPending={isPendingLookup}
-              error={state.lookupError}
-              onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
-              size="small"
-            />
+
+            {/* Mode Toggle */}
+            <div className="flex justify-center">
+              <InputModeToggle mode={inputMode} onModeChange={setInputMode} />
+            </div>
+
+            {/* Search Mode */}
+            {inputMode === 'search' && (
+              <div className="w-full">
+                <ProductSearchDropdown
+                  onProductSelect={handleProductSelect}
+                  placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
+                  autoFocus
+                />
+              </div>
+            )}
+
+            {/* Scan Mode */}
+            {inputMode === 'scan' && (
+              <ScannerFrame
+                scannerId="desktop-reader"
+                onScanSuccess={handleScanSuccess}
+                manualCode={state.manualCode}
+                onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
+                onManualSubmit={handleManualSubmit}
+                isPending={isPendingLookup}
+                error={state.lookupError}
+                onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
+                size="small"
+              />
+            )}
           </div>
 
           {/* Right Column: Cart (expanded to use more space) */}

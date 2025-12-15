@@ -13,6 +13,9 @@ import {
 } from '../components/ui/Icons';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { ProductSearchDropdown } from '../components/search/ProductSearchDropdown';
+import { InputModeToggle, type InputMode } from '../components/search/InputModeToggle';
+import type { Product } from '../types';
 
 type ScanPageProps = {
   onBack: () => void;
@@ -23,6 +26,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
   const [scannedCode, setScannedCode] = useState<string | null>(null);
   const [manualCode, setManualCode] = useState('');
   const [showCreateMode, setShowCreateMode] = useState(false);
+  const [inputMode, setInputMode] = useState<InputMode>('search');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { showToast } = useToast();
 
   const handleScanSuccess = (code: string) => {
@@ -58,16 +63,26 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
     setScannedCode(null);
     setManualCode('');
     setShowCreateMode(false);
+    setSelectedProduct(null);
   };
 
   const handleTryAgain = () => {
     setScannedCode(null);
     setManualCode('');
     setShowCreateMode(false);
+    setSelectedProduct(null);
   };
 
   const handleAddNew = () => {
     setShowCreateMode(true);
+  };
+
+  // Handle product selection from search dropdown
+  const handleProductSelect = (product: Product) => {
+    setSelectedProduct(product);
+    setScannedCode(null);
+    setShowCreateMode(false);
+    if (navigator.vibrate) navigator.vibrate(100);
   };
 
   const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
@@ -83,7 +98,10 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
   const productNotFound = !isLoading && !product && !error && scannedCode;
   const showNotFoundState = productNotFound && !showCreateMode;
   const showCreateForm = productNotFound && showCreateMode;
-  const showDetail = !isLoading && product && scannedCode;
+  const showDetailFromScan = !isLoading && product && scannedCode;
+  const showDetailFromSearch = selectedProduct !== null;
+  const showDetail = showDetailFromScan || showDetailFromSearch;
+  const hasActiveProduct = scannedCode || selectedProduct;
 
   return (
     <>
@@ -94,50 +112,70 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           onBack={onBack}
         />
 
-        {/* Scanner Section */}
-        {!scannedCode && (
+        {/* Input Section */}
+        {!hasActiveProduct && (
           <div className="px-6 pt-4 space-y-4">
-            {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
-            <div className="relative mx-auto w-full max-w-sm">
-              <div className="relative bg-black rounded-xl overflow-hidden">
-                <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
+            {/* Mode Toggle */}
+            <div className="flex justify-center">
+              <InputModeToggle mode={inputMode} onModeChange={setInputMode} />
+            </div>
+
+            {/* Search Mode */}
+            {inputMode === 'search' && (
+              <div className="mx-auto w-full max-w-lg">
+                <ProductSearchDropdown
+                  onProductSelect={handleProductSelect}
+                  placeholder={t('search.scanPagePlaceholder', 'Search by name or barcode...')}
+                  autoFocus
+                />
               </div>
-          </div>
+            )}
 
-          {/* Manual Entry */}
-          <div className="mx-auto w-full max-w-lg">
-            <form onSubmit={handleManualSubmit} className="flex gap-2">
-              <Input
-                type="text"
-                value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
-                className="flex-1 min-w-0 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
-                placeholder={t('scanner.manualEntry')}
-              />
-              <Button
-                type="submit"
-                disabled={manualCode.length < 3}
-                className={`flex-shrink-0 h-12 px-6 font-medium transition-colors ${
-                  manualCode.length >= 3
-                    ? 'bg-stone-900 hover:bg-stone-800 text-white'
-                    : 'bg-stone-200 text-stone-700 cursor-not-allowed'
-                }`}
-              >
-                {t('scanner.addButton')}
-              </Button>
-            </form>
-          </div>
+            {/* Scan Mode */}
+            {inputMode === 'scan' && (
+              <>
+                {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
+                <div className="relative mx-auto w-full max-w-sm">
+                  <div className="relative bg-black rounded-xl overflow-hidden">
+                    <Scanner onScanSuccess={handleScanSuccess} scannerId="add-mobile-reader" />
+                  </div>
+                </div>
 
+                {/* Manual Entry */}
+                <div className="mx-auto w-full max-w-lg">
+                  <form onSubmit={handleManualSubmit} className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={manualCode}
+                      onChange={(e) => setManualCode(e.target.value)}
+                      className="flex-1 min-w-0 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                      placeholder={t('scanner.manualEntry')}
+                    />
+                    <Button
+                      type="submit"
+                      disabled={manualCode.length < 3}
+                      className={`flex-shrink-0 h-12 px-6 font-medium transition-colors ${
+                        manualCode.length >= 3
+                          ? 'bg-stone-900 hover:bg-stone-800 text-white'
+                          : 'bg-stone-200 text-stone-700 cursor-not-allowed'
+                      }`}
+                    >
+                      {t('scanner.addButton')}
+                    </Button>
+                  </form>
+                </div>
+              </>
+            )}
           </div>
         )}
 
         {/* Content Panel */}
         <div
           className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out overflow-hidden z-50 ${
-            scannedCode ? 'h-[calc(100dvh-73px)]' : 'h-auto rounded-t-3xl'
+            hasActiveProduct ? 'h-[calc(100dvh-73px)]' : 'h-auto rounded-t-3xl'
           }`}
         >
-          {!scannedCode ? (
+          {!hasActiveProduct ? (
             /* Empty State - Collapsed */
             <div className="p-6 flex items-center justify-center">
               <div className="flex items-center gap-3 text-gray-500">
@@ -149,7 +187,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
             /* Content - Full screen without border/shadow */
             <div className="h-full overflow-y-auto p-4">
               {isLoading && scannedCode && <ProductSkeleton />}
-              {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
+              {showDetailFromScan && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
+              {showDetailFromSearch && selectedProduct && <ProductDetail productId={selectedProduct.id} onScanNew={handleReset} />}
               {showNotFoundState && scannedCode && (
                 <ProductNotFound
                   barcode={scannedCode}
@@ -170,45 +209,66 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
           onBack={onBack}
         />
 
-        {/* Two-Column Layout - Scanner hidden when product is scanned */}
+        {/* Two-Column Layout - Input section hidden when product is active */}
         <div className="flex h-[calc(100dvh-64px)] gap-6 p-6">
-          {/* Left Column: Scanner (only visible when no scanned code) */}
-          {!scannedCode && (
-            <div className="w-[40%] flex flex-col gap-6">
-              {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
-              <div className="relative mx-auto w-full max-w-md">
-                <div className="relative bg-black rounded-xl overflow-hidden">
-                  <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
-                </div>
+          {/* Left Column: Input (only visible when no active product) */}
+          {!hasActiveProduct && (
+            <div className="w-[40%] flex flex-col gap-4">
+              {/* Mode Toggle */}
+              <div className="flex justify-center">
+                <InputModeToggle mode={inputMode} onModeChange={setInputMode} />
               </div>
 
-              {/* Manual Entry */}
-              <form onSubmit={handleManualSubmit} className="flex gap-2">
-                <Input
-                  type="text"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value)}
-                  className="flex-1 min-w-0 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
-                  placeholder={t('scanner.manualEntry')}
-                />
-                <Button
-                  type="submit"
-                  disabled={manualCode.length < 3}
-                  className={`flex-shrink-0 h-12 px-6 font-medium transition-colors ${
-                    manualCode.length >= 3
-                      ? 'bg-stone-900 hover:bg-stone-800 text-white'
-                      : 'bg-stone-200 text-stone-700 cursor-not-allowed'
-                  }`}
-                >
-                  {t('scanner.addButton')}
-                </Button>
-              </form>
+              {/* Search Mode */}
+              {inputMode === 'search' && (
+                <div className="w-full">
+                  <ProductSearchDropdown
+                    onProductSelect={handleProductSelect}
+                    placeholder={t('search.scanPagePlaceholder', 'Search by name or barcode...')}
+                    autoFocus
+                  />
+                </div>
+              )}
+
+              {/* Scan Mode */}
+              {inputMode === 'scan' && (
+                <>
+                  {/* Scanner Frame - Scanner component includes built-in ScannerOverlay */}
+                  <div className="relative mx-auto w-full max-w-md">
+                    <div className="relative bg-black rounded-xl overflow-hidden">
+                      <Scanner onScanSuccess={handleScanSuccess} scannerId="add-desktop-reader" />
+                    </div>
+                  </div>
+
+                  {/* Manual Entry */}
+                  <form onSubmit={handleManualSubmit} className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={manualCode}
+                      onChange={(e) => setManualCode(e.target.value)}
+                      className="flex-1 min-w-0 h-12 bg-white border-2 border-stone-300 rounded-lg px-4 text-stone-900 placeholder:text-stone-400 focus:border-stone-700 focus:ring-2 focus:ring-stone-700/10"
+                      placeholder={t('scanner.manualEntry')}
+                    />
+                    <Button
+                      type="submit"
+                      disabled={manualCode.length < 3}
+                      className={`flex-shrink-0 h-12 px-6 font-medium transition-colors ${
+                        manualCode.length >= 3
+                          ? 'bg-stone-900 hover:bg-stone-800 text-white'
+                          : 'bg-stone-200 text-stone-700 cursor-not-allowed'
+                      }`}
+                    >
+                      {t('scanner.addButton')}
+                    </Button>
+                  </form>
+                </>
+              )}
             </div>
           )}
 
-          {/* Right Column: Panel (expands to full width when scanner hidden) */}
-          <div className={`${scannedCode ? 'w-full' : 'w-[60%]'} bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden`}>
-            {!scannedCode ? (
+          {/* Right Column: Panel (expands to full width when input section is hidden) */}
+          <div className={`${hasActiveProduct ? 'w-full' : 'w-[60%]'} bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden`}>
+            {!hasActiveProduct ? (
               /* Empty State */
               <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
                 <ShoppingCartIcon className="h-16 w-16 text-stone-300 mb-4" />
@@ -221,7 +281,8 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
               /* Content - Full height without footer */
               <div className="flex-1 overflow-y-auto p-4">
                 {isLoading && scannedCode && <ProductSkeleton />}
-                {showDetail && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
+                {showDetailFromScan && scannedCode && <ProductDetail barcode={scannedCode} onScanNew={handleReset} />}
+                {showDetailFromSearch && selectedProduct && <ProductDetail productId={selectedProduct.id} onScanNew={handleReset} />}
                 {showNotFoundState && scannedCode && (
                   <ProductNotFound
                     barcode={scannedCode}

@@ -430,5 +430,20 @@
     "successMessage": "Au fost exportate {{count}} produse în fișier Excel",
     "downloadedHint": "Verifică folderul Descărcări.",
     "failed": "Export eșuat"
+  },
+  "search": {
+    "placeholder": "Caută produse...",
+    "scanPagePlaceholder": "Caută după nume sau cod de bare...",
+    "checkoutPlaceholder": "Caută pentru a adăuga în coș...",
+    "ariaLabel": "Caută produse",
+    "clear": "Șterge căutarea",
+    "searching": "Se caută...",
+    "noResults": "Nu s-au găsit produse",
+    "tryDifferent": "Încearcă un alt termen de căutare",
+    "inStock": "în stoc",
+    "search": "Caută",
+    "scan": "Scanează",
+    "modeSearch": "Mod căutare",
+    "modeScan": "Mod scanare"
   }
 }

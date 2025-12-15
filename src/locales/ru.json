@@ -417,5 +417,20 @@
     "successMessage": "Экспортировано {{count}} товаров в Excel файл",
     "downloadedHint": "Проверьте папку Загрузки.",
     "failed": "Ошибка экспорта"
+  },
+  "search": {
+    "placeholder": "Поиск товаров...",
+    "scanPagePlaceholder": "Поиск по названию или штрих-коду...",
+    "checkoutPlaceholder": "Поиск для добавления в корзину...",
+    "ariaLabel": "Поиск товаров",
+    "clear": "Очистить поиск",
+    "searching": "Поиск...",
+    "noResults": "Товары не найдены",
+    "tryDifferent": "Попробуйте другой запрос",
+    "inStock": "в наличии",
+    "search": "Поиск",
+    "scan": "Сканировать",
+    "modeSearch": "Режим поиска",
+    "modeScan": "Режим сканирования"
   }
 }
