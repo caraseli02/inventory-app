@@ -183,12 +183,14 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
 
         <div className="h-full flex flex-col overflow-hidden">
           {/* Header */}
-          <DialogHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 py-2 sm:px-6 sm:py-4 flex-shrink-0 min-h-0">
-            <DialogTitle className="text-lg sm:text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
-            <DialogDescription id="edit-product-description" className="sr-only sm:not-sr-only text-stone-600 text-sm">
-              {t('dialogs.editProduct.description', 'Edit product details and save changes')}
-            </DialogDescription>
-          </DialogHeader>
+          <div className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 py-2 sm:px-6 sm:py-4 flex-shrink-0 min-h-0">
+            <DialogHeader className="max-w-2xl mx-auto">
+              <DialogTitle className="text-lg sm:text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
+              <DialogDescription id="edit-product-description" className="sr-only sm:not-sr-only text-stone-600 text-sm">
+                {t('dialogs.editProduct.description', 'Edit product details and save changes')}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
             <form onSubmit={handleSubmit} className="max-w-2xl mx-auto" id="edit-product-form">
@@ -484,29 +486,31 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
           </div>
 
           {/* Footer */}
-          <DialogFooter className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 sm:p-6 border-t-2 border-stone-200 flex gap-3 flex-shrink-0">
-            <Button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              variant="outline"
-              className="hidden sm:flex flex-1 border-2 border-stone-300 hover:bg-stone-100 font-semibold h-12"
-              disabled={mutation.isPending}
-            >
-              {t('product.cancel')}
-            </Button>
-            <Button
-              type="submit"
-              form="edit-product-form"
-              disabled={mutation.isPending || !isFormValid}
-              className="flex-1 font-bold bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] hover:opacity-90 text-white h-12 shadow-md disabled:opacity-50"
-            >
-              {mutation.isPending ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              ) : (
-                t('product.saveChanges')
-              )}
-            </Button>
-          </DialogFooter>
+          <div className="bg-gradient-to-br from-stone-50 to-stone-100/50 p-4 sm:p-6 border-t-2 border-stone-200 flex-shrink-0">
+            <DialogFooter className="max-w-2xl mx-auto flex gap-3">
+              <Button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                variant="outline"
+                className="hidden sm:flex flex-1 border-2 border-stone-300 hover:bg-stone-100 font-semibold h-12"
+                disabled={mutation.isPending}
+              >
+                {t('product.cancel')}
+              </Button>
+              <Button
+                type="submit"
+                form="edit-product-form"
+                disabled={mutation.isPending || !isFormValid}
+                className="flex-1 font-bold bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] hover:opacity-90 text-white h-12 shadow-md disabled:opacity-50"
+              >
+                {mutation.isPending ? (
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                ) : (
+                  t('product.saveChanges')
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
         </div>
 
         {/* Nested dialogs */}

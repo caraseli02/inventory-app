@@ -82,8 +82,8 @@ export const ProductDetailDialog = ({
 
         {/* Mobile/Portrait: Vertical Stack | Landscape/Desktop: Three Column Layout */}
         <div className="px-6 pb-6 lg:px-0 lg:pb-0 lg:flex lg:gap-6">
-          {/* Left Column: Image */}
-          <div className="flex justify-center lg:justify-start lg:flex-shrink-0 mb-6 lg:mb-0">
+          {/* Left Column: Image (desktop only, hidden on mobile) */}
+          <div className="hidden lg:flex lg:justify-start lg:flex-shrink-0">
             <ProductImage
               src={imageUrl}
               alt={product.fields.Name}
@@ -95,7 +95,7 @@ export const ProductDetailDialog = ({
 
           {/* Middle Column: Product Details */}
           <div className="flex-1 space-y-6 lg:overflow-y-auto lg:max-h-[calc(90vh-120px)]">
-            {/* Product Name */}
+            {/* Product Name (shown first on mobile) */}
             <div>
               <h2 className="text-2xl lg:text-3xl font-bold text-stone-900 mb-2">
                 {product.fields.Name}
@@ -105,6 +105,16 @@ export const ProductDetailDialog = ({
                   {t(`categories.${product.fields.Category}`)}
                 </Badge>
               )}
+            </div>
+
+            {/* Product Image (mobile only, shown after name) */}
+            <div className="flex justify-center lg:hidden">
+              <ProductImage
+                src={imageUrl}
+                alt={product.fields.Name}
+                size="xl"
+                showZoom
+              />
             </div>
 
             {/* Product Info Grid */}
