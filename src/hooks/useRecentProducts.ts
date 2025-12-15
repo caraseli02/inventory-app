@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllProducts } from '../lib/api';
 import type { Product } from '../types';
+import { logger } from '../lib/logger';
 
 const RECENT_PRODUCTS_KEY = 'recentProducts';
 const MAX_RECENT_ITEMS = 8;
@@ -17,7 +18,12 @@ export const useRecentProducts = () => {
     try {
       const stored = localStorage.getItem(RECENT_PRODUCTS_KEY);
       return stored ? JSON.parse(stored) : [];
-    } catch {
+    } catch (error) {
+      logger.warn('Failed to load recent products from localStorage', {
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        key: RECENT_PRODUCTS_KEY,
+      });
       return [];
     }
   });
@@ -33,8 +39,14 @@ export const useRecentProducts = () => {
   useEffect(() => {
     try {
       localStorage.setItem(RECENT_PRODUCTS_KEY, JSON.stringify(recentIds));
-    } catch {
-      // localStorage might be full or unavailable
+    } catch (error) {
+      logger.error('Failed to save recent products to localStorage', {
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        key: RECENT_PRODUCTS_KEY,
+        idsCount: recentIds.length,
+        isQuotaError: error instanceof DOMException && error.name === 'QuotaExceededError',
+      });
     }
   }, [recentIds]);
 

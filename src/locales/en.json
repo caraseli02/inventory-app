@@ -468,6 +468,8 @@
     "searching": "Searching...",
     "noResults": "No products found",
     "tryDifferent": "Try a different search term",
+    "error": "Failed to load products",
+    "errorRetry": "Please try again later",
     "inStock": "in stock",
     "outOfStock": "Out",
     "search": "Search",

@@ -440,6 +440,8 @@
     "searching": "Se caută...",
     "noResults": "Nu s-au găsit produse",
     "tryDifferent": "Încearcă un alt termen de căutare",
+    "error": "Eroare la încărcarea produselor",
+    "errorRetry": "Te rog încearcă din nou mai târziu",
     "inStock": "în stoc",
     "outOfStock": "Epuizat",
     "search": "Caută",

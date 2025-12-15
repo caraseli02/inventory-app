@@ -453,6 +453,8 @@
     "searching": "Buscando...",
     "noResults": "No se encontraron productos",
     "tryDifferent": "Intenta con otro término de búsqueda",
+    "error": "Error al cargar productos",
+    "errorRetry": "Por favor, inténtalo de nuevo más tarde",
     "inStock": "en stock",
     "outOfStock": "Agotado",
     "search": "Buscar",

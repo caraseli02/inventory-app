@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { getAllProducts } from '@/lib/api';
 import { useRecentProducts } from '@/hooks/useRecentProducts';
 import type { Product } from '@/types';
+import { logger } from '@/lib/logger';
 
 // Category definitions with icons and subtle indicator dots
 // Using neutral base with ONE accent color (forest green) for selections
@@ -47,7 +48,7 @@ export const ProductBrowsePanel = ({
   const ITEMS_PER_PAGE = 20;
 
   // Fetch all products
-  const { data: allProducts, isLoading } = useQuery({
+  const { data: allProducts, isLoading, error } = useQuery({
     queryKey: ['products', 'all'],
     queryFn: getAllProducts,
     staleTime: 1000 * 60 * 5,
@@ -136,6 +137,16 @@ export const ProductBrowsePanel = ({
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-red-600">
+        <Package className="h-12 w-12 mb-4 opacity-40" />
+        <p className="text-lg font-semibold mb-2">{t('search.error', 'Failed to load products')}</p>
+        <p className="text-sm text-red-500">{t('search.errorRetry', 'Please try again later')}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       {/* Category Tabs - Horizontally scrollable */}
@@ -144,29 +155,35 @@ export const ProductBrowsePanel = ({
           {visibleCategories.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             const Icon = cat.icon;
-            const productCount = cat.id === 'all'
-              ? allProducts?.length ?? 0
-              : cat.id === 'recent'
-              ? recentProducts.length
-              : allProducts?.filter(p => p.fields.Category === cat.id).length ?? 0;
+
+            // Calculate product count based on category type
+            function getProductCount(): number {
+              if (cat.id === 'all') return allProducts?.length ?? 0;
+              if (cat.id === 'recent') return recentProducts.length;
+              return allProducts?.filter(p => p.fields.Category === cat.id).length ?? 0;
+            }
+            const productCount = getProductCount();
+
+            const countClass = isSelected ? 'text-zinc-300' : 'text-zinc-500';
+            const buttonClass = isSelected
+              ? 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-md'
+              : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 border border-zinc-200';
 
             return (
               <Button
                 key={cat.id}
                 variant={isSelected ? 'default' : 'ghost'}
                 size="default"
-                className={`shrink-0 rounded-xl px-5 h-12 font-semibold transition-all duration-150 text-base ${
-                  isSelected
-                    ? 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-md'
-                    : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 border border-zinc-200'
-                }`}
+                className={`shrink-0 rounded-xl px-5 h-12 font-semibold transition-all duration-150 text-base ${buttonClass}`}
                 onClick={() => handleCategorySelect(cat.id)}
               >
-                {/* Subtle category dot */}
-                {!Icon && <span className={`w-2.5 h-2.5 rounded-full ${cat.dot} mr-2.5`} />}
-                {Icon && <Icon className="h-5 w-5 mr-2.5" />}
+                {Icon ? (
+                  <Icon className="h-5 w-5 mr-2.5" />
+                ) : (
+                  <span className={`w-2.5 h-2.5 rounded-full ${cat.dot} mr-2.5`} />
+                )}
                 <span>{getCategoryLabel(cat.id)}</span>
-                <span className={`ml-2.5 text-sm font-bold tabular-nums ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                <span className={`ml-2.5 text-sm font-bold tabular-nums ${countClass}`}>
                   {productCount}
                 </span>
               </Button>
@@ -226,10 +243,20 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, onSelect }: ProductCardProps) => {
   const { t } = useTranslation();
+  const [imageError, setImageError] = useState(false);
   const imageUrl = product.fields.Image?.[0]?.url;
   const price = product.fields.Price;
   const stock = product.fields['Current Stock Level'] ?? 0;
   const isOutOfStock = stock <= 0;
+
+  const handleImageError = () => {
+    logger.warn('Failed to load product image', {
+      productId: product.id,
+      productName: product.fields.Name,
+      imageUrl,
+    });
+    setImageError(true);
+  };
 
   return (
     <Button
@@ -249,12 +276,13 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
     >
       {/* Product Image */}
       <div className="w-20 h-20 rounded-lg bg-zinc-50 flex items-center justify-center overflow-hidden mb-3 border border-zinc-200">
-        {imageUrl ? (
+        {imageUrl && !imageError ? (
           <img
             src={imageUrl}
             alt=""
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={handleImageError}
           />
         ) : (
           <Package className="h-8 w-8 text-zinc-300" />
