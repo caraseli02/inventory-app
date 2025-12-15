@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, Upload, Package } from 'lucide-react';
+import { RefreshCw, Package } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/button';
 import { Spinner } from '../components/ui/spinner';
@@ -15,7 +15,7 @@ import EditProductDialog from '../components/product/EditProductDialog';
 import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ImportDialog } from '../components/xlsx/ImportDialog';
-import { ExportButton } from '../components/xlsx/ExportButton';
+import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
 import { addStockMovement, createProduct, getProductByBarcode } from '../lib/api';
 import type { ImportedProduct } from '../lib/xlsx';
 import { useQueryClient } from '@tanstack/react-query';
@@ -205,6 +205,43 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     setDetailDialogOpen(true);
   }, []);
 
+  // Handle export to xlsx
+  const handleExport = useCallback(() => {
+    if (products.length === 0) return;
+
+    try {
+      // Map products to export format
+      const exportProducts: ExportProduct[] = products.map((product) => ({
+        Barcode: product.fields.Barcode,
+        Name: product.fields.Name,
+        Category: product.fields.Category,
+        Price: product.fields.Price,
+        price50: product.fields['Price 50%'],
+        price70: product.fields['Price 70%'],
+        price100: product.fields['Price 100%'],
+        currentStock: product.fields['Current Stock Level'],
+        minStock: product.fields['Min Stock Level'],
+        Supplier: product.fields.Supplier,
+        expiryDate: product.fields['Expiry Date'],
+      }));
+
+      // Generate and download xlsx file
+      exportToXlsx(exportProducts);
+
+      showToast(
+        'success',
+        t('export.success', 'Export Successful'),
+        t('export.successMessage', { count: products.length }) + ' ' + t('export.downloadedHint', 'Check your Downloads folder.')
+      );
+    } catch (error) {
+      showToast(
+        'error',
+        t('export.failed', 'Export Failed'),
+        error instanceof Error ? error.message : t('errors.unknownError')
+      );
+    }
+  }, [products, showToast, t]);
+
   // Handle import from xlsx
   const handleImport = useCallback(async (importedProducts: ImportedProduct[]) => {
     let successCount = 0;
@@ -346,24 +383,9 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
             onReset={resetFilters}
             onRefresh={handleRefresh}
             isRefreshing={isLoading}
+            onImport={() => setImportDialogOpen(true)}
+            onExport={handleExport}
           />
-
-          {/* Import/Export Actions */}
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setImportDialogOpen(true)}
-              className="h-10 border-2 border-stone-300"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {t('import.button')}
-            </Button>
-            <ExportButton
-              products={products}
-              className="h-10 border-2 border-stone-300"
-            />
-          </div>
 
           {/* Loading State */}
           {isLoading && (
