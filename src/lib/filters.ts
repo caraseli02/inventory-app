@@ -38,6 +38,20 @@ export function createClearFilterHandler(
         onFilterChange('sortField', 'name');
         onFilterChange('sortDirection', 'asc');
         break;
+      case 'sortDirection':
+        // sortDirection is handled together with sortField
+        onFilterChange('sortField', 'name');
+        onFilterChange('sortDirection', 'asc');
+        break;
+      default: {
+        // This should never happen due to TypeScript type checking,
+        // but catch it anyway for runtime safety
+        const exhaustiveCheck: never = key;
+        console.error(`Unhandled filter key: ${exhaustiveCheck}`);
+        if (process.env.NODE_ENV !== 'production') {
+          throw new Error(`Unhandled filter key: ${exhaustiveCheck}`);
+        }
+      }
     }
   };
 }

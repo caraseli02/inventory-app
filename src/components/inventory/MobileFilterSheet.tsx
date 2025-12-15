@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { hasActiveFilters } from '../../lib/filters';
-import type { InventoryFilters, SortField } from '../../hooks/useInventoryList';
+import type { InventoryFilters } from '../../hooks/useInventoryList';
 
 interface MobileFilterSheetProps {
   open: boolean;
@@ -142,7 +142,9 @@ export const MobileFilterSheet = ({
               type="single"
               value={filters.sortField}
               onValueChange={(value: string) => {
-                if (value) onFilterChange('sortField', value as SortField);
+                if (value === 'name' || value === 'stock' || value === 'price' || value === 'category') {
+                  onFilterChange('sortField', value);
+                }
               }}
               className="grid grid-cols-2 gap-2"
             >
