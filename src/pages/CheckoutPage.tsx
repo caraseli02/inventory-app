@@ -909,9 +909,9 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
         />
 
         {/* Two Column Layout - Header is 50px */}
-        <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-4">
+        <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-6">
           {/* Left Column: Stepper → Toggle → Search/Scanner */}
-          <div className="w-[48%] flex flex-col gap-4">
+          <div className="w-[48%] flex flex-col gap-6">
             {/* Progress Indicator - At top, centered */}
             <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
 
@@ -933,7 +933,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                 <div className="flex-1 min-h-0">
                   <ProductBrowsePanel
                     onProductSelect={handleProductSelect}
-                    maxHeight="calc(100dvh - 280px)"
+                    maxHeight="calc(100dvh - 320px)"
                   />
                 </div>
               </div>
