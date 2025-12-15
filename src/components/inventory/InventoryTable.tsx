@@ -196,7 +196,7 @@ const InventoryTableComponent = ({
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-10 w-10 border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+                              className="h-11 w-11 sm:h-10 sm:w-10 border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
                               onClick={() => onQuickAdjust(product.id, -1)}
                               disabled={isLoading || currentStock === 0}
                               title={t('inventory.table.removeUnit')}
@@ -205,13 +205,13 @@ const InventoryTableComponent = ({
                               {isLoading ? (
                                 <span className="animate-spin h-4 w-4 border-2 border-stone-400 border-t-stone-600 rounded-full" />
                               ) : (
-                                <Minus className="h-4 w-4" />
+                                <Minus className="h-5 w-5 sm:h-4 sm:w-4" />
                               )}
                             </Button>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-10 w-10 border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+                              className="h-11 w-11 sm:h-10 sm:w-10 border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
                               onClick={() => onQuickAdjust(product.id, 1)}
                               disabled={isLoading}
                               title={t('inventory.table.addUnit')}
@@ -220,7 +220,7 @@ const InventoryTableComponent = ({
                               {isLoading ? (
                                 <span className="animate-spin h-4 w-4 border-2 border-stone-400 border-t-stone-600 rounded-full" />
                               ) : (
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
                               )}
                             </Button>
                           </div>
@@ -233,24 +233,24 @@ const InventoryTableComponent = ({
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 text-stone-500 hover:text-stone-900 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+                                className="h-11 w-11 sm:h-10 sm:w-10 text-stone-500 hover:text-stone-900 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
                                 onClick={() => onEdit(product)}
                                 title={t('inventory.table.editProduct')}
                                 aria-label={t('inventory.table.editProduct')}
                               >
-                                <Edit2 className="h-4 w-4" />
+                                <Edit2 className="h-5 w-5 sm:h-4 sm:w-4" />
                               </Button>
                             )}
                             {onDelete && (
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-10 w-10 text-stone-500 hover:text-[var(--color-terracotta)] hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]"
+                                className="h-11 w-11 sm:h-10 sm:w-10 text-stone-500 hover:text-[var(--color-terracotta)] hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]"
                                 onClick={() => onDelete(product)}
                                 title={t('inventory.table.deleteProduct')}
                                 aria-label={t('inventory.table.deleteProduct')}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
                               </Button>
                             )}
                           </div>

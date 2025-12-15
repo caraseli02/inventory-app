@@ -26,7 +26,14 @@ export const CartFooter = ({
     <div className="p-6 pt-4 border-t border-gray-200 bg-gray-50">
       <div className="flex items-center justify-between mb-4">
         <span className="text-stone-700 font-semibold">{t('cart.totalWithCount', { count: itemCount })}</span>
-        <span className="text-2xl font-bold text-stone-900">€ {total.toFixed(2)}</span>
+        <span
+          className="text-2xl font-bold text-stone-900"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          €{total.toFixed(2)}
+        </span>
       </div>
 
       {checkoutComplete ? (

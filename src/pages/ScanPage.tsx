@@ -117,10 +117,10 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
               <Button
                 type="submit"
                 disabled={manualCode.length < 3}
-                className={`flex-shrink-0 h-12 px-6 font-medium ${
+                className={`flex-shrink-0 h-12 px-6 font-medium transition-colors ${
                   manualCode.length >= 3
                     ? 'bg-stone-900 hover:bg-stone-800 text-white'
-                    : 'bg-stone-200 text-stone-500 hover:bg-stone-300'
+                    : 'bg-stone-200 text-stone-700 cursor-not-allowed'
                 }`}
               >
                 {t('scanner.addButton')}
@@ -194,10 +194,10 @@ const ScanPage = ({ onBack }: ScanPageProps) => {
                 <Button
                   type="submit"
                   disabled={manualCode.length < 3}
-                  className={`flex-shrink-0 h-12 px-6 font-medium ${
+                  className={`flex-shrink-0 h-12 px-6 font-medium transition-colors ${
                     manualCode.length >= 3
                       ? 'bg-stone-900 hover:bg-stone-800 text-white'
-                      : 'bg-stone-200 text-stone-500 hover:bg-stone-300'
+                      : 'bg-stone-200 text-stone-700 cursor-not-allowed'
                   }`}
                 >
                   {t('scanner.addButton')}

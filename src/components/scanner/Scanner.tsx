@@ -194,18 +194,22 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   return (
     <div className="w-full overflow-hidden bg-black relative" style={{ aspectRatio: '4/3' }}>
       {error ? (
-        <div className="absolute inset-0 flex items-center justify-center bg-amber-50 border-4 border-amber-400 text-amber-900 p-4 text-center m-2 rounded-lg">
-          <div className="space-y-2 max-w-sm">
-            <Video className="h-8 w-8 text-amber-500 mx-auto" />
-            <p className="font-bold text-base">{t('scanner.cameraUnavailable', 'Camera Unavailable')}</p>
-            <p className="text-xs text-amber-800">{error}</p>
+        <div className="absolute inset-0 flex flex-col bg-amber-50 border-4 border-amber-400 text-amber-900 m-2 rounded-lg">
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="space-y-2 max-w-sm text-center">
+              <Video className="h-8 w-8 text-amber-500 mx-auto" />
+              <p className="font-bold text-base">{t('scanner.cameraUnavailable', 'Camera Unavailable')}</p>
+              <p className="text-xs text-amber-800">{error}</p>
+            </div>
+          </div>
+          <div className="p-4">
             <Button
               onClick={handleRetry}
               variant="outline"
-              size="sm"
-              className="mt-2 border-amber-400 text-amber-800 hover:bg-amber-100"
+              className="w-full h-12 border-2 border-amber-400 text-amber-800 hover:bg-amber-100"
+              aria-label={t('scanner.retry', 'Try Again')}
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
+              <RotateCcw className="h-5 w-5 mr-2" />
               {t('scanner.retry', 'Try Again')}
             </Button>
           </div>

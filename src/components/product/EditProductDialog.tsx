@@ -185,7 +185,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
           {/* Header */}
           <DialogHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 py-2 sm:px-6 sm:py-4 flex-shrink-0 min-h-0">
             <DialogTitle className="text-lg sm:text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
-            <DialogDescription id="edit-product-description" className="hidden sm:block text-stone-600 text-sm">
+            <DialogDescription id="edit-product-description" className="sr-only sm:not-sr-only text-stone-600 text-sm">
               {t('dialogs.editProduct.description', 'Edit product details and save changes')}
             </DialogDescription>
           </DialogHeader>
@@ -265,10 +265,10 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                       </Button>
                     )}
                   </div>
-                  <p className="text-xs text-stone-500 mt-1.5">
+                  <p className="text-xs text-stone-600 mt-1.5">
                     {isBarcodeEditable
-                      ? t('product.barcodeAddNow')
-                      : t('product.barcodeCannotChange')
+                      ? t('product.barcodeAddNow', 'Scan or enter barcode now')
+                      : t('product.barcodeCannotChange', 'Barcode cannot be changed once set')
                     }
                   </p>
                 </div>
@@ -287,7 +287,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                     placeholder={t('product.namePlaceholder')}
                     className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                   />
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.nameHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.nameHelp', 'Enter the product display name')}</p>
                 </div>
               </div>
 
@@ -314,7 +314,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                       <SelectItem value="Conserve">{t('categories.Conserve')}</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.categoryHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.categoryHelp', 'Select the product category')}</p>
                 </div>
               </div>
                 </TabsContent>
@@ -331,13 +331,13 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   <div className="mt-2 h-11 px-3 flex items-center bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
                     {basePrice != null ? `€${basePrice.toFixed(2)}` : '—'}
                   </div>
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.basePriceHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.basePriceHelp', 'Import price from Excel spreadsheet')}</p>
                 </div>
 
                 {/* Markup Selector */}
                 <div>
                   <Label className="text-stone-700 font-semibold text-sm">{t('markup.label')}</Label>
-                  <p className="text-xs text-stone-500 mt-1 mb-2">{t('markup.selectTier')}</p>
+                  <p className="text-xs text-stone-600 mt-1 mb-2">{t('markup.selectTier', 'Select profit margin tier')}</p>
                   <div className="flex rounded-lg border-2 border-stone-200 bg-stone-50 p-1">
                     {([50, 70, 100] as MarkupPercentage[]).map((option) => (
                       <Button
@@ -399,7 +399,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                     placeholder="0"
                     className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                   />
-                  <p className="text-xs text-stone-500 mt-1.5">
+                  <p className="text-xs text-stone-600 mt-1.5">
                     {t('product.minStockLevelHelp', 'Alert when stock falls below this level')}
                   </p>
                 </div>
@@ -411,7 +411,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   <div className="mt-2 h-11 px-3 flex items-center bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
                     {product.fields['Current Stock Level'] ?? 0}
                   </div>
-                  <p className="text-xs text-stone-500 mt-1.5">
+                  <p className="text-xs text-stone-600 mt-1.5">
                     {t('product.currentStockHelp', 'Managed via stock movements')}
                   </p>
                 </div>
@@ -444,7 +444,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                     onChange={handleChange}
                     className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                   />
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.expiryDateHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.expiryDateHelp', 'Optional product expiration date')}</p>
                 </div>
 
                 <div>
@@ -468,7 +468,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                       <Camera className="w-5 h-5 text-stone-600" />
                     </Button>
                   </div>
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.imageHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.imageHelp', 'Paste image URL or use camera')}</p>
                 </div>
               </div>
                 </TabsContent>
