@@ -793,8 +793,10 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
         {/* Uses flex-1 with overflow to fit above cart toggle (approx 100px) */}
         {!state.isCartExpanded && (
           <div className="flex-1 px-4 pt-3 pb-[110px] overflow-y-auto flex flex-col gap-3">
-            {/* Progress Indicator - At top, centered */}
-            <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
+            {/* Progress Indicator - Only show in scan mode */}
+            {inputMode === 'scan' && (
+              <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
+            )}
 
             {/* Mode Toggle */}
             <div className="flex justify-center">
@@ -912,8 +914,10 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
         <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-6">
           {/* Left Column: Stepper → Toggle → Search/Scanner */}
           <div className="w-[48%] flex flex-col gap-6">
-            {/* Progress Indicator - At top, centered */}
-            <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
+            {/* Progress Indicator - Only show in scan mode */}
+            {inputMode === 'scan' && (
+              <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
+            )}
 
             {/* Mode Toggle */}
             <div className="flex justify-center">
