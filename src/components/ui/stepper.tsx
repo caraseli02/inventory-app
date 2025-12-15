@@ -21,21 +21,21 @@ function Step({ step, index, status, isLast }: StepProps) {
       <div className="flex flex-col items-center">
         <div
           className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all',
+            'flex h-10 w-10 items-center justify-center rounded-full text-base font-bold transition-all',
             status === 'completed' && 'bg-[var(--color-forest)] text-white',
-            status === 'active' && 'bg-stone-900 text-white ring-2 ring-stone-300',
+            status === 'active' && 'bg-stone-900 text-white ring-4 ring-stone-300',
             status === 'pending' && 'bg-stone-200 text-stone-500'
           )}
         >
           {status === 'completed' ? (
-            <CheckCircle2 className="h-5 w-5" />
+            <CheckCircle2 className="h-6 w-6" />
           ) : (
             index + 1
           )}
         </div>
         <span
           className={cn(
-            'mt-1.5 text-xs font-medium whitespace-nowrap',
+            'mt-2 text-sm font-semibold whitespace-nowrap',
             status === 'completed' && 'text-[var(--color-forest)]',
             status === 'active' && 'text-stone-900',
             status === 'pending' && 'text-stone-400'
@@ -46,7 +46,7 @@ function Step({ step, index, status, isLast }: StepProps) {
       </div>
 
       {!isLast && (
-        <div className="mx-3 h-0.5 w-12 rounded-full bg-stone-200">
+        <div className="mx-4 h-1 w-16 rounded-full bg-stone-200">
           <div
             className={cn(
               'h-full rounded-full transition-all',

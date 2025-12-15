@@ -443,5 +443,29 @@
     "successMessage": "Se exportaron {{count}} productos a archivo Excel",
     "downloadedHint": "Revisa tu carpeta de Descargas.",
     "failed": "Exportación Fallida"
+  },
+  "search": {
+    "placeholder": "Buscar productos...",
+    "scanPagePlaceholder": "Buscar por nombre o código...",
+    "checkoutPlaceholder": "Buscar para añadir al carrito...",
+    "ariaLabel": "Buscar productos",
+    "clear": "Limpiar búsqueda",
+    "searching": "Buscando...",
+    "noResults": "No se encontraron productos",
+    "tryDifferent": "Intenta con otro término de búsqueda",
+    "error": "Error al cargar productos",
+    "errorRetry": "Por favor, inténtalo de nuevo más tarde",
+    "inStock": "en stock",
+    "outOfStock": "Agotado",
+    "search": "Buscar",
+    "scan": "Escanear",
+    "modeSearch": "Modo búsqueda",
+    "modeScan": "Modo escaneo",
+    "recentItems": "Recientes",
+    "favorites": "Favoritos",
+    "allProducts": "Todos",
+    "noCategoryProducts": "No hay productos en esta categoría",
+    "loadMore": "Cargar Más",
+    "remaining": "restantes"
   }
 }

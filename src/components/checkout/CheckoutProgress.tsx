@@ -19,7 +19,7 @@ export function CheckoutProgress({ currentStep }: CheckoutProgressProps) {
   ];
 
   return (
-    <div className="w-full py-3">
+    <div className="w-full py-5">
       <Stepper steps={steps} currentStep={currentStep} />
     </div>
   );

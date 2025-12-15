@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useRef, type FormEvent } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,7 +16,7 @@ import {
 } from '../components/ui/Icons';
 import { CheckoutProgress } from '../components/checkout/CheckoutProgress';
 import { Button } from '../components/ui/button';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ScanBarcode, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import { ProductSearchDropdown } from '../components/search/ProductSearchDropdown';
+import { type InputMode } from '../components/search/InputModeToggle';
+import { ProductBrowsePanel } from '../components/search/ProductBrowsePanel';
+import { useRecentProducts } from '../hooks/useRecentProducts';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -173,54 +177,36 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       const newQuantity = item.quantity + action.delta;
       const availableStock = item.product.fields['Current Stock Level'] ?? 0;
 
-      // If removing items (negative delta), allow it
-      if (action.delta < 0) {
-        if (newQuantity <= 0) {
-          // Remove item from cart - create new array without the item
-          return {
-            ...state,
-            cart: state.cart.filter((_, i) => i !== action.index),
-          };
-        }
-        // Create new item object with updated quantity (immutable update)
+      // Helper to update a single cart item immutably
+      const updateCartItem = (updates: Partial<CartItem>) => ({
+        ...state,
+        cart: state.cart.map((cartItem, i) =>
+          i === action.index ? { ...cartItem, ...updates } : cartItem
+        ),
+      });
+
+      // Remove item if quantity reaches zero
+      if (newQuantity <= 0) {
         return {
           ...state,
-          cart: state.cart.map((cartItem, i) =>
-            i === action.index
-              ? { ...cartItem, quantity: newQuantity, status: 'idle' as const, statusMessage: undefined }
-              : cartItem
-          ),
-        };
-      }
-      // If adding items (positive delta), check stock availability
-      if (action.delta > 0) {
-        if (newQuantity > availableStock) {
-          // Prevent update and show error (immutable update)
-          return {
-            ...state,
-            cart: state.cart.map((cartItem, i) =>
-              i === action.index
-                ? {
-                    ...cartItem,
-                    status: 'failed' as const,
-                    statusMessage: action.errorMessage || `Cannot add more. Only ${availableStock} unit(s) available in stock.`,
-                  }
-                : cartItem
-            ),
-          };
-        }
-        // Allow update (immutable update)
-        return {
-          ...state,
-          cart: state.cart.map((cartItem, i) =>
-            i === action.index
-              ? { ...cartItem, quantity: newQuantity, status: 'idle' as const, statusMessage: undefined }
-              : cartItem
-          ),
+          cart: state.cart.filter((_, i) => i !== action.index),
         };
       }
 
-      return state;
+      // Block increase if exceeds available stock
+      if (action.delta > 0 && newQuantity > availableStock) {
+        return updateCartItem({
+          status: 'failed' as const,
+          statusMessage: action.errorMessage || `Cannot add more. Only ${availableStock} unit(s) available in stock.`,
+        });
+      }
+
+      // Apply quantity change
+      return updateCartItem({
+        quantity: newQuantity,
+        status: 'idle' as const,
+        statusMessage: undefined,
+      });
     }
 
     case 'SET_CART':
@@ -367,6 +353,8 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
+  const [inputMode, setInputMode] = useState<InputMode>('search');
+  const { addRecentProduct } = useRecentProducts();
 
   // Hook for looking up products
   const { data: product, isLoading, error } = useProductLookup(state.scannedCode);
@@ -383,6 +371,55 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
     }
   }, []);
 
+  /**
+   * Validates if a product can be added to cart and shows appropriate feedback
+   * Returns true if the product was successfully added, false otherwise
+   */
+  const addProductToCart = useCallback((productToAdd: Product): boolean => {
+    const existingItem = state.cart.find(item => item.product.id === productToAdd.id);
+    const isNewItem = !existingItem;
+    const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+    const availableStock = productToAdd.fields['Current Stock Level'] ?? 0;
+
+    // Validate stock availability
+    if (newQuantity > availableStock) {
+      playSound('error');
+      toast.error(t('cart.insufficientStock', { available: availableStock }), {
+        description: t('cart.insufficientStockDescription', {
+          name: productToAdd.fields.Name,
+          requested: newQuantity,
+          available: availableStock
+        }),
+      });
+      return false;
+    }
+
+    // Add to cart
+    dispatch({
+      type: 'ADD_TO_CART',
+      product: productToAdd,
+      insufficientStockMessage: t('cart.insufficientStock', { available: availableStock }),
+      zeroStockMessage: t('cart.zeroStock'),
+    });
+    playSound('success');
+
+    // Show toast notification
+    if (isNewItem) {
+      toast.success(t('cart.itemAdded'), {
+        description: t('cart.itemAddedDescription', { name: productToAdd.fields.Name }),
+      });
+    } else {
+      toast.success(t('cart.quantityUpdated'), {
+        description: t('cart.quantityUpdatedDescription', {
+          name: productToAdd.fields.Name,
+          quantity: newQuantity
+        }),
+      });
+    }
+
+    return true;
+  }, [state.cart, playSound, t]);
+
   useEffect(() => {
     if (!state.scannedCode) return;
 
@@ -393,52 +430,12 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
     // Product found successfully
     if (product) {
-      // Check if product already exists in cart to show appropriate toast
-      const existingItem = state.cart.find(item => item.product.id === product.id);
-      const isNewItem = !existingItem;
-      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
-      const availableStock = product.fields['Current Stock Level'] ?? 0;
-
-      // Validate stock availability before adding to cart
-      // Note: This is client-side validation against cached stock data.
-      // For absolute accuracy with concurrent checkouts, a backend proxy should validate this.
-      if (newQuantity > availableStock) {
-        playSound('error');
-        toast.error(t('cart.insufficientStock', { available: availableStock }), {
-          description: t('cart.insufficientStockDescription', {
-            name: product.fields.Name,
-            requested: newQuantity,
-            available: availableStock
-          }),
-        });
-        dispatch({ type: 'LOOKUP_SUCCESS' });
-        return;
-      }
-
       // Mark this barcode as processed BEFORE dispatching to prevent re-entry
       processedBarcodeRef.current = state.scannedCode;
 
-      dispatch({
-        type: 'ADD_TO_CART',
-        product,
-        insufficientStockMessage: t('cart.insufficientStock', { available: availableStock }),
-        zeroStockMessage: t('cart.zeroStock'),
-      });
-      playSound('success');
-
-      // Show toast notification
-      if (isNewItem) {
-        toast.success(t('cart.itemAdded'), {
-          description: t('cart.itemAddedDescription', { name: product.fields.Name }),
-        });
-      } else {
-        toast.success(t('cart.quantityUpdated'), {
-          description: t('cart.quantityUpdatedDescription', {
-            name: product.fields.Name,
-            quantity: newQuantity
-          }),
-        });
-      }
+      // Note: Stock validation is client-side against cached data.
+      // For absolute accuracy with concurrent checkouts, a backend proxy should validate this.
+      addProductToCart(product);
 
       dispatch({ type: 'LOOKUP_SUCCESS' });
       // Auto-collapse cart on mobile ONLY if barcode came from scanner, not QuickAdd
@@ -488,9 +485,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  // Note: state.cart is intentionally NOT in deps - cart updates should not re-trigger this effect
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource, t]);
+  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource, t, addProductToCart]);
 
   /**
    * Handles successful barcode scan by initiating product lookup
@@ -512,11 +507,24 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
     }
   }, [isLoading, state.lookupRequested, state.scannedCode]);
 
-  const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleManualSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (state.manualCode.trim().length > 3 && !isPendingLookup) {
       handleScanSuccess(state.manualCode.trim());
       dispatch({ type: 'SET_MANUAL_CODE', code: '' });
+    }
+  };
+
+  /**
+   * Handles product selection from search dropdown
+   * - Directly adds product to cart without barcode lookup
+   * - Tracks as recent product for quick add panel
+   * @param selectedProduct - Product selected from search
+   */
+  const handleProductSelect = (selectedProduct: Product) => {
+    const added = addProductToCart(selectedProduct);
+    if (added) {
+      addRecentProduct(selectedProduct.id);
     }
   };
 
@@ -728,23 +736,71 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
           variant="compact"
         />
 
-        {/* Scanner Section - Hidden when cart is expanded on mobile */}
+        {/* Input Section - Hidden when cart is expanded on mobile */}
         {/* Uses flex-1 with overflow to fit above cart toggle (approx 100px) */}
         {!state.isCartExpanded && (
           <div className="flex-1 px-4 pt-3 pb-[110px] overflow-y-auto flex flex-col gap-3">
-            {/* Progress Indicator - At top, centered */}
-            <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
-            <ScannerFrame
-              scannerId="mobile-reader"
-              onScanSuccess={handleScanSuccess}
-              manualCode={state.manualCode}
-              onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
-              onManualSubmit={handleManualSubmit}
-              isPending={isPendingLookup}
-              error={state.lookupError}
-              onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
-              size="small"
-            />
+            {/* Progress Indicator - Only show in scan mode */}
+            {inputMode === 'scan' && (
+              <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
+            )}
+
+            {/* Search Mode */}
+            {inputMode === 'search' && (
+              <div className="w-full space-y-4">
+                {/* Search Input with Scan Button */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <ProductSearchDropdown
+                      onProductSelect={handleProductSelect}
+                      placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setInputMode('scan')}
+                    className="h-16 px-5 border-2 border-zinc-300 hover:bg-zinc-100 rounded-xl shrink-0"
+                  >
+                    <ScanBarcode className="h-6 w-6 text-zinc-700" />
+                  </Button>
+                </div>
+
+                {/* Browse by Category - One-tap product selection */}
+                <ProductBrowsePanel
+                  onProductSelect={handleProductSelect}
+                  maxHeight="calc(100dvh - 340px)"
+                />
+              </div>
+            )}
+
+            {/* Scan Mode */}
+            {inputMode === 'scan' && (
+              <div className="w-full space-y-3">
+                {/* Back to Search Button */}
+                <Button
+                  variant="outline"
+                  onClick={() => setInputMode('search')}
+                  className="w-full h-12 border-2 border-zinc-300 hover:bg-zinc-100 rounded-xl font-semibold"
+                >
+                  <Search className="h-5 w-5 mr-2 text-zinc-700" />
+                  {t('search.search', 'Search')}
+                </Button>
+
+                <ScannerFrame
+                  scannerId="mobile-reader"
+                  onScanSuccess={handleScanSuccess}
+                  manualCode={state.manualCode}
+                  onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
+                  onManualSubmit={handleManualSubmit}
+                  isPending={isPendingLookup}
+                  error={state.lookupError}
+                  onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
+                  size="small"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -822,26 +878,76 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
         />
 
         {/* Two Column Layout - Header is 50px */}
-        <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-4">
-          {/* Left Column: Stepper → Scanner → Manual entry */}
-          <div className="w-[32%] flex flex-col gap-4">
-            {/* Progress Indicator - At top, centered */}
-            <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
-            <ScannerFrame
-              scannerId="desktop-reader"
-              onScanSuccess={handleScanSuccess}
-              manualCode={state.manualCode}
-              onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
-              onManualSubmit={handleManualSubmit}
-              isPending={isPendingLookup}
-              error={state.lookupError}
-              onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
-              size="small"
-            />
+        <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-6">
+          {/* Left Column: Search/Scanner */}
+          <div className="w-[48%] flex flex-col gap-6">
+            {/* Progress Indicator - Only show in scan mode */}
+            {inputMode === 'scan' && (
+              <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
+            )}
+
+            {/* Search Mode */}
+            {inputMode === 'search' && (
+              <div className="w-full space-y-4 flex-1 flex flex-col min-h-0">
+                {/* Search Input with Scan Button */}
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <ProductSearchDropdown
+                      onProductSelect={handleProductSelect}
+                      placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setInputMode('scan')}
+                    className="h-16 px-6 border-2 border-zinc-300 hover:bg-zinc-100 rounded-xl shrink-0"
+                  >
+                    <ScanBarcode className="h-6 w-6 text-zinc-700" />
+                  </Button>
+                </div>
+
+                {/* Browse by Category - One-tap product selection */}
+                <div className="flex-1 min-h-0">
+                  <ProductBrowsePanel
+                    onProductSelect={handleProductSelect}
+                    maxHeight="calc(100dvh - 280px)"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Scan Mode */}
+            {inputMode === 'scan' && (
+              <div className="w-full space-y-4 flex-1 flex flex-col">
+                {/* Back to Search Button */}
+                <Button
+                  variant="outline"
+                  onClick={() => setInputMode('search')}
+                  className="w-full h-14 border-2 border-zinc-300 hover:bg-zinc-100 rounded-xl font-semibold text-base"
+                >
+                  <Search className="h-5 w-5 mr-2 text-zinc-700" />
+                  {t('search.search', 'Search')}
+                </Button>
+
+                <ScannerFrame
+                  scannerId="desktop-reader"
+                  onScanSuccess={handleScanSuccess}
+                  manualCode={state.manualCode}
+                  onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
+                  onManualSubmit={handleManualSubmit}
+                  isPending={isPendingLookup}
+                  error={state.lookupError}
+                  onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
+                  size="small"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Right Column: Cart (expanded to use more space) */}
-          <div className="w-[65%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
+          {/* Right Column: Cart */}
+          <div className="w-[48%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
             <Cart
               cart={state.cart}
               total={total}

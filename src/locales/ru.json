@@ -417,5 +417,29 @@
     "successMessage": "Экспортировано {{count}} товаров в Excel файл",
     "downloadedHint": "Проверьте папку Загрузки.",
     "failed": "Ошибка экспорта"
+  },
+  "search": {
+    "placeholder": "Поиск товаров...",
+    "scanPagePlaceholder": "Поиск по названию или штрих-коду...",
+    "checkoutPlaceholder": "Поиск для добавления в корзину...",
+    "ariaLabel": "Поиск товаров",
+    "clear": "Очистить поиск",
+    "searching": "Поиск...",
+    "noResults": "Товары не найдены",
+    "tryDifferent": "Попробуйте другой запрос",
+    "error": "Не удалось загрузить товары",
+    "errorRetry": "Пожалуйста, попробуйте позже",
+    "inStock": "в наличии",
+    "outOfStock": "Нет",
+    "search": "Поиск",
+    "scan": "Сканировать",
+    "modeSearch": "Режим поиска",
+    "modeScan": "Режим сканирования",
+    "recentItems": "Недавние",
+    "favorites": "Избранное",
+    "allProducts": "Все",
+    "noCategoryProducts": "Нет товаров в этой категории",
+    "loadMore": "Загрузить Ещё",
+    "remaining": "осталось"
   }
 }

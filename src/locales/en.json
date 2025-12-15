@@ -458,5 +458,29 @@
     "successMessage": "Exported {{count}} products to Excel file",
     "downloadedHint": "Check your Downloads folder.",
     "failed": "Export Failed"
+  },
+  "search": {
+    "placeholder": "Search products...",
+    "scanPagePlaceholder": "Search by name or barcode...",
+    "checkoutPlaceholder": "Search to add to cart...",
+    "ariaLabel": "Search for products",
+    "clear": "Clear search",
+    "searching": "Searching...",
+    "noResults": "No products found",
+    "tryDifferent": "Try a different search term",
+    "error": "Failed to load products",
+    "errorRetry": "Please try again later",
+    "inStock": "in stock",
+    "outOfStock": "Out",
+    "search": "Search",
+    "scan": "Scan",
+    "modeSearch": "Search mode",
+    "modeScan": "Scan mode",
+    "recentItems": "Recent",
+    "favorites": "Favorites",
+    "allProducts": "All",
+    "noCategoryProducts": "No products in this category",
+    "loadMore": "Load More",
+    "remaining": "remaining"
   }
 }
