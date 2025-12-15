@@ -911,7 +911,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
         {/* Two Column Layout - Header is 50px */}
         <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-4">
           {/* Left Column: Stepper → Toggle → Search/Scanner */}
-          <div className="w-[32%] flex flex-col gap-4">
+          <div className="w-[48%] flex flex-col gap-4">
             {/* Progress Indicator - At top, centered */}
             <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
 
@@ -955,8 +955,8 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
             )}
           </div>
 
-          {/* Right Column: Cart (expanded to use more space) */}
-          <div className="w-[65%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
+          {/* Right Column: Cart */}
+          <div className="w-[48%] bg-white rounded-2xl flex flex-col overflow-hidden shadow-lg">
             <Cart
               cart={state.cart}
               total={total}
