@@ -128,7 +128,7 @@ export const ProductSearchDropdown = ({
     <div className={`relative ${className}`}>
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400" />
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-zinc-500" />
         <Input
           ref={inputRef}
           type="text"
@@ -146,7 +146,7 @@ export const ProductSearchDropdown = ({
           onKeyDown={handleKeyDown}
           placeholder={placeholder ?? defaultPlaceholder}
           disabled={disabled}
-          className="h-12 pl-10 pr-10 border border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 text-base rounded-lg"
+          className="h-14 pl-12 pr-12 border-2 border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 text-lg font-medium rounded-xl shadow-sm"
           aria-label={t('search.ariaLabel', 'Search for products')}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
@@ -180,7 +180,7 @@ export const ProductSearchDropdown = ({
       {isOpen && searchQuery.trim() && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-2 bg-white border border-zinc-200 rounded-lg shadow max-h-80 overflow-y-auto"
+          className="absolute z-50 w-full mt-3 bg-white border-2 border-zinc-200 rounded-xl shadow-lg max-h-96 overflow-y-auto"
           role="listbox"
         >
           {/* Loading State */}
@@ -215,7 +215,7 @@ export const ProductSearchDropdown = ({
                     key={product.id}
                     role="option"
                     aria-selected={isSelected}
-                    className={`px-4 py-3 cursor-pointer flex items-center gap-4 transition-colors duration-150 ${
+                    className={`px-5 py-4 cursor-pointer flex items-center gap-4 transition-colors duration-150 ${
                       isSelected
                         ? 'bg-zinc-100'
                         : 'hover:bg-zinc-50'
@@ -224,7 +224,7 @@ export const ProductSearchDropdown = ({
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
                     {/* Product Image */}
-                    <div className="w-12 h-12 rounded-md bg-zinc-50 flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="w-14 h-14 rounded-lg bg-zinc-50 flex items-center justify-center overflow-hidden shrink-0 border border-zinc-200">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
@@ -233,16 +233,16 @@ export const ProductSearchDropdown = ({
                           loading="lazy"
                         />
                       ) : (
-                        <Package className="h-5 w-5 text-zinc-300" />
+                        <Package className="h-6 w-6 text-zinc-300" />
                       )}
                     </div>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-medium text-zinc-900 truncate">
+                      <p className="text-lg font-semibold text-zinc-900 truncate">
                         {product.fields.Name}
                       </p>
-                      <p className="text-sm text-zinc-500 truncate mt-0.5">
+                      <p className="text-sm text-zinc-500 truncate mt-1">
                         {product.fields.Barcode && (
                           <span className="mr-2">{product.fields.Barcode}</span>
                         )}
@@ -255,11 +255,11 @@ export const ProductSearchDropdown = ({
                     {/* Price & Stock */}
                     <div className="text-right shrink-0">
                       {price != null && (
-                        <p className="text-base font-semibold text-zinc-900">
+                        <p className="text-lg font-bold text-zinc-900">
                           €{price.toFixed(2)}
                         </p>
                       )}
-                      <p className={`text-sm mt-0.5 ${isLowStock ? 'text-amber-600 font-medium' : 'text-zinc-500'}`}>
+                      <p className={`text-sm mt-1 ${isLowStock ? 'text-amber-600 font-medium' : 'text-zinc-500'}`}>
                         {stock} {t('search.inStock', 'in stock')}
                       </p>
                     </div>

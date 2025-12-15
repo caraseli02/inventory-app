@@ -138,19 +138,19 @@ export const ProductBrowsePanel = ({
               <Button
                 key={cat.id}
                 variant={isSelected ? 'default' : 'ghost'}
-                size="sm"
-                className={`shrink-0 rounded-lg px-4 h-10 font-medium transition-all duration-150 ${
+                size="default"
+                className={`shrink-0 rounded-xl px-5 h-12 font-semibold transition-all duration-150 text-base ${
                   isSelected
-                    ? 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm'
-                    : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900'
+                    ? 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-md'
+                    : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 border border-zinc-200'
                 }`}
                 onClick={() => setSelectedCategory(cat.id)}
               >
                 {/* Subtle category dot */}
-                {!Icon && <span className={`w-2 h-2 rounded-full ${cat.dot} mr-2`} />}
-                {Icon && <Icon className="h-4 w-4 mr-2" />}
+                {!Icon && <span className={`w-2.5 h-2.5 rounded-full ${cat.dot} mr-2.5`} />}
+                {Icon && <Icon className="h-5 w-5 mr-2.5" />}
                 <span>{getCategoryLabel(cat.id)}</span>
-                <span className={`ml-2 text-xs tabular-nums ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                <span className={`ml-2.5 text-sm font-bold tabular-nums ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}>
                   {productCount}
                 </span>
               </Button>
@@ -170,7 +170,7 @@ export const ProductBrowsePanel = ({
             <p className="text-base font-medium">{t('search.noCategoryProducts', 'No products in this category')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {sortedProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -202,12 +202,12 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
     <Button
       variant="ghost"
       className={`
-        relative flex flex-col items-center p-3 rounded-lg text-left h-auto
+        relative flex flex-col items-center p-4 rounded-xl text-left h-auto min-h-[160px]
         transition-all duration-150
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900
         ${isOutOfStock
           ? 'bg-zinc-50 opacity-50 cursor-not-allowed'
-          : 'bg-white border border-zinc-200 hover:border-zinc-300 hover:shadow-sm active:scale-[0.98] cursor-pointer hover:bg-white'
+          : 'bg-white border-2 border-zinc-200 hover:border-zinc-300 hover:shadow-md active:scale-[0.98] cursor-pointer hover:bg-white'
         }
       `}
       onClick={() => !isOutOfStock && onSelect(product)}
@@ -215,7 +215,7 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
       title={product.fields.Name}
     >
       {/* Product Image */}
-      <div className="w-14 h-14 rounded-md bg-zinc-50 flex items-center justify-center overflow-hidden mb-2">
+      <div className="w-20 h-20 rounded-lg bg-zinc-50 flex items-center justify-center overflow-hidden mb-3 border border-zinc-200">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -224,18 +224,18 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
             loading="lazy"
           />
         ) : (
-          <Package className="h-6 w-6 text-zinc-300" />
+          <Package className="h-8 w-8 text-zinc-300" />
         )}
       </div>
 
-      {/* Product Name - minimum 12px (text-xs) for readability */}
-      <p className="text-xs font-medium text-zinc-900 text-center line-clamp-2 leading-snug w-full">
+      {/* Product Name - increased to text-sm for better readability */}
+      <p className="text-sm font-semibold text-zinc-900 text-center line-clamp-2 leading-tight w-full mb-2">
         {product.fields.Name}
       </p>
 
       {/* Price */}
       {price != null && (
-        <p className="text-sm font-semibold text-zinc-900 mt-1">
+        <p className="text-base font-bold text-zinc-900">
           €{price.toFixed(2)}
         </p>
       )}
