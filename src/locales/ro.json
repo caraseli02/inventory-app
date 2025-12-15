@@ -449,6 +449,8 @@
     "recentItems": "Recente",
     "favorites": "Favorite",
     "allProducts": "Toate",
-    "noCategoryProducts": "Nu există produse în această categorie"
+    "noCategoryProducts": "Nu există produse în această categorie",
+    "loadMore": "Încarcă Mai Mult",
+    "remaining": "rămase"
   }
 }

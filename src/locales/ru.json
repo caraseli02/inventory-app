@@ -436,6 +436,8 @@
     "recentItems": "Недавние",
     "favorites": "Избранное",
     "allProducts": "Все",
-    "noCategoryProducts": "Нет товаров в этой категории"
+    "noCategoryProducts": "Нет товаров в этой категории",
+    "loadMore": "Загрузить Ещё",
+    "remaining": "осталось"
   }
 }

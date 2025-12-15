@@ -477,6 +477,8 @@
     "recentItems": "Recent",
     "favorites": "Favorites",
     "allProducts": "All",
-    "noCategoryProducts": "No products in this category"
+    "noCategoryProducts": "No products in this category",
+    "loadMore": "Load More",
+    "remaining": "remaining"
   }
 }

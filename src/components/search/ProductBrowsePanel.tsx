@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Package, Clock, Grid3X3 } from 'lucide-react';
+import { Package, Clock, Grid3X3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getAllProducts } from '@/lib/api';
 import { useRecentProducts } from '@/hooks/useRecentProducts';
@@ -41,7 +41,10 @@ export const ProductBrowsePanel = ({
 }: ProductBrowsePanelProps) => {
   const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [itemsToShow, setItemsToShow] = useState(20); // Show 20 items initially
   const { recentProducts, hasRecentProducts } = useRecentProducts();
+
+  const ITEMS_PER_PAGE = 20;
 
   // Fetch all products
   const { data: allProducts, isLoading } = useQuery({
@@ -95,6 +98,19 @@ export const ProductBrowsePanel = ({
     });
   }, [filteredProducts]);
 
+  // Get visible products (paginated)
+  const visibleProducts = sortedProducts.slice(0, itemsToShow);
+  const hasMore = itemsToShow < sortedProducts.length;
+
+  const loadMore = () => {
+    setItemsToShow(prev => prev + ITEMS_PER_PAGE);
+  };
+
+  const handleCategorySelect = (catId: string) => {
+    setSelectedCategory(catId);
+    setItemsToShow(ITEMS_PER_PAGE); // Reset pagination when category changes
+  };
+
   const getCategoryLabel = (catId: string) => {
     if (catId === 'all') return t('search.allProducts', 'All');
     if (catId === 'recent') return t('search.recentItems', 'Recent');
@@ -144,7 +160,7 @@ export const ProductBrowsePanel = ({
                     ? 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-md'
                     : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 border border-zinc-200'
                 }`}
-                onClick={() => setSelectedCategory(cat.id)}
+                onClick={() => handleCategorySelect(cat.id)}
               >
                 {/* Subtle category dot */}
                 {!Icon && <span className={`w-2.5 h-2.5 rounded-full ${cat.dot} mr-2.5`} />}
@@ -170,14 +186,31 @@ export const ProductBrowsePanel = ({
             <p className="text-base font-medium">{t('search.noCategoryProducts', 'No products in this category')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {sortedProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onSelect={onProductSelect}
-              />
-            ))}
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {visibleProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onSelect={onProductSelect}
+                />
+              ))}
+            </div>
+
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="flex justify-center pt-2 pb-4">
+                <Button
+                  onClick={loadMore}
+                  variant="outline"
+                  size="lg"
+                  className="min-w-[200px] h-12 font-semibold border-2 border-zinc-300 hover:bg-zinc-100 hover:border-zinc-400 text-zinc-700 rounded-xl"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  {t('search.loadMore', 'Load More')} ({sortedProducts.length - itemsToShow} {t('search.remaining', 'remaining')})
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

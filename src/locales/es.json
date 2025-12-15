@@ -462,6 +462,8 @@
     "recentItems": "Recientes",
     "favorites": "Favoritos",
     "allProducts": "Todos",
-    "noCategoryProducts": "No hay productos en esta categoría"
+    "noCategoryProducts": "No hay productos en esta categoría",
+    "loadMore": "Cargar Más",
+    "remaining": "restantes"
   }
 }
