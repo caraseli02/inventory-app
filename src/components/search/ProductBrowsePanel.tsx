@@ -199,14 +199,15 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
   const isOutOfStock = stock <= 0;
 
   return (
-    <button
+    <Button
+      variant="ghost"
       className={`
-        relative flex flex-col items-center p-3 rounded-lg text-left
+        relative flex flex-col items-center p-3 rounded-lg text-left h-auto
         transition-all duration-150
         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900
         ${isOutOfStock
           ? 'bg-zinc-50 opacity-50 cursor-not-allowed'
-          : 'bg-white border border-zinc-200 hover:border-zinc-300 hover:shadow-sm active:scale-[0.98] cursor-pointer'
+          : 'bg-white border border-zinc-200 hover:border-zinc-300 hover:shadow-sm active:scale-[0.98] cursor-pointer hover:bg-white'
         }
       `}
       onClick={() => !isOutOfStock && onSelect(product)}
@@ -255,6 +256,6 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
           </span>
         </div>
       )}
-    </button>
+    </Button>
   );
 };
