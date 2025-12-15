@@ -1,10 +1,11 @@
 import { Search, X, RefreshCw, AlertTriangle, Upload, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FilterChips } from './FilterChips';
 import { SortToggle } from './SortToggle';
+import { hasActiveFilters, createClearFilterHandler } from '../../lib/filters';
 import type { InventoryFilters } from '../../hooks/useInventoryList';
 
 interface DesktopFilterBarProps {
@@ -34,12 +35,8 @@ export const DesktopFilterBar = ({
 }: DesktopFilterBarProps) => {
   const { t } = useTranslation();
 
-  const hasActiveFilters =
-    filters.searchQuery ||
-    filters.category ||
-    filters.lowStockOnly ||
-    filters.sortField !== 'name' ||
-    filters.sortDirection !== 'asc';
+  const activeFilters = hasActiveFilters(filters);
+  const clearFilterHandler = createClearFilterHandler(onFilterChange);
 
   const productCountText =
     filteredCount === totalProducts
@@ -134,19 +131,11 @@ export const DesktopFilterBar = ({
       </div>
 
       {/* Secondary row - only if filters are active */}
-      {hasActiveFilters && (
+      {activeFilters && (
         <div className="flex items-center justify-between">
           <FilterChips
             filters={filters}
-            onClearFilter={(key) => {
-              if (key === 'searchQuery') onFilterChange('searchQuery', '');
-              if (key === 'category') onFilterChange('category', '');
-              if (key === 'lowStockOnly') onFilterChange('lowStockOnly', false);
-              if (key === 'sortField') {
-                onFilterChange('sortField', 'name');
-                onFilterChange('sortDirection', 'asc');
-              }
-            }}
+            onClearFilter={clearFilterHandler}
           />
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={onImport} className="h-10 border-2 border-stone-300">

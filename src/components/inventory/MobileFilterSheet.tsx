@@ -1,11 +1,12 @@
 import { Search, X, ArrowUp, ArrowDown, Upload, Download } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../ui/sheet';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Button } from '../ui/button';
-import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
-import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { hasActiveFilters } from '../../lib/filters';
 import type { InventoryFilters, SortField } from '../../hooks/useInventoryList';
 
 interface MobileFilterSheetProps {
@@ -31,12 +32,7 @@ export const MobileFilterSheet = ({
 }: MobileFilterSheetProps) => {
   const { t } = useTranslation();
 
-  const hasActiveFilters =
-    filters.searchQuery ||
-    filters.category ||
-    filters.lowStockOnly ||
-    filters.sortField !== 'name' ||
-    filters.sortDirection !== 'asc';
+  const activeFilters = hasActiveFilters(filters);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -145,7 +141,9 @@ export const MobileFilterSheet = ({
             <ToggleGroup
               type="single"
               value={filters.sortField}
-              onValueChange={(value: SortField) => value && onFilterChange('sortField', value)}
+              onValueChange={(value: string) => {
+                if (value) onFilterChange('sortField', value as SortField);
+              }}
               className="grid grid-cols-2 gap-2"
             >
               <ToggleGroupItem value="name" className="h-12 border-2 border-stone-300">
@@ -164,7 +162,11 @@ export const MobileFilterSheet = ({
             <ToggleGroup
               type="single"
               value={filters.sortDirection}
-              onValueChange={(value: 'asc' | 'desc') => value && onFilterChange('sortDirection', value)}
+              onValueChange={(value: string) => {
+                if (value === 'asc' || value === 'desc') {
+                  onFilterChange('sortDirection', value);
+                }
+              }}
               className="grid grid-cols-2 gap-2"
             >
               <ToggleGroupItem
@@ -217,16 +219,17 @@ export const MobileFilterSheet = ({
           </div>
 
           {/* Divider */}
-          {hasActiveFilters && <div className="border-t-2 border-stone-200" />}
+          {activeFilters && <div className="border-t-2 border-stone-200" />}
 
           {/* Clear Filters */}
-          {hasActiveFilters && (
+          {activeFilters && (
             <Button
               variant="ghost"
               className="w-full h-12 text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)]/10 font-semibold"
               onClick={() => {
                 onReset();
-                onOpenChange(false);
+                // Allow filter state to update before closing sheet
+                setTimeout(() => onOpenChange(false), 0);
               }}
             >
               <X className="h-4 w-4 mr-2" />

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X, RefreshCw, SlidersHorizontal } from 'lucide-react';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { DesktopFilterBar } from './DesktopFilterBar';
 import { MobileFilterSheet } from './MobileFilterSheet';
 import { FilterChips } from './FilterChips';
+import { hasActiveFilters, createClearFilterHandler } from '../../lib/filters';
 import type { InventoryFilters } from '../../hooks/useInventoryList';
 
 interface InventoryFiltersProps {
@@ -37,12 +38,8 @@ export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
     isRefreshing = false,
   } = props;
 
-  const hasActiveFilters =
-    filters.searchQuery ||
-    filters.category ||
-    filters.lowStockOnly ||
-    filters.sortField !== 'name' ||
-    filters.sortDirection !== 'asc';
+  const activeFilters = hasActiveFilters(filters);
+  const clearFilterHandler = createClearFilterHandler(onFilterChange);
 
   const productCountText =
     filteredCount === totalProducts
@@ -89,7 +86,7 @@ export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
             aria-label={t('inventory.openFilters', 'Open filters')}
           >
             <SlidersHorizontal className="h-4 w-4" />
-            {hasActiveFilters && (
+            {activeFilters && (
               <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[var(--color-terracotta)] text-white text-[10px] font-bold flex items-center justify-center">
                 {[
                   filters.category,
@@ -113,19 +110,11 @@ export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
         </div>
 
         {/* Row 2: Active filter chips + count (only show if filters active) */}
-        {hasActiveFilters && (
+        {activeFilters && (
           <div className="flex items-center gap-2">
             <FilterChips
               filters={filters}
-              onClearFilter={(key) => {
-                if (key === 'searchQuery') onFilterChange('searchQuery', '');
-                if (key === 'category') onFilterChange('category', '');
-                if (key === 'lowStockOnly') onFilterChange('lowStockOnly', false);
-                if (key === 'sortField') {
-                  onFilterChange('sortField', 'name');
-                  onFilterChange('sortDirection', 'asc');
-                }
-              }}
+              onClearFilter={clearFilterHandler}
             />
             <span className="ml-auto text-sm text-stone-600 font-medium whitespace-nowrap">
               {productCountText}
