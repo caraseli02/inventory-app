@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Camera, X, RotateCcw, Check } from 'lucide-react';
 import { logger } from '../../lib/logger';
@@ -192,6 +192,9 @@ const CameraCaptureDialog = ({ open, onOpenChange, onCapture }: CameraCaptureDia
       >
         <DialogHeader className="px-4 py-3 border-b border-stone-700 flex-row items-center justify-between bg-stone-900 shrink-0">
           <DialogTitle className="text-lg font-semibold text-white">{t('camera.title')}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('camera.description', 'Capture a photo of the product using your device camera')}
+          </DialogDescription>
           <Button
             variant="ghost"
             size="icon"

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { ScannerOverlay } from './ScannerOverlay';
 import { X } from 'lucide-react';
@@ -168,6 +168,9 @@ const BarcodeScannerDialog = ({ open, onOpenChange, onScanSuccess }: BarcodeScan
         {/* Hidden title for accessibility */}
         <DialogHeader className="sr-only">
           <DialogTitle>{t('scanner.title')}</DialogTitle>
+          <DialogDescription>
+            {t('scanner.dialogDescription', 'Scan product barcodes by positioning them within the scanner frame')}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Close button - floating */}

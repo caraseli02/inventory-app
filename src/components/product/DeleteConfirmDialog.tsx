@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Package } from 'lucide-react';
+import { Package, AlertTriangle } from 'lucide-react';
 import { deleteProduct } from '../../lib/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { logger } from '../../lib/logger';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
@@ -84,9 +84,12 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
         <div className="h-full flex flex-col items-center justify-center max-w-lg mx-auto">
         <DialogHeader className="mb-6">
           <DialogTitle className="text-2xl font-bold text-[var(--color-terracotta)] flex items-center gap-2">
-            <span className="text-3xl">⚠️</span>
+            <AlertTriangle className="h-8 w-8" />
             {t('dialogs.deleteConfirm.title')}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('dialogs.deleteConfirm.description', 'Confirm deletion of product from inventory')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -125,7 +128,7 @@ const DeleteConfirmDialog = ({ product, open, onOpenChange, onDeleteSuccess }: D
 
           <div className="bg-red-100 border-2 border-red-300 rounded-lg p-3 space-y-2">
             <p className="text-sm text-red-800 font-semibold flex items-center gap-2">
-              <span>⚠️</span>
+              <AlertTriangle className="h-4 w-4" />
               {t('dialogs.deleteConfirm.cannotUndo')}
             </p>
             <p className="text-xs text-red-700">

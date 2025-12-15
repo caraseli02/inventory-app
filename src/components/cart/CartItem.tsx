@@ -76,11 +76,11 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 variant="outline"
                 size="icon"
                 onClick={() => onUpdateQuantity(index, -1)}
-                className="h-10 w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
                 disabled={isProcessing}
                 aria-label={t('cart.decreaseQuantity', 'Decrease quantity')}
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-5 w-5 sm:h-4 sm:w-4" />
               </Button>
 
               {/* Quantity Display */}
@@ -94,11 +94,11 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 variant="outline"
                 size="icon"
                 onClick={() => onUpdateQuantity(index, 1)}
-                className="h-10 w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
                 disabled={isProcessing}
                 aria-label={t('cart.increaseQuantity', 'Increase quantity')}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
               </Button>
             </div>
 
@@ -114,12 +114,12 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 variant="ghost"
                 size="icon"
                 onClick={() => onUpdateQuantity(index, -item.quantity)}
-                className="h-10 w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-colors"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-colors"
                 disabled={isProcessing}
                 title={t('cart.removeItem')}
                 aria-label={t('cart.removeItem')}
               >
-                <TrashIcon className="h-4 w-4" />
+                <TrashIcon className="h-5 w-5 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>

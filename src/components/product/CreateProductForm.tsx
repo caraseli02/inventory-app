@@ -15,7 +15,7 @@ import { Badge } from '../ui/badge';
 import { Skeleton } from '../ui/skeleton';
 import { ProductImage } from '@/components/ui/product-image';
 import CameraCaptureDialog from '../camera/CameraCaptureDialog';
-import { Camera, Package } from 'lucide-react';
+import { Camera, Package, AlertTriangle } from 'lucide-react';
 
 type MarkupPercentage = 50 | 70 | 100;
 
@@ -272,7 +272,7 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
                 disabled
                 className="mt-2 h-11 bg-stone-50 border-2 border-stone-300 text-stone-600 cursor-not-allowed"
               />
-              <p className="text-xs text-stone-500 mt-1.5">{t('product.barcodeHelp')}</p>
+              <p className="text-xs text-stone-600 mt-1.5">{t('product.barcodeHelp', 'Scanned or entered barcode identifier')}</p>
             </div>
 
             <div>
@@ -301,7 +301,7 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
               {nameError ? (
                 <p className="mt-1.5 text-sm text-red-600">{t('product.nameRequired')}</p>
               ) : (
-                <p className="text-xs text-stone-500 mt-1.5">{t('product.nameHelp')}</p>
+                <p className="text-xs text-stone-600 mt-1.5">{t('product.nameHelp', 'Enter the product display name')}</p>
               )}
             </div>
           </div>
@@ -329,7 +329,7 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   <SelectItem value="Conserve">{t('categories.Conserve')}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-stone-500 mt-1.5">{t('product.categoryHelp')}</p>
+              <p className="text-xs text-stone-600 mt-1.5">{t('product.categoryHelp', 'Select the product category')}</p>
             </div>
           </div>
 
@@ -353,13 +353,13 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   className="h-11 pl-8 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                 />
               </div>
-              <p className="text-xs text-stone-500 mt-1.5">{t('product.priceHelp')}</p>
+              <p className="text-xs text-stone-600 mt-1.5">{t('product.priceHelp', 'Purchase price in euros')}</p>
             </div>
 
             {/* Markup Selector */}
             <div>
               <Label className="text-stone-700 font-semibold text-sm">{t('markup.label')}</Label>
-              <p className="text-xs text-stone-500 mt-1 mb-2">{t('markup.selectTier')}</p>
+              <p className="text-xs text-stone-600 mt-1 mb-2">{t('markup.selectTier', 'Select profit margin tier')}</p>
               <div className="flex rounded-lg border-2 border-stone-200 bg-stone-50 p-1">
                 {([50, 70, 100] as MarkupPercentage[]).map((option) => (
                   <Button
@@ -413,7 +413,7 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
                 onChange={handleChange}
                 className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
               />
-              <p className="text-xs text-stone-500 mt-1.5">{t('product.initialStockHelp')}</p>
+              <p className="text-xs text-stone-600 mt-1.5">{t('product.initialStockHelp', 'Starting inventory quantity')}</p>
             </div>
 
             <div>
@@ -426,7 +426,7 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
                 onChange={handleChange}
                 className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
               />
-              <p className="text-xs text-stone-500 mt-1.5">{t('product.expiryDateHelp')}</p>
+              <p className="text-xs text-stone-600 mt-1.5">{t('product.expiryDateHelp', 'Optional product expiration date')}</p>
             </div>
           </div>
 
@@ -453,14 +453,14 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   <Camera className="w-5 h-5 text-stone-600" />
                 </Button>
               </div>
-              <p className="text-xs text-stone-500 mt-1.5">{t('product.imageHelp')}</p>
+              <p className="text-xs text-stone-600 mt-1.5">{t('product.imageHelp', 'Paste image URL or use camera')}</p>
             </div>
           </div>
         </form>
 
         {mutation.isError && (
           <div className="mt-6 text-red-700 text-sm bg-red-50 p-4 rounded-lg border-2 border-red-200 font-medium flex items-start gap-2">
-            <span className="text-lg">⚠️</span>
+            <AlertTriangle className="h-5 w-5 flex-shrink-0" />
             <span>{mutation.error.message || t('errors.productCreationFailed')}</span>
           </div>
         )}

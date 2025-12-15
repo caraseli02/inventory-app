@@ -95,6 +95,10 @@ const ProductListItemComponent = ({
                 className={`text-xl font-bold tabular-nums ${
                   isLowStock ? 'text-[var(--color-terracotta)]' : 'text-stone-900'
                 }`}
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                aria-label={t('product.stockLevel', { stock: currentStock })}
               >
                 {currentStock}
               </span>

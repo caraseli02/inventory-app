@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { logger } from '../../lib/logger';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '../ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -13,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ProductImage } from '@/components/ui/product-image';
 import BarcodeScannerDialog from '../scanner/BarcodeScannerDialog';
 import CameraCaptureDialog from '../camera/CameraCaptureDialog';
-import { ScanBarcode, Camera, Package } from 'lucide-react';
+import { ScanBarcode, Camera, Package, AlertTriangle } from 'lucide-react';
 import type { Product } from '../../types';
 
 type MarkupPercentage = 50 | 70 | 100;
@@ -184,13 +185,22 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
           {/* Header */}
           <DialogHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 py-2 sm:px-6 sm:py-4 flex-shrink-0 min-h-0">
             <DialogTitle className="text-lg sm:text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
-            <DialogDescription id="edit-product-description" className="hidden sm:block text-stone-600 text-sm">
+            <DialogDescription id="edit-product-description" className="sr-only sm:not-sr-only text-stone-600 text-sm">
               {t('dialogs.editProduct.description', 'Edit product details and save changes')}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
-            <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto" id="edit-product-form">
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
+            <form onSubmit={handleSubmit} className="max-w-2xl mx-auto" id="edit-product-form">
+              <Tabs defaultValue="basic" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="basic">{t('dialogs.editProduct.tabBasic', 'Basic')}</TabsTrigger>
+                  <TabsTrigger value="pricing">{t('dialogs.editProduct.tabPricing', 'Pricing')}</TabsTrigger>
+                  <TabsTrigger value="details">{t('dialogs.editProduct.tabDetails', 'Details')}</TabsTrigger>
+                </TabsList>
+
+                {/* TAB 1: BASIC INFO */}
+                <TabsContent value="basic" className="space-y-6">
               {/* Product Image Section */}
               <div className="flex flex-col items-center gap-3 pb-4 border-b border-stone-200">
                 {formData.imageUrl ? (
@@ -255,10 +265,10 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                       </Button>
                     )}
                   </div>
-                  <p className="text-xs text-stone-500 mt-1.5">
+                  <p className="text-xs text-stone-600 mt-1.5">
                     {isBarcodeEditable
-                      ? t('product.barcodeAddNow')
-                      : t('product.barcodeCannotChange')
+                      ? t('product.barcodeAddNow', 'Scan or enter barcode now')
+                      : t('product.barcodeCannotChange', 'Barcode cannot be changed once set')
                     }
                   </p>
                 </div>
@@ -277,7 +287,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                     placeholder={t('product.namePlaceholder')}
                     className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                   />
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.nameHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.nameHelp', 'Enter the product display name')}</p>
                 </div>
               </div>
 
@@ -304,12 +314,15 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                       <SelectItem value="Conserve">{t('categories.Conserve')}</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.categoryHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.categoryHelp', 'Select the product category')}</p>
                 </div>
               </div>
+                </TabsContent>
 
+                {/* TAB 2: PRICING */}
+                <TabsContent value="pricing" className="space-y-6">
               {/* Pricing Section */}
-              <div className="space-y-4 pt-4 border-t border-stone-200">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-stone-900">{t('product.pricing')}</h3>
 
                 {/* Base Price (read-only) */}
@@ -318,13 +331,13 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   <div className="mt-2 h-11 px-3 flex items-center bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
                     {basePrice != null ? `€${basePrice.toFixed(2)}` : '—'}
                   </div>
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.basePriceHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.basePriceHelp', 'Import price from Excel spreadsheet')}</p>
                 </div>
 
                 {/* Markup Selector */}
                 <div>
                   <Label className="text-stone-700 font-semibold text-sm">{t('markup.label')}</Label>
-                  <p className="text-xs text-stone-500 mt-1 mb-2">{t('markup.selectTier')}</p>
+                  <p className="text-xs text-stone-600 mt-1 mb-2">{t('markup.selectTier', 'Select profit margin tier')}</p>
                   <div className="flex rounded-lg border-2 border-stone-200 bg-stone-50 p-1">
                     {([50, 70, 100] as MarkupPercentage[]).map((option) => (
                       <Button
@@ -364,9 +377,12 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   </div>
                 )}
               </div>
+                </TabsContent>
 
+                {/* TAB 3: DETAILS */}
+                <TabsContent value="details" className="space-y-6">
               {/* Stock Management Section */}
-              <div className="space-y-4 pt-4 border-t border-stone-200">
+              <div className="space-y-4">
                 <h3 className="font-semibold text-stone-900">{t('product.stockManagement', 'Stock Management')}</h3>
 
                 <div>
@@ -383,7 +399,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                     placeholder="0"
                     className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                   />
-                  <p className="text-xs text-stone-500 mt-1.5">
+                  <p className="text-xs text-stone-600 mt-1.5">
                     {t('product.minStockLevelHelp', 'Alert when stock falls below this level')}
                   </p>
                 </div>
@@ -395,7 +411,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   <div className="mt-2 h-11 px-3 flex items-center bg-stone-100 border-2 border-stone-200 rounded-md text-stone-600">
                     {product.fields['Current Stock Level'] ?? 0}
                   </div>
-                  <p className="text-xs text-stone-500 mt-1.5">
+                  <p className="text-xs text-stone-600 mt-1.5">
                     {t('product.currentStockHelp', 'Managed via stock movements')}
                   </p>
                 </div>
@@ -417,7 +433,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
               </div>
 
               {/* Additional Details Section */}
-              <div className="space-y-4 pt-4 border-t border-stone-200">
+              <div className="space-y-4">
                 <div>
                   <Label htmlFor="expiryDate" className="text-stone-700 font-semibold text-sm">{t('product.expiryDate')}</Label>
                   <Input
@@ -428,7 +444,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                     onChange={handleChange}
                     className="mt-2 h-11 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]"
                   />
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.expiryDateHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.expiryDateHelp', 'Optional product expiration date')}</p>
                 </div>
 
                 <div>
@@ -452,14 +468,16 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                       <Camera className="w-5 h-5 text-stone-600" />
                     </Button>
                   </div>
-                  <p className="text-xs text-stone-500 mt-1.5">{t('product.imageHelp')}</p>
+                  <p className="text-xs text-stone-600 mt-1.5">{t('product.imageHelp', 'Paste image URL or use camera')}</p>
                 </div>
               </div>
+                </TabsContent>
+              </Tabs>
             </form>
 
             {mutation.isError && (
               <div className="mt-6 text-red-700 text-sm bg-red-50 p-4 rounded-lg border-2 border-red-200 font-medium flex items-start gap-2">
-                <span className="text-lg">⚠️</span>
+                <AlertTriangle className="h-5 w-5 flex-shrink-0" />
                 <span>{mutation.error instanceof Error ? mutation.error.message : t('product.updateFailed')}</span>
               </div>
             )}
