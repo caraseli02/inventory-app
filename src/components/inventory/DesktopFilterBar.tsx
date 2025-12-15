@@ -128,6 +128,18 @@ export const DesktopFilterBar = ({
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </Button>
+
+        {/* Import Button */}
+        <Button variant="outline" size="sm" onClick={onImport} className="h-10 border-2 border-stone-300">
+          <Upload className="h-4 w-4 mr-2" />
+          {t('inventory.import', 'Import')}
+        </Button>
+
+        {/* Export Button */}
+        <Button variant="outline" size="sm" onClick={onExport} className="h-10 border-2 border-stone-300">
+          <Download className="h-4 w-4 mr-2" />
+          {t('inventory.export', 'Export')}
+        </Button>
       </div>
 
       {/* Secondary row - only if filters are active */}
@@ -137,25 +149,15 @@ export const DesktopFilterBar = ({
             filters={filters}
             onClearFilter={clearFilterHandler}
           />
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={onImport} className="h-10 border-2 border-stone-300">
-              <Upload className="h-4 w-4 mr-2" />
-              {t('inventory.import', 'Import')}
-            </Button>
-            <Button variant="outline" size="sm" onClick={onExport} className="h-10 border-2 border-stone-300">
-              <Download className="h-4 w-4 mr-2" />
-              {t('inventory.export', 'Export')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onReset}
-              className="h-10 text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)]/10"
-            >
-              <X className="h-4 w-4 mr-2" />
-              {t('inventory.filters.clearAll', 'Clear')}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onReset}
+            className="h-10 text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)]/10"
+          >
+            <X className="h-4 w-4 mr-2" />
+            {t('inventory.filters.clearAll', 'Clear')}
+          </Button>
         </div>
       )}
     </div>
