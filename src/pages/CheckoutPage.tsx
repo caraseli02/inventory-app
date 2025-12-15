@@ -177,54 +177,36 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       const newQuantity = item.quantity + action.delta;
       const availableStock = item.product.fields['Current Stock Level'] ?? 0;
 
-      // If removing items (negative delta), allow it
-      if (action.delta < 0) {
-        if (newQuantity <= 0) {
-          // Remove item from cart - create new array without the item
-          return {
-            ...state,
-            cart: state.cart.filter((_, i) => i !== action.index),
-          };
-        }
-        // Create new item object with updated quantity (immutable update)
+      // Helper to update a single cart item immutably
+      const updateCartItem = (updates: Partial<CartItem>) => ({
+        ...state,
+        cart: state.cart.map((cartItem, i) =>
+          i === action.index ? { ...cartItem, ...updates } : cartItem
+        ),
+      });
+
+      // Remove item if quantity reaches zero
+      if (newQuantity <= 0) {
         return {
           ...state,
-          cart: state.cart.map((cartItem, i) =>
-            i === action.index
-              ? { ...cartItem, quantity: newQuantity, status: 'idle' as const, statusMessage: undefined }
-              : cartItem
-          ),
-        };
-      }
-      // If adding items (positive delta), check stock availability
-      if (action.delta > 0) {
-        if (newQuantity > availableStock) {
-          // Prevent update and show error (immutable update)
-          return {
-            ...state,
-            cart: state.cart.map((cartItem, i) =>
-              i === action.index
-                ? {
-                    ...cartItem,
-                    status: 'failed' as const,
-                    statusMessage: action.errorMessage || `Cannot add more. Only ${availableStock} unit(s) available in stock.`,
-                  }
-                : cartItem
-            ),
-          };
-        }
-        // Allow update (immutable update)
-        return {
-          ...state,
-          cart: state.cart.map((cartItem, i) =>
-            i === action.index
-              ? { ...cartItem, quantity: newQuantity, status: 'idle' as const, statusMessage: undefined }
-              : cartItem
-          ),
+          cart: state.cart.filter((_, i) => i !== action.index),
         };
       }
 
-      return state;
+      // Block increase if exceeds available stock
+      if (action.delta > 0 && newQuantity > availableStock) {
+        return updateCartItem({
+          status: 'failed' as const,
+          statusMessage: action.errorMessage || `Cannot add more. Only ${availableStock} unit(s) available in stock.`,
+        });
+      }
+
+      // Apply quantity change
+      return updateCartItem({
+        quantity: newQuantity,
+        status: 'idle' as const,
+        statusMessage: undefined,
+      });
     }
 
     case 'SET_CART':
@@ -389,6 +371,55 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
     }
   }, []);
 
+  /**
+   * Validates if a product can be added to cart and shows appropriate feedback
+   * Returns true if the product was successfully added, false otherwise
+   */
+  const addProductToCart = useCallback((productToAdd: Product): boolean => {
+    const existingItem = state.cart.find(item => item.product.id === productToAdd.id);
+    const isNewItem = !existingItem;
+    const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+    const availableStock = productToAdd.fields['Current Stock Level'] ?? 0;
+
+    // Validate stock availability
+    if (newQuantity > availableStock) {
+      playSound('error');
+      toast.error(t('cart.insufficientStock', { available: availableStock }), {
+        description: t('cart.insufficientStockDescription', {
+          name: productToAdd.fields.Name,
+          requested: newQuantity,
+          available: availableStock
+        }),
+      });
+      return false;
+    }
+
+    // Add to cart
+    dispatch({
+      type: 'ADD_TO_CART',
+      product: productToAdd,
+      insufficientStockMessage: t('cart.insufficientStock', { available: availableStock }),
+      zeroStockMessage: t('cart.zeroStock'),
+    });
+    playSound('success');
+
+    // Show toast notification
+    if (isNewItem) {
+      toast.success(t('cart.itemAdded'), {
+        description: t('cart.itemAddedDescription', { name: productToAdd.fields.Name }),
+      });
+    } else {
+      toast.success(t('cart.quantityUpdated'), {
+        description: t('cart.quantityUpdatedDescription', {
+          name: productToAdd.fields.Name,
+          quantity: newQuantity
+        }),
+      });
+    }
+
+    return true;
+  }, [state.cart, playSound, t]);
+
   useEffect(() => {
     if (!state.scannedCode) return;
 
@@ -399,52 +430,12 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
     // Product found successfully
     if (product) {
-      // Check if product already exists in cart to show appropriate toast
-      const existingItem = state.cart.find(item => item.product.id === product.id);
-      const isNewItem = !existingItem;
-      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
-      const availableStock = product.fields['Current Stock Level'] ?? 0;
-
-      // Validate stock availability before adding to cart
-      // Note: This is client-side validation against cached stock data.
-      // For absolute accuracy with concurrent checkouts, a backend proxy should validate this.
-      if (newQuantity > availableStock) {
-        playSound('error');
-        toast.error(t('cart.insufficientStock', { available: availableStock }), {
-          description: t('cart.insufficientStockDescription', {
-            name: product.fields.Name,
-            requested: newQuantity,
-            available: availableStock
-          }),
-        });
-        dispatch({ type: 'LOOKUP_SUCCESS' });
-        return;
-      }
-
       // Mark this barcode as processed BEFORE dispatching to prevent re-entry
       processedBarcodeRef.current = state.scannedCode;
 
-      dispatch({
-        type: 'ADD_TO_CART',
-        product,
-        insufficientStockMessage: t('cart.insufficientStock', { available: availableStock }),
-        zeroStockMessage: t('cart.zeroStock'),
-      });
-      playSound('success');
-
-      // Show toast notification
-      if (isNewItem) {
-        toast.success(t('cart.itemAdded'), {
-          description: t('cart.itemAddedDescription', { name: product.fields.Name }),
-        });
-      } else {
-        toast.success(t('cart.quantityUpdated'), {
-          description: t('cart.quantityUpdatedDescription', {
-            name: product.fields.Name,
-            quantity: newQuantity
-          }),
-        });
-      }
+      // Note: Stock validation is client-side against cached data.
+      // For absolute accuracy with concurrent checkouts, a backend proxy should validate this.
+      addProductToCart(product);
 
       dispatch({ type: 'LOOKUP_SUCCESS' });
       // Auto-collapse cart on mobile ONLY if barcode came from scanner, not QuickAdd
@@ -494,9 +485,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
       dispatch({ type: 'LOOKUP_ERROR', error: userMessage });
     }
-  // Note: state.cart is intentionally NOT in deps - cart updates should not re-trigger this effect
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource, t]);
+  }, [error, isLoading, playSound, product, state.scannedCode, state.barcodeSource, t, addProductToCart]);
 
   /**
    * Handles successful barcode scan by initiating product lookup
@@ -529,56 +518,14 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
   /**
    * Handles product selection from search dropdown
    * - Directly adds product to cart without barcode lookup
-   * - Shows appropriate toast notifications
-   * @param product - Product selected from search
+   * - Tracks as recent product for quick add panel
+   * @param selectedProduct - Product selected from search
    */
   const handleProductSelect = (selectedProduct: Product) => {
-    // Check if product already exists in cart to show appropriate toast
-    const existingItem = state.cart.find(item => item.product.id === selectedProduct.id);
-    const isNewItem = !existingItem;
-    const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
-    const availableStock = selectedProduct.fields['Current Stock Level'] ?? 0;
-
-    // Validate stock availability before adding to cart
-    if (newQuantity > availableStock) {
-      playSound('error');
-      toast.error(t('cart.insufficientStock', { available: availableStock }), {
-        description: t('cart.insufficientStockDescription', {
-          name: selectedProduct.fields.Name,
-          requested: newQuantity,
-          available: availableStock
-        }),
-      });
-      return;
+    const added = addProductToCart(selectedProduct);
+    if (added) {
+      addRecentProduct(selectedProduct.id);
     }
-
-    dispatch({
-      type: 'ADD_TO_CART',
-      product: selectedProduct,
-      insufficientStockMessage: t('cart.insufficientStock', { available: availableStock }),
-      zeroStockMessage: t('cart.zeroStock'),
-    });
-    playSound('success');
-
-    // Track as recent product for quick add
-    addRecentProduct(selectedProduct.id);
-
-    // Show toast notification
-    if (isNewItem) {
-      toast.success(t('cart.itemAdded'), {
-        description: t('cart.itemAddedDescription', { name: selectedProduct.fields.Name }),
-      });
-    } else {
-      toast.success(t('cart.quantityUpdated'), {
-        description: t('cart.quantityUpdatedDescription', {
-          name: selectedProduct.fields.Name,
-          quantity: newQuantity
-        }),
-      });
-    }
-
-    // Vibrate for feedback
-    if (navigator.vibrate) navigator.vibrate(100);
   };
 
   /**
