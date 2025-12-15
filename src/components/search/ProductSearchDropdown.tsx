@@ -128,7 +128,7 @@ export const ProductSearchDropdown = ({
     <div className={`relative ${className}`}>
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-zinc-500" />
+        <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 h-6 w-6 text-zinc-500" />
         <Input
           ref={inputRef}
           type="text"
@@ -146,7 +146,7 @@ export const ProductSearchDropdown = ({
           onKeyDown={handleKeyDown}
           placeholder={placeholder ?? defaultPlaceholder}
           disabled={disabled}
-          className="h-14 pl-12 pr-12 border-2 border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 text-lg font-medium rounded-xl shadow-sm"
+          className="h-16 pl-14 pr-14 border-2 border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 text-xl font-semibold rounded-xl shadow-md"
           aria-label={t('search.ariaLabel', 'Search for products')}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
@@ -155,21 +155,21 @@ export const ProductSearchDropdown = ({
         />
         {/* Clear button or loading spinner */}
         {searchQuery && (
-          <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
             {isSearching || isLoading ? (
-              <Loader2 className="h-5 w-5 text-zinc-400 animate-spin" />
+              <Loader2 className="h-6 w-6 text-zinc-400 animate-spin" />
             ) : (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 hover:bg-zinc-100 rounded-md transition-colors"
+                className="h-10 w-10 hover:bg-zinc-100 rounded-lg transition-colors"
                 onClick={() => {
                   clearSearch();
                   inputRef.current?.focus();
                 }}
                 aria-label={t('search.clear', 'Clear search')}
               >
-                <X className="h-4 w-4 text-zinc-500" />
+                <X className="h-5 w-5 text-zinc-500" />
               </Button>
             )}
           </div>

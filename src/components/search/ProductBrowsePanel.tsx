@@ -177,7 +177,7 @@ export const ProductBrowsePanel = ({
 
       {/* Product Grid - Scrollable */}
       <div
-        className="overflow-y-auto"
+        className="overflow-y-auto pb-6"
         style={{ maxHeight }}
       >
         {sortedProducts.length === 0 ? (

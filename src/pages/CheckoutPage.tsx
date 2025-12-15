@@ -813,7 +813,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                 {/* Browse by Category - One-tap product selection */}
                 <ProductBrowsePanel
                   onProductSelect={handleProductSelect}
-                  maxHeight="calc(100dvh - 360px)"
+                  maxHeight="calc(100dvh - 380px)"
                 />
               </div>
             )}
@@ -933,7 +933,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                 <div className="flex-1 min-h-0">
                   <ProductBrowsePanel
                     onProductSelect={handleProductSelect}
-                    maxHeight="calc(100dvh - 260px)"
+                    maxHeight="calc(100dvh - 280px)"
                   />
                 </div>
               </div>
