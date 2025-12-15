@@ -434,6 +434,8 @@
     "modeSearch": "Режим поиска",
     "modeScan": "Режим сканирования",
     "recentItems": "Недавние",
-    "favorites": "Избранное"
+    "favorites": "Избранное",
+    "allProducts": "Все",
+    "noCategoryProducts": "Нет товаров в этой категории"
   }
 }

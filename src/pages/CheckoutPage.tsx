@@ -27,7 +27,7 @@ import {
 } from '../components/ui/dialog';
 import { ProductSearchDropdown } from '../components/search/ProductSearchDropdown';
 import { InputModeToggle, type InputMode } from '../components/search/InputModeToggle';
-import { QuickAddGrid } from '../components/search/QuickAddGrid';
+import { ProductBrowsePanel } from '../components/search/ProductBrowsePanel';
 import { useRecentProducts } from '../hooks/useRecentProducts';
 
 interface CheckoutPageProps {
@@ -372,7 +372,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
   const queryClient = useQueryClient();
   const [state, dispatch] = useReducer(checkoutReducer, initialState);
   const [inputMode, setInputMode] = useState<InputMode>('search');
-  const { recentProducts, addRecentProduct, hasRecentProducts } = useRecentProducts();
+  const { addRecentProduct } = useRecentProducts();
 
   // Hook for looking up products
   const { data: product, isLoading, error } = useProductLookup(state.scannedCode);
@@ -803,22 +803,18 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
             {/* Search Mode */}
             {inputMode === 'search' && (
-              <div className="w-full space-y-4">
+              <div className="w-full space-y-3">
                 <ProductSearchDropdown
                   onProductSelect={handleProductSelect}
                   placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
                   autoFocus
                 />
 
-                {/* Quick Add Grid - Recent Items */}
-                {hasRecentProducts && (
-                  <QuickAddGrid
-                    products={recentProducts}
-                    onProductSelect={handleProductSelect}
-                    title={t('search.recentItems', 'Recent')}
-                    maxItems={8}
-                  />
-                )}
+                {/* Browse by Category - One-tap product selection */}
+                <ProductBrowsePanel
+                  onProductSelect={handleProductSelect}
+                  maxHeight="calc(100dvh - 340px)"
+                />
               </div>
             )}
 
@@ -926,22 +922,20 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
             {/* Search Mode */}
             {inputMode === 'search' && (
-              <div className="w-full space-y-4">
+              <div className="w-full space-y-3 flex-1 flex flex-col min-h-0">
                 <ProductSearchDropdown
                   onProductSelect={handleProductSelect}
                   placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
                   autoFocus
                 />
 
-                {/* Quick Add Grid - Recent Items */}
-                {hasRecentProducts && (
-                  <QuickAddGrid
-                    products={recentProducts}
+                {/* Browse by Category - One-tap product selection */}
+                <div className="flex-1 min-h-0">
+                  <ProductBrowsePanel
                     onProductSelect={handleProductSelect}
-                    title={t('search.recentItems', 'Recent')}
-                    maxItems={8}
+                    maxHeight="calc(100dvh - 240px)"
                   />
-                )}
+                </div>
               </div>
             )}
 

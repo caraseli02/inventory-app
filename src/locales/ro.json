@@ -447,6 +447,8 @@
     "modeSearch": "Mod căutare",
     "modeScan": "Mod scanare",
     "recentItems": "Recente",
-    "favorites": "Favorite"
+    "favorites": "Favorite",
+    "allProducts": "Toate",
+    "noCategoryProducts": "Nu există produse în această categorie"
   }
 }

@@ -475,6 +475,8 @@
     "modeSearch": "Search mode",
     "modeScan": "Scan mode",
     "recentItems": "Recent",
-    "favorites": "Favorites"
+    "favorites": "Favorites",
+    "allProducts": "All",
+    "noCategoryProducts": "No products in this category"
   }
 }

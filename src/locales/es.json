@@ -460,6 +460,8 @@
     "modeSearch": "Modo búsqueda",
     "modeScan": "Modo escaneo",
     "recentItems": "Recientes",
-    "favorites": "Favoritos"
+    "favorites": "Favoritos",
+    "allProducts": "Todos",
+    "noCategoryProducts": "No hay productos en esta categoría"
   }
 }
