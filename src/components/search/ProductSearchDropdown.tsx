@@ -128,7 +128,7 @@ export const ProductSearchDropdown = ({
     <div className={`relative ${className}`}>
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-stone-400" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-zinc-400" />
         <Input
           ref={inputRef}
           type="text"
@@ -146,7 +146,7 @@ export const ProductSearchDropdown = ({
           onKeyDown={handleKeyDown}
           placeholder={placeholder ?? defaultPlaceholder}
           disabled={disabled}
-          className="h-12 pl-10 pr-10 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)] text-base"
+          className="h-12 pl-10 pr-10 border border-zinc-300 focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2 text-base rounded-lg"
           aria-label={t('search.ariaLabel', 'Search for products')}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
@@ -157,19 +157,19 @@ export const ProductSearchDropdown = ({
         {searchQuery && (
           <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
             {isSearching || isLoading ? (
-              <Loader2 className="h-5 w-5 text-stone-400 animate-spin" />
+              <Loader2 className="h-5 w-5 text-zinc-400 animate-spin" />
             ) : (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-8 w-8 hover:bg-zinc-100 rounded-md transition-colors"
                 onClick={() => {
                   clearSearch();
                   inputRef.current?.focus();
                 }}
                 aria-label={t('search.clear', 'Clear search')}
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 text-zinc-500" />
               </Button>
             )}
           </div>
@@ -180,29 +180,29 @@ export const ProductSearchDropdown = ({
       {isOpen && searchQuery.trim() && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white border-2 border-stone-200 rounded-xl shadow-lg max-h-80 overflow-y-auto"
+          className="absolute z-50 w-full mt-2 bg-white border border-zinc-200 rounded-lg shadow max-h-80 overflow-y-auto"
           role="listbox"
         >
           {/* Loading State */}
           {isSearching && (
-            <div className="p-4 text-center text-stone-500">
+            <div className="p-6 text-center text-zinc-500">
               <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-              <p className="text-sm">{t('search.searching', 'Searching...')}</p>
+              <p className="text-base">{t('search.searching', 'Searching...')}</p>
             </div>
           )}
 
           {/* No Results */}
           {noResults && !isSearching && (
-            <div className="p-4 text-center text-stone-500">
-              <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm font-medium">{t('search.noResults', 'No products found')}</p>
-              <p className="text-xs mt-1">{t('search.tryDifferent', 'Try a different search term')}</p>
+            <div className="p-6 text-center text-zinc-400">
+              <Package className="h-8 w-8 mx-auto mb-3 opacity-40" />
+              <p className="text-base font-medium">{t('search.noResults', 'No products found')}</p>
+              <p className="text-sm mt-1">{t('search.tryDifferent', 'Try a different search term')}</p>
             </div>
           )}
 
           {/* Results List */}
           {hasResults && !isSearching && (
-            <ul className="py-1">
+            <ul className="py-2">
               {searchResults.map((product, index) => {
                 const imageUrl = product.fields.Image?.[0]?.url;
                 const price = product.fields.Price;
@@ -215,16 +215,16 @@ export const ProductSearchDropdown = ({
                     key={product.id}
                     role="option"
                     aria-selected={isSelected}
-                    className={`px-3 py-2 cursor-pointer flex items-center gap-3 transition-colors ${
+                    className={`px-4 py-3 cursor-pointer flex items-center gap-4 transition-colors duration-150 ${
                       isSelected
-                        ? 'bg-stone-100'
-                        : 'hover:bg-stone-50'
+                        ? 'bg-zinc-100'
+                        : 'hover:bg-zinc-50'
                     }`}
                     onClick={() => handleSelect(product)}
                     onMouseEnter={() => setSelectedIndex(index)}
                   >
                     {/* Product Image */}
-                    <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center overflow-hidden shrink-0 border border-stone-200">
+                    <div className="w-12 h-12 rounded-md bg-zinc-50 flex items-center justify-center overflow-hidden shrink-0">
                       {imageUrl ? (
                         <img
                           src={imageUrl}
@@ -233,21 +233,21 @@ export const ProductSearchDropdown = ({
                           loading="lazy"
                         />
                       ) : (
-                        <Package className="h-5 w-5 text-stone-400" />
+                        <Package className="h-5 w-5 text-zinc-300" />
                       )}
                     </div>
 
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-stone-900 truncate">
+                      <p className="text-base font-medium text-zinc-900 truncate">
                         {product.fields.Name}
                       </p>
-                      <p className="text-xs text-stone-500 truncate">
+                      <p className="text-sm text-zinc-500 truncate mt-0.5">
                         {product.fields.Barcode && (
                           <span className="mr-2">{product.fields.Barcode}</span>
                         )}
                         {product.fields.Category && (
-                          <span className="text-stone-400">{product.fields.Category}</span>
+                          <span className="text-zinc-400">{product.fields.Category}</span>
                         )}
                       </p>
                     </div>
@@ -255,11 +255,11 @@ export const ProductSearchDropdown = ({
                     {/* Price & Stock */}
                     <div className="text-right shrink-0">
                       {price != null && (
-                        <p className="font-semibold text-stone-900">
+                        <p className="text-base font-semibold text-zinc-900">
                           €{price.toFixed(2)}
                         </p>
                       )}
-                      <p className={`text-xs ${isLowStock ? 'text-[var(--color-terracotta)] font-medium' : 'text-stone-500'}`}>
+                      <p className={`text-sm mt-0.5 ${isLowStock ? 'text-amber-600 font-medium' : 'text-zinc-500'}`}>
                         {stock} {t('search.inStock', 'in stock')}
                       </p>
                     </div>

@@ -32,12 +32,12 @@ export const InputModeToggle = ({
       onValueChange={(value) => {
         if (value) onModeChange(value as InputMode);
       }}
-      className={`bg-stone-100 p-1 rounded-lg ${className}`}
+      className={`bg-zinc-100 p-1 rounded-lg ${className}`}
     >
       <ToggleGroupItem
         value="search"
         aria-label={t('search.modeSearch', 'Search mode')}
-        className="flex items-center gap-2 px-4 py-2 rounded-md data-[state=on]:bg-white data-[state=on]:shadow-sm transition-all"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-md text-zinc-600 data-[state=on]:bg-white data-[state=on]:text-zinc-900 data-[state=on]:shadow-sm transition-all duration-150 hover:text-zinc-900"
       >
         <Search className="h-4 w-4" />
         <span className="text-sm font-medium">{t('search.search', 'Search')}</span>
@@ -45,7 +45,7 @@ export const InputModeToggle = ({
       <ToggleGroupItem
         value="scan"
         aria-label={t('search.modeScan', 'Scan mode')}
-        className="flex items-center gap-2 px-4 py-2 rounded-md data-[state=on]:bg-white data-[state=on]:shadow-sm transition-all"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-md text-zinc-600 data-[state=on]:bg-white data-[state=on]:text-zinc-900 data-[state=on]:shadow-sm transition-all duration-150 hover:text-zinc-900"
       >
         <ScanBarcode className="h-4 w-4" />
         <span className="text-sm font-medium">{t('search.scan', 'Scan')}</span>

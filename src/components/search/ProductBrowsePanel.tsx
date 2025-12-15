@@ -7,19 +7,20 @@ import { getAllProducts } from '@/lib/api';
 import { useRecentProducts } from '@/hooks/useRecentProducts';
 import type { Product } from '@/types';
 
-// Category definitions with icons/colors
+// Category definitions with icons and subtle indicator dots
+// Using neutral base with ONE accent color (forest green) for selections
 const CATEGORIES = [
-  { id: 'all', icon: Grid3X3, color: 'bg-stone-500' },
-  { id: 'recent', icon: Clock, color: 'bg-purple-500' },
-  { id: 'Produce', icon: null, color: 'bg-green-500' },
-  { id: 'Dairy', icon: null, color: 'bg-blue-400' },
-  { id: 'Meat', icon: null, color: 'bg-red-500' },
-  { id: 'Pantry', icon: null, color: 'bg-amber-600' },
-  { id: 'Snacks', icon: null, color: 'bg-orange-400' },
-  { id: 'Beverages', icon: null, color: 'bg-cyan-500' },
-  { id: 'Household', icon: null, color: 'bg-slate-500' },
-  { id: 'Conserve', icon: null, color: 'bg-yellow-600' },
-  { id: 'General', icon: null, color: 'bg-stone-400' },
+  { id: 'all', icon: Grid3X3, dot: 'bg-zinc-400' },
+  { id: 'recent', icon: Clock, dot: 'bg-zinc-400' },
+  { id: 'Produce', icon: null, dot: 'bg-emerald-500' },
+  { id: 'Dairy', icon: null, dot: 'bg-sky-400' },
+  { id: 'Meat', icon: null, dot: 'bg-rose-400' },
+  { id: 'Pantry', icon: null, dot: 'bg-amber-500' },
+  { id: 'Snacks', icon: null, dot: 'bg-orange-400' },
+  { id: 'Beverages', icon: null, dot: 'bg-cyan-400' },
+  { id: 'Household', icon: null, dot: 'bg-slate-400' },
+  { id: 'Conserve', icon: null, dot: 'bg-yellow-500' },
+  { id: 'General', icon: null, dot: 'bg-zinc-400' },
 ] as const;
 
 interface ProductBrowsePanelProps {
@@ -102,17 +103,17 @@ export const ProductBrowsePanel = ({
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Category tabs skeleton */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-9 w-20 bg-stone-200 rounded-full animate-pulse shrink-0" />
+            <div key={i} className="h-10 w-24 bg-zinc-100 rounded-lg animate-pulse shrink-0" />
           ))}
         </div>
         {/* Product grid skeleton */}
-        <div className="grid grid-cols-4 gap-2">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="aspect-square bg-stone-100 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-24 bg-zinc-50 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -120,7 +121,7 @@ export const ProductBrowsePanel = ({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Category Tabs - Horizontally scrollable */}
       <div className="relative">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -136,18 +137,20 @@ export const ProductBrowsePanel = ({
             return (
               <Button
                 key={cat.id}
-                variant={isSelected ? 'default' : 'outline'}
+                variant={isSelected ? 'default' : 'ghost'}
                 size="sm"
-                className={`shrink-0 rounded-full px-4 h-9 font-medium transition-all ${
+                className={`shrink-0 rounded-lg px-4 h-10 font-medium transition-all duration-150 ${
                   isSelected
-                    ? `${cat.color} text-white border-transparent hover:opacity-90`
-                    : 'bg-white border-stone-200 text-stone-700 hover:bg-stone-50'
+                    ? 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-sm'
+                    : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900'
                 }`}
                 onClick={() => setSelectedCategory(cat.id)}
               >
-                {Icon && <Icon className="h-4 w-4 mr-1.5" />}
-                {getCategoryLabel(cat.id)}
-                <span className={`ml-1.5 text-xs ${isSelected ? 'text-white/80' : 'text-stone-400'}`}>
+                {/* Subtle category dot */}
+                {!Icon && <span className={`w-2 h-2 rounded-full ${cat.dot} mr-2`} />}
+                {Icon && <Icon className="h-4 w-4 mr-2" />}
+                <span>{getCategoryLabel(cat.id)}</span>
+                <span className={`ml-2 text-xs tabular-nums ${isSelected ? 'text-zinc-400' : 'text-zinc-500'}`}>
                   {productCount}
                 </span>
               </Button>
@@ -162,12 +165,12 @@ export const ProductBrowsePanel = ({
         style={{ maxHeight }}
       >
         {sortedProducts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-stone-400">
-            <Package className="h-10 w-10 mb-2 opacity-50" />
-            <p className="text-sm font-medium">{t('search.noCategoryProducts', 'No products in this category')}</p>
+          <div className="flex flex-col items-center justify-center py-12 text-zinc-400">
+            <Package className="h-10 w-10 mb-3 opacity-40" />
+            <p className="text-base font-medium">{t('search.noCategoryProducts', 'No products in this category')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
             {sortedProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -197,17 +200,21 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
 
   return (
     <button
-      className={`relative flex flex-col items-center p-2 rounded-xl border-2 transition-all text-left ${
-        isOutOfStock
-          ? 'border-stone-200 bg-stone-50 opacity-50 cursor-not-allowed'
-          : 'border-stone-200 hover:border-[var(--color-forest)] hover:bg-stone-50 active:scale-95 cursor-pointer'
-      }`}
+      className={`
+        relative flex flex-col items-center p-3 rounded-lg text-left
+        transition-all duration-150
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900
+        ${isOutOfStock
+          ? 'bg-zinc-50 opacity-50 cursor-not-allowed'
+          : 'bg-white border border-zinc-200 hover:border-zinc-300 hover:shadow-sm active:scale-[0.98] cursor-pointer'
+        }
+      `}
       onClick={() => !isOutOfStock && onSelect(product)}
       disabled={isOutOfStock}
       title={product.fields.Name}
     >
       {/* Product Image */}
-      <div className="w-12 h-12 rounded-lg bg-stone-100 flex items-center justify-center overflow-hidden mb-1.5 border border-stone-200">
+      <div className="w-14 h-14 rounded-md bg-zinc-50 flex items-center justify-center overflow-hidden mb-2">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -216,31 +223,34 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
             loading="lazy"
           />
         ) : (
-          <Package className="h-6 w-6 text-stone-400" />
+          <Package className="h-6 w-6 text-zinc-300" />
         )}
       </div>
 
-      {/* Product Name */}
-      <p className="text-[10px] font-medium text-stone-700 text-center line-clamp-2 leading-tight w-full min-h-[24px]">
+      {/* Product Name - minimum 12px (text-xs) for readability */}
+      <p className="text-xs font-medium text-zinc-900 text-center line-clamp-2 leading-snug w-full">
         {product.fields.Name}
       </p>
 
       {/* Price */}
       {price != null && (
-        <p className="text-xs font-bold text-stone-900 mt-0.5">
+        <p className="text-sm font-semibold text-zinc-900 mt-1">
           €{price.toFixed(2)}
         </p>
       )}
 
-      {/* Stock indicator */}
+      {/* Low stock indicator - subtle amber dot */}
       {!isOutOfStock && stock <= 5 && (
-        <span className="absolute top-1 right-1 w-2 h-2 bg-amber-400 rounded-full" title={`${stock} in stock`} />
+        <span
+          className="absolute top-2 right-2 w-2 h-2 bg-amber-400 rounded-full"
+          title={`${stock} in stock`}
+        />
       )}
 
       {/* Out of Stock Overlay */}
       {isOutOfStock && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80 rounded-xl">
-          <span className="text-[10px] font-medium text-stone-500">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg">
+          <span className="text-xs font-medium text-zinc-400">
             {t('search.outOfStock', 'Out')}
           </span>
         </div>
