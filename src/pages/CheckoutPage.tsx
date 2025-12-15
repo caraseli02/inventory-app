@@ -16,7 +16,7 @@ import {
 } from '../components/ui/Icons';
 import { CheckoutProgress } from '../components/checkout/CheckoutProgress';
 import { Button } from '../components/ui/button';
-import { ChevronUp, ChevronDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ScanBarcode, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +26,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { ProductSearchDropdown } from '../components/search/ProductSearchDropdown';
-import { InputModeToggle, type InputMode } from '../components/search/InputModeToggle';
+import { type InputMode } from '../components/search/InputModeToggle';
 import { ProductBrowsePanel } from '../components/search/ProductBrowsePanel';
 import { useRecentProducts } from '../hooks/useRecentProducts';
 
@@ -798,41 +798,61 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
               <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
             )}
 
-            {/* Mode Toggle */}
-            <div className="flex justify-center">
-              <InputModeToggle mode={inputMode} onModeChange={setInputMode} />
-            </div>
-
             {/* Search Mode */}
             {inputMode === 'search' && (
               <div className="w-full space-y-4">
-                <ProductSearchDropdown
-                  onProductSelect={handleProductSelect}
-                  placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
-                  autoFocus
-                />
+                {/* Search Input with Scan Button */}
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <ProductSearchDropdown
+                      onProductSelect={handleProductSelect}
+                      placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setInputMode('scan')}
+                    className="h-16 px-5 border-2 border-zinc-300 hover:bg-zinc-100 rounded-xl shrink-0"
+                  >
+                    <ScanBarcode className="h-6 w-6 text-zinc-700" />
+                  </Button>
+                </div>
 
                 {/* Browse by Category - One-tap product selection */}
                 <ProductBrowsePanel
                   onProductSelect={handleProductSelect}
-                  maxHeight="calc(100dvh - 380px)"
+                  maxHeight="calc(100dvh - 340px)"
                 />
               </div>
             )}
 
             {/* Scan Mode */}
             {inputMode === 'scan' && (
-              <ScannerFrame
-                scannerId="mobile-reader"
-                onScanSuccess={handleScanSuccess}
-                manualCode={state.manualCode}
-                onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
-                onManualSubmit={handleManualSubmit}
-                isPending={isPendingLookup}
-                error={state.lookupError}
-                onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
-                size="small"
-              />
+              <div className="w-full space-y-3">
+                {/* Back to Search Button */}
+                <Button
+                  variant="outline"
+                  onClick={() => setInputMode('search')}
+                  className="w-full h-12 border-2 border-zinc-300 hover:bg-zinc-100 rounded-xl font-semibold"
+                >
+                  <Search className="h-5 w-5 mr-2 text-zinc-700" />
+                  {t('search.search', 'Search')}
+                </Button>
+
+                <ScannerFrame
+                  scannerId="mobile-reader"
+                  onScanSuccess={handleScanSuccess}
+                  manualCode={state.manualCode}
+                  onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
+                  onManualSubmit={handleManualSubmit}
+                  isPending={isPendingLookup}
+                  error={state.lookupError}
+                  onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
+                  size="small"
+                />
+              </div>
             )}
           </div>
         )}
@@ -912,32 +932,40 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
         {/* Two Column Layout - Header is 50px */}
         <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-6">
-          {/* Left Column: Stepper → Toggle → Search/Scanner */}
+          {/* Left Column: Search/Scanner */}
           <div className="w-[48%] flex flex-col gap-6">
             {/* Progress Indicator - Only show in scan mode */}
             {inputMode === 'scan' && (
               <CheckoutProgress currentStep={state.showReviewModal ? 'review' : 'scan'} />
             )}
 
-            {/* Mode Toggle */}
-            <div className="flex justify-center">
-              <InputModeToggle mode={inputMode} onModeChange={setInputMode} />
-            </div>
-
             {/* Search Mode */}
             {inputMode === 'search' && (
               <div className="w-full space-y-4 flex-1 flex flex-col min-h-0">
-                <ProductSearchDropdown
-                  onProductSelect={handleProductSelect}
-                  placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
-                  autoFocus
-                />
+                {/* Search Input with Scan Button */}
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <ProductSearchDropdown
+                      onProductSelect={handleProductSelect}
+                      placeholder={t('search.checkoutPlaceholder', 'Search to add to cart...')}
+                      autoFocus
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setInputMode('scan')}
+                    className="h-16 px-6 border-2 border-zinc-300 hover:bg-zinc-100 rounded-xl shrink-0"
+                  >
+                    <ScanBarcode className="h-6 w-6 text-zinc-700" />
+                  </Button>
+                </div>
 
                 {/* Browse by Category - One-tap product selection */}
                 <div className="flex-1 min-h-0">
                   <ProductBrowsePanel
                     onProductSelect={handleProductSelect}
-                    maxHeight="calc(100dvh - 320px)"
+                    maxHeight="calc(100dvh - 280px)"
                   />
                 </div>
               </div>
@@ -945,17 +973,29 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
             {/* Scan Mode */}
             {inputMode === 'scan' && (
-              <ScannerFrame
-                scannerId="desktop-reader"
-                onScanSuccess={handleScanSuccess}
-                manualCode={state.manualCode}
-                onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
-                onManualSubmit={handleManualSubmit}
-                isPending={isPendingLookup}
-                error={state.lookupError}
-                onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
-                size="small"
-              />
+              <div className="w-full space-y-4 flex-1 flex flex-col">
+                {/* Back to Search Button */}
+                <Button
+                  variant="outline"
+                  onClick={() => setInputMode('search')}
+                  className="w-full h-14 border-2 border-zinc-300 hover:bg-zinc-100 rounded-xl font-semibold text-base"
+                >
+                  <Search className="h-5 w-5 mr-2 text-zinc-700" />
+                  {t('search.search', 'Search')}
+                </Button>
+
+                <ScannerFrame
+                  scannerId="desktop-reader"
+                  onScanSuccess={handleScanSuccess}
+                  manualCode={state.manualCode}
+                  onManualCodeChange={(code) => dispatch({ type: 'SET_MANUAL_CODE', code })}
+                  onManualSubmit={handleManualSubmit}
+                  isPending={isPendingLookup}
+                  error={state.lookupError}
+                  onClearError={() => dispatch({ type: 'CLEAR_LOOKUP_ERROR' })}
+                  size="small"
+                />
+              </div>
             )}
           </div>
 
