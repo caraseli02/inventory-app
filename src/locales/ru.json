@@ -428,9 +428,12 @@
     "noResults": "Товары не найдены",
     "tryDifferent": "Попробуйте другой запрос",
     "inStock": "в наличии",
+    "outOfStock": "Нет",
     "search": "Поиск",
     "scan": "Сканировать",
     "modeSearch": "Режим поиска",
-    "modeScan": "Режим сканирования"
+    "modeScan": "Режим сканирования",
+    "recentItems": "Недавние",
+    "favorites": "Избранное"
   }
 }

@@ -469,9 +469,12 @@
     "noResults": "No products found",
     "tryDifferent": "Try a different search term",
     "inStock": "in stock",
+    "outOfStock": "Out",
     "search": "Search",
     "scan": "Scan",
     "modeSearch": "Search mode",
-    "modeScan": "Scan mode"
+    "modeScan": "Scan mode",
+    "recentItems": "Recent",
+    "favorites": "Favorites"
   }
 }

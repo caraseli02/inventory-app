@@ -85,12 +85,9 @@ export const ProductSearchDropdown = ({
   const handleSelect = useCallback((product: Product) => {
     onProductSelect(product);
     clearSearch();
-    setIsFocused(false);
-    // Re-focus input for next search
-    setTimeout(() => {
-      inputRef.current?.focus();
-      setIsFocused(true);
-    }, 100);
+    setSelectedIndex(-1);
+    // Keep focus on input for continuous searching - don't manipulate focus state
+    // The input naturally keeps focus after clearing
   }, [onProductSelect, clearSearch]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -441,9 +441,12 @@
     "noResults": "Nu s-au găsit produse",
     "tryDifferent": "Încearcă un alt termen de căutare",
     "inStock": "în stoc",
+    "outOfStock": "Epuizat",
     "search": "Caută",
     "scan": "Scanează",
     "modeSearch": "Mod căutare",
-    "modeScan": "Mod scanare"
+    "modeScan": "Mod scanare",
+    "recentItems": "Recente",
+    "favorites": "Favorite"
   }
 }

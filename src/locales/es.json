@@ -454,9 +454,12 @@
     "noResults": "No se encontraron productos",
     "tryDifferent": "Intenta con otro término de búsqueda",
     "inStock": "en stock",
+    "outOfStock": "Agotado",
     "search": "Buscar",
     "scan": "Escanear",
     "modeSearch": "Modo búsqueda",
-    "modeScan": "Modo escaneo"
+    "modeScan": "Modo escaneo",
+    "recentItems": "Recientes",
+    "favorites": "Favoritos"
   }
 }
