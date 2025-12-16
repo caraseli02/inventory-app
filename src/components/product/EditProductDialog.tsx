@@ -270,7 +270,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
           </div>
 
           {/* Content with Sections */}
-          <div className="flex-1 overflow-y-auto pb-24">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4 sm:p-6 space-y-4" id="edit-product-form">
 
               {/* Quick Actions Bar */}
@@ -606,56 +606,54 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
             </form>
           </div>
 
-          {/* Floating Save Bar - Only visible when there are changes */}
-          {hasChanges && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-stone-200 px-4 py-3 shadow-lg animate-in slide-in-from-bottom-4 duration-200 z-40">
-              <div className="max-w-3xl mx-auto flex items-center justify-between">
-                <span className="text-sm text-stone-600 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
-                  {t('product.unsavedChanges', 'Unsaved changes')}
-                </span>
-                <div className="flex items-center gap-3">
+          {/* Footer - Always visible at bottom */}
+          <div className="flex-shrink-0 bg-white border-t-2 border-stone-200 px-4 py-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div className="max-w-3xl mx-auto flex items-center justify-between">
+              {hasChanges ? (
+                <>
+                  <span className="text-sm text-stone-600 flex items-center gap-2">
+                    <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
+                    {t('product.unsavedChanges', 'Unsaved changes')}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={handleDiscard}
+                      disabled={mutation.isPending}
+                      className="text-stone-600 hover:bg-stone-100"
+                    >
+                      {t('product.discard', 'Discard')}
+                    </Button>
+                    <Button
+                      type="submit"
+                      form="edit-product-form"
+                      disabled={mutation.isPending || !isFormValid}
+                      className="px-5 bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] hover:opacity-90 text-white font-semibold shadow-md disabled:opacity-50"
+                    >
+                      {mutation.isPending ? (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      ) : (
+                        t('product.saveChanges')
+                      )}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div></div>
                   <Button
                     type="button"
-                    variant="ghost"
-                    onClick={handleDiscard}
-                    disabled={mutation.isPending}
-                    className="text-stone-600 hover:bg-stone-100"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    className="border-stone-300 text-stone-700 hover:bg-stone-100"
                   >
-                    {t('product.discard', 'Discard')}
+                    {t('product.close', 'Close')}
                   </Button>
-                  <Button
-                    type="submit"
-                    form="edit-product-form"
-                    disabled={mutation.isPending || !isFormValid}
-                    className="px-5 bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] hover:opacity-90 text-white font-semibold shadow-md disabled:opacity-50"
-                  >
-                    {mutation.isPending ? (
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    ) : (
-                      t('product.saveChanges')
-                    )}
-                  </Button>
-                </div>
-              </div>
+                </>
+              )}
             </div>
-          )}
-
-          {/* Static Footer when no changes */}
-          {!hasChanges && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-stone-200 px-4 py-3 z-40">
-              <div className="max-w-3xl mx-auto flex justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  className="border-stone-300 text-stone-700 hover:bg-stone-100"
-                >
-                  {t('product.close', 'Close')}
-                </Button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Nested dialogs */}
