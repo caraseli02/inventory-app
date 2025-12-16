@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { X, Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Package as PackageIcon } from 'lucide-react';
+import { X, Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Package as PackageIcon, Pencil } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -14,12 +14,14 @@ interface ProductDetailDialogProps {
   product: Product | null;
   open: boolean;
   onClose: () => void;
+  onEdit?: (product: Product) => void;
 }
 
 export const ProductDetailDialog = ({
   product,
   open,
   onClose,
+  onEdit,
 }: ProductDetailDialogProps) => {
   const { t } = useTranslation();
 
@@ -224,11 +226,27 @@ export const ProductDetailDialog = ({
               </div>
             )}
 
-            {/* Close Button - Mobile/Portrait Only */}
-            <div className="lg:hidden flex justify-center pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
+            {/* Action Buttons - Mobile/Portrait Only */}
+            <div className="lg:hidden flex justify-center gap-3 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
+              {onEdit && (
+                <Button
+                  onClick={() => {
+                    onClose();
+                    onEdit(product);
+                  }}
+                  className="flex-1 max-w-[10rem] h-12 font-semibold"
+                  style={{
+                    background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+                    color: 'white',
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {t('common.edit', 'Edit')}
+                </Button>
+              )}
               <Button
                 onClick={onClose}
-                className="w-full max-w-xs h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
+                className="flex-1 max-w-[10rem] h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
               >
                 <X className="h-4 w-4 mr-2" />
                 {t('dialogs.productDetail.close')}
@@ -290,8 +308,24 @@ export const ProductDetailDialog = ({
               )}
             </div>
 
-            {/* Close Button - Landscape/Desktop Only */}
-            <div className="hidden lg:flex justify-end pt-4 mt-4 border-t border-stone-200">
+            {/* Action Buttons - Landscape/Desktop Only */}
+            <div className="hidden lg:flex justify-end gap-3 pt-4 mt-4 border-t border-stone-200">
+              {onEdit && (
+                <Button
+                  onClick={() => {
+                    onClose();
+                    onEdit(product);
+                  }}
+                  className="font-semibold"
+                  style={{
+                    background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+                    color: 'white',
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {t('common.edit', 'Edit')}
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={onClose}

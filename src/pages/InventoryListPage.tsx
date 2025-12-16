@@ -465,6 +465,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           product={selectedProduct}
           open={detailDialogOpen}
           onClose={handleCloseDialog}
+          onEdit={handleEdit}
         />
       </ErrorBoundary>
 
