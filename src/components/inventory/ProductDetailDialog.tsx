@@ -70,7 +70,8 @@ export const ProductDetailDialog = ({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="!fixed !inset-0 w-full h-full !max-w-full !max-h-full p-0 gap-0 !rounded-none !translate-x-0 !translate-y-0 overflow-hidden"
+        className="!fixed !inset-0 w-full !max-w-full !max-h-full p-0 gap-0 !rounded-none !translate-x-0 !translate-y-0 overflow-hidden"
+        style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}
         aria-describedby="product-detail-description"
       >
         <div className="h-full flex flex-col">
