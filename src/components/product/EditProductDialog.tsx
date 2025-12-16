@@ -181,25 +181,28 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
           </div>
         )}
 
-        <div className="h-full flex flex-col overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 py-2 sm:px-6 sm:py-4 flex-shrink-0 min-h-0">
-            <DialogHeader className="max-w-2xl mx-auto">
-              <DialogTitle className="text-lg sm:text-2xl font-bold text-stone-900">{t('dialogs.editProduct.title')}</DialogTitle>
-              <DialogDescription id="edit-product-description" className="sr-only sm:not-sr-only text-stone-600 text-sm">
-                {t('dialogs.editProduct.description', 'Edit product details and save changes')}
-              </DialogDescription>
-            </DialogHeader>
+        <Tabs defaultValue="basic" className="h-full flex flex-col overflow-hidden">
+          {/* Header with Tabs */}
+          <div className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-4 sm:px-6 py-3 flex-shrink-0 min-h-0">
+            <div className="max-w-2xl mx-auto">
+              <DialogHeader className="mb-3">
+                <DialogTitle className="text-lg sm:text-xl font-bold text-stone-900">{product.fields.Name}</DialogTitle>
+                <DialogDescription id="edit-product-description" className="sr-only">
+                  {t('dialogs.editProduct.description', 'Edit product details and save changes')}
+                </DialogDescription>
+              </DialogHeader>
+
+              {/* Tabs in Header - Always Visible */}
+              <TabsList className="grid w-full grid-cols-3 bg-white">
+                <TabsTrigger value="basic">{t('dialogs.editProduct.tabBasic', 'Basic')}</TabsTrigger>
+                <TabsTrigger value="pricing">{t('dialogs.editProduct.tabPricing', 'Pricing')}</TabsTrigger>
+                <TabsTrigger value="details">{t('dialogs.editProduct.tabDetails', 'Details')}</TabsTrigger>
+              </TabsList>
+            </div>
           </div>
 
           <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
             <form onSubmit={handleSubmit} className="max-w-2xl mx-auto" id="edit-product-form">
-              <Tabs defaultValue="basic" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6">
-                  <TabsTrigger value="basic">{t('dialogs.editProduct.tabBasic', 'Basic')}</TabsTrigger>
-                  <TabsTrigger value="pricing">{t('dialogs.editProduct.tabPricing', 'Pricing')}</TabsTrigger>
-                  <TabsTrigger value="details">{t('dialogs.editProduct.tabDetails', 'Details')}</TabsTrigger>
-                </TabsList>
 
                 {/* TAB 1: BASIC INFO */}
                 <TabsContent value="basic" className="space-y-6">
@@ -474,7 +477,6 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                 </div>
               </div>
                 </TabsContent>
-              </Tabs>
             </form>
 
             {mutation.isError && (
@@ -511,7 +513,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
               </Button>
             </DialogFooter>
           </div>
-        </div>
+        </Tabs>
 
         {/* Nested dialogs */}
         <BarcodeScannerDialog
