@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory List UX Proposals - 4 Variants</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'Inter', system-ui, sans-serif;
+            --color-cream: #FAFAF9;
+            --color-forest: #059669;
+            --color-forest-dark: #047857;
+            --color-terracotta: #EA580C;
+            --color-terracotta-dark: #C2410C;
+            --color-lavender: #8B5CF6;
+            --color-lavender-dark: #7C3AED;
+            --color-stone: #78716C;
+            --color-stone-dark: #57534E;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        h1, h2, h3, h4 {
+            font-family: var(--font-display);
+        }
+
+        .tablet-frame {
+            background: #1a1a1a;
+            border-radius: 32px;
+            padding: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .tablet-screen {
+            background: var(--color-cream);
+            border-radius: 16px;
+            overflow: hidden;
+            height: 600px;
+            overflow-y: auto;
+        }
+
+        .stock-low { color: #DC2626; }
+        .stock-medium { color: #F59E0B; }
+        .stock-good { color: #059669; }
+
+        .stock-indicator {
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            background: #E5E7EB;
+        }
+
+        .stock-indicator-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .recommended-badge {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            margin-left: 12px;
+        }
+
+        .variant-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .benefit-tag {
+            background: #F3F4F6;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: inline-block;
+            margin: 4px;
+        }
+
+        .company-tag {
+            background: linear-gradient(135deg, var(--color-lavender) 0%, var(--color-lavender-dark) 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: inline-block;
+            margin: 4px;
+        }
+
+        .expandable-row {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .expandable-row.expanded {
+            max-height: 500px;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%);
+            padding: 12px;
+            font-weight: 700;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 12px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .checkmark {
+            color: #10B981;
+            font-size: 18px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #F3F4F6;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #9CA3AF;
+            border-radius: 4px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #6B7280;
+        }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-gray-900 mb-4">Inventory List UX Proposals</h1>
+            <p class="text-xl text-gray-600">4 Interactive Variants Based on Industry Best Practices</p>
+            <div class="mt-4 flex justify-center gap-4 flex-wrap text-sm text-gray-500">
+                <span>📱 Tablet-First Design</span>
+                <span>🎨 "Fresh Precision" Aesthetic</span>
+                <span>♿ Accessibility Optimized</span>
+            </div>
+        </header>
+
+        <!-- Quick Navigation -->
+        <nav class="bg-white rounded-xl p-6 mb-8 shadow-lg">
+            <h3 class="font-bold text-lg mb-4">Quick Navigation</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <a href="#option-a" class="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition">
+                    <div class="text-2xl mb-2">📊</div>
+                    <div class="font-semibold">Option A</div>
+                    <div class="text-xs text-gray-600">Enhanced Table</div>
+                </a>
+                <a href="#option-b" class="text-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition">
+                    <div class="text-2xl mb-2">🎴</div>
+                    <div class="font-semibold">Option B</div>
+                    <div class="text-xs text-gray-600">Card-Grid Hybrid</div>
+                </a>
+                <a href="#option-c" class="text-center p-4 bg-amber-50 rounded-lg hover:bg-amber-100 transition">
+                    <div class="text-2xl mb-2">📋</div>
+                    <div class="font-semibold">Option C</div>
+                    <div class="text-xs text-gray-600">Compact List</div>
+                </a>
+                <a href="#option-d" class="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition border-2 border-green-500">
+                    <div class="text-2xl mb-2">⭐</div>
+                    <div class="font-semibold text-green-700">Option D</div>
+                    <div class="text-xs text-green-600">RECOMMENDED</div>
+                </a>
+            </div>
+        </nav>
+
+        <!-- OPTION A: Enhanced Table with Visual Indicators -->
+        <section id="option-a" class="variant-card">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Option A: Enhanced Table with Visual Indicators</h2>
+                <p class="text-gray-600 text-lg">Traditional table layout enhanced with visual stock indicators, color coding, and improved data hierarchy.</p>
+            </div>
+
+            <div class="mb-6">
+                <h4 class="font-bold text-sm text-gray-700 mb-3">USED BY:</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span class="company-tag">SAP Business One</span>
+                    <span class="company-tag">Oracle NetSuite</span>
+                    <span class="company-tag">QuickBooks Commerce</span>
+                    <span class="company-tag">Zoho Inventory</span>
+                </div>
+            </div>
+
+            <!-- Interactive Demo -->
+            <div class="tablet-frame mb-6">
+                <div class="tablet-screen scrollbar-thin">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 p-4 border-b-2 border-gray-200">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">Inventory List</h3>
+                        <input type="text" placeholder="Search by name or barcode..."
+                               class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500">
+                    </div>
+
+                    <!-- Toolbar -->
+                    <div class="flex justify-between items-center px-4 py-3 bg-white border-b border-gray-200">
+                        <div class="text-sm text-gray-600">14 products</div>
+                        <div class="flex gap-2">
+                            <select class="px-3 py-1.5 border-2 border-gray-300 rounded-lg text-sm">
+                                <option>All Categories</option>
+                                <option>Meat</option>
+                                <option>General</option>
+                            </select>
+                            <button class="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700">
+                                + Import
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 border-b-2 border-gray-200 text-xs uppercase text-gray-600 sticky top-0">
+                                <tr>
+                                    <th class="text-left p-3 w-12"></th>
+                                    <th class="text-left p-3">Product</th>
+                                    <th class="text-left p-3">Category</th>
+                                    <th class="text-center p-3">Stock</th>
+                                    <th class="text-right p-3">Price</th>
+                                    <th class="text-right p-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm">
+                                <!-- Product 1 - Low Stock -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                    <td class="p-3">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">📦</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="font-semibold text-gray-900">Doctorscaia Pegas vrag</div>
+                                        <div class="text-xs text-gray-500">Barcode: —</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">Meat</span>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="text-center">
+                                            <div class="stock-low font-bold text-lg mb-1">1</div>
+                                            <div class="stock-indicator mx-auto" style="width: 60px;">
+                                                <div class="stock-indicator-fill bg-red-500" style="width: 10%;"></div>
+                                            </div>
+                                            <div class="text-xs text-red-600 font-semibold mt-1">⚠️ Low Stock</div>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-right">
+                                        <div class="font-bold text-gray-900">€16.28</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="flex justify-end gap-1">
+                                            <button class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center">−</button>
+                                            <button class="w-8 h-8 bg-green-100 hover:bg-green-200 rounded flex items-center justify-center">+</button>
+                                            <button class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center">✏️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Product 2 - Medium Stock -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                    <td class="p-3">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">📦</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="font-semibold text-gray-900">Bomboane Korovka Roshen</div>
+                                        <div class="text-xs text-gray-500">Barcode: —</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">—</span>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="text-center">
+                                            <div class="stock-medium font-bold text-lg mb-1">5</div>
+                                            <div class="stock-indicator mx-auto" style="width: 60px;">
+                                                <div class="stock-indicator-fill bg-amber-500" style="width: 50%;"></div>
+                                            </div>
+                                            <div class="text-xs text-amber-600 font-semibold mt-1">Medium</div>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-right">
+                                        <div class="font-bold text-gray-900">€2.16</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="flex justify-end gap-1">
+                                            <button class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center">−</button>
+                                            <button class="w-8 h-8 bg-green-100 hover:bg-green-200 rounded flex items-center justify-center">+</button>
+                                            <button class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center">✏️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Product 3 - Good Stock -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                    <td class="p-3">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">📦</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="font-semibold text-gray-900">Hrean Veres</div>
+                                        <div class="text-xs text-gray-500">Barcode: —</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">General</span>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="text-center">
+                                            <div class="stock-good font-bold text-lg mb-1">10</div>
+                                            <div class="stock-indicator mx-auto" style="width: 60px;">
+                                                <div class="stock-indicator-fill bg-green-500" style="width: 100%;"></div>
+                                            </div>
+                                            <div class="text-xs text-green-600 font-semibold mt-1">✓ Good</div>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-right">
+                                        <div class="font-bold text-gray-900">€2.55</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="flex justify-end gap-1">
+                                            <button class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center">−</button>
+                                            <button class="w-8 h-8 bg-green-100 hover:bg-green-200 rounded flex items-center justify-center">+</button>
+                                            <button class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center">✏️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Product 4 -->
+                                <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                    <td class="p-3">
+                                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">📦</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="font-semibold text-gray-900">Brânză de vaci 5,5% Latti</div>
+                                        <div class="text-xs text-gray-500">Barcode: —</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">—</span>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="text-center">
+                                            <div class="stock-medium font-bold text-lg mb-1">5</div>
+                                            <div class="stock-indicator mx-auto" style="width: 60px;">
+                                                <div class="stock-indicator-fill bg-amber-500" style="width: 50%;"></div>
+                                            </div>
+                                            <div class="text-xs text-amber-600 font-semibold mt-1">Medium</div>
+                                        </div>
+                                    </td>
+                                    <td class="p-3 text-right">
+                                        <div class="font-bold text-gray-900">€10.24</div>
+                                    </td>
+                                    <td class="p-3">
+                                        <div class="flex justify-end gap-1">
+                                            <button class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center">−</button>
+                                            <button class="w-8 h-8 bg-green-100 hover:bg-green-200 rounded flex items-center justify-center">+</button>
+                                            <button class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded flex items-center justify-center">✏️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="mb-4">
+                <h4 class="font-bold text-sm text-gray-700 mb-3">KEY BENEFITS:</h4>
+                <div class="flex flex-wrap">
+                    <span class="benefit-tag">✓ Familiar table layout</span>
+                    <span class="benefit-tag">✓ Visual stock indicators</span>
+                    <span class="benefit-tag">✓ Color-coded alerts</span>
+                    <span class="benefit-tag">✓ Quick scanning</span>
+                    <span class="benefit-tag">✓ Progressive disclosure</span>
+                    <span class="benefit-tag">✓ Desktop-optimized</span>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                <p class="text-sm text-gray-700"><strong>Best for:</strong> Desktop-heavy workflows, users comfortable with traditional inventory systems, scenarios requiring quick comparison across multiple columns.</p>
+            </div>
+        </section>
+
+        <!-- OPTION B: Card-Grid Hybrid -->
+        <section id="option-b" class="variant-card">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Option B: Card-Grid Hybrid</h2>
+                <p class="text-gray-600 text-lg">Visual card-based layout with large product images, ideal for touch interactions and product-focused inventory management.</p>
+            </div>
+
+            <div class="mb-6">
+                <h4 class="font-bold text-sm text-gray-700 mb-3">USED BY:</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span class="company-tag">Shopify POS</span>
+                    <span class="company-tag">Square Inventory</span>
+                    <span class="company-tag">Toast POS</span>
+                    <span class="company-tag">Lightspeed Retail</span>
+                </div>
+            </div>
+
+            <!-- Interactive Demo -->
+            <div class="tablet-frame mb-6">
+                <div class="tablet-screen scrollbar-thin">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-4 border-b-2 border-purple-200">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">Inventory List</h3>
+                        <input type="text" placeholder="Search products..."
+                               class="w-full px-4 py-2 border-2 border-purple-300 rounded-lg focus:outline-none focus:border-purple-500">
+                    </div>
+
+                    <!-- Toolbar -->
+                    <div class="flex justify-between items-center px-4 py-3 bg-white border-b border-gray-200">
+                        <div class="flex gap-2">
+                            <button class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold">Grid</button>
+                            <button class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-sm">List</button>
+                        </div>
+                        <div class="text-sm text-gray-600">14 products</div>
+                    </div>
+
+                    <!-- Grid Layout -->
+                    <div class="p-4 grid grid-cols-2 gap-4">
+                        <!-- Card 1 - Low Stock -->
+                        <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-lg transition">
+                            <div class="relative">
+                                <div class="h-32 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-4xl">
+                                    🥩
+                                </div>
+                                <div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                    LOW
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-sm text-gray-900 mb-1 line-clamp-2">Doctorscaia Pegas vrag</h4>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Meat</span>
+                                    <span class="text-lg font-bold text-gray-900">€16.28</span>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="flex-1 stock-indicator">
+                                        <div class="stock-indicator-fill bg-red-500" style="width: 10%;"></div>
+                                    </div>
+                                    <span class="text-red-600 font-bold text-sm">1</span>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-semibold">−</button>
+                                    <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-semibold">+</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded">✏️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 - Good Stock -->
+                        <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-lg transition">
+                            <div class="relative">
+                                <div class="h-32 bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center text-4xl">
+                                    🌶️
+                                </div>
+                                <div class="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                    GOOD
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-sm text-gray-900 mb-1 line-clamp-2">Hrean Veres</h4>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">General</span>
+                                    <span class="text-lg font-bold text-gray-900">€2.55</span>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="flex-1 stock-indicator">
+                                        <div class="stock-indicator-fill bg-green-500" style="width: 100%;"></div>
+                                    </div>
+                                    <span class="text-green-600 font-bold text-sm">10</span>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-semibold">−</button>
+                                    <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-semibold">+</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded">✏️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3 - Medium Stock -->
+                        <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-lg transition">
+                            <div class="relative">
+                                <div class="h-32 bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-4xl">
+                                    🍬
+                                </div>
+                                <div class="absolute top-2 right-2 bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                    MED
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-sm text-gray-900 mb-1 line-clamp-2">Bomboane Korovka Roshen</h4>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">—</span>
+                                    <span class="text-lg font-bold text-gray-900">€2.16</span>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="flex-1 stock-indicator">
+                                        <div class="stock-indicator-fill bg-amber-500" style="width: 50%;"></div>
+                                    </div>
+                                    <span class="text-amber-600 font-bold text-sm">5</span>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-semibold">−</button>
+                                    <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-semibold">+</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded">✏️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 4 -->
+                        <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-lg transition">
+                            <div class="relative">
+                                <div class="h-32 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-4xl">
+                                    🧀
+                                </div>
+                                <div class="absolute top-2 right-2 bg-amber-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                                    MED
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-sm text-gray-900 mb-1 line-clamp-2">Brânză de vaci 5,5% Latti</h4>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">—</span>
+                                    <span class="text-lg font-bold text-gray-900">€10.24</span>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="flex-1 stock-indicator">
+                                        <div class="stock-indicator-fill bg-amber-500" style="width: 50%;"></div>
+                                    </div>
+                                    <span class="text-amber-600 font-bold text-sm">5</span>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button class="flex-1 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm font-semibold">−</button>
+                                    <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm font-semibold">+</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded">✏️</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="mb-4">
+                <h4 class="font-bold text-sm text-gray-700 mb-3">KEY BENEFITS:</h4>
+                <div class="flex flex-wrap">
+                    <span class="benefit-tag">✓ Visual product recognition</span>
+                    <span class="benefit-tag">✓ Touch-optimized</span>
+                    <span class="benefit-tag">✓ Large tap targets</span>
+                    <span class="benefit-tag">✓ Stock badges</span>
+                    <span class="benefit-tag">✓ Product-focused</span>
+                    <span class="benefit-tag">✓ Modern aesthetics</span>
+                </div>
+            </div>
+
+            <div class="bg-purple-50 p-4 rounded-lg border-l-4 border-purple-500">
+                <p class="text-sm text-gray-700"><strong>Best for:</strong> Tablet-first workflows, retail/POS environments, visually-driven inventory management, products with strong visual identity.</p>
+            </div>
+        </section>
+
+        <!-- OPTION C: Compact List with Progressive Disclosure -->
+        <section id="option-c" class="variant-card">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Option C: Compact List with Progressive Disclosure</h2>
+                <p class="text-gray-600 text-lg">Dense, information-rich list view with expandable rows to reveal detailed information only when needed.</p>
+            </div>
+
+            <div class="mb-6">
+                <h4 class="font-bold text-sm text-gray-700 mb-3">USED BY:</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span class="company-tag">Airtable</span>
+                    <span class="company-tag">Google Admin</span>
+                    <span class="company-tag">Notion Databases</span>
+                    <span class="company-tag">Linear Issues</span>
+                </div>
+            </div>
+
+            <!-- Interactive Demo -->
+            <div class="tablet-frame mb-6">
+                <div class="tablet-screen scrollbar-thin">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-br from-amber-50 to-amber-100 p-4 border-b-2 border-amber-200">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">Inventory List</h3>
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="Search..."
+                                   class="flex-1 px-4 py-2 border-2 border-amber-300 rounded-lg focus:outline-none focus:border-amber-500">
+                            <button class="px-4 py-2 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700">
+                                Filter
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Compact List -->
+                    <div class="divide-y divide-gray-200">
+                        <!-- Item 1 -->
+                        <div class="bg-white hover:bg-gray-50 transition">
+                            <div class="flex items-center p-3 cursor-pointer" onclick="toggleExpand('item1')">
+                                <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl mr-3">🥩</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-gray-900">Doctorscaia Pegas vrag</div>
+                                    <div class="text-xs text-gray-500">Meat • €16.28</div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="text-right">
+                                        <div class="text-red-600 font-bold">1</div>
+                                        <div class="text-xs text-red-600">Low</div>
+                                    </div>
+                                    <svg class="w-5 h-5 text-gray-400 transition-transform" id="arrow-item1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="expandable-row px-3 pb-3" id="item1">
+                                <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Barcode</div>
+                                            <div class="font-semibold">—</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Supplier</div>
+                                            <div class="font-semibold">—</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Min Stock</div>
+                                            <div class="font-semibold">5 units</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Expiry Date</div>
+                                            <div class="font-semibold">—</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 pt-2">
+                                        <button class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded font-semibold text-sm">− Remove</button>
+                                        <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm">+ Add Stock</button>
+                                        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm">Edit</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item 2 -->
+                        <div class="bg-white hover:bg-gray-50 transition">
+                            <div class="flex items-center p-3 cursor-pointer" onclick="toggleExpand('item2')">
+                                <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl mr-3">🌶️</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-gray-900">Hrean Veres</div>
+                                    <div class="text-xs text-gray-500">General • €2.55</div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="text-right">
+                                        <div class="text-green-600 font-bold">10</div>
+                                        <div class="text-xs text-green-600">Good</div>
+                                    </div>
+                                    <svg class="w-5 h-5 text-gray-400 transition-transform" id="arrow-item2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="expandable-row px-3 pb-3" id="item2">
+                                <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Barcode</div>
+                                            <div class="font-semibold">—</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Supplier</div>
+                                            <div class="font-semibold">Local Supplier</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Min Stock</div>
+                                            <div class="font-semibold">3 units</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Expiry Date</div>
+                                            <div class="font-semibold">2026-03-15</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 pt-2">
+                                        <button class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded font-semibold text-sm">− Remove</button>
+                                        <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm">+ Add Stock</button>
+                                        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm">Edit</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item 3 -->
+                        <div class="bg-white hover:bg-gray-50 transition">
+                            <div class="flex items-center p-3 cursor-pointer" onclick="toggleExpand('item3')">
+                                <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl mr-3">🍬</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-gray-900">Bomboane Korovka Roshen</div>
+                                    <div class="text-xs text-gray-500">— • €2.16</div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="text-right">
+                                        <div class="text-amber-600 font-bold">5</div>
+                                        <div class="text-xs text-amber-600">Med</div>
+                                    </div>
+                                    <svg class="w-5 h-5 text-gray-400 transition-transform" id="arrow-item3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="expandable-row px-3 pb-3" id="item3">
+                                <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Barcode</div>
+                                            <div class="font-semibold">—</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Supplier</div>
+                                            <div class="font-semibold">Roshen Corp</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Min Stock</div>
+                                            <div class="font-semibold">10 units</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Expiry Date</div>
+                                            <div class="font-semibold">2025-12-31</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 pt-2">
+                                        <button class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded font-semibold text-sm">− Remove</button>
+                                        <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm">+ Add Stock</button>
+                                        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm">Edit</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item 4 -->
+                        <div class="bg-white hover:bg-gray-50 transition">
+                            <div class="flex items-center p-3 cursor-pointer" onclick="toggleExpand('item4')">
+                                <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center text-xl mr-3">🧀</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="font-semibold text-gray-900">Brânză de vaci 5,5% Latti</div>
+                                    <div class="text-xs text-gray-500">— • €10.24</div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="text-right">
+                                        <div class="text-amber-600 font-bold">5</div>
+                                        <div class="text-xs text-amber-600">Med</div>
+                                    </div>
+                                    <svg class="w-5 h-5 text-gray-400 transition-transform" id="arrow-item4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="expandable-row px-3 pb-3" id="item4">
+                                <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                                    <div class="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Barcode</div>
+                                            <div class="font-semibold">—</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Supplier</div>
+                                            <div class="font-semibold">Latti Dairy</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Min Stock</div>
+                                            <div class="font-semibold">8 units</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-gray-500 text-xs mb-1">Expiry Date</div>
+                                            <div class="font-semibold">2025-01-20</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 pt-2">
+                                        <button class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 rounded font-semibold text-sm">− Remove</button>
+                                        <button class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold text-sm">+ Add Stock</button>
+                                        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold text-sm">Edit</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="mb-4">
+                <h4 class="font-bold text-sm text-gray-700 mb-3">KEY BENEFITS:</h4>
+                <div class="flex flex-wrap">
+                    <span class="benefit-tag">✓ Space-efficient</span>
+                    <span class="benefit-tag">✓ Progressive disclosure</span>
+                    <span class="benefit-tag">✓ Expandable details</span>
+                    <span class="benefit-tag">✓ Reduced cognitive load</span>
+                    <span class="benefit-tag">✓ Clean interface</span>
+                    <span class="benefit-tag">✓ Mobile-friendly</span>
+                </div>
+            </div>
+
+            <div class="bg-amber-50 p-4 rounded-lg border-l-4 border-amber-500">
+                <p class="text-sm text-gray-700"><strong>Best for:</strong> Large inventories (100+ items), users who need quick overview with on-demand details, scenarios where screen real estate is limited.</p>
+            </div>
+        </section>
+
+        <!-- OPTION D: Adaptive Smart View (RECOMMENDED) -->
+        <section id="option-d" class="variant-card border-4 border-green-500">
+            <div class="mb-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">
+                    Option D: Adaptive Smart View
+                    <span class="recommended-badge">⭐ RECOMMENDED</span>
+                </h2>
+                <p class="text-gray-600 text-lg">Intelligent hybrid approach combining visual indicators, smart data hierarchy, and contextual actions that adapt to screen size and stock status.</p>
+            </div>
+
+            <div class="mb-6">
+                <h4 class="font-bold text-sm text-gray-700 mb-3">USED BY:</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span class="company-tag">Monday.com</span>
+                    <span class="company-tag">ClickUp</span>
+                    <span class="company-tag">Asana Projects</span>
+                    <span class="company-tag">Zendesk Support</span>
+                </div>
+            </div>
+
+            <!-- Interactive Demo -->
+            <div class="tablet-frame mb-6">
+                <div class="tablet-screen scrollbar-thin">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 p-4 border-b-2 border-green-200">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-3">Inventory List</h3>
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="Search by name, barcode, or category..."
+                                   class="flex-1 px-4 py-2 border-2 border-green-300 rounded-lg focus:outline-none focus:border-green-500">
+                            <button class="px-4 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700">
+                                🔍
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Smart Toolbar -->
+                    <div class="bg-white border-b border-gray-200 p-3">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex gap-2">
+                                <button class="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">
+                                    ⚠️ 2 Low Stock
+                                </button>
+                                <button class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs">
+                                    All (14)
+                                </button>
+                            </div>
+                            <div class="flex gap-2">
+                                <select class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs">
+                                    <option>All Categories</option>
+                                    <option>Meat</option>
+                                    <option>General</option>
+                                </select>
+                                <button class="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold">+ Import</button>
+                                <button class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-semibold">Export</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Smart List -->
+                    <div class="divide-y divide-gray-200">
+                        <!-- Low Stock Item - Enhanced Alert -->
+                        <div class="bg-red-50 hover:bg-red-100 transition border-l-4 border-red-500">
+                            <div class="flex items-center p-3 gap-3">
+                                <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center text-2xl shadow-sm">🥩</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h4 class="font-bold text-gray-900">Doctorscaia Pegas vrag</h4>
+                                        <span class="px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold">URGENT</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-gray-600">
+                                        <span class="px-2 py-0.5 bg-orange-100 text-orange-700 rounded font-medium">Meat</span>
+                                        <span>•</span>
+                                        <span class="font-semibold">€16.28</span>
+                                        <span>•</span>
+                                        <span class="text-red-600 font-bold">⚠️ Only 1 left (Min: 5)</span>
+                                    </div>
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <div class="flex-1 max-w-xs stock-indicator">
+                                            <div class="stock-indicator-fill bg-red-500" style="width: 10%;"></div>
+                                        </div>
+                                        <span class="text-xs text-red-600 font-bold">10% stock</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <button class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold shadow-sm">
+                                        + Restock
+                                    </button>
+                                    <div class="flex gap-1">
+                                        <button class="flex-1 px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded text-xs">−</button>
+                                        <button class="flex-1 px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded text-xs">✏️</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Good Stock Item - Standard View -->
+                        <div class="bg-white hover:bg-gray-50 transition border-l-4 border-green-500">
+                            <div class="flex items-center p-3 gap-3">
+                                <div class="w-14 h-14 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center text-2xl shadow-sm">🌶️</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h4 class="font-bold text-gray-900">Hrean Veres</h4>
+                                        <span class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">✓ In Stock</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-gray-600">
+                                        <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded font-medium">General</span>
+                                        <span>•</span>
+                                        <span class="font-semibold">€2.55</span>
+                                        <span>•</span>
+                                        <span class="text-green-600">10 units available</span>
+                                    </div>
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <div class="flex-1 max-w-xs stock-indicator">
+                                            <div class="stock-indicator-fill bg-green-500" style="width: 100%;"></div>
+                                        </div>
+                                        <span class="text-xs text-green-600 font-semibold">100% stock</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">−</button>
+                                    <button class="px-3 py-2 bg-green-100 hover:bg-green-200 rounded text-sm font-semibold">+</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">✏️</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">⋮</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Medium Stock Item -->
+                        <div class="bg-white hover:bg-gray-50 transition border-l-4 border-amber-400">
+                            <div class="flex items-center p-3 gap-3">
+                                <div class="w-14 h-14 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl flex items-center justify-center text-2xl shadow-sm">🍬</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h4 class="font-bold text-gray-900">Bomboane Korovka Roshen</h4>
+                                        <span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">Medium</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-gray-600">
+                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">No Category</span>
+                                        <span>•</span>
+                                        <span class="font-semibold">€2.16</span>
+                                        <span>•</span>
+                                        <span class="text-amber-600">5 units</span>
+                                    </div>
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <div class="flex-1 max-w-xs stock-indicator">
+                                            <div class="stock-indicator-fill bg-amber-500" style="width: 50%;"></div>
+                                        </div>
+                                        <span class="text-xs text-amber-600 font-semibold">50% stock</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">−</button>
+                                    <button class="px-3 py-2 bg-green-100 hover:bg-green-200 rounded text-sm font-semibold">+</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">✏️</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">⋮</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Another Medium Stock Item -->
+                        <div class="bg-white hover:bg-gray-50 transition border-l-4 border-amber-400">
+                            <div class="flex items-center p-3 gap-3">
+                                <div class="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center text-2xl shadow-sm">🧀</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <h4 class="font-bold text-gray-900">Brânză de vaci 5,5% Latti</h4>
+                                        <span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">Medium</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs text-gray-600">
+                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded font-medium">No Category</span>
+                                        <span>•</span>
+                                        <span class="font-semibold">€10.24</span>
+                                        <span>•</span>
+                                        <span class="text-amber-600">5 units</span>
+                                    </div>
+                                    <div class="mt-2 flex items-center gap-2">
+                                        <div class="flex-1 max-w-xs stock-indicator">
+                                            <div class="stock-indicator-fill bg-amber-500" style="width: 50%;"></div>
+                                        </div>
+                                        <span class="text-xs text-amber-600 font-semibold">50% stock</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1">
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">−</button>
+                                    <button class="px-3 py-2 bg-green-100 hover:bg-green-200 rounded text-sm font-semibold">+</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">✏️</button>
+                                    <button class="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-sm">⋮</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="mb-4">
+                <h4 class="font-bold text-sm text-gray-700 mb-3">KEY BENEFITS:</h4>
+                <div class="flex flex-wrap">
+                    <span class="benefit-tag">✓ Smart stock alerts</span>
+                    <span class="benefit-tag">✓ Contextual actions</span>
+                    <span class="benefit-tag">✓ Visual hierarchy</span>
+                    <span class="benefit-tag">✓ Adaptive layout</span>
+                    <span class="benefit-tag">✓ Priority highlighting</span>
+                    <span class="benefit-tag">✓ Quick filters</span>
+                    <span class="benefit-tag">✓ Touch-optimized</span>
+                    <span class="benefit-tag">✓ Accessibility-first</span>
+                </div>
+            </div>
+
+            <div class="bg-green-50 p-6 rounded-lg border-l-4 border-green-600">
+                <h4 class="font-bold text-lg text-green-900 mb-3">🏆 Why This is Recommended:</h4>
+                <ul class="space-y-2 text-sm text-gray-700">
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-600 font-bold">✓</span>
+                        <span><strong>Intelligent prioritization:</strong> Low-stock items automatically get enhanced visibility with urgent styling and quick restock buttons</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-600 font-bold">✓</span>
+                        <span><strong>Contextual UI:</strong> Actions adapt to stock status - critical items show "Restock" CTA, normal items show standard controls</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-600 font-bold">✓</span>
+                        <span><strong>Visual feedback:</strong> Color-coded borders, progress bars, and badges provide instant stock status recognition</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-600 font-bold">✓</span>
+                        <span><strong>Tablet-optimized:</strong> Larger touch targets, clear spacing, works perfectly on iPad Air (1180x820)</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-600 font-bold">✓</span>
+                        <span><strong>Scalable:</strong> Works for 10 products or 1000+ products with smart filtering and search</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-600 font-bold">✓</span>
+                        <span><strong>Reduces cognitive load:</strong> Users instantly see what needs attention without scanning entire list</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-600 font-bold">✓</span>
+                        <span><strong>Aligns with "Fresh Precision":</strong> Uses your existing design system colors and typography</span>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- COMPARISON TABLE -->
+        <section class="variant-card">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">Feature Comparison</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full comparison-table border-collapse border border-gray-300">
+                    <thead>
+                        <tr>
+                            <th class="border border-gray-300">Feature</th>
+                            <th class="border border-gray-300">Option A<br><span class="text-xs font-normal">Enhanced Table</span></th>
+                            <th class="border border-gray-300">Option B<br><span class="text-xs font-normal">Card-Grid</span></th>
+                            <th class="border border-gray-300">Option C<br><span class="text-xs font-normal">Compact List</span></th>
+                            <th class="border border-gray-300 bg-green-50">Option D ⭐<br><span class="text-xs font-normal">Adaptive Smart</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Visual Stock Indicators</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center text-gray-400">—</td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Tablet Touch Optimization</td>
+                            <td class="border border-gray-300 text-center text-gray-400">Medium</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Smart Priority Highlighting</td>
+                            <td class="border border-gray-300 text-center text-gray-400">—</td>
+                            <td class="border border-gray-300 text-center text-gray-400">—</td>
+                            <td class="border border-gray-300 text-center text-gray-400">—</td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Contextual Actions</td>
+                            <td class="border border-gray-300 text-center text-gray-400">—</td>
+                            <td class="border border-gray-300 text-center text-gray-400">—</td>
+                            <td class="border border-gray-300 text-center text-gray-400">—</td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Space Efficiency</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center text-gray-400">Low</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓✓</span></td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Quick Scanning</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓✓</span></td>
+                            <td class="border border-gray-300 text-center text-gray-400">Medium</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Visual Product Recognition</td>
+                            <td class="border border-gray-300 text-center text-gray-400">Low</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓✓</span></td>
+                            <td class="border border-gray-300 text-center text-gray-400">Medium</td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Scalability (100+ items)</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center text-gray-400">Low</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓✓</span></td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Accessibility</td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center"><span class="checkmark">✓</span></td>
+                            <td class="border border-gray-300 text-center bg-green-50"><span class="checkmark">✓✓</span></td>
+                        </tr>
+                        <tr>
+                            <td class="border border-gray-300 font-semibold">Learning Curve</td>
+                            <td class="border border-gray-300 text-center">Low</td>
+                            <td class="border border-gray-300 text-center">Low</td>
+                            <td class="border border-gray-300 text-center">Medium</td>
+                            <td class="border border-gray-300 text-center bg-green-50">Low</td>
+                        </tr>
+                        <tr class="bg-green-50 font-bold">
+                            <td class="border border-gray-300">OVERALL SCORE</td>
+                            <td class="border border-gray-300 text-center">7/10</td>
+                            <td class="border border-gray-300 text-center">6/10</td>
+                            <td class="border border-gray-300 text-center">7/10</td>
+                            <td class="border border-gray-300 text-center bg-green-100 text-green-700">9/10 ⭐</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- RESEARCH SOURCES -->
+        <section class="variant-card">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">📚 Research Sources</h2>
+            <div class="space-y-4 text-sm">
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Inventory Management UI/UX Best Practices:</h4>
+                    <ul class="space-y-2 text-gray-700">
+                        <li>• <a href="https://www.uxpin.com/studio/blog/inventory-app-design/" class="text-blue-600 hover:underline" target="_blank">UXPin - Inventory App Design Guide</a></li>
+                        <li>• <a href="https://medium.com/@pokhrelameet12/15-ui-ux-prototypes-for-inventory-management-system-dfd3c78a0b16" class="text-blue-600 hover:underline" target="_blank">Medium - 15 UI/UX Prototypes for Inventory Management</a></li>
+                        <li>• <a href="https://devpulse.com/insights/ux-ui-design-best-practices-2025-enterprise-applications/" class="text-blue-600 hover:underline" target="_blank">devPulse - 10 UX/UI Best Practices for 2025</a></li>
+                        <li>• <a href="https://medium.com/@sakshivaidya2812/inventory-management-application-ux-case-study-344b0548cbaf" class="text-blue-600 hover:underline" target="_blank">Medium - Inventory Management UX Case Study</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Table vs Card Layout Research:</h4>
+                    <ul class="space-y-2 text-gray-700">
+                        <li>• <a href="https://sdorra.dev/posts/2024-03-23-from-card-to-table" class="text-blue-600 hover:underline" target="_blank">sdorra.dev - From Card Layout to Table Layout</a></li>
+                        <li>• <a href="http://www.productsutras.com/ux-cards-vs-tables-infinity-war/" class="text-blue-600 hover:underline" target="_blank">Product Sutras - Cards Vs Tables (Infinity War)</a></li>
+                        <li>• <a href="https://medium.com/design-bootcamp/when-to-use-which-component-a-case-study-of-card-view-vs-table-view-7f5a6cff557b" class="text-blue-600 hover:underline" target="_blank">Medium - Card View vs Table View Case Study</a></li>
+                        <li>• <a href="https://www.nngroup.com/articles/mobile-tables/" class="text-blue-600 hover:underline" target="_blank">Nielsen Norman Group - Mobile Tables Best Practices</a></li>
+                        <li>• <a href="https://cwcorbin.medium.com/redux-cards-versus-table-ux-patterns-1911e3ca4b16" class="text-blue-600 hover:underline" target="_blank">Medium - RedUX: Cards versus Table UX Patterns</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">Data Visualization & Dashboard Examples:</h4>
+                    <ul class="space-y-2 text-gray-700">
+                        <li>• <a href="https://www.quantizeanalytics.co.uk/inventory-dashboard-examples/" class="text-blue-600 hover:underline" target="_blank">Quantize Analytics - 9 Inventory Dashboard Examples</a></li>
+                        <li>• <a href="https://www.geckoboard.com/dashboard-examples/operations/inventory-dashboard/" class="text-blue-600 hover:underline" target="_blank">Geckoboard - Inventory Dashboard Example</a></li>
+                        <li>• <a href="https://budibase.com/blog/tutorials/inventory-dashboard/" class="text-blue-600 hover:underline" target="_blank">Budibase - How to Build an Inventory Dashboard</a></li>
+                        <li>• <a href="https://www.boldbi.com/blog/online-retail-inventory-optimization-with-visualization/" class="text-blue-600 hover:underline" target="_blank">Bold BI - Retail Inventory Optimization with Visualization</a></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- IMPLEMENTATION NOTES -->
+        <section class="variant-card bg-blue-50">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">🚀 Next Steps</h2>
+            <div class="space-y-4">
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-2">If you choose Option D (Recommended):</h4>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-700">
+                        <li>Update the InventoryList component to use the adaptive smart view layout</li>
+                        <li>Add stock level thresholds logic (Low: <30%, Medium: 30-70%, Good: >70%)</li>
+                        <li>Implement contextual action buttons based on stock status</li>
+                        <li>Add color-coded border-left indicators for quick visual scanning</li>
+                        <li>Create smart filter badges (Low Stock, All, By Category)</li>
+                        <li>Add stock progress bars with percentage calculation</li>
+                        <li>Ensure all touch targets are 44px minimum (accessibility)</li>
+                    </ol>
+                </div>
+                <div class="bg-white p-4 rounded-lg border-2 border-blue-500">
+                    <p class="text-sm text-gray-700"><strong>💡 Pro Tip:</strong> Start with Option D's layout but keep the flexibility to toggle between views. Some users might prefer the compact list (Option C) for large inventories, so consider adding a view toggle in the toolbar.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center py-8 text-gray-500 text-sm">
+            <p>Created for Inventory App - Tablet-First Grocery Management</p>
+            <p class="mt-2">React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui</p>
+        </footer>
+    </div>
+
+    <script>
+        function toggleExpand(itemId) {
+            const expandableRow = document.getElementById(itemId);
+            const arrow = document.getElementById('arrow-' + itemId);
+
+            expandableRow.classList.toggle('expanded');
+            arrow.style.transform = expandableRow.classList.contains('expanded')
+                ? 'rotate(180deg)'
+                : 'rotate(0deg)';
+        }
+
+        // Smooth scroll for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
