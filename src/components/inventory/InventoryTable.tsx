@@ -53,18 +53,18 @@ const InventoryTableComponent = ({
 
   return (
     <div className="rounded-2xl border-2 border-stone-200 bg-white overflow-hidden">
-      <div className="max-h-[calc(100dvh-340px)] overflow-y-auto">
-        <Table>
-          <TableHeader className="sticky top-0 z-10">
-            <TableRow className="bg-gradient-to-br from-stone-50 to-stone-100 border-b-2 border-stone-200">
-              <TableHead className="w-[64px] font-semibold text-stone-700 text-sm">{t('inventory.table.image')}</TableHead>
-              <TableHead className="font-semibold text-stone-700 text-sm min-w-[160px]">{t('inventory.table.name')}</TableHead>
-              <TableHead className="font-semibold text-stone-700 text-sm">{t('inventory.table.barcode')}</TableHead>
-              <TableHead className="font-semibold text-stone-700 text-sm">{t('inventory.table.category')}</TableHead>
-              <TableHead className="font-semibold text-stone-700 text-sm text-right pr-4">{t('inventory.table.stock')}</TableHead>
-              <TableHead className="font-semibold text-stone-700 text-sm text-right pr-4">{t('inventory.table.price')}</TableHead>
+      <div className="max-h-[calc(100dvh-290px)] overflow-y-auto">
+        <Table stickyHeader>
+          <TableHeader className="sticky top-0 z-10 bg-linear-to-br from-stone-50 to-stone-100">
+            <TableRow className="border-b-2 border-stone-200">
+              <TableHead className="w-[64px] font-semibold text-stone-700 text-sm bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.image')}</TableHead>
+              <TableHead className="font-semibold text-stone-700 text-sm min-w-[160px] bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.name')}</TableHead>
+              <TableHead className="font-semibold text-stone-700 text-sm bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.barcode')}</TableHead>
+              <TableHead className="font-semibold text-stone-700 text-sm bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.category')}</TableHead>
+              <TableHead className="font-semibold text-stone-700 text-sm text-right pr-4 bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.stock')}</TableHead>
+              <TableHead className="font-semibold text-stone-700 text-sm text-right pr-4 bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.price')}</TableHead>
               {(onQuickAdjust || onEdit || onDelete) && (
-                <TableHead className="font-semibold text-stone-700 text-sm text-center w-[180px]">
+                <TableHead className="font-semibold text-stone-700 text-sm text-center w-[180px] bg-linear-to-br from-stone-50 to-stone-100">
                   {t('inventory.table.actions')}
                 </TableHead>
               )}

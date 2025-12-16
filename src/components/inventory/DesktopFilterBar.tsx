@@ -45,7 +45,7 @@ export const DesktopFilterBar = ({
 
   return (
     <div className="space-y-3">
-      {/* Main row */}
+      {/* Main row - Filters and Controls */}
       <div className="flex items-center gap-3">
         {/* Search Input */}
         <div className="relative flex-1">
@@ -114,9 +114,6 @@ export const DesktopFilterBar = ({
           }}
         />
 
-        {/* Product Count */}
-        <span className="text-sm text-stone-600 font-medium whitespace-nowrap">{productCountText}</span>
-
         {/* Refresh Button */}
         <Button
           variant="outline"
@@ -128,21 +125,43 @@ export const DesktopFilterBar = ({
         >
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </Button>
+      </div>
 
-        {/* Import Button */}
-        <Button variant="outline" size="sm" onClick={onImport} className="h-10 border-2 border-stone-300">
+      {/* Import/Export Actions Row */}
+      <div className="flex items-center justify-between">
+        {/* Product Count */}
+        <span className="text-sm text-stone-600 font-medium whitespace-nowrap">{productCountText}</span>
+
+        <div className="flex gap-2">
+          {/* Import Button */}
+        <Button
+          size="sm"
+          onClick={onImport}
+          className="h-10 font-semibold text-white"
+          style={{
+            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+          }}
+        >
           <Upload className="h-4 w-4 mr-2" />
           {t('inventory.import', 'Import')}
         </Button>
 
         {/* Export Button */}
-        <Button variant="outline" size="sm" onClick={onExport} className="h-10 border-2 border-stone-300">
+        <Button
+          size="sm"
+          onClick={onExport}
+          className="h-10 font-semibold text-white"
+          style={{
+            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+          }}
+        >
           <Download className="h-4 w-4 mr-2" />
           {t('inventory.export', 'Export')}
         </Button>
+        </div>
       </div>
 
-      {/* Secondary row - only if filters are active */}
+      {/* Filter chips row - only if filters are active */}
       {activeFilters && (
         <div className="flex items-center justify-between">
           <FilterChips
