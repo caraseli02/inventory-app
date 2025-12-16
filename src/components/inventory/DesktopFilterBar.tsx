@@ -114,9 +114,6 @@ export const DesktopFilterBar = ({
           }}
         />
 
-        {/* Product Count */}
-        <span className="text-sm text-stone-600 font-medium whitespace-nowrap">{productCountText}</span>
-
         {/* Refresh Button */}
         <Button
           variant="outline"
@@ -131,8 +128,12 @@ export const DesktopFilterBar = ({
       </div>
 
       {/* Import/Export Actions Row */}
-      <div className="flex justify-end gap-2">
-        {/* Import Button */}
+      <div className="flex items-center justify-between">
+        {/* Product Count */}
+        <span className="text-sm text-stone-600 font-medium whitespace-nowrap">{productCountText}</span>
+
+        <div className="flex gap-2">
+          {/* Import Button */}
         <Button
           size="sm"
           onClick={onImport}
@@ -157,6 +158,7 @@ export const DesktopFilterBar = ({
           <Download className="h-4 w-4 mr-2" />
           {t('inventory.export', 'Export')}
         </Button>
+        </div>
       </div>
 
       {/* Filter chips row - only if filters are active */}
