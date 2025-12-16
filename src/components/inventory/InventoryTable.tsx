@@ -53,7 +53,7 @@ const InventoryTableComponent = ({
 
   return (
     <div className="rounded-2xl border-2 border-stone-200 bg-white overflow-hidden">
-      <div className="max-h-[calc(100dvh-340px)] overflow-y-auto">
+      <div className="max-h-[calc(100dvh-240px)] overflow-y-auto">
         <Table>
           <TableHeader className="sticky top-0 z-10">
             <TableRow className="bg-gradient-to-br from-stone-50 to-stone-100 border-b-2 border-stone-200">
