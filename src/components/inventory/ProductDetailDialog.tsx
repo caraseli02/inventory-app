@@ -70,66 +70,67 @@ export const ProductDetailDialog = ({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="h-dvh w-full max-w-none sm:h-auto sm:max-w-5xl overflow-hidden p-0"
+        className="!fixed !inset-0 w-full h-full !max-w-full !max-h-full p-0 gap-0 !rounded-none !translate-x-0 !translate-y-0 overflow-hidden"
         aria-describedby="product-detail-description"
       >
-        {/* Header with gradient */}
-        <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-4 sm:px-8 sm:pt-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 border-b border-zinc-200">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-1">
-                {product.fields.Name}
-              </DialogTitle>
-              {product.fields.Category && (
-                <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200">
-                  {t(`categories.${product.fields.Category}`)}
-                </Badge>
-              )}
+        <div className="h-full flex flex-col">
+          {/* Header with gradient */}
+          <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-4 sm:px-8 sm:pt-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 border-b border-zinc-200 flex-shrink-0">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-1">
+                  {product.fields.Name}
+                </DialogTitle>
+                {product.fields.Category && (
+                  <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200">
+                    {t(`categories.${product.fields.Category}`)}
+                  </Badge>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-10 w-10 rounded-full hover:bg-zinc-100 flex-shrink-0"
+              >
+                <X className="h-5 w-5 text-zinc-600" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="h-10 w-10 rounded-full hover:bg-zinc-100"
-            >
-              <X className="h-5 w-5 text-zinc-600" />
-            </Button>
-          </div>
-          <DialogDescription id="product-detail-description" className="sr-only">
-            {t('dialogs.productDetail.title')} - {product.fields.Name}
-          </DialogDescription>
-        </DialogHeader>
+            <DialogDescription id="product-detail-description" className="sr-only">
+              {t('dialogs.productDetail.title')} - {product.fields.Name}
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Main Content Area */}
-        <div className="overflow-y-auto max-h-[calc(100vh-200px)] sm:max-h-[70vh]">
-          <div className="p-6 sm:p-8 space-y-8">
+          {/* Main Content Area - Full height with scrolling */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+            <div className="p-6 sm:p-8 space-y-6">
             {/* Product Hero Section */}
-            <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex flex-col lg:flex-row gap-6">
               {/* Product Image */}
-              <div className="flex-shrink-0 lg:w-80">
+              <div className="flex-shrink-0 lg:w-64">
                 <ProductImage
                   src={imageUrl}
                   alt={product.fields.Name}
-                  size="xl"
+                  size="lg"
                   showZoom
-                  className="w-full h-80 object-cover rounded-2xl shadow-md border border-zinc-200"
+                  className="w-full h-48 lg:h-56 object-cover rounded-xl shadow-sm border border-zinc-200"
                 />
               </div>
 
               {/* Key Metrics Cards */}
-              <div className="flex-1 grid grid-cols-2 gap-4">
+              <div className="flex-1 grid grid-cols-2 gap-3">
                 {/* Price Card */}
                 <Card className="border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-emerald-50 rounded-lg">
-                        <Euro className="h-5 w-5 text-emerald-600" />
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-2.5">
+                      <div className="p-1.5 bg-emerald-50 rounded-lg">
+                        <Euro className="h-4 w-4 text-emerald-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">
+                        <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide mb-0.5">
                           {t('dialogs.productDetail.price')}
                         </p>
-                        <p className="text-2xl font-bold text-zinc-900">
+                        <p className="text-xl font-bold text-zinc-900">
                           {product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : '—'}
                         </p>
                       </div>
@@ -139,20 +140,20 @@ export const ProductDetailDialog = ({
 
                 {/* Current Stock Card */}
                 <Card className="border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-lg ${isLowStock ? 'bg-red-50' : 'bg-blue-50'}`}>
-                        <PackageIcon className={`h-5 w-5 ${isLowStock ? 'text-red-600' : 'text-blue-600'}`} />
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-2.5">
+                      <div className={`p-1.5 rounded-lg ${isLowStock ? 'bg-red-50' : 'bg-blue-50'}`}>
+                        <PackageIcon className={`h-4 w-4 ${isLowStock ? 'text-red-600' : 'text-blue-600'}`} />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">
+                        <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide mb-0.5">
                           {t('dialogs.productDetail.currentStock')}
                         </p>
                         <div className="flex items-center gap-2">
-                          <p className={`text-2xl font-bold ${isLowStock ? 'text-red-600' : 'text-zinc-900'}`}>
+                          <p className={`text-xl font-bold ${isLowStock ? 'text-red-600' : 'text-zinc-900'}`}>
                             {currentStock}
                           </p>
-                          {isLowStock && <AlertTriangle className="h-5 w-5 text-red-500" />}
+                          {isLowStock && <AlertTriangle className="h-4 w-4 text-red-500" />}
                         </div>
                       </div>
                     </div>
@@ -161,16 +162,16 @@ export const ProductDetailDialog = ({
 
                 {/* Barcode Card */}
                 <Card className="border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-violet-50 rounded-lg">
-                        <Barcode className="h-5 w-5 text-violet-600" />
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-2.5">
+                      <div className="p-1.5 bg-violet-50 rounded-lg">
+                        <Barcode className="h-4 w-4 text-violet-600" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">
+                        <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide mb-0.5">
                           {t('dialogs.productDetail.barcode')}
                         </p>
-                        <p className="text-base font-mono font-semibold text-zinc-900 break-all">
+                        <p className="text-sm font-mono font-semibold text-zinc-900 break-all">
                           {product.fields.Barcode}
                         </p>
                       </div>
@@ -181,16 +182,16 @@ export const ProductDetailDialog = ({
                 {/* Min Stock Card */}
                 {minStock > 0 && (
                   <Card className="border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 bg-amber-50 rounded-lg">
-                          <Tag className="h-5 w-5 text-amber-600" />
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-2.5">
+                        <div className="p-1.5 bg-amber-50 rounded-lg">
+                          <Tag className="h-4 w-4 text-amber-600" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">
+                          <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide mb-0.5">
                             {t('dialogs.productDetail.minStockLevel')}
                           </p>
-                          <p className="text-2xl font-bold text-zinc-900">{minStock}</p>
+                          <p className="text-xl font-bold text-zinc-900">{minStock}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -201,14 +202,14 @@ export const ProductDetailDialog = ({
 
             {/* Additional Details Section */}
             {(product.fields['Expiry Date'] || product.fields.Supplier) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {product.fields['Expiry Date'] && (
                   <Card className="border-zinc-200 shadow-sm">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Calendar className="h-5 w-5 text-zinc-500" />
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2.5">
+                        <Calendar className="h-4 w-4 text-zinc-500" />
                         <div>
-                          <p className="text-xs font-medium text-zinc-500 mb-0.5">
+                          <p className="text-[10px] font-medium text-zinc-500 mb-0.5">
                             {t('dialogs.productDetail.expiryDate')}
                           </p>
                           <p className="text-sm font-semibold text-zinc-900">
@@ -221,11 +222,11 @@ export const ProductDetailDialog = ({
                 )}
                 {product.fields.Supplier && (
                   <Card className="border-zinc-200 shadow-sm">
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Tag className="h-5 w-5 text-zinc-500" />
+                    <CardContent className="p-3">
+                      <div className="flex items-center gap-2.5">
+                        <Tag className="h-4 w-4 text-zinc-500" />
                         <div>
-                          <p className="text-xs font-medium text-zinc-500 mb-0.5">
+                          <p className="text-[10px] font-medium text-zinc-500 mb-0.5">
                             {t('dialogs.productDetail.supplier')}
                           </p>
                           <p className="text-sm font-semibold text-zinc-900">{product.fields.Supplier}</p>
@@ -240,31 +241,31 @@ export const ProductDetailDialog = ({
             {/* Lifetime Statistics */}
             {movements.length > 0 && (
               <Card className="border-zinc-200 shadow-sm bg-gradient-to-br from-zinc-50 to-white">
-                <CardContent className="p-6">
-                  <h4 className="text-sm font-bold text-zinc-700 uppercase tracking-wide mb-4">
+                <CardContent className="p-4">
+                  <h4 className="text-xs font-bold text-zinc-700 uppercase tracking-wide mb-3">
                     {t('dialogs.productDetail.lifetimeStats', 'Lifetime Statistics')}
                   </h4>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-emerald-50 rounded-xl">
-                        <TrendingUp className="h-6 w-6 text-emerald-600" />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-50 rounded-lg">
+                        <TrendingUp className="h-5 w-5 text-emerald-600" />
                       </div>
                       <div>
-                        <p className="text-xs text-zinc-500 font-medium mb-1">
+                        <p className="text-[10px] text-zinc-500 font-medium mb-0.5">
                           {t('dialogs.productDetail.totalIn', 'Total In')}
                         </p>
-                        <p className="text-2xl font-bold text-zinc-900">{lifetimeIn}</p>
+                        <p className="text-xl font-bold text-zinc-900">{lifetimeIn}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="p-3 bg-zinc-100 rounded-xl">
-                        <TrendingDown className="h-6 w-6 text-zinc-600" />
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-zinc-100 rounded-lg">
+                        <TrendingDown className="h-5 w-5 text-zinc-600" />
                       </div>
                       <div>
-                        <p className="text-xs text-zinc-500 font-medium mb-1">
+                        <p className="text-[10px] text-zinc-500 font-medium mb-0.5">
                           {t('dialogs.productDetail.totalOut', 'Total Out')}
                         </p>
-                        <p className="text-2xl font-bold text-zinc-900">{lifetimeOut}</p>
+                        <p className="text-xl font-bold text-zinc-900">{lifetimeOut}</p>
                       </div>
                     </div>
                   </div>
@@ -274,21 +275,21 @@ export const ProductDetailDialog = ({
 
             {/* Stock Movement History */}
             <div>
-              <h3 className="text-lg font-bold text-zinc-900 mb-4">
+              <h3 className="text-base font-bold text-zinc-900 mb-3">
                 {t('dialogs.productDetail.recentMovements')}
               </h3>
               {loadingMovements ? (
-                <div className="flex justify-center py-12">
+                <div className="flex justify-center py-8">
                   <Spinner size="md" label={t('dialogs.productDetail.loadingMovements')} />
                 </div>
               ) : movements.length > 0 ? (
-                <div className="space-y-3 max-h-80 overflow-y-auto">
+                <div className="space-y-2">
                   {movements.slice(0, 10).map((movement) => (
                     <Card
                       key={movement.id}
                       className="border-zinc-200 shadow-sm hover:shadow-md transition-all"
                     >
-                      <CardContent className="p-4">
+                      <CardContent className="p-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div
@@ -340,34 +341,35 @@ export const ProductDetailDialog = ({
               )}
             </div>
           </div>
-        </div>
+          </div>
 
-        {/* Footer with Actions */}
-        <div className="border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="border-zinc-300 hover:bg-zinc-100"
-          >
-            <X className="h-4 w-4 mr-2" />
-            {t('dialogs.productDetail.close')}
-          </Button>
-          {onEdit && (
+          {/* Footer with Actions - Sticky at bottom */}
+          <div className="border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <Button
-              onClick={() => {
-                onClose();
-                onEdit(product);
-              }}
-              className="font-semibold"
-              style={{
-                background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-                color: 'white',
-              }}
+              variant="outline"
+              onClick={onClose}
+              className="border-zinc-300 hover:bg-zinc-100"
             >
-              <Pencil className="h-4 w-4 mr-2" />
-              {t('common.edit', 'Edit')}
+              <X className="h-4 w-4 mr-2" />
+              {t('dialogs.productDetail.close')}
             </Button>
-          )}
+            {onEdit && (
+              <Button
+                onClick={() => {
+                  onClose();
+                  onEdit(product);
+                }}
+                className="font-semibold"
+                style={{
+                  background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+                  color: 'white',
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                {t('common.edit', 'Edit')}
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
