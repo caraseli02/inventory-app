@@ -254,7 +254,7 @@ export const ProductBrowsePanel = ({
 
       {/* Product Grid - 3 columns on mobile, 4 on tablet, 5 on desktop */}
       <div
-        className="overflow-y-auto pb-4"
+        className="overflow-y-auto pb-4 p-1"
         style={{ maxHeight }}
       >
         {sortedProducts.length === 0 ? (
