@@ -92,7 +92,7 @@ export const ProductDetailDialog = ({
 
           {/* Main Content Area - Full height with scrolling */}
           <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-6 sm:p-8 space-y-6">
+            <div className="p-6 sm:p-8 space-y-6 pb-24">
             {/* Product Hero Section */}
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Product Image */}
@@ -333,7 +333,7 @@ export const ProductDetailDialog = ({
           </div>
 
           {/* Footer with Actions - Sticky at bottom */}
-          <div className="border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="sticky bottom-0 z-10 border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
             <Button
               variant="outline"
               onClick={onClose}
