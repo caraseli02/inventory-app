@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next';
-import { X, Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Package as PackageIcon, Pencil } from 'lucide-react';
+import { X, Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Package as PackageIcon, Pencil, TrendingUp, TrendingDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Spinner } from '../ui/spinner';
 import { ProductImage } from '../ui/product-image';
+import { Card, CardContent } from '../ui/card';
 import { getStockMovements } from '../../lib/api';
 import { logger } from '../../lib/logger';
 import type { Product } from '../../types';
@@ -69,273 +70,304 @@ export const ProductDetailDialog = ({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="h-dvh w-full max-w-none sm:h-[95vh] sm:max-w-[95vw] sm:max-h-[95vh] overflow-y-auto p-0 sm:p-6"
+        className="h-dvh w-full max-w-none sm:h-auto sm:max-w-5xl overflow-hidden p-0"
         aria-describedby="product-detail-description"
       >
-        <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-2 sm:p-0 sm:pb-2 flex-row items-center justify-between gap-4">
-          <DialogTitle className="text-xl font-bold text-stone-900 flex items-center gap-2">
-            <PackageIcon className="h-5 w-5" />
-            {t('dialogs.productDetail.title')}
-          </DialogTitle>
+        {/* Header with gradient */}
+        <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-4 sm:px-8 sm:pt-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 border-b border-zinc-200">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-1">
+                {product.fields.Name}
+              </DialogTitle>
+              {product.fields.Category && (
+                <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200">
+                  {t(`categories.${product.fields.Category}`)}
+                </Badge>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-10 w-10 rounded-full hover:bg-zinc-100"
+            >
+              <X className="h-5 w-5 text-zinc-600" />
+            </Button>
+          </div>
           <DialogDescription id="product-detail-description" className="sr-only">
             {t('dialogs.productDetail.title')} - {product.fields.Name}
           </DialogDescription>
         </DialogHeader>
 
-        {/* Mobile/Portrait: Vertical Stack | Landscape/Desktop: Three Column Layout */}
-        <div className="px-6 pb-6 lg:px-0 lg:pb-0 lg:flex lg:gap-6">
-          {/* Left Column: Image (desktop only, hidden on mobile) */}
-          <div className="hidden lg:flex lg:justify-start lg:flex-shrink-0">
-            <ProductImage
-              src={imageUrl}
-              alt={product.fields.Name}
-              size="xl"
-              showZoom
-              className="lg:w-48 xl:w-56"
-            />
-          </div>
+        {/* Main Content Area */}
+        <div className="overflow-y-auto max-h-[calc(100vh-200px)] sm:max-h-[70vh]">
+          <div className="p-6 sm:p-8 space-y-8">
+            {/* Product Hero Section */}
+            <div className="flex flex-col lg:flex-row gap-8">
+              {/* Product Image */}
+              <div className="flex-shrink-0 lg:w-80">
+                <ProductImage
+                  src={imageUrl}
+                  alt={product.fields.Name}
+                  size="xl"
+                  showZoom
+                  className="w-full h-80 object-cover rounded-2xl shadow-md border border-zinc-200"
+                />
+              </div>
 
-          {/* Middle Column: Product Details */}
-          <div className="flex-1 space-y-6 lg:overflow-y-auto lg:max-h-[calc(90vh-120px)]">
-            {/* Product Name (shown first on mobile) */}
-            <div>
-              <h2 className="text-2xl lg:text-3xl font-bold text-stone-900 mb-2">
-                {product.fields.Name}
-              </h2>
-              {product.fields.Category && (
-                <Badge variant="secondary" className="bg-stone-100 border-stone-200">
-                  {t(`categories.${product.fields.Category}`)}
-                </Badge>
-              )}
-            </div>
+              {/* Key Metrics Cards */}
+              <div className="flex-1 grid grid-cols-2 gap-4">
+                {/* Price Card */}
+                <Card className="border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-emerald-50 rounded-lg">
+                        <Euro className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">
+                          {t('dialogs.productDetail.price')}
+                        </p>
+                        <p className="text-2xl font-bold text-zinc-900">
+                          {product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : '—'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* Product Image (mobile only, shown after name) */}
-            <div className="flex justify-center lg:hidden">
-              <ProductImage
-                src={imageUrl}
-                alt={product.fields.Name}
-                size="xl"
-                showZoom
-              />
-            </div>
+                {/* Current Stock Card */}
+                <Card className="border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg ${isLowStock ? 'bg-red-50' : 'bg-blue-50'}`}>
+                        <PackageIcon className={`h-5 w-5 ${isLowStock ? 'text-red-600' : 'text-blue-600'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">
+                          {t('dialogs.productDetail.currentStock')}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className={`text-2xl font-bold ${isLowStock ? 'text-red-600' : 'text-zinc-900'}`}>
+                            {currentStock}
+                          </p>
+                          {isLowStock && <AlertTriangle className="h-5 w-5 text-red-500" />}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* Product Info Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Barcode */}
-            <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
-              <Barcode className="h-5 w-5 text-stone-600 mt-0.5" />
-              <div>
-                <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.barcode')}</p>
-                <p className="font-mono text-stone-900 font-bold">
-                  {product.fields.Barcode}
-                </p>
+                {/* Barcode Card */}
+                <Card className="border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-violet-50 rounded-lg">
+                        <Barcode className="h-5 w-5 text-violet-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">
+                          {t('dialogs.productDetail.barcode')}
+                        </p>
+                        <p className="text-base font-mono font-semibold text-zinc-900 break-all">
+                          {product.fields.Barcode}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Min Stock Card */}
+                {minStock > 0 && (
+                  <Card className="border-zinc-200 shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 bg-amber-50 rounded-lg">
+                          <Tag className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide mb-1">
+                            {t('dialogs.productDetail.minStockLevel')}
+                          </p>
+                          <p className="text-2xl font-bold text-zinc-900">{minStock}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </div>
 
-            {/* Price */}
-            <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
-              <Euro className="h-5 w-5 text-stone-600 mt-0.5" />
-              <div>
-                <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.price')}</p>
-                <p className="text-stone-900 font-bold">
-                  {product.fields.Price != null
-                    ? `€${product.fields.Price.toFixed(2)}`
-                    : '—'}
-                </p>
-              </div>
-            </div>
-
-            {/* Current Stock */}
-            <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
-              <PackageIcon className="h-5 w-5 text-stone-600 mt-0.5" />
-              <div>
-                <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.currentStock')}</p>
-                <div className="flex items-center gap-2">
-                  <p
-                    className={`text-2xl font-bold ${
-                      isLowStock
-                        ? 'text-[var(--color-terracotta)]'
-                        : 'text-stone-900'
-                    }`}
-                  >
-                    {currentStock}
-                  </p>
-                  {isLowStock && (
-                    <AlertTriangle className="h-5 w-5 text-[var(--color-terracotta)]" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Min Stock Level */}
-            {minStock > 0 && (
-              <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
-                <Tag className="h-5 w-5 text-stone-600 mt-0.5" />
-                <div>
-                  <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.minStockLevel')}</p>
-                  <p className="text-stone-900 font-bold">{minStock}</p>
-                </div>
+            {/* Additional Details Section */}
+            {(product.fields['Expiry Date'] || product.fields.Supplier) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {product.fields['Expiry Date'] && (
+                  <Card className="border-zinc-200 shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Calendar className="h-5 w-5 text-zinc-500" />
+                        <div>
+                          <p className="text-xs font-medium text-zinc-500 mb-0.5">
+                            {t('dialogs.productDetail.expiryDate')}
+                          </p>
+                          <p className="text-sm font-semibold text-zinc-900">
+                            {new Date(product.fields['Expiry Date']).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                {product.fields.Supplier && (
+                  <Card className="border-zinc-200 shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Tag className="h-5 w-5 text-zinc-500" />
+                        <div>
+                          <p className="text-xs font-medium text-zinc-500 mb-0.5">
+                            {t('dialogs.productDetail.supplier')}
+                          </p>
+                          <p className="text-sm font-semibold text-zinc-900">{product.fields.Supplier}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
 
-            {/* Expiry Date */}
-            {product.fields['Expiry Date'] && (
-              <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
-                <Calendar className="h-5 w-5 text-stone-600 mt-0.5" />
-                <div>
-                  <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.expiryDate')}</p>
-                  <p className="text-stone-900 font-bold">
-                    {new Date(product.fields['Expiry Date']).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Supplier */}
-            {product.fields.Supplier && (
-              <div className="flex items-start gap-3 p-3 bg-stone-50 rounded-lg border border-stone-200">
-                <Tag className="h-5 w-5 text-stone-600 mt-0.5" />
-                <div>
-                  <p className="text-sm text-stone-600 font-medium">{t('dialogs.productDetail.supplier')}</p>
-                  <p className="text-stone-900 font-bold">{product.fields.Supplier}</p>
-                </div>
-              </div>
-            )}
-            </div>
-
-            {/* Lifetime Stock Statistics */}
+            {/* Lifetime Statistics */}
             {movements.length > 0 && (
-              <div className="mt-4 p-4 bg-gradient-to-br from-stone-50 to-stone-100/50 rounded-lg border border-stone-200">
-                <h4 className="text-sm font-semibold text-stone-700 mb-3">{t('dialogs.productDetail.lifetimeStats', 'Lifetime Statistics')}</h4>
-                <div className="flex gap-6">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[var(--color-forest)]/20 text-[var(--color-forest)] text-xs font-bold">+</span>
-                    <div>
-                      <p className="text-xs text-stone-500">{t('dialogs.productDetail.totalIn', 'Total In')}</p>
-                      <p className="font-bold text-stone-900">{lifetimeIn}</p>
+              <Card className="border-zinc-200 shadow-sm bg-gradient-to-br from-zinc-50 to-white">
+                <CardContent className="p-6">
+                  <h4 className="text-sm font-bold text-zinc-700 uppercase tracking-wide mb-4">
+                    {t('dialogs.productDetail.lifetimeStats', 'Lifetime Statistics')}
+                  </h4>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-emerald-50 rounded-xl">
+                        <TrendingUp className="h-6 w-6 text-emerald-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500 font-medium mb-1">
+                          {t('dialogs.productDetail.totalIn', 'Total In')}
+                        </p>
+                        <p className="text-2xl font-bold text-zinc-900">{lifetimeIn}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-zinc-100 rounded-xl">
+                        <TrendingDown className="h-6 w-6 text-zinc-600" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500 font-medium mb-1">
+                          {t('dialogs.productDetail.totalOut', 'Total Out')}
+                        </p>
+                        <p className="text-2xl font-bold text-zinc-900">{lifetimeOut}</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-stone-300/50 text-stone-600 text-xs font-bold">−</span>
-                    <div>
-                      <p className="text-xs text-stone-500">{t('dialogs.productDetail.totalOut', 'Total Out')}</p>
-                      <p className="font-bold text-stone-900">{lifetimeOut}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
 
-            {/* Action Buttons - Mobile/Portrait Only */}
-            <div className="lg:hidden flex justify-center gap-3 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-stone-200">
-              {onEdit && (
-                <Button
-                  onClick={() => {
-                    onClose();
-                    onEdit(product);
-                  }}
-                  className="flex-1 max-w-[10rem] h-12 font-semibold"
-                  style={{
-                    background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-                    color: 'white',
-                  }}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  {t('common.edit', 'Edit')}
-                </Button>
-              )}
-              <Button
-                onClick={onClose}
-                className="flex-1 max-w-[10rem] h-12 bg-stone-900 hover:bg-stone-800 text-white font-semibold"
-              >
-                <X className="h-4 w-4 mr-2" />
-                {t('dialogs.productDetail.close')}
-              </Button>
-            </div>
-          </div>
-
-          {/* Right Column: Stock Movement History (only on lg+) */}
-          <div className="hidden lg:flex lg:flex-col lg:w-80 xl:w-96">
-            <div className="space-y-4 overflow-y-auto lg:max-h-[calc(90vh-120px)]">
-              <h3 className="text-lg font-bold text-stone-900 sticky top-0 bg-white py-2">
+            {/* Stock Movement History */}
+            <div>
+              <h3 className="text-lg font-bold text-zinc-900 mb-4">
                 {t('dialogs.productDetail.recentMovements')}
               </h3>
               {loadingMovements ? (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-12">
                   <Spinner size="md" label={t('dialogs.productDetail.loadingMovements')} />
                 </div>
               ) : movements.length > 0 ? (
-                <div className="space-y-2">
-                  {movements.map((movement) => (
-                    <div
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {movements.slice(0, 10).map((movement) => (
+                    <Card
                       key={movement.id}
-                      className="flex items-center justify-between p-3 bg-stone-50 rounded-lg border border-stone-200"
+                      className="border-zinc-200 shadow-sm hover:shadow-md transition-all"
                     >
-                      <div className="flex items-center gap-3">
-                        <Badge
-                          variant={
-                            movement.fields.Type === 'IN' ? 'default' : 'secondary'
-                          }
-                          className={
-                            movement.fields.Type === 'IN'
-                              ? 'bg-[var(--color-forest)] text-white'
-                              : 'bg-stone-200 text-stone-900'
-                          }
-                        >
-                          {movement.fields.Type === 'IN' ? (
-                            <ArrowDownToLine className="h-3 w-3 mr-1" />
-                          ) : (
-                            <ArrowUpFromLine className="h-3 w-3 mr-1" />
-                          )}
-                          {movement.fields.Type}
-                        </Badge>
-                        <span className="font-bold text-stone-900">
-                          {Math.abs(movement.fields.Quantity)} {t('dialogs.productDetail.units')}
-                        </span>
-                      </div>
-                      <span className="text-sm text-stone-600">
-                        {movement.fields.Date
-                          ? new Date(movement.fields.Date).toLocaleDateString()
-                          : '—'}
-                      </span>
-                    </div>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={`p-2 rounded-lg ${
+                                movement.fields.Type === 'IN' ? 'bg-emerald-50' : 'bg-zinc-100'
+                              }`}
+                            >
+                              {movement.fields.Type === 'IN' ? (
+                                <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
+                              ) : (
+                                <ArrowUpFromLine className="h-4 w-4 text-zinc-600" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-zinc-900">
+                                {movement.fields.Type === 'IN' ? '+' : '−'}
+                                {Math.abs(movement.fields.Quantity)} {t('dialogs.productDetail.units')}
+                              </p>
+                              <p className="text-xs text-zinc-500">
+                                {movement.fields.Date
+                                  ? new Date(movement.fields.Date).toLocaleDateString()
+                                  : '—'}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge
+                            variant={movement.fields.Type === 'IN' ? 'default' : 'secondary'}
+                            className={
+                              movement.fields.Type === 'IN'
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-zinc-200 text-zinc-900'
+                            }
+                          >
+                            {movement.fields.Type}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               ) : (
-                <p className="text-stone-600 text-center py-4">
-                  {t('dialogs.productDetail.noMovements')}
-                </p>
+                <Card className="border-zinc-200">
+                  <CardContent className="p-8">
+                    <p className="text-center text-zinc-500">
+                      {t('dialogs.productDetail.noMovements')}
+                    </p>
+                  </CardContent>
+                </Card>
               )}
-            </div>
-
-            {/* Action Buttons - Landscape/Desktop Only */}
-            <div className="hidden lg:flex justify-end gap-3 pt-4 mt-4 border-t border-stone-200">
-              {onEdit && (
-                <Button
-                  onClick={() => {
-                    onClose();
-                    onEdit(product);
-                  }}
-                  className="font-semibold"
-                  style={{
-                    background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-                    color: 'white',
-                  }}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  {t('common.edit', 'Edit')}
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={onClose}
-                className="border-2 border-stone-300"
-              >
-                <X className="h-4 w-4 mr-2" />
-                {t('dialogs.productDetail.close')}
-              </Button>
             </div>
           </div>
+        </div>
+
+        {/* Footer with Actions */}
+        <div className="border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="border-zinc-300 hover:bg-zinc-100"
+          >
+            <X className="h-4 w-4 mr-2" />
+            {t('dialogs.productDetail.close')}
+          </Button>
+          {onEdit && (
+            <Button
+              onClick={() => {
+                onClose();
+                onEdit(product);
+              }}
+              className="font-semibold"
+              style={{
+                background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+                color: 'white',
+              }}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              {t('common.edit', 'Edit')}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
