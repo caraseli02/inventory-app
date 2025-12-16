@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { X, Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Package as PackageIcon, Pencil, TrendingUp, TrendingDown } from 'lucide-react';
+import { Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Package as PackageIcon, Pencil, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Button } from '../ui/button';
@@ -76,26 +76,14 @@ export const ProductDetailDialog = ({
         <div className="h-full flex flex-col">
           {/* Header with gradient */}
           <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-4 sm:px-8 sm:pt-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 border-b border-zinc-200 flex-shrink-0">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-1">
-                  {product.fields.Name}
-                </DialogTitle>
-                {product.fields.Category && (
-                  <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200">
-                    {t(`categories.${product.fields.Category}`)}
-                  </Badge>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="h-10 w-10 rounded-full hover:bg-zinc-100 flex-shrink-0"
-              >
-                <X className="h-5 w-5 text-zinc-600" />
-              </Button>
-            </div>
+            <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-1">
+              {product.fields.Name}
+            </DialogTitle>
+            {product.fields.Category && (
+              <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200 mt-1">
+                {t(`categories.${product.fields.Category}`)}
+              </Badge>
+            )}
             <DialogDescription id="product-detail-description" className="sr-only">
               {t('dialogs.productDetail.title')} - {product.fields.Name}
             </DialogDescription>
