@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Package, Clock, Grid3X3, Plus } from 'lucide-react';
+import { Package, Clock, Grid3X3, Plus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getAllProducts } from '@/lib/api';
 import { useRecentProducts } from '@/hooks/useRecentProducts';
-import type { Product } from '@/types';
+import type { Product, CartItem } from '@/types';
 import { logger } from '@/lib/logger';
 
 // Category definitions with icons and subtle indicator dots
@@ -29,6 +29,8 @@ interface ProductBrowsePanelProps {
   onProductSelect: (product: Product) => void;
   /** Maximum height for the panel */
   maxHeight?: string;
+  /** Current cart items to show selection state */
+  cartItems?: CartItem[];
 }
 
 /**
@@ -39,11 +41,15 @@ interface ProductBrowsePanelProps {
 export const ProductBrowsePanel = ({
   onProductSelect,
   maxHeight = '300px',
+  cartItems = [],
 }: ProductBrowsePanelProps) => {
   const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [itemsToShow, setItemsToShow] = useState(20); // Show 20 items initially
   const { recentProducts, hasRecentProducts } = useRecentProducts();
+
+  // Track which product was just added for animation
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   const ITEMS_PER_PAGE = 20;
 
@@ -53,6 +59,15 @@ export const ProductBrowsePanel = ({
     queryFn: getAllProducts,
     staleTime: 1000 * 60 * 5,
   });
+
+  // Create a map of product ID -> quantity in cart for quick lookup
+  const cartQuantityMap = useMemo(() => {
+    const map = new Map<string, number>();
+    cartItems.forEach(item => {
+      map.set(item.product.id, item.quantity);
+    });
+    return map;
+  }, [cartItems]);
 
   // Get unique categories from products
   const availableCategories = useMemo(() => {
@@ -111,6 +126,27 @@ export const ProductBrowsePanel = ({
     setSelectedCategory(catId);
     setItemsToShow(ITEMS_PER_PAGE); // Reset pagination when category changes
   };
+
+  const handleProductSelect = useCallback((product: Product) => {
+    // Trigger animation
+    setJustAddedId(product.id);
+
+    // Haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
+    // Call parent handler
+    onProductSelect(product);
+  }, [onProductSelect]);
+
+  // Clear animation after delay
+  useEffect(() => {
+    if (justAddedId) {
+      const timer = setTimeout(() => setJustAddedId(null), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [justAddedId]);
 
   const getCategoryLabel = (catId: string) => {
     if (catId === 'all') return t('search.allProducts', 'All');
@@ -204,12 +240,14 @@ export const ProductBrowsePanel = ({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
               {visibleProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onSelect={onProductSelect}
+                  onSelect={handleProductSelect}
+                  quantityInCart={cartQuantityMap.get(product.id) ?? 0}
+                  isJustAdded={justAddedId === product.id}
                 />
               ))}
             </div>
@@ -235,19 +273,22 @@ export const ProductBrowsePanel = ({
   );
 };
 
-// Individual product card component
+// Individual product card component with selection feedback
 interface ProductCardProps {
   product: Product;
   onSelect: (product: Product) => void;
+  quantityInCart: number;
+  isJustAdded: boolean;
 }
 
-const ProductCard = ({ product, onSelect }: ProductCardProps) => {
+const ProductCard = ({ product, onSelect, quantityInCart, isJustAdded }: ProductCardProps) => {
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
   const imageUrl = product.fields.Image?.[0]?.url;
   const price = product.fields.Price;
   const stock = product.fields['Current Stock Level'] ?? 0;
   const isOutOfStock = stock <= 0;
+  const isInCart = quantityInCart > 0;
 
   const handleImageError = () => {
     logger.warn('Failed to load product image', {
@@ -259,23 +300,39 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
   };
 
   return (
-    <Button
-      variant="ghost"
+    <button
+      type="button"
       className={`
-        relative flex flex-col items-center p-4 rounded-xl text-left h-auto min-h-[160px]
-        transition-all duration-150
-        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900
+        relative flex flex-col items-center p-3 rounded-2xl text-left h-auto min-h-[140px] w-full
+        transition-all duration-200 ease-out
+        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500
         ${isOutOfStock
-          ? 'bg-zinc-50 opacity-50 cursor-not-allowed'
-          : 'bg-white border-2 border-zinc-200 hover:border-zinc-300 hover:shadow-md active:scale-[0.98] cursor-pointer hover:bg-white'
+          ? 'bg-zinc-100 opacity-50 cursor-not-allowed'
+          : isInCart
+            ? 'bg-emerald-50 border-2 border-emerald-500 shadow-md'
+            : 'bg-white border-2 border-zinc-200 hover:border-zinc-300 hover:shadow-lg active:scale-[0.97] cursor-pointer'
         }
+        ${isJustAdded ? 'scale-[0.95]' : ''}
       `}
       onClick={() => !isOutOfStock && onSelect(product)}
       disabled={isOutOfStock}
       title={product.fields.Name}
     >
+      {/* Success Checkmark Overlay - Shows briefly when added */}
+      <div
+        className={`
+          absolute inset-0 bg-emerald-500 rounded-2xl flex items-center justify-center z-10
+          transition-all duration-200
+          ${isJustAdded ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+        `}
+      >
+        <div className="bg-white rounded-full p-2">
+          <Check className="h-8 w-8 text-emerald-500" strokeWidth={3} />
+        </div>
+      </div>
+
       {/* Product Image */}
-      <div className="w-20 h-20 rounded-lg bg-zinc-50 flex items-center justify-center overflow-hidden mb-3 border border-zinc-200">
+      <div className="w-16 h-16 rounded-xl bg-zinc-100 flex items-center justify-center overflow-hidden mb-2 relative">
         {imageUrl && !imageError ? (
           <img
             src={imageUrl}
@@ -285,24 +342,33 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
             onError={handleImageError}
           />
         ) : (
-          <Package className="h-8 w-8 text-zinc-300" />
+          <Package className="h-7 w-7 text-zinc-300" />
         )}
       </div>
 
-      {/* Product Name - increased to text-sm for better readability */}
-      <p className="text-sm font-semibold text-zinc-900 text-center line-clamp-2 leading-tight w-full mb-2">
+      {/* Product Name */}
+      <p className="text-sm font-semibold text-zinc-900 text-center line-clamp-2 leading-tight w-full mb-1.5">
         {product.fields.Name}
       </p>
 
-      {/* Price */}
-      {price != null && (
-        <p className="text-base font-bold text-zinc-900">
-          €{price.toFixed(2)}
-        </p>
-      )}
+      {/* Price and Quantity Row */}
+      <div className="flex items-center justify-between w-full gap-2">
+        {price != null && (
+          <p className="text-base font-bold text-zinc-900">
+            €{price.toFixed(2)}
+          </p>
+        )}
+
+        {/* Quantity indicator - shows when in cart */}
+        {isInCart && (
+          <span className="text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+            ×{quantityInCart}
+          </span>
+        )}
+      </div>
 
       {/* Low stock indicator - subtle amber dot */}
-      {!isOutOfStock && stock <= 5 && (
+      {!isOutOfStock && stock <= 5 && !isInCart && (
         <span
           className="absolute top-2 right-2 w-2 h-2 bg-amber-400 rounded-full"
           title={`${stock} in stock`}
@@ -311,12 +377,12 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
 
       {/* Out of Stock Overlay */}
       {isOutOfStock && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-2xl">
           <span className="text-xs font-medium text-zinc-400">
             {t('search.outOfStock', 'Out')}
           </span>
         </div>
       )}
-    </Button>
+    </button>
   );
 };
