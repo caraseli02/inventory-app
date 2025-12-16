@@ -130,13 +130,27 @@ export const DesktopFilterBar = ({
         </Button>
 
         {/* Import Button */}
-        <Button variant="outline" size="sm" onClick={onImport} className="h-10 border-2 border-stone-300">
+        <Button
+          size="sm"
+          onClick={onImport}
+          className="h-10 font-semibold text-white"
+          style={{
+            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+          }}
+        >
           <Upload className="h-4 w-4 mr-2" />
           {t('inventory.import', 'Import')}
         </Button>
 
         {/* Export Button */}
-        <Button variant="outline" size="sm" onClick={onExport} className="h-10 border-2 border-stone-300">
+        <Button
+          size="sm"
+          onClick={onExport}
+          className="h-10 font-semibold text-white"
+          style={{
+            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+          }}
+        >
           <Download className="h-4 w-4 mr-2" />
           {t('inventory.export', 'Export')}
         </Button>
