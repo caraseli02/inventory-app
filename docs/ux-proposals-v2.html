@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Checkout UX Improvements v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { font-family: 'Inter', sans-serif; }
+
+    .phone-frame {
+      width: 375px;
+      height: 750px;
+      border: 8px solid #1f2937;
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+      background: #fafaf9;
+    }
+
+    /* Animation keyframes */
+    @keyframes checkPop {
+      0% { transform: scale(0); opacity: 0; }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes badgePop {
+      0% { transform: scale(0.5); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes chipSelect {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+
+    .check-pop { animation: checkPop 0.3s ease-out forwards; }
+    .slide-up { animation: slideUp 0.3s ease-out forwards; }
+    .badge-pop { animation: badgePop 0.3s ease-out; }
+    .chip-select { animation: chipSelect 0.2s ease-out; }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .proposal-card {
+      transition: all 0.3s ease;
+    }
+    .proposal-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+
+    /* Fade mask for scrollable areas */
+    .scroll-fade-right {
+      mask-image: linear-gradient(to right, black 85%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+  <div class="max-w-7xl mx-auto">
+    <header class="mb-12 text-center">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">Mobile Checkout UX Improvements v2</h1>
+      <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+        Enhanced proposals with 3-column grid, improved filter chips, and refined card design.
+        Based on research from <a href="https://m3.material.io/components/chips/guidelines" class="text-emerald-600 underline">Material Design 3</a>,
+        <a href="https://baymard.com/blog/current-state-product-list-and-filtering" class="text-emerald-600 underline">Baymard Institute</a>, and
+        <a href="https://uxplanet.org/mobile-app-ux-design-grid-view-for-products-947e94c1fcb8" class="text-emerald-600 underline">UX Planet</a>.
+      </p>
+    </header>
+
+    <!-- Improvement Areas -->
+    <div class="grid lg:grid-cols-2 gap-8 mb-16">
+
+      <!-- Improvement 1: 3-Column Grid -->
+      <div class="proposal-card bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">Layout</span>
+            <h3 class="text-xl font-bold mt-2">3-Column Product Grid</h3>
+            <p class="text-gray-600 mt-1">More products visible, faster scanning</p>
+          </div>
+          <span class="text-3xl">📱</span>
+        </div>
+
+        <div class="flex justify-center my-6">
+          <div class="phone-frame" id="phone-grid">
+            <div class="h-full flex flex-col">
+              <!-- Header -->
+              <div class="bg-stone-800 text-white p-3 text-center text-sm font-medium">
+                Scan barcodes to add to cart
+              </div>
+
+              <!-- Search -->
+              <div class="p-3 bg-stone-100">
+                <div class="flex gap-2">
+                  <div class="flex-1 bg-white rounded-xl px-3 py-3 text-sm text-gray-400 border border-gray-200">
+                    Search to add to cart..
+                  </div>
+                  <button class="bg-white rounded-xl px-4 border border-gray-200">
+                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Category Chips -->
+              <div class="px-3 py-2 bg-stone-100 overflow-x-auto scrollbar-hide scroll-fade-right">
+                <div class="flex gap-2">
+                  <button class="shrink-0 bg-stone-900 text-white px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                    </svg>
+                    All <span class="text-stone-400">14</span>
+                  </button>
+                  <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200">
+                    Recent <span class="text-gray-400">4</span>
+                  </button>
+                  <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                    Dairy
+                  </button>
+                  <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    Pantry
+                  </button>
+                </div>
+              </div>
+
+              <!-- 3-Column Product Grid -->
+              <div class="flex-1 p-3 bg-stone-100 overflow-y-auto">
+                <div class="grid grid-cols-3 gap-2">
+                  <!-- Product 1 - In Cart -->
+                  <button class="bg-emerald-50 border-2 border-emerald-500 rounded-xl p-2 flex flex-col items-center relative">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Milk 2%</p>
+                    <div class="flex items-center justify-between w-full">
+                      <span class="text-xs font-bold">€2.50</span>
+                      <span class="text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×3</span>
+                    </div>
+                  </button>
+
+                  <!-- Product 2 - In Cart -->
+                  <button class="bg-emerald-50 border-2 border-emerald-500 rounded-xl p-2 flex flex-col items-center relative">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Bread</p>
+                    <div class="flex items-center justify-between w-full">
+                      <span class="text-xs font-bold">€1.80</span>
+                      <span class="text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×2</span>
+                    </div>
+                  </button>
+
+                  <!-- Product 3 - Normal -->
+                  <button class="bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center hover:border-gray-300 hover:shadow-md transition-all">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Eggs 12pk</p>
+                    <span class="text-xs font-bold">€3.20</span>
+                    <span class="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                  </button>
+
+                  <!-- Product 4-9 -->
+                  <button class="bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Butter</p>
+                    <span class="text-xs font-bold">€4.50</span>
+                  </button>
+
+                  <button class="bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Cheese</p>
+                    <span class="text-xs font-bold">€5.99</span>
+                  </button>
+
+                  <button class="bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Yogurt</p>
+                    <span class="text-xs font-bold">€1.20</span>
+                  </button>
+
+                  <button class="bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Orange Juice</p>
+                    <span class="text-xs font-bold">€3.50</span>
+                  </button>
+
+                  <button class="bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Apple</p>
+                    <span class="text-xs font-bold">€0.80</span>
+                  </button>
+
+                  <button class="bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1 flex items-center justify-center">
+                      <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Banana</p>
+                    <span class="text-xs font-bold">€1.50</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Cart Bar -->
+              <div class="bg-stone-900 text-white p-3 rounded-t-2xl">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span class="bg-emerald-500 text-xs font-bold px-2 py-0.5 rounded-full">5 items</span>
+                  </div>
+                  <div class="text-center">
+                    <p class="text-[10px] text-stone-400 uppercase">Total</p>
+                    <p class="text-lg font-bold">€12.30</p>
+                  </div>
+                  <button class="bg-emerald-500 text-white text-sm font-bold px-4 py-2 rounded-xl flex items-center gap-1">
+                    View Cart
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-blue-50 rounded-xl p-4">
+          <h4 class="font-semibold text-blue-800 mb-2">Benefits of 3-Column Grid:</h4>
+          <ul class="text-sm text-blue-700 space-y-1">
+            <li>✓ <strong>50% more products visible</strong> per screen</li>
+            <li>✓ <strong>Faster scanning</strong> - users can browse more items</li>
+            <li>✓ <strong>Compact cards</strong> still show essential info</li>
+            <li>✓ <strong>Touch-friendly</strong> - min 44px tap targets maintained</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Improvement 2: Enhanced Filter Chips -->
+      <div class="proposal-card bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-semibold">Filters</span>
+            <h3 class="text-xl font-bold mt-2">Enhanced Category Chips</h3>
+            <p class="text-gray-600 mt-1">Material Design 3 filter chip patterns</p>
+          </div>
+          <span class="text-3xl">🏷️</span>
+        </div>
+
+        <div class="space-y-6 my-6">
+          <!-- Current vs Proposed -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Current</p>
+              <div class="flex gap-2 overflow-x-auto pb-2">
+                <button class="shrink-0 bg-zinc-900 text-white px-4 py-2 rounded-xl text-sm font-semibold">All 14</button>
+                <button class="shrink-0 bg-zinc-50 text-zinc-700 px-4 py-2 rounded-xl text-sm border border-zinc-200">Recent 4</button>
+                <button class="shrink-0 bg-zinc-50 text-zinc-700 px-4 py-2 rounded-xl text-sm border border-zinc-200">Dairy</button>
+              </div>
+            </div>
+            <div>
+              <p class="text-xs font-semibold text-emerald-600 uppercase mb-2">Proposed</p>
+              <div class="flex gap-2 overflow-x-auto pb-2">
+                <button class="shrink-0 bg-emerald-600 text-white px-3 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  All
+                  <span class="bg-white/20 px-1.5 rounded-full text-xs">14</span>
+                </button>
+                <button class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Recent
+                </button>
+                <button class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                  Dairy
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Demo -->
+          <div class="bg-gray-50 rounded-xl p-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase mb-3">Interactive Demo - Click to select</p>
+            <div class="flex gap-2 flex-wrap" id="chip-demo">
+              <button onclick="selectChip(this)" class="chip-active shrink-0 bg-emerald-600 text-white px-3 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-all">
+                <svg class="w-4 h-4 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                All
+                <span class="bg-white/20 px-1.5 rounded-full text-xs">14</span>
+              </button>
+              <button onclick="selectChip(this)" class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5 hover:bg-gray-50 transition-all">
+                <svg class="w-4 h-4 text-gray-400 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <svg class="w-4 h-4 text-gray-400 icon-default" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Recent
+                <span class="text-gray-400 text-xs">4</span>
+              </button>
+              <button onclick="selectChip(this)" class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5 hover:bg-gray-50 transition-all">
+                <svg class="w-4 h-4 text-gray-400 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="w-2 h-2 rounded-full bg-emerald-500 icon-default"></span>
+                Produce
+                <span class="text-gray-400 text-xs">8</span>
+              </button>
+              <button onclick="selectChip(this)" class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5 hover:bg-gray-50 transition-all">
+                <svg class="w-4 h-4 text-gray-400 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="w-2 h-2 rounded-full bg-sky-400 icon-default"></span>
+                Dairy
+                <span class="text-gray-400 text-xs">6</span>
+              </button>
+              <button onclick="selectChip(this)" class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5 hover:bg-gray-50 transition-all">
+                <svg class="w-4 h-4 text-gray-400 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="w-2 h-2 rounded-full bg-rose-400 icon-default"></span>
+                Meat
+                <span class="text-gray-400 text-xs">3</span>
+              </button>
+              <button onclick="selectChip(this)" class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5 hover:bg-gray-50 transition-all">
+                <svg class="w-4 h-4 text-gray-400 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span class="w-2 h-2 rounded-full bg-amber-500 icon-default"></span>
+                Pantry
+                <span class="text-gray-400 text-xs">12</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-purple-50 rounded-xl p-4">
+          <h4 class="font-semibold text-purple-800 mb-2">Chip Improvements:</h4>
+          <ul class="text-sm text-purple-700 space-y-1">
+            <li>✓ <strong>Rounded pill shape</strong> - Material Design 3 standard</li>
+            <li>✓ <strong>Checkmark on selected</strong> - clear active state</li>
+            <li>✓ <strong>Colored dots</strong> for category identification</li>
+            <li>✓ <strong>Count badges</strong> show items per category</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Improvement 3: Compact Card Design -->
+      <div class="proposal-card bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold">Cards</span>
+            <h3 class="text-xl font-bold mt-2">Compact Card Design</h3>
+            <p class="text-gray-600 mt-1">Optimized for 3-column grid</p>
+          </div>
+          <span class="text-3xl">🎴</span>
+        </div>
+
+        <div class="my-6 space-y-4">
+          <!-- Card States -->
+          <div class="grid grid-cols-3 gap-3">
+            <!-- Normal State -->
+            <div class="text-center">
+              <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Default</p>
+              <button class="w-full bg-white border-2 border-gray-200 rounded-xl p-3 flex flex-col items-center hover:shadow-lg transition-all">
+                <div class="w-14 h-14 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                  <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                  </svg>
+                </div>
+                <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Product Name</p>
+                <span class="text-sm font-bold">€2.50</span>
+              </button>
+            </div>
+
+            <!-- Selected/In Cart State -->
+            <div class="text-center">
+              <p class="text-xs font-semibold text-emerald-600 uppercase mb-2">In Cart</p>
+              <button class="w-full bg-emerald-50 border-2 border-emerald-500 rounded-xl p-3 flex flex-col items-center shadow-md">
+                <div class="w-14 h-14 bg-emerald-100 rounded-lg mb-2 flex items-center justify-center">
+                  <svg class="w-7 h-7 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                  </svg>
+                </div>
+                <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Product Name</p>
+                <div class="flex items-center justify-between w-full">
+                  <span class="text-sm font-bold">€2.50</span>
+                  <span class="text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×2</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Low Stock State -->
+            <div class="text-center">
+              <p class="text-xs font-semibold text-amber-600 uppercase mb-2">Low Stock</p>
+              <button class="w-full bg-white border-2 border-gray-200 rounded-xl p-3 flex flex-col items-center relative">
+                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-400 rounded-full"></span>
+                <div class="w-14 h-14 bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                  <svg class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                  </svg>
+                </div>
+                <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Product Name</p>
+                <span class="text-sm font-bold">€2.50</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Size Comparison -->
+          <div class="bg-gray-50 rounded-xl p-4">
+            <p class="text-xs font-semibold text-gray-500 uppercase mb-3">Size Comparison</p>
+            <div class="flex gap-4 items-end justify-center">
+              <div class="text-center">
+                <div class="w-[140px] h-[160px] border-2 border-dashed border-red-300 rounded-xl flex items-center justify-center bg-red-50">
+                  <span class="text-xs text-red-500">Current 2-col<br/>140×160px</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">2 per row</p>
+              </div>
+              <div class="text-center">
+                <div class="w-[105px] h-[120px] border-2 border-dashed border-emerald-400 rounded-xl flex items-center justify-center bg-emerald-50">
+                  <span class="text-xs text-emerald-600">New 3-col<br/>105×120px</span>
+                </div>
+                <p class="text-xs text-emerald-600 font-semibold mt-2">3 per row ✓</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-emerald-50 rounded-xl p-4">
+          <h4 class="font-semibold text-emerald-800 mb-2">Card Optimizations:</h4>
+          <ul class="text-sm text-emerald-700 space-y-1">
+            <li>✓ <strong>Smaller image</strong> - 48-56px instead of 80px</li>
+            <li>✓ <strong>Reduced padding</strong> - p-2 to p-3</li>
+            <li>✓ <strong>Tighter text</strong> - text-xs for labels</li>
+            <li>✓ <strong>Inline quantity badge</strong> saves vertical space</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Improvement 4: Scroll Indicators -->
+      <div class="proposal-card bg-white rounded-2xl p-6 shadow-lg border-2 border-gray-200">
+        <div class="flex items-start justify-between mb-4">
+          <div>
+            <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm font-semibold">UX Detail</span>
+            <h3 class="text-xl font-bold mt-2">Scroll Affordance</h3>
+            <p class="text-gray-600 mt-1">Clear indication that content is scrollable</p>
+          </div>
+          <span class="text-3xl">👆</span>
+        </div>
+
+        <div class="my-6 space-y-4">
+          <!-- Without indicator -->
+          <div>
+            <p class="text-xs font-semibold text-red-500 uppercase mb-2">❌ Without indicator - users may miss content</p>
+            <div class="bg-gray-100 rounded-xl p-3 overflow-hidden">
+              <div class="flex gap-2 overflow-x-auto scrollbar-hide">
+                <button class="shrink-0 bg-stone-900 text-white px-4 py-2 rounded-xl text-sm font-semibold">All</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm border">Recent</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm border">Dairy</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm border">Pantry</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-xl text-sm border">Snacks</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- With fade indicator -->
+          <div>
+            <p class="text-xs font-semibold text-emerald-600 uppercase mb-2">✓ Fade mask - signals more content</p>
+            <div class="bg-gray-100 rounded-xl p-3 overflow-hidden">
+              <div class="flex gap-2 overflow-x-auto scrollbar-hide scroll-fade-right">
+                <button class="shrink-0 bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  All
+                </button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Recent</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Dairy</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Pantry</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Snacks</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- With offset -->
+          <div>
+            <p class="text-xs font-semibold text-blue-600 uppercase mb-2">✓ Partial chip visible - Material Design pattern</p>
+            <div class="bg-gray-100 rounded-xl p-3 overflow-hidden">
+              <div class="flex gap-2 overflow-x-auto scrollbar-hide -mr-6 pr-6">
+                <button class="shrink-0 bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  All
+                </button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Recent</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Dairy</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Pantry</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Snacks</button>
+                <button class="shrink-0 bg-white text-gray-700 px-4 py-2 rounded-full text-sm border">Beverages</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-orange-50 rounded-xl p-4">
+          <h4 class="font-semibold text-orange-800 mb-2">Scroll Indicators:</h4>
+          <ul class="text-sm text-orange-700 space-y-1">
+            <li>✓ <strong>Fade gradient</strong> on right edge</li>
+            <li>✓ <strong>Partial chip visible</strong> at edge</li>
+            <li>✓ <strong>No scrollbar</strong> - cleaner mobile look</li>
+            <li>✓ <strong>Touch-friendly</strong> swipe gestures</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complete Mockup -->
+    <section class="mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">✨ Complete Updated Design</h2>
+
+      <div class="flex justify-center">
+        <div class="phone-frame" style="height: 800px;" id="phone-final">
+          <div class="h-full flex flex-col">
+            <!-- Header -->
+            <div class="bg-stone-800 text-white p-3 flex items-center justify-between">
+              <button class="p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <span class="text-sm font-medium">Scan barcodes to add to cart</span>
+              <button class="p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="p-3 bg-stone-100">
+              <div class="flex gap-2">
+                <div class="flex-1 bg-white rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-gray-400 border border-gray-200">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                  Search to add to cart..
+                </div>
+                <button class="bg-white rounded-xl px-4 border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Category Chips with Scroll Fade -->
+            <div class="px-3 py-2 bg-stone-100">
+              <div class="flex gap-2 overflow-x-auto scrollbar-hide scroll-fade-right pb-1">
+                <button class="shrink-0 bg-emerald-600 text-white px-3 py-2 rounded-full text-sm font-semibold flex items-center gap-1.5 shadow-sm">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  All
+                  <span class="bg-white/20 px-1.5 rounded-full text-xs">14</span>
+                </button>
+                <button class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  Recent
+                  <span class="text-gray-400 text-xs">4</span>
+                </button>
+                <button class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                  Dairy
+                </button>
+                <button class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  Pantry
+                </button>
+                <button class="shrink-0 bg-white text-gray-700 px-3 py-2 rounded-full text-sm border border-gray-200 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+                  Snacks
+                </button>
+              </div>
+            </div>
+
+            <!-- 3-Column Product Grid -->
+            <div class="flex-1 p-3 bg-stone-100 overflow-y-auto">
+              <div class="grid grid-cols-3 gap-2" id="final-grid">
+                <!-- Row 1 -->
+                <button onclick="toggleCart(this)" class="product-card bg-emerald-50 border-2 border-emerald-500 rounded-xl p-2 flex flex-col items-center relative transition-all" data-in-cart="true" data-qty="3">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="w-12 h-12 bg-emerald-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Arpacași/ perlovca</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€0.43</span>
+                    <span class="qty-badge text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×3</span>
+                  </div>
+                </button>
+
+                <button onclick="toggleCart(this)" class="product-card bg-emerald-50 border-2 border-emerald-500 rounded-xl p-2 flex flex-col items-center relative transition-all" data-in-cart="true" data-qty="2">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="w-12 h-12 bg-emerald-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Bomboane Korovka</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€0.97</span>
+                    <span class="qty-badge text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×2</span>
+                  </div>
+                </button>
+
+                <button onclick="toggleCart(this)" class="product-card bg-emerald-50 border-2 border-emerald-500 rounded-xl p-2 flex flex-col items-center relative transition-all" data-in-cart="true" data-qty="2">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="w-12 h-12 bg-emerald-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Brînză de vaci Latti</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€4.53</span>
+                    <span class="qty-badge text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×2</span>
+                  </div>
+                </button>
+
+                <!-- Row 2 -->
+                <button onclick="toggleCart(this)" class="product-card bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center relative hover:border-gray-300 hover:shadow-md transition-all" data-in-cart="false" data-qty="0">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <span class="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                  <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Cioco Fruvit Caise</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€4.35</span>
+                    <span class="qty-badge hidden text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×1</span>
+                  </div>
+                </button>
+
+                <button onclick="toggleCart(this)" class="product-card bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center relative hover:border-gray-300 hover:shadow-md transition-all" data-in-cart="false" data-qty="0">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Divin Bardar Silver</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€6.15</span>
+                    <span class="qty-badge hidden text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×1</span>
+                  </div>
+                </button>
+
+                <button onclick="toggleCart(this)" class="product-card bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center relative hover:border-gray-300 hover:shadow-md transition-all" data-in-cart="false" data-qty="0">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <span class="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                  <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Doctorscaia Pegas</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€7.98</span>
+                    <span class="qty-badge hidden text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×1</span>
+                  </div>
+                </button>
+
+                <!-- Rows 3-4: More products -->
+                <button onclick="toggleCart(this)" class="product-card bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center relative hover:border-gray-300 hover:shadow-md transition-all" data-in-cart="false" data-qty="0">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Smântână 20%</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€2.30</span>
+                    <span class="qty-badge hidden text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×1</span>
+                  </div>
+                </button>
+
+                <button onclick="toggleCart(this)" class="product-card bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center relative hover:border-gray-300 hover:shadow-md transition-all" data-in-cart="false" data-qty="0">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Lapte 3.5%</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€1.85</span>
+                    <span class="qty-badge hidden text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×1</span>
+                  </div>
+                </button>
+
+                <button onclick="toggleCart(this)" class="product-card bg-white border-2 border-gray-200 rounded-xl p-2 flex flex-col items-center relative hover:border-gray-300 hover:shadow-md transition-all" data-in-cart="false" data-qty="0">
+                  <div class="absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10 opacity-0 success-overlay pointer-events-none transition-opacity duration-200">
+                    <div class="bg-white rounded-full p-1.5">
+                      <svg class="w-6 h-6 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <span class="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full"></span>
+                  <div class="w-12 h-12 bg-gray-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                  </div>
+                  <p class="text-xs font-semibold text-center line-clamp-2 leading-tight mb-1">Unt Lurpak</p>
+                  <div class="flex items-center justify-between w-full">
+                    <span class="text-xs font-bold">€5.40</span>
+                    <span class="qty-badge hidden text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">×1</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Cart Bar -->
+            <div class="bg-stone-900 text-white p-4 rounded-t-2xl">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span id="cart-count" class="bg-emerald-500 text-xs font-bold px-2 py-0.5 rounded-full">7 items</span>
+                  </div>
+                  <p id="last-added" class="text-xs text-emerald-400 h-4"></p>
+                </div>
+                <div class="text-center">
+                  <p class="text-[10px] text-stone-400 uppercase">Total</p>
+                  <p id="cart-total" class="text-xl font-bold">€12.29</p>
+                </div>
+                <button class="bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 transition-colors">
+                  View Cart
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-center text-gray-500 text-sm mt-4">👆 Click products to see the add-to-cart animation</p>
+    </section>
+
+    <!-- Implementation Summary -->
+    <section class="bg-gray-900 text-white rounded-2xl p-8 mb-8">
+      <h2 class="text-2xl font-bold mb-6">📋 Implementation Checklist</h2>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-lg font-semibold text-emerald-400 mb-3">Grid Changes</h3>
+          <ul class="space-y-2 text-gray-300">
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400">□</span>
+              Change grid-cols-2 → grid-cols-3 on mobile
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400">□</span>
+              Reduce card padding: p-3 → p-2
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400">□</span>
+              Reduce image size: w-16 h-16 → w-12 h-12
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-400">□</span>
+              Reduce gap: gap-4 → gap-2
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-lg font-semibold text-purple-400 mb-3">Filter Chip Changes</h3>
+          <ul class="space-y-2 text-gray-300">
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400">□</span>
+              Change rounded-xl → rounded-full (pill shape)
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400">□</span>
+              Add checkmark icon to selected chip
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400">□</span>
+              Change selected color: stone-900 → emerald-600
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-400">□</span>
+              Add scroll fade mask to right edge
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sources -->
+    <section class="text-center text-gray-600 text-sm mb-8">
+      <p class="font-semibold mb-2">Research Sources:</p>
+      <p>
+        <a href="https://m3.material.io/components/chips/guidelines" class="text-emerald-600 hover:underline">Material Design 3 - Chips</a> •
+        <a href="https://baymard.com/blog/current-state-product-list-and-filtering" class="text-emerald-600 hover:underline">Baymard - Product List UX</a> •
+        <a href="https://medium.com/insights-observations/size-and-layout-of-e-commerce-product-grids-a-user-research-case-study-8a8307cbd087" class="text-emerald-600 hover:underline">Product Grid Research</a> •
+        <a href="https://uxplanet.org/mobile-app-ux-design-grid-view-for-products-947e94c1fcb8" class="text-emerald-600 hover:underline">UX Planet - Grid View</a>
+      </p>
+    </section>
+  </div>
+
+  <script>
+    // Chip selection demo
+    function selectChip(chip) {
+      const container = document.getElementById('chip-demo');
+      const chips = container.querySelectorAll('button');
+
+      chips.forEach(c => {
+        c.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm', 'chip-active');
+        c.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-200');
+        const checkIcon = c.querySelector('.check-icon');
+        const defaultIcon = c.querySelector('.icon-default');
+        if (checkIcon) checkIcon.classList.add('hidden');
+        if (defaultIcon) defaultIcon.classList.remove('hidden');
+      });
+
+      chip.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-200');
+      chip.classList.add('bg-emerald-600', 'text-white', 'shadow-sm', 'chip-active', 'chip-select');
+      const checkIcon = chip.querySelector('.check-icon');
+      const defaultIcon = chip.querySelector('.icon-default');
+      if (checkIcon) checkIcon.classList.remove('hidden');
+      if (defaultIcon) defaultIcon.classList.add('hidden');
+
+      setTimeout(() => chip.classList.remove('chip-select'), 200);
+    }
+
+    // Product card toggle demo
+    let cartTotal = 12.29;
+    let cartCount = 7;
+
+    function toggleCart(card) {
+      const inCart = card.dataset.inCart === 'true';
+      const overlay = card.querySelector('.success-overlay');
+      const qtyBadge = card.querySelector('.qty-badge');
+      const priceText = card.querySelector('.text-xs.font-bold').textContent;
+      const price = parseFloat(priceText.replace('€', ''));
+      const productName = card.querySelector('.line-clamp-2').textContent;
+
+      // Show overlay animation
+      overlay.classList.remove('opacity-0');
+      overlay.classList.add('opacity-100');
+
+      setTimeout(() => {
+        overlay.classList.remove('opacity-100');
+        overlay.classList.add('opacity-0');
+      }, 300);
+
+      if (!inCart) {
+        // Add to cart
+        card.dataset.inCart = 'true';
+        card.dataset.qty = '1';
+        card.classList.remove('bg-white', 'border-gray-200');
+        card.classList.add('bg-emerald-50', 'border-emerald-500');
+        qtyBadge.classList.remove('hidden');
+        qtyBadge.textContent = '×1';
+
+        // Update image container
+        const imgContainer = card.querySelector('.w-12.h-12');
+        imgContainer.classList.remove('bg-gray-100');
+        imgContainer.classList.add('bg-emerald-100');
+        const svg = imgContainer.querySelector('svg');
+        svg.classList.remove('text-gray-300');
+        svg.classList.add('text-emerald-400');
+
+        cartTotal += price;
+        cartCount += 1;
+      } else {
+        // Increase quantity
+        let qty = parseInt(card.dataset.qty) + 1;
+        card.dataset.qty = qty.toString();
+        qtyBadge.textContent = `×${qty}`;
+
+        cartTotal += price;
+        cartCount += 1;
+      }
+
+      // Update cart bar
+      document.getElementById('cart-total').textContent = `€${cartTotal.toFixed(2)}`;
+      document.getElementById('cart-count').textContent = `${cartCount} items`;
+
+      // Show last added
+      const lastAdded = document.getElementById('last-added');
+      lastAdded.textContent = `+ ${productName}`;
+      lastAdded.classList.add('text-emerald-400');
+      setTimeout(() => {
+        lastAdded.textContent = '';
+      }, 2500);
+
+      // Haptic-like visual feedback
+      card.style.transform = 'scale(0.95)';
+      setTimeout(() => card.style.transform = 'scale(1)', 100);
+    }
+  </script>
+</body>
+</html>
