@@ -45,7 +45,7 @@ export const DesktopFilterBar = ({
 
   return (
     <div className="space-y-3">
-      {/* Main row */}
+      {/* Main row - Filters and Controls */}
       <div className="flex items-center gap-3">
         {/* Search Input */}
         <div className="relative flex-1">
@@ -129,31 +129,34 @@ export const DesktopFilterBar = ({
           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </Button>
 
-        {/* Import Button */}
-        <Button
-          size="sm"
-          onClick={onImport}
-          className="h-10 font-semibold text-white"
-          style={{
-            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-          }}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          {t('inventory.import', 'Import')}
-        </Button>
+        {/* Import/Export Actions - Separated */}
+        <div className="flex gap-2 ml-2 pl-2 border-l-2 border-stone-200">
+          {/* Import Button */}
+          <Button
+            size="sm"
+            onClick={onImport}
+            className="h-10 font-semibold text-white"
+            style={{
+              background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+            }}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {t('inventory.import', 'Import')}
+          </Button>
 
-        {/* Export Button */}
-        <Button
-          size="sm"
-          onClick={onExport}
-          className="h-10 font-semibold text-white"
-          style={{
-            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-          }}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {t('inventory.export', 'Export')}
-        </Button>
+          {/* Export Button */}
+          <Button
+            size="sm"
+            onClick={onExport}
+            className="h-10 font-semibold text-white"
+            style={{
+              background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t('inventory.export', 'Export')}
+          </Button>
+        </div>
       </div>
 
       {/* Secondary row - only if filters are active */}
