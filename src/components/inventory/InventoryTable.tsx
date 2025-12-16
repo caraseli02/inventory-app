@@ -53,9 +53,9 @@ const InventoryTableComponent = ({
 
   return (
     <div className="rounded-2xl border-2 border-stone-200 bg-white overflow-hidden">
-      <div className="max-h-[calc(100dvh-240px)] overflow-y-auto">
-        <Table>
-          <TableHeader className="sticky top-0 z-10">
+      <div className="max-h-[calc(100dvh-290px)] overflow-y-auto">
+        <Table stickyHeader>
+          <TableHeader className="sticky top-0 z-10 bg-linear-to-br from-stone-50 to-stone-100">
             <TableRow className="border-b-2 border-stone-200">
               <TableHead className="w-[64px] font-semibold text-stone-700 text-sm bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.image')}</TableHead>
               <TableHead className="font-semibold text-stone-700 text-sm min-w-[160px] bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.name')}</TableHead>
