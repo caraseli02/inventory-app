@@ -58,8 +58,7 @@ const InventoryTableComponent = ({
           <TableHeader className="sticky top-0 z-10 bg-linear-to-br from-stone-50 to-stone-100">
             <TableRow className="border-b-2 border-stone-200">
               <TableHead className="w-[64px] font-semibold text-stone-700 text-sm bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.image')}</TableHead>
-              <TableHead className="font-semibold text-stone-700 text-sm min-w-[160px] bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.name')}</TableHead>
-              <TableHead className="font-semibold text-stone-700 text-sm bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.barcode')}</TableHead>
+              <TableHead className="font-semibold text-stone-700 text-sm min-w-[200px] bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.product')}</TableHead>
               <TableHead className="font-semibold text-stone-700 text-sm bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.category')}</TableHead>
               <TableHead className="font-semibold text-stone-700 text-sm text-right pr-4 bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.stock')}</TableHead>
               <TableHead className="font-semibold text-stone-700 text-sm text-right pr-4 bg-linear-to-br from-stone-50 to-stone-100">{t('inventory.table.price')}</TableHead>
@@ -117,38 +116,34 @@ const InventoryTableComponent = ({
                     </div>
                   </TableCell>
 
-                  {/* Name with low stock indicator */}
+                  {/* Name with barcode subtitle */}
                   <TableCell className="py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-stone-900 text-sm">
-                        {product.fields.Name}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-stone-900 text-sm">
+                          {product.fields.Name}
+                        </span>
+                        {isLowStock && (
+                          <Badge
+                            variant="outline"
+                            className="bg-orange-100 border-orange-300 text-orange-700 text-xs px-1.5 py-0 h-5"
+                          >
+                            <AlertTriangle className="h-3 w-3 mr-0.5" />
+                            {t('inventory.lowStock', 'Low')}
+                          </Badge>
+                        )}
+                      </div>
+                      {/* Barcode as subtitle */}
+                      <span className="text-xs text-stone-500">
+                        {hasBarcode ? (
+                          <>
+                            {t('inventory.barcode', 'Barcode')}: <span className="font-mono">{product.fields.Barcode}</span>
+                          </>
+                        ) : (
+                          <span className="text-stone-400">—</span>
+                        )}
                       </span>
-                      {isLowStock && (
-                        <Badge
-                          variant="outline"
-                          className="bg-orange-100 border-orange-300 text-orange-700 text-xs px-1.5 py-0 h-5"
-                        >
-                          <AlertTriangle className="h-3 w-3 mr-0.5" />
-                          {t('inventory.lowStock', 'Low')}
-                        </Badge>
-                      )}
                     </div>
-                  </TableCell>
-
-                  {/* Barcode - with placeholder for missing */}
-                  <TableCell className="py-2">
-                    {hasBarcode ? (
-                      <span className="text-stone-600 font-mono text-sm">
-                        {product.fields.Barcode}
-                      </span>
-                    ) : (
-                      <span
-                        className="text-stone-400 text-sm cursor-help"
-                        title={t('inventory.noBarcodeTooltip', 'No barcode assigned')}
-                      >
-                        —
-                      </span>
-                    )}
                   </TableCell>
 
                   {/* Category */}
@@ -162,17 +157,59 @@ const InventoryTableComponent = ({
                     )}
                   </TableCell>
 
-                  {/* Stock - right aligned */}
+                  {/* Stock - with visual indicator */}
                   <TableCell className="py-2 text-right pr-4">
-                    <span
-                      className={`font-bold text-base tabular-nums ${
-                        isLowStock
-                          ? 'text-[var(--color-terracotta)]'
-                          : 'text-stone-900'
-                      }`}
-                    >
-                      {currentStock}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      {/* Stock number with color coding */}
+                      <span
+                        className={`font-bold text-base tabular-nums ${
+                          isLowStock
+                            ? 'text-red-600'
+                            : currentStock <= minStock * 1.5 && minStock > 0
+                            ? 'text-amber-600'
+                            : 'text-[var(--color-forest)]'
+                        }`}
+                      >
+                        {currentStock}
+                      </span>
+
+                      {/* Progress bar indicator */}
+                      {minStock > 0 && (
+                        <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              isLowStock
+                                ? 'bg-red-500'
+                                : currentStock <= minStock * 1.5
+                                ? 'bg-amber-500'
+                                : 'bg-[var(--color-forest)]'
+                            }`}
+                            style={{
+                              width: `${Math.min(100, (currentStock / (minStock * 2)) * 100)}%`,
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {/* Status label */}
+                      {minStock > 0 && (
+                        <span
+                          className={`text-xs font-semibold ${
+                            isLowStock
+                              ? 'text-red-600'
+                              : currentStock <= minStock * 1.5
+                              ? 'text-amber-600'
+                              : 'text-[var(--color-forest)]'
+                          }`}
+                        >
+                          {isLowStock
+                            ? '⚠️ ' + t('inventory.lowStock', 'Low')
+                            : currentStock <= minStock * 1.5
+                            ? t('inventory.mediumStock', 'Medium')
+                            : '✓ ' + t('inventory.goodStock', 'Good')}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
 
                   {/* Price - right aligned */}
