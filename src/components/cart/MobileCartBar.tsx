@@ -41,7 +41,9 @@ export const MobileCartBar = ({
   // Handle last added product animation
   useEffect(() => {
     if (lastAddedProduct) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayedLastAdded(lastAddedProduct);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowLastAdded(true);
 
       const timer = setTimeout(() => {
