@@ -174,3 +174,7 @@ debug-*.log
 !CONTRIBUTING.md
 !LICENSE.md
 !claude-progress.md
+
+# Visual test artifacts
+visual-test-results/
+*.mjs
