@@ -11,12 +11,11 @@ import type { CartItem, Product } from '../types';
 import { logger } from '../lib/logger';
 import {
   CheckCircleIcon,
-  ShoppingCartIcon,
   BoxIcon,
 } from '../components/ui/Icons';
 import { CheckoutProgress } from '../components/checkout/CheckoutProgress';
 import { Button } from '../components/ui/button';
-import { ChevronUp, ChevronDown, ScanBarcode, Search } from 'lucide-react';
+import { ChevronDown, ScanBarcode, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +27,7 @@ import {
 import { ProductSearchDropdown } from '../components/search/ProductSearchDropdown';
 import { type InputMode } from '../components/search/InputModeToggle';
 import { ProductBrowsePanel } from '../components/search/ProductBrowsePanel';
+import { MobileCartBar } from '../components/cart/MobileCartBar';
 import { useRecentProducts } from '../hooks/useRecentProducts';
 
 interface CheckoutPageProps {
@@ -42,6 +42,7 @@ interface CheckoutState {
   cart: CartItem[];
   isCheckingOut: boolean;
   checkoutComplete: boolean;
+  lastAddedProduct: string | null; // Name of last added product for feedback
 
   // Scanner state
   scannedCode: string | null;
@@ -69,6 +70,7 @@ type CheckoutAction =
   | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number; errorMessage?: string }
   | { type: 'SET_CART'; cart: CartItem[] }
   | { type: 'CLEAR_CART' }
+  | { type: 'SET_LAST_ADDED'; productName: string | null }
   | { type: 'START_CHECKOUT' }
   | { type: 'COMPLETE_CHECKOUT' }
   | { type: 'CANCEL_CHECKOUT' }
@@ -101,6 +103,7 @@ const initialState: CheckoutState = {
   cart: [],
   isCheckingOut: false,
   checkoutComplete: false,
+  lastAddedProduct: null,
   scannedCode: null,
   showScanner: true,
   manualCode: '',
@@ -219,6 +222,13 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       return {
         ...state,
         cart: [],
+        lastAddedProduct: null,
+      };
+
+    case 'SET_LAST_ADDED':
+      return {
+        ...state,
+        lastAddedProduct: action.productName,
       };
 
     case 'START_CHECKOUT':
@@ -403,7 +413,10 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
     });
     playSound('success');
 
-    // Show toast notification
+    // Set last added product for mobile cart bar feedback
+    dispatch({ type: 'SET_LAST_ADDED', productName: productToAdd.fields.Name });
+
+    // Show toast notification (less prominent on mobile since we have cart bar)
     if (isNewItem) {
       toast.success(t('cart.itemAdded'), {
         description: t('cart.itemAddedDescription', { name: productToAdd.fields.Name }),
@@ -771,6 +784,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                 <ProductBrowsePanel
                   onProductSelect={handleProductSelect}
                   maxHeight="calc(100dvh - 340px)"
+                  cartItems={state.cart}
                 />
               </div>
             )}
@@ -804,42 +818,33 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
           </div>
         )}
 
-        {/* Cart Toggle/Collapse */}
-        <div
-          className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out z-20 ${
-            state.isCartExpanded ? 'h-[calc(100dvh-50px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
-          }`}
-        >
-          {/* Toggle Button */}
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-            <Button
-              onClick={() => dispatch({ type: 'TOGGLE_CART_EXPANDED' })}
-              size="icon"
-              className="h-12 w-12 rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg"
-            >
-              {state.isCartExpanded ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
-            </Button>
-          </div>
+        {/* Mobile Cart Bar - Shows when cart has items and not expanded */}
+        {!state.isCartExpanded && (
+          <MobileCartBar
+            cart={state.cart}
+            total={total}
+            lastAddedProduct={state.lastAddedProduct}
+            onViewCart={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: true })}
+            isCheckingOut={state.isCheckingOut}
+          />
+        )}
 
-          {/* Collapsed Cart Summary */}
-          {!state.isCartExpanded && (
-            <div className="p-6 flex items-center justify-between cursor-pointer" onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: true })}>
-              <div className="flex items-center gap-3">
-                <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">{t('cart.title')}</h3>
-                  <p className="text-sm text-gray-600">{state.cart.length} {t('cart.items')}</p>
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-stone-900">
-                € {total.toFixed(2)}
-              </div>
+        {/* Expanded Cart Overlay */}
+        {state.isCartExpanded && (
+          <div className="absolute bottom-0 left-0 right-0 bg-white h-[calc(100dvh-50px)] rounded-t-3xl transition-all duration-300 ease-in-out z-30">
+            {/* Close Button */}
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+              <Button
+                onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: false })}
+                size="icon"
+                className="h-12 w-12 rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg"
+              >
+                <ChevronDown className="h-6 w-6" />
+              </Button>
             </div>
-          )}
 
-          {/* Expanded Cart */}
-          {state.isCartExpanded && (
-            <div className="h-full flex flex-col">
+            {/* Full Cart View */}
+            <div className="h-full flex flex-col pt-4">
               <Cart
                 cart={state.cart}
                 total={total}
@@ -849,7 +854,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
                     <div className="space-y-2">
                       <Button
-                        className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white disabled:bg-stone-400"
+                        className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-stone-400 rounded-xl"
                         onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
@@ -865,8 +870,8 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                 }
               />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Tablet/Desktop View - New Scanner UI with visible cart */}
@@ -913,6 +918,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                   <ProductBrowsePanel
                     onProductSelect={handleProductSelect}
                     maxHeight="calc(100dvh - 280px)"
+                    cartItems={state.cart}
                   />
                 </div>
               </div>
