@@ -70,12 +70,12 @@ export const ProductDetailDialog = ({
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full h-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none relative sm:!inset-0 sm:!left-0 sm:!top-0 sm:!translate-x-0 sm:!translate-y-0 sm:!max-w-full sm:!rounded-none overflow-hidden"
+        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none flex flex-col overflow-hidden"
+        style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}
         aria-describedby="product-detail-description"
       >
-        <div className="h-full flex flex-col">
-          {/* Header with gradient */}
-          <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-4 sm:px-8 sm:pt-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 border-b border-zinc-200 flex-shrink-0">
+        {/* Header with gradient */}
+        <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-4 sm:px-8 sm:pt-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 border-b border-zinc-200 shrink-0">
             <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-1">
               {product.fields.Name}
             </DialogTitle>
@@ -331,8 +331,8 @@ export const ProductDetailDialog = ({
           </div>
           </div>
 
-          {/* Footer with Actions - Sticky at bottom */}
-          <div className="sticky bottom-0 z-10 border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4 flex-shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+          {/* Footer with Actions - Always at bottom */}
+          <div className="border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4 shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
             <Button
               variant="outline"
               onClick={onClose}
@@ -358,7 +358,6 @@ export const ProductDetailDialog = ({
               </Button>
             )}
           </div>
-        </div>
       </DialogContent>
     </Dialog>
   );
