@@ -1,4 +1,4 @@
-import { Search, X, RefreshCw, AlertTriangle, Upload, Download } from 'lucide-react';
+import { Search, X, RefreshCw, AlertTriangle, Upload, Download, Receipt } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ interface DesktopFilterBarProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onImport: () => void;
+  onImportInvoice?: () => void;
   onExport: () => void;
 }
 
@@ -31,6 +32,7 @@ export const DesktopFilterBar = ({
   onRefresh,
   isRefreshing = false,
   onImport,
+  onImportInvoice,
   onExport,
 }: DesktopFilterBarProps) => {
   const { t } = useTranslation();
@@ -133,31 +135,48 @@ export const DesktopFilterBar = ({
         <span className="text-sm text-stone-600 font-medium whitespace-nowrap">{productCountText}</span>
 
         <div className="flex gap-2">
-          {/* Import Button */}
-        <Button
-          size="sm"
-          onClick={onImport}
-          className="h-10 font-semibold text-white"
-          style={{
-            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-          }}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          {t('inventory.import', 'Import')}
-        </Button>
+          {/* Import Excel Button */}
+          <Button
+            size="sm"
+            onClick={onImport}
+            className="h-10 font-semibold text-white"
+            style={{
+              background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+            }}
+            title="Import from Excel file"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            {t('inventory.importExcel', 'Import Excel')}
+          </Button>
 
-        {/* Export Button */}
-        <Button
-          size="sm"
-          onClick={onExport}
-          className="h-10 font-semibold text-white"
-          style={{
-            background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-          }}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {t('inventory.export', 'Export')}
-        </Button>
+          {/* Import Invoice Button */}
+          {onImportInvoice && (
+            <Button
+              size="sm"
+              onClick={onImportInvoice}
+              className="h-10 font-semibold text-white"
+              style={{
+                background: 'linear-gradient(to bottom right, var(--color-lavender), var(--color-lavender-dark))',
+              }}
+              title="Import from Invoice (PDF/Image)"
+            >
+              <Receipt className="h-4 w-4 mr-2" />
+              {t('inventory.importInvoice', 'Import Invoice')}
+            </Button>
+          )}
+
+          {/* Export Button */}
+          <Button
+            size="sm"
+            onClick={onExport}
+            className="h-10 font-semibold text-white"
+            style={{
+              background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t('inventory.export', 'Export')}
+          </Button>
         </div>
       </div>
 

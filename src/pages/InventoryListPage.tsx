@@ -15,6 +15,7 @@ import EditProductDialog from '../components/product/EditProductDialog';
 import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ImportDialog } from '../components/xlsx/ImportDialog';
+import { InvoiceUploadDialog } from '../components/invoice/InvoiceUploadDialog';
 import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
 import { addStockMovement, createProduct, getProductByBarcode } from '../lib/api';
 import type { ImportedProduct } from '../lib/xlsx';
@@ -37,6 +38,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
   const [loadingProducts, setLoadingProducts] = useState<Set<string>>(new Set());
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
@@ -384,6 +386,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
             onRefresh={handleRefresh}
             isRefreshing={isLoading}
             onImport={() => setImportDialogOpen(true)}
+            onImportInvoice={() => setInvoiceDialogOpen(true)}
             onExport={handleExport}
           />
 
@@ -492,6 +495,13 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       <ImportDialog
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
+        onImport={handleImport}
+      />
+
+      {/* Invoice Upload Dialog */}
+      <InvoiceUploadDialog
+        open={invoiceDialogOpen}
+        onOpenChange={setInvoiceDialogOpen}
         onImport={handleImport}
       />
     </div>

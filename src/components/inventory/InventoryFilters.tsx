@@ -22,6 +22,7 @@ interface InventoryFiltersProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onImport: () => void;
+  onImportInvoice?: () => void;
   onExport: () => void;
 }
 
