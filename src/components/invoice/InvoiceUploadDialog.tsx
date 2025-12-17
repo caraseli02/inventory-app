@@ -21,9 +21,10 @@ import {
   type InvoiceData,
   VALID_INVOICE_EXTENSIONS,
 } from '@/lib/invoiceOCR';
-import { Upload, AlertCircle, CheckCircle2, Loader2, Receipt } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle2, Loader2, Receipt, Trash2 } from 'lucide-react';
 import type { ImportedProduct } from '@/lib/xlsx';
 import { logger } from '@/lib/logger';
+import type { InvoiceProduct } from '@/lib/invoiceOCR';
 
 interface InvoiceUploadDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
   const [step, setStep] = useState<InvoiceStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
+  const [editableProducts, setEditableProducts] = useState<InvoiceProduct[]>([]);
   const [fileName, setFileName] = useState<string>('');
   const [ocrProgress, setOcrProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -63,6 +65,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
   const resetState = useCallback(() => {
     setStep('upload');
     setInvoiceData(null);
+    setEditableProducts([]);
     setFileName('');
     setOcrProgress(0);
     setIsProcessing(false);
@@ -99,6 +102,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
 
       if (result.success) {
         setInvoiceData(result.data);
+        setEditableProducts(result.data.products);
         setStep('preview');
       } else {
         setError(result.error);
@@ -167,23 +171,27 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     [handleFileSelect]
   );
 
+  const handleRemoveProduct = useCallback((index: number) => {
+    setEditableProducts(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleConfirmImport = useCallback(async () => {
-    if (!invoiceData?.products.length) return;
+    if (!editableProducts.length || !invoiceData) return;
 
     setStep('importing');
-    setImportProgress({ current: 0, total: invoiceData.products.length });
+    setImportProgress({ current: 0, total: editableProducts.length });
     setImportErrors([]);
 
     try {
       // Convert invoice products to ImportedProduct format
-      const importedProducts: ImportedProduct[] = invoiceData.products.map((product) => ({
+      const importedProducts: ImportedProduct[] = editableProducts.map((product) => ({
         Name: product.name,
         Barcode: product.barcode || '', // Can be empty, user can add later
         Category: undefined, // Will be assigned based on existing logic or user input
         Price: product.unitPrice,
         currentStock: product.quantity,
         'Min Stock Level': undefined,
-        Supplier: invoiceData.supplier || undefined,
+        Supplier: invoiceData?.supplier || undefined,
         'Expiry Date': undefined,
       }));
 
@@ -191,15 +199,15 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
 
       logger.info('Invoice import completed successfully', {
         productCount: importedProducts.length,
-        supplier: invoiceData.supplier,
-        invoiceNumber: invoiceData.invoiceNumber,
+        supplier: invoiceData?.supplier,
+        invoiceNumber: invoiceData?.invoiceNumber,
       });
 
       setStep('complete');
     } catch (error) {
       logger.error('Invoice import failed', {
-        productCount: invoiceData.products.length,
-        supplier: invoiceData.supplier,
+        productCount: editableProducts.length,
+        supplier: invoiceData?.supplier,
         errorMessage: error instanceof Error ? error.message : String(error),
         errorStack: error instanceof Error ? error.stack : undefined,
       });
@@ -221,7 +229,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
       setImportErrors([errorMessage]);
       setStep('preview');
     }
-  }, [invoiceData, onImport]);
+  }, [editableProducts, invoiceData, onImport]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -345,7 +353,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                 <CheckCircle2 className="h-8 w-8 text-[var(--color-forest)] flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-stone-900">
-                    Successfully extracted {invoiceData.products.length} products
+                    Successfully extracted {editableProducts.length} products
                   </p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm">
                     {invoiceData.supplier && (
@@ -383,7 +391,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
               </div>
 
               {/* Warning about barcodes */}
-              {invoiceData.products.some((p) => !p.barcode) && (
+              {editableProducts.some((p) => !p.barcode) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-amber-800 mb-1">
                     Note: Some products don't have barcodes
@@ -415,10 +423,13 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                         <TableHead className="px-3 py-2 text-right font-medium text-stone-700">
                           Total
                         </TableHead>
+                        <TableHead className="px-3 py-2 text-center font-medium text-stone-700">
+                          Actions
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-stone-200">
-                      {invoiceData.products.map((product, i) => (
+                      {editableProducts.map((product, i) => (
                         <TableRow key={i} className="hover:bg-stone-50">
                           <TableCell className="px-3 py-2">{product.name}</TableCell>
                           <TableCell className="px-3 py-2">
@@ -439,6 +450,19 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                           <TableCell className="px-3 py-2 text-right font-semibold">
                             €{product.totalPrice.toFixed(2)}
                           </TableCell>
+                          <TableCell className="px-3 py-2">
+                            <div className="flex items-center justify-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveProduct(i)}
+                                className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Remove product"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -451,7 +475,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                 <p className="text-sm font-medium text-blue-900 mb-2">What happens next?</p>
                 <ul className="text-xs text-blue-800 space-y-1">
                   <li>
-                    • {invoiceData.products.length} products will be added to your inventory
+                    • {editableProducts.length} products will be added to your inventory
                   </li>
                   <li>
                     • Stock IN movements will be created with the extracted quantities
@@ -492,7 +516,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
               <CheckCircle2 className="h-16 w-16 text-[var(--color-forest)] mb-4" />
               <p className="text-xl font-semibold text-stone-900 mb-2">Import Complete!</p>
               <p className="text-stone-600">
-                Successfully imported {invoiceData?.products.length ?? 0} products from invoice
+                Successfully imported {editableProducts.length} products from invoice
               </p>
             </div>
           )}
@@ -513,9 +537,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
               <Button
                 onClick={handleConfirmImport}
                 className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
-                disabled={!invoiceData?.products.length}
+                disabled={!editableProducts.length}
               >
-                Import {invoiceData?.products.length ?? 0} Products
+                Import {editableProducts.length} Products
               </Button>
             </>
           )}
