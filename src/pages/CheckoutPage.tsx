@@ -52,6 +52,7 @@ interface CheckoutState {
   // Checkout summary (stored when checkout completes)
   completedItemsCount: number;
   completedTotalQuantity: number;
+  completedReferenceNumber: string;
 
   // Scanner state
   scannedCode: string | null;
@@ -82,7 +83,7 @@ type CheckoutAction =
   | { type: 'CLEAR_CART' }
   | { type: 'SET_LAST_ADDED'; productName: string | null }
   | { type: 'START_CHECKOUT' }
-  | { type: 'COMPLETE_CHECKOUT'; itemsCount: number; totalQuantity: number }
+  | { type: 'COMPLETE_CHECKOUT'; itemsCount: number; totalQuantity: number; referenceNumber: string }
   | { type: 'CANCEL_CHECKOUT' }
 
   // Scanner actions
@@ -117,6 +118,7 @@ const initialState: CheckoutState = {
   lastAddedProduct: null,
   completedItemsCount: 0,
   completedTotalQuantity: 0,
+  completedReferenceNumber: '',
   scannedCode: null,
   showScanner: true,
   manualCode: '',
@@ -259,6 +261,7 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         checkoutComplete: true,
         completedItemsCount: action.itemsCount,
         completedTotalQuantity: action.totalQuantity,
+        completedReferenceNumber: action.referenceNumber,
         cart: [],
       };
 
@@ -721,8 +724,9 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
       // Calculate summary before clearing cart
       const itemsCount = mergedResults.length;
       const totalQuantity = mergedResults.reduce((sum, item) => sum + item.quantity, 0);
+      const referenceNumber = `#INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
 
-      dispatch({ type: 'COMPLETE_CHECKOUT', itemsCount, totalQuantity });
+      dispatch({ type: 'COMPLETE_CHECKOUT', itemsCount, totalQuantity, referenceNumber });
       playSound('success');
 
       // Invalidate all related caches to ensure fresh data after checkout
@@ -816,7 +820,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                       <div className="flex justify-between text-sm">
                         <span style={{ color: 'var(--color-stone)' }}>{t('checkout.referenceLabel', 'Reference:')}</span>
                         <span className="font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
-                          #INV-{new Date().getFullYear()}-{String(Math.floor(Math.random() * 1000)).padStart(3, '0')}
+                          {state.completedReferenceNumber}
                         </span>
                       </div>
                     </div>
@@ -827,24 +831,24 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-3 gap-2 mb-6">
-              <button className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all hover:bg-gray-50" style={{ borderColor: 'var(--color-stone)' }}>
+              <Button variant="outline" className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
                 <Share2 className="w-5 h-5" style={{ color: 'var(--color-stone)' }} />
                 <span className="text-xs font-medium" style={{ color: 'var(--color-stone)' }}>
                   {t('checkout.share', 'Share')}
                 </span>
-              </button>
-              <button className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all hover:bg-gray-50" style={{ borderColor: 'var(--color-stone)' }}>
+              </Button>
+              <Button variant="outline" className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
                 <Download className="w-5 h-5" style={{ color: 'var(--color-stone)' }} />
                 <span className="text-xs font-medium" style={{ color: 'var(--color-stone)' }}>
                   {t('checkout.export', 'Export')}
                 </span>
-              </button>
-              <button className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 transition-all hover:bg-gray-50" style={{ borderColor: 'var(--color-stone)' }}>
+              </Button>
+              <Button variant="outline" className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
                 <Clock className="w-5 h-5" style={{ color: 'var(--color-stone)' }} />
                 <span className="text-xs font-medium" style={{ color: 'var(--color-stone)' }}>
                   {t('checkout.history', 'History')}
                 </span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -929,7 +933,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                         {t('checkout.referenceNumber', 'Reference Number:')}
                       </span>
                       <span className="text-lg font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
-                        #INV-{new Date().getFullYear()}-{String(Math.floor(Math.random() * 1000)).padStart(3, '0')}
+                        {state.completedReferenceNumber}
                       </span>
                     </div>
                   </div>
@@ -937,24 +941,24 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
                 {/* Quick Actions */}
                 <div className="grid grid-cols-3 gap-3 mb-6">
-                  <button className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all hover:bg-gray-50" style={{ borderColor: 'var(--color-stone)' }}>
+                  <Button variant="outline" className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
                     <Share2 className="w-6 h-6" style={{ color: 'var(--color-stone)' }} />
                     <span className="text-sm font-semibold" style={{ color: 'var(--color-stone)' }}>
                       {t('checkout.share', 'Share')}
                     </span>
-                  </button>
-                  <button className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all hover:bg-gray-50" style={{ borderColor: 'var(--color-stone)' }}>
+                  </Button>
+                  <Button variant="outline" className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
                     <Download className="w-6 h-6" style={{ color: 'var(--color-stone)' }} />
                     <span className="text-sm font-semibold" style={{ color: 'var(--color-stone)' }}>
                       {t('checkout.export', 'Export')}
                     </span>
-                  </button>
-                  <button className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all hover:bg-gray-50" style={{ borderColor: 'var(--color-stone)' }}>
+                  </Button>
+                  <Button variant="outline" className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
                     <Clock className="w-6 h-6" style={{ color: 'var(--color-stone)' }} />
                     <span className="text-sm font-semibold" style={{ color: 'var(--color-stone)' }}>
                       {t('checkout.history', 'History')}
                     </span>
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Back to Home Button */}
