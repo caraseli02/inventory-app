@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "version": "1.3.0",
-    "last_updated": "2025-12-14",
+    "version": "1.4.0",
+    "last_updated": "2025-12-17",
     "project": "Inventory App - Grocery Management",
-    "total_features": 27,
-    "implemented": 22,
+    "total_features": 28,
+    "implemented": 23,
     "tested": 21,
     "warning": "⚠️ STRICTLY DO NOT REMOVE OR MODIFY ANYTHING IN THIS FILE BEYOND MARKING FEATURES AS IMPLEMENTED"
   },
@@ -1278,6 +1278,109 @@
           "scenario": "Alerts update when stock falls below threshold",
           "tested": true,
           "test_file": "manual-test"
+        }
+      ]
+    },
+    {
+      "id": "F028",
+      "name": "Invoice Upload with AI-Powered OCR",
+      "category": "Data Integration",
+      "priority": "Phase-1",
+      "spec": "docs/specs/invoice_automation_research.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Create invoiceOCR.ts with Google Cloud Vision integration",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Implement GPT-4o mini invoice parsing",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Build InvoiceUploadDialog component with drag-and-drop",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Add progress tracking for OCR processing",
+          "completed": true
+        },
+        {
+          "step": 5,
+          "description": "Create editable product preview table",
+          "completed": true
+        },
+        {
+          "step": 6,
+          "description": "Add edit/remove functionality for products before import",
+          "completed": true
+        },
+        {
+          "step": 7,
+          "description": "Integrate with existing import workflow",
+          "completed": true
+        },
+        {
+          "step": 8,
+          "description": "Add responsive modal sizing (fullscreen mobile, 90% desktop)",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Upload invoice image and extract products via OCR",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "AI correctly parses product names, quantities, and prices",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Edit product details before import",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Remove unwanted products from preview",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle invoices with mixed barcodes (some present, some missing)",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Extract invoice metadata (supplier, invoice number, date, total)",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle OCR API errors gracefully",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle parsing API errors gracefully",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Validate file type and size (JPG/PNG, max 10MB)",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Display progress bar during processing",
+          "tested": false,
+          "test_file": null
         }
       ]
     }
