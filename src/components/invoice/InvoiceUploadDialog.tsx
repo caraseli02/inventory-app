@@ -256,18 +256,18 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-2xl min-h-[70vh] max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-[var(--color-forest)]" />
+      <DialogContent className="w-[100vw] h-[100vh] md:w-[90vw] md:h-[90vh] md:max-w-[1400px] p-0 gap-0 overflow-hidden flex flex-col">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-stone-200">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <Receipt className="h-6 w-6 text-[var(--color-forest)]" />
             Import from Invoice
           </DialogTitle>
-          <DialogDescription>{STEP_DESCRIPTIONS[step]}</DialogDescription>
+          <DialogDescription className="text-base">{STEP_DESCRIPTIONS[step]}</DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto py-4">
+        <div className="flex-1 overflow-auto px-6 py-4">
           {step === 'upload' && (
-            <div className="space-y-4">
+            <div className="space-y-4 max-w-3xl mx-auto">
               {/* Drag & Drop Zone */}
               <div
                 onDrop={handleDrop}
@@ -427,26 +427,26 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
 
               {/* Product Preview Table - Using shadcn Table components */}
               <div className="border-2 border-stone-200 rounded-lg overflow-hidden">
-                <div className="overflow-x-auto max-h-80">
+                <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 500px)', minHeight: '300px' }}>
                   <Table>
-                    <TableHeader className="bg-stone-100 sticky top-0">
+                    <TableHeader className="bg-stone-100 sticky top-0 z-10">
                       <TableRow>
-                        <TableHead className="px-3 py-2 text-left font-medium text-stone-700">
+                        <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[35%]">
                           Product Name
                         </TableHead>
-                        <TableHead className="px-3 py-2 text-left font-medium text-stone-700">
+                        <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[20%]">
                           Barcode
                         </TableHead>
-                        <TableHead className="px-3 py-2 text-right font-medium text-stone-700">
+                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[10%]">
                           Qty
                         </TableHead>
-                        <TableHead className="px-3 py-2 text-right font-medium text-stone-700">
+                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[12%]">
                           Unit Price
                         </TableHead>
-                        <TableHead className="px-3 py-2 text-right font-medium text-stone-700">
+                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[12%]">
                           Total
                         </TableHead>
-                        <TableHead className="px-3 py-2 text-center font-medium text-stone-700">
+                        <TableHead className="px-4 py-3 text-center font-semibold text-stone-700 w-[11%]">
                           Actions
                         </TableHead>
                       </TableRow>
@@ -456,25 +456,25 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                         const isEditing = editingIndex === i;
                         return (
                           <TableRow key={i} className={isEditing ? "bg-blue-50" : "hover:bg-stone-50"}>
-                            <TableCell className="px-3 py-2">
+                            <TableCell className="px-4 py-3">
                               {isEditing ? (
                                 <Input
                                   value={product.name}
                                   onChange={(e) => handleProductFieldChange(i, 'name', e.target.value)}
-                                  className="h-8 text-sm"
+                                  className="h-9 text-sm w-full"
                                   autoFocus
                                 />
                               ) : (
                                 product.name
                               )}
                             </TableCell>
-                            <TableCell className="px-3 py-2">
+                            <TableCell className="px-4 py-3">
                               {isEditing ? (
                                 <Input
                                   value={product.barcode || ''}
                                   onChange={(e) => handleProductFieldChange(i, 'barcode', e.target.value)}
                                   placeholder="No barcode"
-                                  className="h-8 text-xs font-mono"
+                                  className="h-9 text-xs font-mono w-full"
                                 />
                               ) : product.barcode ? (
                                 <code className="text-xs font-mono bg-stone-100 px-1.5 py-0.5 rounded">
@@ -484,26 +484,26 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                 <span className="text-xs text-stone-400 italic">No barcode</span>
                               )}
                             </TableCell>
-                            <TableCell className="px-3 py-2 text-right">
+                            <TableCell className="px-4 py-3 text-right">
                               {isEditing ? (
                                 <Input
                                   type="number"
                                   value={product.quantity}
                                   onChange={(e) => handleProductFieldChange(i, 'quantity', Number(e.target.value))}
-                                  className="h-8 text-sm text-right"
+                                  className="h-9 text-sm text-right w-full"
                                   min="1"
                                 />
                               ) : (
                                 <span className="font-medium">{product.quantity}</span>
                               )}
                             </TableCell>
-                            <TableCell className="px-3 py-2 text-right">
+                            <TableCell className="px-4 py-3 text-right">
                               {isEditing ? (
                                 <Input
                                   type="number"
                                   value={product.unitPrice}
                                   onChange={(e) => handleProductFieldChange(i, 'unitPrice', Number(e.target.value))}
-                                  className="h-8 text-sm text-right"
+                                  className="h-9 text-sm text-right w-full"
                                   step="0.01"
                                   min="0"
                                 />
@@ -511,13 +511,13 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                 `€${product.unitPrice.toFixed(2)}`
                               )}
                             </TableCell>
-                            <TableCell className="px-3 py-2 text-right">
+                            <TableCell className="px-4 py-3 text-right">
                               {isEditing ? (
                                 <Input
                                   type="number"
                                   value={product.totalPrice}
                                   onChange={(e) => handleProductFieldChange(i, 'totalPrice', Number(e.target.value))}
-                                  className="h-8 text-sm text-right"
+                                  className="h-9 text-sm text-right w-full"
                                   step="0.01"
                                   min="0"
                                 />
@@ -525,27 +525,27 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                 <span className="font-semibold">€{product.totalPrice.toFixed(2)}</span>
                               )}
                             </TableCell>
-                            <TableCell className="px-3 py-2">
-                              <div className="flex items-center justify-center gap-1">
+                            <TableCell className="px-4 py-3">
+                              <div className="flex items-center justify-center gap-2">
                                 {isEditing ? (
                                   <>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={handleSaveEdit}
-                                      className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                                       title="Save changes"
                                     >
-                                      <Check className="h-4 w-4" />
+                                      <Check className="h-5 w-5" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={handleCancelEdit}
-                                      className="h-7 w-7 p-0 text-stone-600 hover:text-stone-700 hover:bg-stone-100"
+                                      className="h-8 w-8 p-0 text-stone-600 hover:text-stone-700 hover:bg-stone-100"
                                       title="Cancel"
                                     >
-                                      <X className="h-4 w-4" />
+                                      <X className="h-5 w-5" />
                                     </Button>
                                   </>
                                 ) : (
@@ -554,19 +554,19 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleEditProduct(i)}
-                                      className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                      className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                                       title="Edit product"
                                     >
-                                      <Edit2 className="h-4 w-4" />
+                                      <Edit2 className="h-5 w-5" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleRemoveProduct(i)}
-                                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                                       title="Remove product"
                                     >
-                                      <Trash2 className="h-4 w-4" />
+                                      <Trash2 className="h-5 w-5" />
                                     </Button>
                                   </>
                                 )}
@@ -632,7 +632,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 border-t border-stone-200">
           {step === 'upload' && (
             <Button variant="outline" onClick={handleClose} disabled={isProcessing}>
               Cancel
