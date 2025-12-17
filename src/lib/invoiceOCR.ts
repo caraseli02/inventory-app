@@ -183,7 +183,25 @@ ${ocrText}`;
 
     // Parse JSON response (remove markdown code blocks if present)
     const jsonText = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const invoiceData = JSON.parse(jsonText);
+
+    // Define interface for raw API response
+    interface RawInvoiceProduct {
+      name: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+      barcode?: string | null;
+    }
+
+    interface RawInvoiceData {
+      supplier?: string | null;
+      invoiceNumber?: string | null;
+      invoiceDate?: string | null;
+      totalAmount?: number | null;
+      products?: RawInvoiceProduct[];
+    }
+
+    const invoiceData: RawInvoiceData = JSON.parse(jsonText);
 
     // Validate and clean data
     return {
@@ -192,8 +210,8 @@ ${ocrText}`;
       invoiceDate: invoiceData.invoiceDate || undefined,
       totalAmount: invoiceData.totalAmount || undefined,
       products: (invoiceData.products || [])
-        .filter((p: any) => p.name && p.name.trim().length > 0)
-        .map((p: any) => ({
+        .filter((p: RawInvoiceProduct) => p.name && p.name.trim().length > 0)
+        .map((p: RawInvoiceProduct) => ({
           name: p.name.trim(),
           quantity: Number(p.quantity) || 1,
           unitPrice: Number(p.unitPrice) || 0,
@@ -277,7 +295,6 @@ export async function extractInvoiceData(
     onProgress?.(30);
 
     // For PDFs, convert first page to image
-    let imageFile = file;
     if (file.type === 'application/pdf') {
       // TODO: Implement PDF to image conversion using pdf.js
       // For now, return error for PDFs
@@ -290,7 +307,7 @@ export async function extractInvoiceData(
     onProgress?.(40);
 
     // Step 1: Perform OCR
-    const ocrText = await performOCR(imageFile);
+    const ocrText = await performOCR(file);
     onProgress?.(70);
 
     // Step 2: Parse OCR text into structured data
