@@ -13,8 +13,23 @@ interface CartItemProps {
 }
 
 /**
- * Enhanced cart item with category badges, hover effects, and status indicators
- * Optimized for touch with 44px minimum touch targets
+ * Helper function to get status-based styling
+ */
+function getStatusStyles(status: CartItemType['status']): string {
+  switch (status) {
+    case 'failed':
+      return 'border-red-200 bg-red-50/30';
+    case 'success':
+      return 'border-green-200 bg-green-50/30';
+    default:
+      return 'border-stone-200 hover:border-stone-300 hover:shadow-md';
+  }
+}
+
+/**
+ * Enhanced cart item with category badges, hover effects, and status indicators.
+ * Touch-optimized: 44px touch targets on mobile (< 640px), 40px on tablet/desktop.
+ * Note: Desktop buttons are below WCAG 2.5.5 minimum; acceptable as mouse-driven.
  */
 export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
   const { t } = useTranslation();
@@ -25,32 +40,25 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
   const isProcessing = status === 'processing';
 
   return (
-    <div
-      className={`bg-white border-2 rounded-xl overflow-hidden transition-all duration-150 ${
-        status === 'failed'
-          ? 'border-red-200 bg-red-50/30'
-          : status === 'success'
-          ? 'border-green-200 bg-green-50/30'
-          : 'border-stone-200 hover:border-stone-300'
-      }`}
-    >
+    <div className={`bg-white border-2 rounded-xl overflow-hidden transition-all duration-200 animate-scale-in ${getStatusStyles(status)}`}>
       <div className="flex gap-0 items-stretch">
-        {/* Product Image - Fixed width, full height of card */}
         <div className="w-24 min-h-[96px] bg-stone-100 flex items-center justify-center shrink-0 overflow-hidden">
           {imageUrl ? (
             <img
               src={imageUrl}
               alt={item.product.fields.Name}
               className="w-full h-full object-cover"
+              onError={(e) => {
+                console.warn('Failed to load product image in cart:', imageUrl);
+                e.currentTarget.style.display = 'none';
+              }}
             />
           ) : (
             <BoxIcon className="h-10 w-10 text-stone-400" />
           )}
         </div>
 
-        {/* Product Info & Controls */}
         <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
-          {/* Top: Name, Category, Price */}
           <div className="flex-1">
             <h3 className="font-semibold text-stone-900 text-sm leading-tight line-clamp-2 mb-1">
               {item.product.fields.Name}
@@ -67,34 +75,42 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
             </div>
           </div>
 
-          {/* Bottom: Quantity Controls - 44px touch targets */}
           <div className="mt-2 flex items-center justify-between">
             <div className="flex items-center gap-1">
-              {/* Decrease Button */}
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => onUpdateQuantity(index, -1)}
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
+                onClick={() => {
+                  try {
+                    onUpdateQuantity(index, -1);
+                  } catch (error) {
+                    console.error('Failed to decrease cart item quantity:', error);
+                  }
+                }}
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-all hover:scale-105 active:scale-95 touch-feedback"
                 disabled={isProcessing}
                 aria-label={t('cart.decreaseQuantity', 'Decrease quantity')}
               >
                 <Minus className="h-5 w-5 sm:h-4 sm:w-4" />
               </Button>
 
-              {/* Quantity Display */}
-              <span className="font-bold text-lg min-w-[2.5rem] text-center tabular-nums">
+              <span className="font-bold text-lg min-w-[2.5rem] text-center tabular-nums transition-all">
                 {item.quantity}
               </span>
 
-              {/* Increase Button */}
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => onUpdateQuantity(index, 1)}
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
+                onClick={() => {
+                  try {
+                    onUpdateQuantity(index, 1);
+                  } catch (error) {
+                    console.error('Failed to increase cart item quantity:', error);
+                  }
+                }}
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-all hover:scale-105 active:scale-95 touch-feedback"
                 disabled={isProcessing}
                 aria-label={t('cart.increaseQuantity', 'Increase quantity')}
               >
@@ -102,7 +118,6 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
               </Button>
             </div>
 
-            {/* Item Total & Remove */}
             <div className="flex items-center gap-2">
               {price != null && (
                 <span className="font-bold text-stone-900 text-base tabular-nums">
@@ -113,8 +128,14 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => onUpdateQuantity(index, -item.quantity)}
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-colors"
+                onClick={() => {
+                  try {
+                    onUpdateQuantity(index, -item.quantity);
+                  } catch (error) {
+                    console.error('Failed to remove cart item:', error);
+                  }
+                }}
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-all hover:scale-110 active:scale-95 touch-feedback"
                 disabled={isProcessing}
                 title={t('cart.removeItem')}
                 aria-label={t('cart.removeItem')}
