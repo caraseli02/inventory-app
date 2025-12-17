@@ -72,61 +72,59 @@ export const MobileCartBar = ({
     }
   }, [lastAddedProduct, cart]);
 
-  // Don't render if cart is empty
-  if (!hasItems) {
-    return null;
-  }
-
   return (
-    <div
-      className={`
-        fixed bottom-0 left-0 right-0 z-30
-        transform transition-transform duration-300 ease-out
-        ${hasItems ? 'translate-y-0' : 'translate-y-full'}
-      `}
-    >
-      {/* Main bar */}
-      <div className="bg-stone-900 text-white px-4 py-4 rounded-t-2xl shadow-2xl animate-slide-in-up">
-        <div className="flex items-center justify-between gap-4">
+    <div className="fixed bottom-0 left-0 right-0 z-30">
+      {/* Main bar - Always visible */}
+      <div className={`bg-stone-900 text-white px-4 py-3 rounded-t-2xl shadow-2xl transition-all duration-300 ${hasItems ? 'animate-slide-in-up' : ''}`}>
+        <div className="flex items-center justify-between gap-3">
           {/* Left side: Count and last added */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-emerald-400" />
-                <span className={`bg-emerald-500 text-white text-sm font-bold px-2.5 py-0.5 rounded-full transition-transform ${animateBadge ? 'animate-bounce-once' : ''}`}>
-                  {itemCount} {itemCount === 1 ? t('cart.item', 'item') : t('cart.items', 'items')}
-                </span>
-              </div>
+            <div className="flex items-center gap-2">
+              <ShoppingCart className={`h-5 w-5 transition-colors ${hasItems ? 'text-emerald-400' : 'text-stone-500'}`} />
+              <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full transition-all ${hasItems ? 'bg-emerald-500 text-white' : 'bg-stone-700 text-stone-400'} ${animateBadge ? 'animate-bounce-once' : ''}`}>
+                {itemCount} {itemCount === 1 ? t('cart.item', 'item') : t('cart.items', 'items')}
+              </span>
             </div>
 
-            {/* Last added feedback with thumbnail */}
-            <div className="h-7 mt-1.5 overflow-hidden">
-              <div
-                className={`
-                  flex items-center gap-2
-                  transition-all duration-300 ease-out
-                  ${showLastAdded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}
-                `}
-              >
-                {lastAddedImage && (
-                  <div className="w-6 h-6 rounded bg-stone-800 overflow-hidden shrink-0 border border-emerald-500">
-                    <img
-                      src={lastAddedImage}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                {!lastAddedImage && (
-                  <div className="w-6 h-6 rounded bg-stone-800 flex items-center justify-center shrink-0 border border-emerald-500">
-                    <span className="text-[10px]">📦</span>
-                  </div>
-                )}
-                <p className="text-sm text-emerald-400 font-medium truncate">
-                  {displayedLastAdded && `+ ${displayedLastAdded}`}
+            {/* Last added feedback with thumbnail - Only show when items exist */}
+            {hasItems && (
+              <div className="h-7 mt-1.5 overflow-hidden">
+                <div
+                  className={`
+                    flex items-center gap-2
+                    transition-all duration-300 ease-out
+                    ${showLastAdded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}
+                  `}
+                >
+                  {lastAddedImage && (
+                    <div className="w-6 h-6 rounded bg-stone-800 overflow-hidden shrink-0 border border-emerald-500">
+                      <img
+                        src={lastAddedImage}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  {!lastAddedImage && showLastAdded && (
+                    <div className="w-6 h-6 rounded bg-stone-800 flex items-center justify-center shrink-0 border border-emerald-500">
+                      <span className="text-[10px]">📦</span>
+                    </div>
+                  )}
+                  <p className="text-sm text-emerald-400 font-medium truncate">
+                    {displayedLastAdded && `+ ${displayedLastAdded}`}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Empty state hint - Only show when cart is empty */}
+            {!hasItems && (
+              <div className="h-5 mt-1 overflow-hidden">
+                <p className="text-xs text-stone-500">
+                  {t('cart.emptyHint', 'Scan products to add them to your cart')}
                 </p>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Center: Total */}
@@ -134,7 +132,7 @@ export const MobileCartBar = ({
             <p className="text-xs text-stone-400 uppercase tracking-wide">
               {t('cart.total', 'Total')}
             </p>
-            <p className="text-2xl font-bold tabular-nums">
+            <p className={`text-2xl font-bold tabular-nums transition-colors ${hasItems ? 'text-white' : 'text-stone-500'}`}>
               €{total.toFixed(2)}
             </p>
           </div>
@@ -142,8 +140,8 @@ export const MobileCartBar = ({
           {/* Right: View Cart button */}
           <Button
             onClick={onViewCart}
-            disabled={isCheckingOut}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-6 rounded-xl flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+            disabled={!hasItems || isCheckingOut}
+            className={`font-bold px-5 py-6 rounded-xl flex items-center gap-2 transition-all ${hasItems ? 'bg-emerald-500 hover:bg-emerald-600 text-white hover:scale-105 active:scale-95' : 'bg-stone-700 text-stone-500 cursor-not-allowed opacity-50'}`}
           >
             <span>{t('cart.viewCart', 'View Cart')}</span>
             <ChevronUp className="h-4 w-4" />
