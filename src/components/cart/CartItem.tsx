@@ -90,12 +90,15 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 }}
                 className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-all hover:scale-105 active:scale-95 touch-feedback"
                 disabled={isProcessing}
-                aria-label={t('cart.decreaseQuantity', 'Decrease quantity')}
+                aria-label={t('cart.decreaseQuantityFor', `Decrease quantity for ${item.product.fields.Name}`)}
               >
-                <Minus className="h-5 w-5 sm:h-4 sm:w-4" />
+                <Minus className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
               </Button>
 
-              <span className="font-bold text-lg min-w-[2.5rem] text-center tabular-nums transition-all">
+              <span
+                className="font-bold text-lg min-w-[2.5rem] text-center tabular-nums transition-all"
+                aria-label={t('cart.quantityLabel', `Quantity: ${item.quantity}`)}
+              >
                 {item.quantity}
               </span>
 
@@ -112,9 +115,9 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 }}
                 className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-all hover:scale-105 active:scale-95 touch-feedback"
                 disabled={isProcessing}
-                aria-label={t('cart.increaseQuantity', 'Increase quantity')}
+                aria-label={t('cart.increaseQuantityFor', `Increase quantity for ${item.product.fields.Name}`)}
               >
-                <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+                <Plus className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
               </Button>
             </div>
 
@@ -137,10 +140,9 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 }}
                 className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-all hover:scale-110 active:scale-95 touch-feedback"
                 disabled={isProcessing}
-                title={t('cart.removeItem')}
-                aria-label={t('cart.removeItem')}
+                aria-label={t('cart.removeItemFor', `Remove ${item.product.fields.Name} from cart`)}
               >
-                <TrashIcon className="h-5 w-5 sm:h-4 sm:w-4" />
+                <TrashIcon className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
               </Button>
             </div>
           </div>

@@ -51,13 +51,21 @@ export const Cart = ({
       <CartHeader itemCount={itemCount} total={total} />
 
       {/* Cart Items List */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div
+        className="flex-1 overflow-y-auto p-6 space-y-4"
+        role="region"
+        aria-label={t('cart.itemsList', 'Shopping cart items')}
+      >
         {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full py-12 text-center px-4 animate-fade-in">
+          <div
+            className="flex flex-col items-center justify-center h-full py-12 text-center px-4 animate-fade-in"
+            role="status"
+            aria-label={t('cart.emptyState', 'Cart is empty')}
+          >
             <div className="relative mb-6">
               <div className="absolute inset-0 bg-emerald-100 rounded-full blur-2xl opacity-30 animate-pulse"></div>
               <div className="relative bg-stone-100 rounded-full p-6 border-2 border-stone-200">
-                <ShoppingCartIcon className="h-16 w-16 text-stone-400" />
+                <ShoppingCartIcon className="h-16 w-16 text-stone-400" aria-hidden="true" />
               </div>
             </div>
             <p className="text-xl font-bold text-stone-800 mb-2">{t('cart.empty', 'Cart is Empty')}</p>
@@ -76,7 +84,7 @@ export const Cart = ({
                 className="bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] hover:opacity-90 text-white h-12 px-8 rounded-xl font-bold shadow-lg transition-all hover:scale-105 active:scale-95 animate-ripple"
                 aria-label={t('cart.startScanning', 'Start scanning products')}
               >
-                <ScanBarcode className="h-5 w-5 mr-2" />
+                <ScanBarcode className="h-5 w-5 mr-2" aria-hidden="true" />
                 {t('cart.startScanning', 'Start Scanning')}
               </Button>
             )}

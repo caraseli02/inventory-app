@@ -471,8 +471,9 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
       // Mark this barcode as processed BEFORE dispatching to prevent re-entry
       processedBarcodeRef.current = state.scannedCode;
 
-      // Note: Stock validation is client-side against cached data.
-      // For absolute accuracy with concurrent checkouts, a backend proxy should validate this.
+      // ⚠️ KNOWN LIMITATION: Stock validation is client-side against cached data.
+      // For absolute accuracy with concurrent checkouts, server-side validation is required.
+      // This is acceptable for MVP but should be addressed before multi-user production use.
       addProductToCart(product);
 
       dispatch({ type: 'LOOKUP_SUCCESS' });
@@ -620,6 +621,12 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
   const handleCheckoutClick = () => {
     if (pendingItems.length === 0) return;
 
+    // ⚠️ KNOWN LIMITATION: Client-side stock validation only
+    // This validation uses cached data and does NOT prevent race conditions where multiple
+    // users could checkout the same items simultaneously. For production use at scale,
+    // implement server-side atomic stock validation with optimistic locking.
+    // See: docs/specs/checkout_race_condition.md (if exists) or create backend proxy.
+    //
     // Validate stock availability for all items
     const itemsWithInsufficientStock: Array<{ name: string; quantity: number; available: number }> = [];
 
@@ -793,7 +800,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
               <Collapsible open={state.summaryExpanded} onOpenChange={() => dispatch({ type: 'TOGGLE_SUMMARY_EXPANDED' })}>
                 <div className="bg-white rounded-2xl border-2 shadow-md" style={{ borderColor: 'var(--color-stone)' }}>
                   <CollapsibleTrigger asChild>
-                    <button className="w-full p-4 flex items-center justify-between text-left">
+                    <Button variant="ghost" className="w-full p-4 flex items-center justify-between text-left h-auto hover:bg-stone-50">
                       <span className="font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
                         {t('checkout.transactionSummary', 'Transaction Summary')}
                       </span>
@@ -801,7 +808,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                         className={`w-5 h-5 transition-transform ${state.summaryExpanded ? 'rotate-180' : ''}`}
                         style={{ color: 'var(--color-stone)' }}
                       />
-                    </button>
+                    </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="border-t-2 p-4 space-y-2" style={{ borderColor: 'var(--color-stone)' }}>
@@ -1204,7 +1211,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                   {/* Total */}
                   <div className="flex items-center justify-between pb-2">
                     <span className="text-lg font-semibold text-gray-700">{t('cart.total')}</span>
-                    <span className="text-3xl font-bold text-gray-900">€ {total.toFixed(2)}</span>
+                    <span className="text-3xl font-bold text-gray-900">€{total.toFixed(2)}</span>
                   </div>
 
                   {/* Action Button - No "Next Product" on desktop since scanner is always visible */}

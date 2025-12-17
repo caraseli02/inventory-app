@@ -19,6 +19,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   const regionId = scannerId;
   const lastScanRef = useRef<{ code: string; timestamp: number } | null>(null);
   const onScanSuccessRef = useRef(onScanSuccess);
+  const isMountedRef = useRef(true);
 
   // Keep callback ref up to date without triggering useEffect
   useEffect(() => {
@@ -52,6 +53,9 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   }, []);
 
   useEffect(() => {
+    // Mark component as mounted
+    isMountedRef.current = true;
+
     // strict mode safety check: if already initialized, don't re-init
     if (scannerRef.current) return;
 
@@ -152,15 +156,24 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
     }, 100);
 
     return () => {
+      // Mark component as unmounted to prevent state updates after unmount
+      isMountedRef.current = false;
+
       clearTimeout(timer);
       if (scannerRef.current) {
         if (scannerRef.current.isScanning) {
           scannerRef.current
             .stop()
             .then(() => {
-              scannerRef.current?.clear();
+              try {
+                scannerRef.current?.clear();
+              } catch (clearError) {
+                logger.error('Failed to clear scanner after stop', {
+                  errorMessage: clearError instanceof Error ? clearError.message : String(clearError),
+                });
+              }
               scannerRef.current = null;
-              logger.debug('Scanner stopped successfully');
+              logger.debug('Scanner stopped and cleared successfully');
             })
             .catch((err) => {
               logger.error('Failed to stop scanner during cleanup', {
@@ -180,11 +193,19 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
 
               scannerRef.current = null;
 
-              // Set error state to inform user
-              setError(t('scanner.cleanupFailed', 'Camera cleanup error. You may need to reload the page.'));
+              // Only set error state if component is still mounted
+              if (isMountedRef.current) {
+                setError(t('scanner.cleanupFailed', 'Camera cleanup error. You may need to reload the page.'));
+              }
             });
         } else {
-          scannerRef.current.clear();
+          try {
+            scannerRef.current.clear();
+          } catch (clearError) {
+            logger.error('Failed to clear non-scanning scanner', {
+              errorMessage: clearError instanceof Error ? clearError.message : String(clearError),
+            });
+          }
           scannerRef.current = null;
         }
       }
@@ -192,12 +213,21 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
   }, [regionId, retryCount, t]);
 
   return (
-    <div className="w-full overflow-hidden bg-black relative" style={{ aspectRatio: '4/3' }}>
+    <div
+      className="w-full overflow-hidden bg-black relative"
+      style={{ aspectRatio: '4/3' }}
+      role="region"
+      aria-label={t('scanner.cameraRegion', 'Barcode scanner camera')}
+    >
       {error ? (
-        <div className="absolute inset-0 flex flex-col bg-amber-50 border-4 border-amber-400 text-amber-900 m-2 rounded-lg">
+        <div
+          className="absolute inset-0 flex flex-col bg-amber-50 border-4 border-amber-400 text-amber-900 m-2 rounded-lg"
+          role="alert"
+          aria-live="assertive"
+        >
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="space-y-2 max-w-sm text-center">
-              <Video className="h-8 w-8 text-amber-500 mx-auto" />
+              <Video className="h-8 w-8 text-amber-500 mx-auto" aria-hidden="true" />
               <p className="font-bold text-base">{t('scanner.cameraUnavailable', 'Camera Unavailable')}</p>
               <p className="text-xs text-amber-800">{error}</p>
             </div>
@@ -207,9 +237,9 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
               onClick={handleRetry}
               variant="outline"
               className="w-full h-12 border-2 border-amber-400 text-amber-800 hover:bg-amber-100"
-              aria-label={t('scanner.retry', 'Try Again')}
+              aria-label={t('scanner.retryAccessCamera', 'Try to access camera again')}
             >
-              <RotateCcw className="h-5 w-5 mr-2" />
+              <RotateCcw className="h-5 w-5 mr-2" aria-hidden="true" />
               {t('scanner.retry', 'Try Again')}
             </Button>
           </div>
@@ -217,12 +247,19 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
       ) : (
         <>
           {/* Scanner video container - html5-qrcode renders here */}
-          <div id={regionId} className="absolute inset-0 [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover [&_video]:!max-w-none [&_video]:!max-h-none" />
+          <div
+            id={regionId}
+            className="absolute inset-0 [&_video]:!w-full [&_video]:!h-full [&_video]:!object-cover [&_video]:!max-w-none [&_video]:!max-h-none"
+            aria-label={t('scanner.videoStream', 'Camera video stream for barcode scanning')}
+          />
           <ScannerOverlay />
         </>
       )}
       {/* Bottom text - positioned at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 bg-stone-100 py-1.5 text-center text-stone-700 text-xs">
+      <div
+        className="absolute bottom-0 left-0 right-0 bg-stone-100 py-1.5 text-center text-stone-700 text-xs"
+        aria-live="polite"
+      >
         {t('scanner.alignCode', 'Align code within frame')}
       </div>
     </div>
