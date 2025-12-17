@@ -9,11 +9,21 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   extractInvoiceData,
   type InvoiceData,
+  VALID_INVOICE_EXTENSIONS,
 } from '@/lib/invoiceOCR';
 import { Upload, AlertCircle, CheckCircle2, Loader2, Receipt } from 'lucide-react';
 import type { ImportedProduct } from '@/lib/xlsx';
+import { logger } from '@/lib/logger';
 
 interface InvoiceUploadDialogProps {
   open: boolean;
@@ -22,6 +32,22 @@ interface InvoiceUploadDialogProps {
 }
 
 type InvoiceStep = 'upload' | 'preview' | 'importing' | 'complete';
+
+// Step descriptions lookup
+const STEP_DESCRIPTIONS: Record<InvoiceStep, string> = {
+  upload: 'Upload an invoice to automatically extract product data',
+  preview: 'Review extracted products before importing',
+  importing: 'Creating products in your inventory...',
+  complete: 'Invoice products have been imported successfully',
+};
+
+// Progress message helper
+function getProgressMessage(progress: number): string {
+  if (progress < 40) return 'Preparing invoice...';
+  if (progress < 70) return 'Extracting text with AI...';
+  if (progress < 90) return 'Analyzing products...';
+  return 'Finalizing...';
+}
 
 export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUploadDialogProps) {
   const [step, setStep] = useState<InvoiceStep>('upload');
@@ -53,11 +79,11 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
   }, [isProcessing, onOpenChange, resetState]);
 
   const handleFileSelect = useCallback(async (file: File) => {
-    const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const validExtensions = VALID_INVOICE_EXTENSIONS as readonly string[];
     const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
 
     if (!validExtensions.includes(fileExt)) {
-      setError('Please select a PDF, JPG, or PNG file.');
+      setError('Please select a JPG or PNG file.');
       return;
     }
 
@@ -71,14 +97,38 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
         setOcrProgress(progress);
       });
 
-      if (result.success && result.data) {
+      if (result.success) {
         setInvoiceData(result.data);
         setStep('preview');
       } else {
-        setError(result.error || 'Failed to extract invoice data');
+        setError(result.error);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      logger.error('Invoice upload failed in UI', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        errorMessage: err instanceof Error ? err.message : String(err),
+        errorStack: err instanceof Error ? err.stack : undefined,
+      });
+
+      // Provide user-friendly error message
+      let userMessage = 'Failed to process invoice. ';
+      if (err instanceof Error) {
+        if (err.message.includes('API key')) {
+          userMessage += 'Please check your API configuration.';
+        } else if (err.message.includes('network') || err.message.includes('fetch')) {
+          userMessage += 'Please check your internet connection and try again.';
+        } else if (err.message.includes('quota') || err.message.includes('rate limit')) {
+          userMessage += 'Service limit reached. Please try again later.';
+        } else {
+          userMessage += err.message;
+        }
+      } else {
+        userMessage += 'Please try again or contact support if the issue persists.';
+      }
+
+      setError(userMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -138,9 +188,37 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
       }));
 
       await onImport(importedProducts);
+
+      logger.info('Invoice import completed successfully', {
+        productCount: importedProducts.length,
+        supplier: invoiceData.supplier,
+        invoiceNumber: invoiceData.invoiceNumber,
+      });
+
       setStep('complete');
     } catch (error) {
-      setImportErrors([error instanceof Error ? error.message : 'Import failed']);
+      logger.error('Invoice import failed', {
+        productCount: invoiceData.products.length,
+        supplier: invoiceData.supplier,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      });
+
+      // Provide specific error message based on error type
+      let errorMessage = 'Import failed. ';
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage += 'Network error occurred. Please check your connection and try again.';
+        } else if (error.message.includes('quota') || error.message.includes('rate limit')) {
+          errorMessage += 'Rate limit exceeded. Please wait a moment and try again.';
+        } else if (error.message.includes('validation')) {
+          errorMessage += error.message;
+        } else {
+          errorMessage += 'Please try again or contact support if the issue persists.';
+        }
+      }
+
+      setImportErrors([errorMessage]);
       setStep('preview');
     }
   }, [invoiceData, onImport]);
@@ -153,12 +231,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
             <Receipt className="h-5 w-5 text-[var(--color-forest)]" />
             Import from Invoice
           </DialogTitle>
-          <DialogDescription>
-            {step === 'upload' && 'Upload an invoice to automatically extract product data'}
-            {step === 'preview' && 'Review extracted products before importing'}
-            {step === 'importing' && 'Creating products in your inventory...'}
-            {step === 'complete' && 'Invoice products have been imported successfully'}
-          </DialogDescription>
+          <DialogDescription>{STEP_DESCRIPTIONS[step]}</DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-auto py-4">
@@ -185,11 +258,11 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                 </p>
                 <p className="text-sm text-stone-500 mb-4">or click to browse files</p>
                 <p className="text-xs text-stone-400 mb-4">
-                  Supports PDF, JPG, PNG (max 10MB)
+                  Supports JPG, PNG (max 10MB)
                 </p>
                 <input
                   type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
+                  accept={VALID_INVOICE_EXTENSIONS.join(',')}
                   onChange={handleFileInput}
                   className="hidden"
                   id="invoice-upload"
@@ -214,12 +287,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                     <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                     <div className="flex-1">
                       <p className="font-medium text-blue-900">{fileName}</p>
-                      <p className="text-sm text-blue-600">
-                        {ocrProgress < 40 && 'Preparing invoice...'}
-                        {ocrProgress >= 40 && ocrProgress < 70 && 'Extracting text with AI...'}
-                        {ocrProgress >= 70 && ocrProgress < 90 && 'Analyzing products...'}
-                        {ocrProgress >= 90 && 'Finalizing...'}
-                      </p>
+                      <p className="text-sm text-blue-600">{getProgressMessage(ocrProgress)}</p>
                     </div>
                     <span className="text-sm font-medium text-blue-700">{ocrProgress}%</span>
                   </div>
@@ -326,28 +394,34 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                 </div>
               )}
 
-              {/* Product Preview Table */}
+              {/* Product Preview Table - Using shadcn Table components */}
               <div className="border-2 border-stone-200 rounded-lg overflow-hidden">
                 <div className="overflow-x-auto max-h-80">
-                  <table className="w-full text-sm">
-                    <thead className="bg-stone-100 sticky top-0">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-medium text-stone-700">
+                  <Table>
+                    <TableHeader className="bg-stone-100 sticky top-0">
+                      <TableRow>
+                        <TableHead className="px-3 py-2 text-left font-medium text-stone-700">
                           Product Name
-                        </th>
-                        <th className="px-3 py-2 text-left font-medium text-stone-700">Barcode</th>
-                        <th className="px-3 py-2 text-right font-medium text-stone-700">Qty</th>
-                        <th className="px-3 py-2 text-right font-medium text-stone-700">
+                        </TableHead>
+                        <TableHead className="px-3 py-2 text-left font-medium text-stone-700">
+                          Barcode
+                        </TableHead>
+                        <TableHead className="px-3 py-2 text-right font-medium text-stone-700">
+                          Qty
+                        </TableHead>
+                        <TableHead className="px-3 py-2 text-right font-medium text-stone-700">
                           Unit Price
-                        </th>
-                        <th className="px-3 py-2 text-right font-medium text-stone-700">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-200">
+                        </TableHead>
+                        <TableHead className="px-3 py-2 text-right font-medium text-stone-700">
+                          Total
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-stone-200">
                       {invoiceData.products.map((product, i) => (
-                        <tr key={i} className="hover:bg-stone-50">
-                          <td className="px-3 py-2">{product.name}</td>
-                          <td className="px-3 py-2">
+                        <TableRow key={i} className="hover:bg-stone-50">
+                          <TableCell className="px-3 py-2">{product.name}</TableCell>
+                          <TableCell className="px-3 py-2">
                             {product.barcode ? (
                               <code className="text-xs font-mono bg-stone-100 px-1.5 py-0.5 rounded">
                                 {product.barcode}
@@ -355,16 +429,20 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                             ) : (
                               <span className="text-xs text-stone-400 italic">No barcode</span>
                             )}
-                          </td>
-                          <td className="px-3 py-2 text-right font-medium">{product.quantity}</td>
-                          <td className="px-3 py-2 text-right">€{product.unitPrice.toFixed(2)}</td>
-                          <td className="px-3 py-2 text-right font-semibold">
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-medium">
+                            {product.quantity}
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right">
+                            €{product.unitPrice.toFixed(2)}
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right font-semibold">
                             €{product.totalPrice.toFixed(2)}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
 

@@ -8,6 +8,8 @@
  * Total cost: $0-0.10/month for typical small business
  */
 
+import { logger } from './logger';
+
 export interface InvoiceProduct {
   name: string;
   quantity: number;
@@ -24,12 +26,41 @@ export interface InvoiceData {
   totalAmount?: number;
 }
 
-export interface InvoiceOCRResult {
-  success: boolean;
-  data?: InvoiceData;
-  error?: string;
-  ocrText?: string; // Raw OCR text for debugging
+// Discriminated union for type-safe results
+export interface InvoiceOCRSuccess {
+  readonly success: true;
+  readonly data: InvoiceData;
+  readonly ocrText?: string;
 }
+
+export interface InvoiceOCRFailure {
+  readonly success: false;
+  readonly error: string;
+  readonly ocrText?: string;
+}
+
+export type InvoiceOCRResult = InvoiceOCRSuccess | InvoiceOCRFailure;
+
+// Internal types for API response parsing (moved to module scope)
+interface RawInvoiceProduct {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  barcode?: string | null;
+}
+
+interface RawInvoiceData {
+  supplier?: string | null;
+  invoiceNumber?: string | null;
+  invoiceDate?: string | null;
+  totalAmount?: number | null;
+  products?: RawInvoiceProduct[];
+}
+
+// Valid file types for invoice upload
+export const VALID_INVOICE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'] as const;
+export const VALID_INVOICE_EXTENSIONS = ['.jpg', '.jpeg', '.png'] as const;
 
 /**
  * Step 1: Perform OCR using Google Cloud Vision API
@@ -39,54 +70,106 @@ async function performOCR(file: File): Promise<string> {
   const apiKey = import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
 
   if (!apiKey) {
+    logger.error('Google Cloud Vision API key not configured', {
+      envVar: 'VITE_GOOGLE_CLOUD_VISION_API_KEY',
+    });
     throw new Error('Google Cloud Vision API key not configured. Please set VITE_GOOGLE_CLOUD_VISION_API_KEY in your .env file.');
   }
 
+  logger.info('Starting OCR processing', {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+  });
+
   // Convert file to base64
-  const base64 = await fileToBase64(file);
-  const base64Content = base64.split(',')[1]; // Remove data:image/...;base64, prefix
+  let base64Content: string;
+  try {
+    const base64 = await fileToBase64(file);
+    base64Content = base64.split(',')[1]; // Remove data:image/...;base64, prefix
+  } catch (error) {
+    logger.error('Failed to convert file to base64', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+    throw new Error('Failed to read invoice file. Please ensure the file is not corrupted.');
+  }
 
   // Call Google Cloud Vision API
-  const response = await fetch(
-    `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        requests: [
-          {
-            image: {
-              content: base64Content,
-            },
-            features: [
-              {
-                type: 'DOCUMENT_TEXT_DETECTION',
-                maxResults: 1,
+  let response: Response;
+  try {
+    response = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requests: [
+            {
+              image: {
+                content: base64Content,
               },
-            ],
-          },
-        ],
-      }),
-    }
-  );
+              features: [
+                {
+                  type: 'DOCUMENT_TEXT_DETECTION',
+                  maxResults: 1,
+                },
+              ],
+            },
+          ],
+        }),
+      }
+    );
+  } catch (error) {
+    logger.error('Google Cloud Vision API network error', {
+      fileName: file.name,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
+    throw new Error('Network error while contacting Google Cloud Vision API. Please check your internet connection.');
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(
-      error.error?.message || `Google Cloud Vision API error: ${response.statusText}`
-    );
+    const errorMessage = error.error?.message || `Google Cloud Vision API error: ${response.statusText}`;
+
+    logger.error('Google Cloud Vision API request failed', {
+      fileName: file.name,
+      status: response.status,
+      statusText: response.statusText,
+      errorMessage,
+    });
+
+    if (response.status === 401) {
+      throw new Error('Google Cloud Vision API authentication failed. Please check your API key.');
+    }
+    if (response.status === 429) {
+      throw new Error('Google Cloud Vision API quota exceeded. Please try again later or upgrade your plan.');
+    }
+
+    throw new Error(errorMessage);
   }
 
   const result = await response.json();
   const textAnnotations = result.responses[0]?.textAnnotations;
 
   if (!textAnnotations || textAnnotations.length === 0) {
+    logger.warn('No text detected in invoice image', {
+      fileName: file.name,
+      fileType: file.type,
+    });
     throw new Error('No text detected in the image. Please ensure the invoice is clear and readable.');
   }
 
-  // First annotation contains the full text
+  logger.info('OCR processing completed successfully', {
+    fileName: file.name,
+    textLength: textAnnotations[0].description.length,
+  });
+
   return textAnnotations[0].description;
 }
 
@@ -98,10 +181,19 @@ async function parseInvoiceText(ocrText: string): Promise<InvoiceData> {
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
 
   if (!apiKey) {
-    // Fallback: Try basic regex parsing if OpenAI is not configured
-    console.warn('OpenAI API key not configured. Using basic parsing (less accurate).');
-    return basicParseInvoice(ocrText);
+    logger.error('OpenAI API key not configured', {
+      envVar: 'VITE_OPENAI_API_KEY',
+      requiredFor: 'AI-powered invoice parsing',
+    });
+    throw new Error(
+      'AI invoice extraction requires OpenAI API key. Please set VITE_OPENAI_API_KEY in your .env file. ' +
+      'Get a free key at https://platform.openai.com/api-keys'
+    );
   }
+
+  logger.debug('Starting AI-powered invoice parsing', {
+    ocrTextLength: ocrText.length,
+  });
 
   const prompt = `You are an invoice data extraction assistant. Extract the following information from this invoice OCR text:
 
@@ -143,8 +235,9 @@ Important:
 Invoice OCR Text:
 ${ocrText}`;
 
+  let response: Response;
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -166,102 +259,88 @@ ${ocrText}`;
         max_tokens: 2000,
       }),
     });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(
-        error.error?.message || `OpenAI API error: ${response.statusText}`
-      );
-    }
-
-    const result = await response.json();
-    const content = result.choices[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('No response from OpenAI API');
-    }
-
-    // Parse JSON response (remove markdown code blocks if present)
-    const jsonText = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-    // Define interface for raw API response
-    interface RawInvoiceProduct {
-      name: string;
-      quantity: number;
-      unitPrice: number;
-      totalPrice: number;
-      barcode?: string | null;
-    }
-
-    interface RawInvoiceData {
-      supplier?: string | null;
-      invoiceNumber?: string | null;
-      invoiceDate?: string | null;
-      totalAmount?: number | null;
-      products?: RawInvoiceProduct[];
-    }
-
-    const invoiceData: RawInvoiceData = JSON.parse(jsonText);
-
-    // Validate and clean data
-    return {
-      supplier: invoiceData.supplier || undefined,
-      invoiceNumber: invoiceData.invoiceNumber || undefined,
-      invoiceDate: invoiceData.invoiceDate || undefined,
-      totalAmount: invoiceData.totalAmount || undefined,
-      products: (invoiceData.products || [])
-        .filter((p: RawInvoiceProduct) => p.name && p.name.trim().length > 0)
-        .map((p: RawInvoiceProduct) => ({
-          name: p.name.trim(),
-          quantity: Number(p.quantity) || 1,
-          unitPrice: Number(p.unitPrice) || 0,
-          totalPrice: Number(p.totalPrice) || 0,
-          barcode: p.barcode || undefined,
-        })),
-    };
   } catch (error) {
-    console.error('GPT-4o mini parsing failed, falling back to basic parsing:', error);
-    return basicParseInvoice(ocrText);
+    logger.error('OpenAI API network error', {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
+    throw new Error('Network error while contacting OpenAI API. Please check your internet connection.');
   }
-}
 
-/**
- * Fallback: Basic regex-based parsing (less accurate than GPT-4o mini)
- * Used when OpenAI API is not configured
- */
-function basicParseInvoice(ocrText: string): InvoiceData {
-  const lines = ocrText.split('\n').map(l => l.trim()).filter(l => l);
-  const products: InvoiceProduct[] = [];
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    const errorMessage = error.error?.message || `OpenAI API error: ${response.statusText}`;
 
-  // Try to extract basic product lines
-  // This is a simplified parser and may not work for all invoice formats
-  const productLineRegex = /^(.+?)\s+(\d+)\s+(\d+[.,]\d{2})\s+(\d+[.,]\d{2})$/;
+    logger.error('OpenAI API request failed', {
+      status: response.status,
+      statusText: response.statusText,
+      errorMessage,
+    });
 
-  for (const line of lines) {
-    const match = line.match(productLineRegex);
-    if (match) {
-      const [, name, qty, price, total] = match;
-      products.push({
-        name: name.trim(),
-        quantity: parseInt(qty),
-        unitPrice: parseFloat(price.replace(',', '.')),
-        totalPrice: parseFloat(total.replace(',', '.')),
-      });
+    if (response.status === 401) {
+      throw new Error('OpenAI API authentication failed. Please check your API key.');
     }
+    if (response.status === 429) {
+      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
+    }
+
+    throw new Error(errorMessage);
   }
 
-  return {
-    products,
-    supplier: undefined,
-    invoiceNumber: undefined,
-    invoiceDate: undefined,
+  const result = await response.json();
+  const content = result.choices[0]?.message?.content;
+
+  if (!content) {
+    logger.error('No response from OpenAI API', {
+      resultChoices: result.choices?.length,
+    });
+    throw new Error('No response from OpenAI API');
+  }
+
+  // Parse JSON response (remove markdown code blocks if present)
+  const jsonText = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+  let invoiceData: RawInvoiceData;
+  try {
+    invoiceData = JSON.parse(jsonText);
+  } catch (error) {
+    logger.error('Failed to parse OpenAI JSON response', {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      responsePreview: jsonText.substring(0, 200),
+    });
+    throw new Error('Failed to parse AI response. The invoice format may be unsupported.');
+  }
+
+  // Validate and clean data
+  const cleanedData = {
+    supplier: invoiceData.supplier || undefined,
+    invoiceNumber: invoiceData.invoiceNumber || undefined,
+    invoiceDate: invoiceData.invoiceDate || undefined,
+    totalAmount: invoiceData.totalAmount || undefined,
+    products: (invoiceData.products || [])
+      .filter((p: RawInvoiceProduct) => p.name?.trim())
+      .map((p: RawInvoiceProduct) => ({
+        name: p.name.trim(),
+        quantity: Number(p.quantity) || 1,
+        unitPrice: Number(p.unitPrice) || 0,
+        totalPrice: Number(p.totalPrice) || 0,
+        barcode: p.barcode || undefined,
+      })),
   };
+
+  logger.info('Invoice parsing completed successfully', {
+    productCount: cleanedData.products.length,
+    hasSupplier: !!cleanedData.supplier,
+    hasInvoiceNumber: !!cleanedData.invoiceNumber,
+  });
+
+  return cleanedData;
 }
 
 /**
  * Main function: Extract invoice data from uploaded file
  *
- * @param file - Invoice file (PDF, JPG, PNG)
+ * @param file - Invoice file (JPG, PNG only - PDF support removed)
  * @param onProgress - Optional callback for progress updates (0-100)
  * @returns Invoice data extraction result
  */
@@ -269,53 +348,75 @@ export async function extractInvoiceData(
   file: File,
   onProgress?: (progress: number) => void
 ): Promise<InvoiceOCRResult> {
-  try {
-    onProgress?.(10);
+  logger.info('Starting invoice extraction', {
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type,
+  });
 
-    // Validate file type
-    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+  // Safe progress callback wrapper
+  const safeProgress = (progress: number) => {
+    try {
+      onProgress?.(progress);
+    } catch (error) {
+      logger.debug('Progress callback failed', {
+        progress,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
+  try {
+    safeProgress(10);
+
+    // Validate file type (PDF removed)
+    const validTypes: string[] = Array.from(VALID_INVOICE_TYPES);
     if (!validTypes.includes(file.type)) {
+      logger.warn('Invalid file type rejected', {
+        fileName: file.name,
+        fileType: file.type,
+        validTypes: Array.from(VALID_INVOICE_TYPES),
+      });
       return {
         success: false,
-        error: 'Invalid file type. Please upload a PDF, JPG, or PNG file.',
+        error: 'Invalid file type. Please upload a JPG or PNG file.',
       };
     }
 
-    onProgress?.(20);
+    safeProgress(20);
 
     // Validate file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
+      logger.warn('File size exceeds limit', {
+        fileName: file.name,
+        fileSize: file.size,
+        maxSize,
+      });
       return {
         success: false,
         error: 'File size exceeds 10MB limit. Please upload a smaller file.',
       };
     }
 
-    onProgress?.(30);
-
-    // For PDFs, convert first page to image
-    if (file.type === 'application/pdf') {
-      // TODO: Implement PDF to image conversion using pdf.js
-      // For now, return error for PDFs
-      return {
-        success: false,
-        error: 'PDF support coming soon. Please upload a JPG or PNG image of the invoice for now.',
-      };
-    }
-
-    onProgress?.(40);
+    safeProgress(30);
+    safeProgress(40);
 
     // Step 1: Perform OCR
     const ocrText = await performOCR(file);
-    onProgress?.(70);
+    safeProgress(70);
 
     // Step 2: Parse OCR text into structured data
     const invoiceData = await parseInvoiceText(ocrText);
-    onProgress?.(90);
+    safeProgress(90);
 
     // Validate that we got at least one product
     if (!invoiceData.products || invoiceData.products.length === 0) {
+      logger.warn('No products found in parsed invoice', {
+        fileName: file.name,
+        hasOcrText: !!ocrText,
+        ocrTextLength: ocrText.length,
+      });
       return {
         success: false,
         error: 'No products found in the invoice. Please ensure the invoice is clear and contains product line items.',
@@ -323,7 +424,12 @@ export async function extractInvoiceData(
       };
     }
 
-    onProgress?.(100);
+    safeProgress(100);
+
+    logger.info('Invoice extraction completed successfully', {
+      fileName: file.name,
+      productCount: invoiceData.products.length,
+    });
 
     return {
       success: true,
@@ -331,7 +437,13 @@ export async function extractInvoiceData(
       ocrText,
     };
   } catch (error) {
-    console.error('Invoice extraction error:', error);
+    logger.error('Invoice extraction failed', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to extract invoice data',
@@ -340,13 +452,42 @@ export async function extractInvoiceData(
 }
 
 /**
- * Helper: Convert file to base64 string
+ * Helper: Convert file to base64 string with enhanced error handling
  */
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
+
+    reader.onload = () => {
+      logger.debug('File converted to base64 successfully', {
+        fileName: file.name,
+        fileSize: file.size,
+      });
+      resolve(reader.result as string);
+    };
+
+    reader.onerror = () => {
+      const error = reader.error;
+      logger.error('FileReader failed to read file', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        errorName: error?.name,
+        errorMessage: error?.message,
+      });
+
+      // Provide user-friendly error messages based on error type
+      if (error?.name === 'NotFoundError') {
+        reject(new Error('File not found. Please try selecting the file again.'));
+      } else if (error?.name === 'NotReadableError') {
+        reject(new Error('File cannot be read. The file may be corrupted or inaccessible.'));
+      } else if (error?.name === 'SecurityError') {
+        reject(new Error('Security error: Browser blocked file access.'));
+      } else {
+        reject(new Error('Failed to read file. Please try again.'));
+      }
+    };
+
     reader.readAsDataURL(file);
   });
 }

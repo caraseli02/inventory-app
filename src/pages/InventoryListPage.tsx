@@ -499,11 +499,13 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       />
 
       {/* Invoice Upload Dialog */}
-      <InvoiceUploadDialog
-        open={invoiceDialogOpen}
-        onOpenChange={setInvoiceDialogOpen}
-        onImport={handleImport}
-      />
+      <ErrorBoundary>
+        <InvoiceUploadDialog
+          open={invoiceDialogOpen}
+          onOpenChange={setInvoiceDialogOpen}
+          onImport={handleImport}
+        />
+      </ErrorBoundary>
     </div>
   );
 };
