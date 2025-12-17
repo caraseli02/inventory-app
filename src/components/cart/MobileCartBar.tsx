@@ -20,7 +20,8 @@ interface MobileCartBarProps {
 /**
  * Persistent cart bar for mobile checkout.
  * Appears at bottom of screen when cart has items.
- * Shows item count, total, last added product, and view cart button.
+ * Shows item count, total, last added product with thumbnail, and view cart button.
+ * Enhanced with micro-animations and visual feedback.
  */
 export const MobileCartBar = ({
   cart,
@@ -32,6 +33,8 @@ export const MobileCartBar = ({
   const { t } = useTranslation();
   const [showLastAdded, setShowLastAdded] = useState(false);
   const [displayedLastAdded, setDisplayedLastAdded] = useState<string | null>(null);
+  const [lastAddedImage, setLastAddedImage] = useState<string | null>(null);
+  const [animateBadge, setAnimateBadge] = useState(false);
 
   // Calculate pending items (not yet checked out)
   const pendingItems = cart.filter(item => item.status !== 'success');
@@ -41,18 +44,33 @@ export const MobileCartBar = ({
   // Handle last added product animation
   useEffect(() => {
     if (lastAddedProduct) {
+      // Find the product in cart to get its image
+      const addedProduct = cart.find(item => item.product.fields.Name === lastAddedProduct);
+      const imageUrl = addedProduct?.product.fields.Image?.[0]?.url;
+
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayedLastAdded(lastAddedProduct);
       // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLastAddedImage(imageUrl || null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowLastAdded(true);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAnimateBadge(true);
+
+      const badgeTimer = setTimeout(() => {
+        setAnimateBadge(false);
+      }, 500);
 
       const timer = setTimeout(() => {
         setShowLastAdded(false);
-      }, 2500);
+      }, 3000);
 
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(badgeTimer);
+      };
     }
-  }, [lastAddedProduct]);
+  }, [lastAddedProduct, cart]);
 
   // Don't render if cart is empty
   if (!hasItems) {
@@ -68,30 +86,46 @@ export const MobileCartBar = ({
       `}
     >
       {/* Main bar */}
-      <div className="bg-stone-900 text-white px-4 py-4 rounded-t-2xl shadow-2xl">
+      <div className="bg-stone-900 text-white px-4 py-4 rounded-t-2xl shadow-2xl animate-slide-in-up">
         <div className="flex items-center justify-between gap-4">
           {/* Left side: Count and last added */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-emerald-400" />
-                <span className="bg-emerald-500 text-white text-sm font-bold px-2.5 py-0.5 rounded-full">
+                <span className={`bg-emerald-500 text-white text-sm font-bold px-2.5 py-0.5 rounded-full transition-transform ${animateBadge ? 'animate-bounce-once' : ''}`}>
                   {itemCount} {itemCount === 1 ? t('cart.item', 'item') : t('cart.items', 'items')}
                 </span>
               </div>
             </div>
 
-            {/* Last added feedback */}
-            <div className="h-5 mt-1 overflow-hidden">
-              <p
+            {/* Last added feedback with thumbnail */}
+            <div className="h-7 mt-1.5 overflow-hidden">
+              <div
                 className={`
-                  text-sm text-emerald-400 font-medium truncate
+                  flex items-center gap-2
                   transition-all duration-300 ease-out
-                  ${showLastAdded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}
+                  ${showLastAdded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}
                 `}
               >
-                {displayedLastAdded && `+ ${displayedLastAdded}`}
-              </p>
+                {lastAddedImage && (
+                  <div className="w-6 h-6 rounded bg-stone-800 overflow-hidden shrink-0 border border-emerald-500">
+                    <img
+                      src={lastAddedImage}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                {!lastAddedImage && (
+                  <div className="w-6 h-6 rounded bg-stone-800 flex items-center justify-center shrink-0 border border-emerald-500">
+                    <span className="text-[10px]">📦</span>
+                  </div>
+                )}
+                <p className="text-sm text-emerald-400 font-medium truncate">
+                  {displayedLastAdded && `+ ${displayedLastAdded}`}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -109,7 +143,7 @@ export const MobileCartBar = ({
           <Button
             onClick={onViewCart}
             disabled={isCheckingOut}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-6 rounded-xl flex items-center gap-2 transition-colors"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-5 py-6 rounded-xl flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
           >
             <span>{t('cart.viewCart', 'View Cart')}</span>
             <ChevronUp className="h-4 w-4" />

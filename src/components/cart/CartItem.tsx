@@ -26,12 +26,12 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
 
   return (
     <div
-      className={`bg-white border-2 rounded-xl overflow-hidden transition-all duration-150 ${
+      className={`bg-white border-2 rounded-xl overflow-hidden transition-all duration-200 animate-scale-in ${
         status === 'failed'
           ? 'border-red-200 bg-red-50/30'
           : status === 'success'
           ? 'border-green-200 bg-green-50/30'
-          : 'border-stone-200 hover:border-stone-300'
+          : 'border-stone-200 hover:border-stone-300 hover:shadow-md'
       }`}
     >
       <div className="flex gap-0 items-stretch">
@@ -76,7 +76,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 variant="outline"
                 size="icon"
                 onClick={() => onUpdateQuantity(index, -1)}
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-all hover:scale-105 active:scale-95 touch-feedback"
                 disabled={isProcessing}
                 aria-label={t('cart.decreaseQuantity', 'Decrease quantity')}
               >
@@ -84,7 +84,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
               </Button>
 
               {/* Quantity Display */}
-              <span className="font-bold text-lg min-w-[2.5rem] text-center tabular-nums">
+              <span className="font-bold text-lg min-w-[2.5rem] text-center tabular-nums transition-all">
                 {item.quantity}
               </span>
 
@@ -94,7 +94,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 variant="outline"
                 size="icon"
                 onClick={() => onUpdateQuantity(index, 1)}
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-colors"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-all hover:scale-105 active:scale-95 touch-feedback"
                 disabled={isProcessing}
                 aria-label={t('cart.increaseQuantity', 'Increase quantity')}
               >
@@ -114,7 +114,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 variant="ghost"
                 size="icon"
                 onClick={() => onUpdateQuantity(index, -item.quantity)}
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-colors"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-all hover:scale-110 active:scale-95 touch-feedback"
                 disabled={isProcessing}
                 title={t('cart.removeItem')}
                 aria-label={t('cart.removeItem')}
