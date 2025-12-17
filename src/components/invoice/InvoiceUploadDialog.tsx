@@ -21,10 +21,11 @@ import {
   type InvoiceData,
   VALID_INVOICE_EXTENSIONS,
 } from '@/lib/invoiceOCR';
-import { Upload, AlertCircle, CheckCircle2, Loader2, Receipt, Trash2 } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle2, Loader2, Receipt, Trash2, Edit2, Check, X } from 'lucide-react';
 import type { ImportedProduct } from '@/lib/xlsx';
 import { logger } from '@/lib/logger';
 import type { InvoiceProduct } from '@/lib/invoiceOCR';
+import { Input } from '@/components/ui/input';
 
 interface InvoiceUploadDialogProps {
   open: boolean;
@@ -55,6 +56,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
   const [isDragging, setIsDragging] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [editableProducts, setEditableProducts] = useState<InvoiceProduct[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [ocrProgress, setOcrProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -66,6 +68,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     setStep('upload');
     setInvoiceData(null);
     setEditableProducts([]);
+    setEditingIndex(null);
     setFileName('');
     setOcrProgress(0);
     setIsProcessing(false);
@@ -173,6 +176,26 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
 
   const handleRemoveProduct = useCallback((index: number) => {
     setEditableProducts(prev => prev.filter((_, i) => i !== index));
+    setEditingIndex(null);
+  }, []);
+
+  const handleEditProduct = useCallback((index: number) => {
+    setEditingIndex(index);
+  }, []);
+
+  const handleSaveEdit = useCallback(() => {
+    setEditingIndex(null);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingIndex(null);
+  }, []);
+
+  const handleProductFieldChange = useCallback((index: number, field: keyof InvoiceProduct, value: string | number) => {
+    setEditableProducts(prev => prev.map((product, i) => {
+      if (i !== index) return product;
+      return { ...product, [field]: value };
+    }));
   }, []);
 
   const handleConfirmImport = useCallback(async () => {
@@ -429,42 +452,129 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                       </TableRow>
                     </TableHeader>
                     <TableBody className="divide-y divide-stone-200">
-                      {editableProducts.map((product, i) => (
-                        <TableRow key={i} className="hover:bg-stone-50">
-                          <TableCell className="px-3 py-2">{product.name}</TableCell>
-                          <TableCell className="px-3 py-2">
-                            {product.barcode ? (
-                              <code className="text-xs font-mono bg-stone-100 px-1.5 py-0.5 rounded">
-                                {product.barcode}
-                              </code>
-                            ) : (
-                              <span className="text-xs text-stone-400 italic">No barcode</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="px-3 py-2 text-right font-medium">
-                            {product.quantity}
-                          </TableCell>
-                          <TableCell className="px-3 py-2 text-right">
-                            €{product.unitPrice.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="px-3 py-2 text-right font-semibold">
-                            €{product.totalPrice.toFixed(2)}
-                          </TableCell>
-                          <TableCell className="px-3 py-2">
-                            <div className="flex items-center justify-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveProduct(i)}
-                                className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                title="Remove product"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {editableProducts.map((product, i) => {
+                        const isEditing = editingIndex === i;
+                        return (
+                          <TableRow key={i} className={isEditing ? "bg-blue-50" : "hover:bg-stone-50"}>
+                            <TableCell className="px-3 py-2">
+                              {isEditing ? (
+                                <Input
+                                  value={product.name}
+                                  onChange={(e) => handleProductFieldChange(i, 'name', e.target.value)}
+                                  className="h-8 text-sm"
+                                  autoFocus
+                                />
+                              ) : (
+                                product.name
+                              )}
+                            </TableCell>
+                            <TableCell className="px-3 py-2">
+                              {isEditing ? (
+                                <Input
+                                  value={product.barcode || ''}
+                                  onChange={(e) => handleProductFieldChange(i, 'barcode', e.target.value)}
+                                  placeholder="No barcode"
+                                  className="h-8 text-xs font-mono"
+                                />
+                              ) : product.barcode ? (
+                                <code className="text-xs font-mono bg-stone-100 px-1.5 py-0.5 rounded">
+                                  {product.barcode}
+                                </code>
+                              ) : (
+                                <span className="text-xs text-stone-400 italic">No barcode</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-3 py-2 text-right">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={product.quantity}
+                                  onChange={(e) => handleProductFieldChange(i, 'quantity', Number(e.target.value))}
+                                  className="h-8 text-sm text-right"
+                                  min="1"
+                                />
+                              ) : (
+                                <span className="font-medium">{product.quantity}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-3 py-2 text-right">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={product.unitPrice}
+                                  onChange={(e) => handleProductFieldChange(i, 'unitPrice', Number(e.target.value))}
+                                  className="h-8 text-sm text-right"
+                                  step="0.01"
+                                  min="0"
+                                />
+                              ) : (
+                                `€${product.unitPrice.toFixed(2)}`
+                              )}
+                            </TableCell>
+                            <TableCell className="px-3 py-2 text-right">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={product.totalPrice}
+                                  onChange={(e) => handleProductFieldChange(i, 'totalPrice', Number(e.target.value))}
+                                  className="h-8 text-sm text-right"
+                                  step="0.01"
+                                  min="0"
+                                />
+                              ) : (
+                                <span className="font-semibold">€{product.totalPrice.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-3 py-2">
+                              <div className="flex items-center justify-center gap-1">
+                                {isEditing ? (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={handleSaveEdit}
+                                      className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                      title="Save changes"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={handleCancelEdit}
+                                      className="h-7 w-7 p-0 text-stone-600 hover:text-stone-700 hover:bg-stone-100"
+                                      title="Cancel"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditProduct(i)}
+                                      className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                      title="Edit product"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleRemoveProduct(i)}
+                                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                      title="Remove product"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
