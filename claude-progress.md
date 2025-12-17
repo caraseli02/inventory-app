@@ -398,6 +398,24 @@ Located at: `public/magazin.xlsx`
 
 ## 📝 Recent Activity Log
 
+### 2025-12-17
+#### PR #80 Code Review Fixes ✅ (Latest)
+- 🐛 **Fixed code quality issues identified in PR #80 code review**:
+  - Replaced 6 raw HTML `<button>` elements with shadcn `Button` components in CheckoutPage.tsx
+    - Mobile view Quick Actions (Share, Export, History) - Lines 834-851
+    - Desktop view Quick Actions (Share, Export, History) - Lines 944-961
+    - Used `variant="outline"` with consistent styling
+  - Fixed non-deterministic reference number bug (#INV-YYYY-XXX)
+    - Reference number was generated with `Math.random()` directly in JSX render
+    - Caused number to change on every re-render
+    - Solution: Generate once in `handleCheckoutConfirm` and store in state
+    - Added `completedReferenceNumber` to CheckoutState and action types
+    - Updated both mobile (line 823) and desktop (line 936) views to use `state.completedReferenceNumber`
+- 🔧 **Files modified**:
+  - `src/pages/CheckoutPage.tsx` - Button components + stable reference number
+- ✅ **CLAUDE.md compliance**: All shadcn/ui requirements now met
+- 📋 **Code review**: https://github.com/caraseli02/inventory-app/pull/80#issuecomment-3664659993
+
 ### 2025-12-14
 #### Phase 1.6: Scanner UX Polish & UI Consistency ✅ (Latest)
 - 🎨 **Major scanner UI/UX improvements** (6 commits):
