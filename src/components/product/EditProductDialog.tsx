@@ -185,8 +185,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none flex flex-col overflow-hidden"
-        style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}
+        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full h-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none flex flex-col overflow-hidden"
         onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => {
           if (scannerOpen || cameraOpen) {
