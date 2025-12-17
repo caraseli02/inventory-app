@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Invoice - Simple</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 40px;
+            background: white;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .company-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            flex: 1;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .value {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+        th {
+            background: #2c3e50;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        .qty {
+            text-align: center;
+        }
+        .price {
+            text-align: right;
+        }
+        .total-row {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #333;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">METRO Cash & Carry</div>
+        <div style="margin-top: 10px; color: #666;">Wholesale Food Supplier</div>
+    </div>
+
+    <div class="info-section">
+        <div class="info-box">
+            <div class="label">Invoice Number</div>
+            <div class="value">INV-2025-001234</div>
+
+            <div class="label">Date</div>
+            <div class="value">2025-12-17</div>
+        </div>
+
+        <div class="info-box" style="text-align: right;">
+            <div class="label">Supplier</div>
+            <div class="value">METRO Cash & Carry Romania</div>
+
+            <div class="label">Customer</div>
+            <div class="value">Magazin Alimentar SRL</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th class="qty">Qty</th>
+                <th class="price">Unit Price</th>
+                <th class="price">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Lapte Zuzu 3.5% 1L</td>
+                <td class="qty">24</td>
+                <td class="price">€5.50</td>
+                <td class="price">€132.00</td>
+            </tr>
+            <tr>
+                <td>Paine alba feliata 500g</td>
+                <td class="qty">15</td>
+                <td class="price">€2.30</td>
+                <td class="price">€34.50</td>
+            </tr>
+            <tr>
+                <td>Apa minerala Dorna 2L</td>
+                <td class="qty">48</td>
+                <td class="price">€1.20</td>
+                <td class="price">€57.60</td>
+            </tr>
+            <tr>
+                <td>Oua categoria A (10 buc)</td>
+                <td class="qty">12</td>
+                <td class="price">€8.90</td>
+                <td class="price">€106.80</td>
+            </tr>
+            <tr>
+                <td>Cafea Jacobs Cronat 200g</td>
+                <td class="qty">6</td>
+                <td class="price">€12.40</td>
+                <td class="price">€74.40</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="3" style="text-align: right;">TOTAL</td>
+                <td class="price">€405.30</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Thank you for your business!<br>
+        METRO Cash & Carry Romania SRL | Tax ID: RO12345678
+    </div>
+</body>
+</html>
