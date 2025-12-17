@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Invoice - With Barcodes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 40px;
+            background: white;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #059669;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .company-name {
+            font-size: 32px;
+            font-weight: bold;
+            color: #059669;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            flex: 1;
+        }
+        .label {
+            font-weight: bold;
+            color: #555;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .value {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+        th {
+            background: #059669;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #ddd;
+            font-size: 13px;
+        }
+        .barcode {
+            font-family: 'Courier New', monospace;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .qty {
+            text-align: center;
+        }
+        .price {
+            text-align: right;
+        }
+        .total-row {
+            background: #e8f5e9;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #059669;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="company-name">Selgros Cash & Carry</div>
+        <div style="margin-top: 10px; color: #666;">Your Trusted Wholesale Partner</div>
+    </div>
+
+    <div class="info-section">
+        <div class="info-box">
+            <div class="label">Invoice Number</div>
+            <div class="value">SEL-2025-789456</div>
+
+            <div class="label">Date</div>
+            <div class="value">2025-12-17</div>
+        </div>
+
+        <div class="info-box" style="text-align: right;">
+            <div class="label">Supplier</div>
+            <div class="value">Selgros Romania SRL</div>
+
+            <div class="label">Payment Terms</div>
+            <div class="value">Cash on Delivery</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Product Name</th>
+                <th>Barcode</th>
+                <th class="qty">Qty</th>
+                <th class="price">Unit Price</th>
+                <th class="price">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Coca Cola 2L</td>
+                <td><span class="barcode">5449000000996</span></td>
+                <td class="qty">36</td>
+                <td class="price">€3.50</td>
+                <td class="price">€126.00</td>
+            </tr>
+            <tr>
+                <td>Nutella 750g</td>
+                <td><span class="barcode">8000500037560</span></td>
+                <td class="qty">12</td>
+                <td class="price">€9.80</td>
+                <td class="price">€117.60</td>
+            </tr>
+            <tr>
+                <td>Milka Chocolate 100g</td>
+                <td><span class="barcode">7622300489809</span></td>
+                <td class="qty">48</td>
+                <td class="price">€2.45</td>
+                <td class="price">€117.60</td>
+            </tr>
+            <tr>
+                <td>Red Bull Energy 250ml</td>
+                <td><span class="barcode">9002490100124</span></td>
+                <td class="qty">24</td>
+                <td class="price">€4.20</td>
+                <td class="price">€100.80</td>
+            </tr>
+            <tr>
+                <td>Lay's Chips Classic 140g</td>
+                <td><span class="barcode">5997386507177</span></td>
+                <td class="qty">30</td>
+                <td class="price">€3.10</td>
+                <td class="price">€93.00</td>
+            </tr>
+            <tr>
+                <td>Rama Margarina 500g</td>
+                <td><span class="barcode">8712566453061</span></td>
+                <td class="qty">18</td>
+                <td class="price">€4.60</td>
+                <td class="price">€82.80</td>
+            </tr>
+            <tr>
+                <td>Haribo Goldbears 200g</td>
+                <td><span class="barcode">4001686301104</span></td>
+                <td class="qty">24</td>
+                <td class="price">€2.80</td>
+                <td class="price">€67.20</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="4" style="text-align: right;">TOTAL</td>
+                <td class="price">€705.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Thank you for your purchase!<br>
+        Selgros Romania SRL | Tax ID: RO98765432 | www.selgros.ro
+    </div>
+</body>
+</html>
