@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -9,13 +8,11 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   extractInvoiceData,
   type InvoiceData,
-  type InvoiceProduct,
 } from '@/lib/invoiceOCR';
-import { Upload, FileText, AlertCircle, CheckCircle2, Loader2, Receipt } from 'lucide-react';
+import { Upload, AlertCircle, CheckCircle2, Loader2, Receipt } from 'lucide-react';
 import type { ImportedProduct } from '@/lib/xlsx';
 
 interface InvoiceUploadDialogProps {
@@ -27,7 +24,6 @@ interface InvoiceUploadDialogProps {
 type InvoiceStep = 'upload' | 'preview' | 'importing' | 'complete';
 
 export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUploadDialogProps) {
-  const { t } = useTranslation();
   const [step, setStep] = useState<InvoiceStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
