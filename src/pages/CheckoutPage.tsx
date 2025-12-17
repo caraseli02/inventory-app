@@ -49,6 +49,10 @@ interface CheckoutState {
   checkoutComplete: boolean;
   lastAddedProduct: string | null; // Name of last added product for feedback
 
+  // Checkout summary (stored when checkout completes)
+  completedItemsCount: number;
+  completedTotalQuantity: number;
+
   // Scanner state
   scannedCode: string | null;
   showScanner: boolean;
@@ -78,7 +82,7 @@ type CheckoutAction =
   | { type: 'CLEAR_CART' }
   | { type: 'SET_LAST_ADDED'; productName: string | null }
   | { type: 'START_CHECKOUT' }
-  | { type: 'COMPLETE_CHECKOUT' }
+  | { type: 'COMPLETE_CHECKOUT'; itemsCount: number; totalQuantity: number }
   | { type: 'CANCEL_CHECKOUT' }
 
   // Scanner actions
@@ -111,6 +115,8 @@ const initialState: CheckoutState = {
   isCheckingOut: false,
   checkoutComplete: false,
   lastAddedProduct: null,
+  completedItemsCount: 0,
+  completedTotalQuantity: 0,
   scannedCode: null,
   showScanner: true,
   manualCode: '',
@@ -251,6 +257,8 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         ...state,
         isCheckingOut: false,
         checkoutComplete: true,
+        completedItemsCount: action.itemsCount,
+        completedTotalQuantity: action.totalQuantity,
         cart: [],
       };
 
@@ -710,7 +718,11 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
     // Batch all state updates at the end
     if (failedItems.length === 0 && mergedResults.length > 0) {
-      dispatch({ type: 'COMPLETE_CHECKOUT' });
+      // Calculate summary before clearing cart
+      const itemsCount = mergedResults.length;
+      const totalQuantity = mergedResults.reduce((sum, item) => sum + item.quantity, 0);
+
+      dispatch({ type: 'COMPLETE_CHECKOUT', itemsCount, totalQuantity });
       playSound('success');
 
       // Invalidate all related caches to ensure fresh data after checkout
@@ -792,13 +804,13 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                       <div className="flex justify-between text-sm">
                         <span style={{ color: 'var(--color-stone)' }}>{t('checkout.itemsLabel', 'Items:')}</span>
                         <span className="font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
-                          {t('checkout.productsCount', { count: pendingItems.length })}
+                          {state.completedItemsCount} {t('checkout.products', 'products')}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span style={{ color: 'var(--color-stone)' }}>{t('checkout.quantityLabel', 'Quantity:')}</span>
                         <span className="font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
-                          {pendingItems.reduce((sum, item) => sum + item.quantity, 0)} {t('checkout.units', 'units')}
+                          {state.completedTotalQuantity} {t('checkout.units', 'units')}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
@@ -901,7 +913,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                         {t('checkout.productsUpdated', 'Products Updated:')}
                       </span>
                       <span className="text-2xl font-bold" style={{ color: 'var(--color-forest)' }}>
-                        {pendingItems.length}
+                        {state.completedItemsCount}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -909,7 +921,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                         {t('checkout.totalQuantity', 'Total Quantity:')}
                       </span>
                       <span className="text-2xl font-bold" style={{ color: 'var(--color-forest)' }}>
-                        {pendingItems.reduce((sum, item) => sum + item.quantity, 0)} {t('checkout.units', 'units')}
+                        {state.completedTotalQuantity} {t('checkout.units', 'units')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
