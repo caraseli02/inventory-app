@@ -127,6 +127,22 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* Gentle pulse animation for checkout completion checkmark */
+@keyframes pulse-gentle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.animate-pulse-gentle {
+  animation: pulse-gentle 2s ease-in-out infinite;
+}
+
 /* ============================================
    MICRO-ANIMATIONS FOR INTERACTIONS
    ============================================ */
