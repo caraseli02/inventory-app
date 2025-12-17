@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory List UX Proposals - 4 Professional Variants</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'Inter', system-ui, sans-serif;
+            --color-cream: #FAFAF9;
+            --color-forest: #059669;
+            --color-forest-dark: #047857;
+            --color-terracotta: #EA580C;
+            --color-terracotta-dark: #C2410C;
+            --color-lavender: #8B5CF6;
+            --color-lavender-dark: #7C3AED;
+            --color-stone: #78716C;
+            --color-stone-dark: #57534E;
+        }
+
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: var(--font-display);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .tablet-frame {
+            background: linear-gradient(145deg, #2d3748, #1a202c);
+            border-radius: 40px;
+            padding: 20px;
+            box-shadow:
+                0 50px 100px -20px rgba(0, 0, 0, 0.5),
+                0 30px 60px -30px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 920px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .tablet-frame::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -20px;
+            width: 6px;
+            height: 60px;
+            background: linear-gradient(180deg, #1a202c, #2d3748);
+            border-radius: 0 3px 3px 0;
+            transform: translateY(-50%);
+        }
+
+        .tablet-screen {
+            background: var(--color-cream);
+            border-radius: 24px;
+            overflow: hidden;
+            height: 620px;
+            overflow-y: auto;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .tablet-screen::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tablet-screen::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .tablet-screen::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .tablet-screen::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .stock-indicator {
+            height: 6px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #E5E7EB;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .stock-indicator-fill {
+            height: 100%;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stock-indicator-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slide-in {
+            animation: slideInUp 0.4s ease-out;
+        }
+
+        .variant-card {
+            background: white;
+            border-radius: 24px;
+            padding: 32px;
+            margin-bottom: 48px;
+            box-shadow:
+                0 20px 25px -5px rgba(0, 0, 0, 0.1),
+                0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .variant-card:hover {
+            transform: translateY(-4px);
+            box-shadow:
+                0 25px 50px -12px rgba(0, 0, 0, 0.15),
+                0 12px 15px -5px rgba(0, 0, 0, 0.08);
+        }
+
+        .benefit-tag {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 4px;
+            transition: all 0.2s ease;
+            border: 1px solid #e5e7eb;
+        }
+
+        .benefit-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .company-tag {
+            background: linear-gradient(135deg, var(--color-lavender) 0%, var(--color-lavender-dark) 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 4px;
+            box-shadow: 0 4px 6px rgba(139, 92, 246, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .company-tag:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 6px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .product-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-forest) 0%, var(--color-forest-dark) 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(5, 150, 105, 0.3);
+        }
+
+        .expandable-row {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .expandable-row.expanded {
+            max-height: 600px;
+        }
+
+        .comparison-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            padding: 16px;
+            font-weight: 700;
+            text-align: left;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #374151;
+        }
+
+        .comparison-table td {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background 0.2s ease;
+        }
+
+        .comparison-table tr:hover td {
+            background: #f9fafb;
+        }
+
+        .checkmark {
+            color: #10B981;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .badge:hover {
+            transform: scale(1.05);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            border-radius: 16px;
+            padding: 20px;
+            border: 2px solid #f3f4f6;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--color-lavender);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(139, 92, 246, 0.1);
+        }
+
+        .nav-pill {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-pill::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+
+        .nav-pill:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .product-image {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            transition: all 0.3s ease;
+        }
+
+        .product-image:hover {
+            transform: scale(1.05);
+        }
+
+        .status-badge {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg,
+                rgba(102, 126, 234, 0.1) 0%,
+                rgba(118, 75, 162, 0.1) 100%);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen">
+    <div class="max-w-7xl mx-auto">
+        <!-- Enhanced Header -->
+        <header class="text-center mb-16 animate-slide-in">
+            <div class="glass-card rounded-3xl p-8 md:p-12 shadow-2xl">
+                <div class="inline-block px-4 py-2 bg-purple-100 rounded-full mb-4">
+                    <span class="text-purple-700 font-semibold text-sm">✨ Professional UX Design</span>
+                </div>
+                <h1 class="text-5xl md:text-6xl font-bold text-gray-900 mb-4 leading-tight">
+                    Inventory List UX Proposals
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-600 mb-4 max-w-3xl mx-auto">
+                    4 Interactive Variants Based on Industry Best Practices
+                </p>
+                <div class="inline-block px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg mb-6">
+                    <p class="text-sm text-amber-800">
+                        <strong>Note:</strong> These are design proposals and mockups. Actual implementation may differ.
+                        Refer to <code class="bg-amber-100 px-1 py-0.5 rounded text-xs">src/components/inventory/InventoryTable.tsx</code> for production code.
+                    </p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-4 text-sm text-gray-600 font-medium">
+                    <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm">
+                        <span class="text-2xl">📱</span>
+                        <span>Tablet-First Design</span>
+                    </div>
+                    <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm">
+                        <span class="text-2xl">🎨</span>
+                        <span>"Fresh Precision" Aesthetic</span>
+                    </div>
+                    <div class="flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm">
+                        <span class="text-2xl">♿</span>
+                        <span>Accessibility Optimized</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Quick Navigation -->
+        <nav class="glass-card rounded-2xl p-8 mb-12 shadow-xl animate-slide-in" style="animation-delay: 0.1s;">
+            <h3 class="font-bold text-xl mb-6 text-gray-900">Quick Navigation</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <a href="#option-a" class="nav-pill group text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl hover:from-blue-100 hover:to-blue-200 transition-all transform hover:scale-105 shadow-lg">
+                    <div class="text-4xl mb-3">📊</div>
+                    <div class="font-bold text-gray-900 text-lg mb-1">Option A</div>
+                    <div class="text-sm text-gray-600">Enhanced Table</div>
+                </a>
+                <a href="#option-b" class="nav-pill group text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl hover:from-purple-100 hover:to-purple-200 transition-all transform hover:scale-105 shadow-lg">
+                    <div class="text-4xl mb-3">🎴</div>
+                    <div class="font-bold text-gray-900 text-lg mb-1">Option B</div>
+                    <div class="text-sm text-gray-600">Card-Grid Hybrid</div>
+                </a>
+                <a href="#option-c" class="nav-pill group text-center p-6 bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl hover:from-amber-100 hover:to-amber-200 transition-all transform hover:scale-105 shadow-lg">
+                    <div class="text-4xl mb-3">📋</div>
+                    <div class="font-bold text-gray-900 text-lg mb-1">Option C</div>
+                    <div class="text-sm text-gray-600">Compact List</div>
+                </a>
+                <a href="#option-d" class="nav-pill group text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl hover:from-green-100 hover:to-green-200 transition-all transform hover:scale-105 shadow-lg border-3 border-green-400">
+                    <div class="text-4xl mb-3">⭐</div>
+                    <div class="font-bold text-green-800 text-lg mb-1">Option D</div>
+                    <div class="text-sm text-green-700 font-semibold">RECOMMENDED</div>
+                </a>
+            </div>
+        </nav>
+
+        <!-- OPTION A: Enhanced Table with Visual Indicators -->
+        <section id="option-a" class="variant-card animate-slide-in" style="animation-delay: 0.2s;">
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl shadow-lg">
+                        📊
+                    </div>
+                    <div>
+                        <h2 class="text-4xl font-bold text-gray-900">Option A: Enhanced Table with Visual Indicators</h2>
+                    </div>
+                </div>
+                <p class="text-gray-600 text-lg leading-relaxed">
+                    Traditional table layout enhanced with visual stock indicators, color coding, and improved data hierarchy. Perfect for users who prefer familiar spreadsheet-style interfaces.
+                </p>
+            </div>
+
+            <div class="mb-8">
+                <h4 class="font-bold text-sm text-gray-700 mb-4 uppercase tracking-wide">Industry Leaders Using This Pattern:</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span class="company-tag">SAP Business One</span>
+                    <span class="company-tag">Oracle NetSuite</span>
+                    <span class="company-tag">QuickBooks Commerce</span>
+                    <span class="company-tag">Zoho Inventory</span>
+                </div>
+            </div>
+
+            <!-- Interactive Demo -->
+            <div class="tablet-frame mb-8">
+                <div class="tablet-screen">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 p-6 border-b-2 border-gray-200 shadow-sm">
+                        <h3 class="text-3xl font-bold text-gray-900 mb-4">Inventory List</h3>
+                        <input type="text" placeholder="🔍 Search by name or barcode..."
+                               class="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all text-base shadow-sm">
+                    </div>
+
+                    <!-- Toolbar -->
+                    <div class="flex flex-wrap justify-between items-center px-6 py-4 bg-white border-b border-gray-200 gap-3">
+                        <div class="text-sm font-semibold text-gray-700 bg-gray-100 px-4 py-2 rounded-lg">
+                            14 products
+                        </div>
+                        <div class="flex gap-3">
+                            <select class="px-4 py-2 border-2 border-gray-300 rounded-xl text-sm font-medium focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all shadow-sm">
+                                <option>All Categories</option>
+                                <option>Meat</option>
+                                <option>Dairy</option>
+                                <option>General</option>
+                            </select>
+                            <button class="px-5 py-2 btn-primary text-white rounded-xl text-sm font-bold shadow-lg hover:shadow-xl transition-all">
+                                📥 Import
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Enhanced Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-200 text-xs uppercase text-gray-700 sticky top-0 z-10">
+                                <tr>
+                                    <th class="text-left p-4 w-16 font-bold">Image</th>
+                                    <th class="text-left p-4 font-bold">Product</th>
+                                    <th class="text-left p-4 font-bold">Category</th>
+                                    <th class="text-center p-4 font-bold">Stock Level</th>
+                                    <th class="text-right p-4 font-bold">Price</th>
+                                    <th class="text-right p-4 font-bold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm">
+                                <!-- Product 1 - Low Stock (Critical) -->
+                                <tr class="border-b border-gray-100 hover:bg-red-50 transition-all group bg-red-25">
+                                    <td class="p-4">
+                                        <div class="w-12 h-12 product-image rounded-xl flex items-center justify-center text-2xl shadow-sm">🥩</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="font-bold text-gray-900 mb-1">Doctorscaia Pegas vrag</div>
+                                        <div class="text-xs text-gray-500">Barcode: <span class="font-mono">4820024713146</span></div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="badge bg-orange-100 text-orange-700 border border-orange-200">🥩 Meat</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <div class="font-bold text-2xl text-red-600">1</div>
+                                            <div class="stock-indicator w-20">
+                                                <div class="stock-indicator-fill bg-gradient-to-r from-red-500 to-red-600" style="width: 10%;"></div>
+                                            </div>
+                                            <div class="status-badge text-xs text-red-700 font-bold bg-red-100 px-3 py-1 rounded-full border border-red-200">
+                                                ⚠️ Critical
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-bold text-gray-900 text-lg">€16.28</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex justify-end gap-2">
+                                            <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">−</button>
+                                            <button class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">+</button>
+                                            <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">✏️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Product 2 - Medium Stock -->
+                                <tr class="border-b border-gray-100 hover:bg-amber-50 transition-all group">
+                                    <td class="p-4">
+                                        <div class="w-12 h-12 product-image rounded-xl flex items-center justify-center text-2xl shadow-sm">🍬</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="font-bold text-gray-900 mb-1">Bomboane Korovka Roshen</div>
+                                        <div class="text-xs text-gray-500">Barcode: <span class="font-mono">4823077619717</span></div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="badge bg-pink-100 text-pink-700 border border-pink-200">🍭 Sweets</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <div class="font-bold text-2xl text-amber-600">5</div>
+                                            <div class="stock-indicator w-20">
+                                                <div class="stock-indicator-fill bg-gradient-to-r from-amber-400 to-amber-500" style="width: 50%;"></div>
+                                            </div>
+                                            <div class="text-xs text-amber-700 font-bold bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
+                                                Medium
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-bold text-gray-900 text-lg">€2.16</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex justify-end gap-2">
+                                            <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">−</button>
+                                            <button class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">+</button>
+                                            <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">✏️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Product 3 - Good Stock -->
+                                <tr class="border-b border-gray-100 hover:bg-green-50 transition-all group">
+                                    <td class="p-4">
+                                        <div class="w-12 h-12 product-image rounded-xl flex items-center justify-center text-2xl shadow-sm">🌶️</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="font-bold text-gray-900 mb-1">Hrean Veres</div>
+                                        <div class="text-xs text-gray-500">Barcode: <span class="font-mono">4820024714136</span></div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="badge bg-blue-100 text-blue-700 border border-blue-200">🏪 General</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <div class="font-bold text-2xl text-green-600">10</div>
+                                            <div class="stock-indicator w-20">
+                                                <div class="stock-indicator-fill bg-gradient-to-r from-green-500 to-green-600" style="width: 100%;"></div>
+                                            </div>
+                                            <div class="text-xs text-green-700 font-bold bg-green-100 px-3 py-1 rounded-full border border-green-200">
+                                                ✓ Good
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-bold text-gray-900 text-lg">€2.55</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex justify-end gap-2">
+                                            <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">−</button>
+                                            <button class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">+</button>
+                                            <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">✏️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Product 4 - Medium Stock -->
+                                <tr class="border-b border-gray-100 hover:bg-amber-50 transition-all group">
+                                    <td class="p-4">
+                                        <div class="w-12 h-12 product-image rounded-xl flex items-center justify-center text-2xl shadow-sm">🧀</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="font-bold text-gray-900 mb-1">Brânză de vaci 5,5% Latti</div>
+                                        <div class="text-xs text-gray-500">Barcode: <span class="font-mono">4820024715843</span></div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="badge bg-yellow-100 text-yellow-700 border border-yellow-200">🧈 Dairy</span>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex flex-col items-center gap-2">
+                                            <div class="font-bold text-2xl text-amber-600">5</div>
+                                            <div class="stock-indicator w-20">
+                                                <div class="stock-indicator-fill bg-gradient-to-r from-amber-400 to-amber-500" style="width: 50%;"></div>
+                                            </div>
+                                            <div class="text-xs text-amber-700 font-bold bg-amber-100 px-3 py-1 rounded-full border border-amber-200">
+                                                Medium
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="p-4 text-right">
+                                        <div class="font-bold text-gray-900 text-lg">€10.24</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="flex justify-end gap-2">
+                                            <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">−</button>
+                                            <button class="w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">+</button>
+                                            <button class="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow">✏️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="mb-6">
+                <h4 class="font-bold text-sm text-gray-700 mb-4 uppercase tracking-wide">Key Benefits:</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span class="benefit-tag">✓ Familiar table layout</span>
+                    <span class="benefit-tag">✓ Visual stock indicators</span>
+                    <span class="benefit-tag">✓ Color-coded alerts</span>
+                    <span class="benefit-tag">✓ Quick scanning</span>
+                    <span class="benefit-tag">✓ Progressive disclosure</span>
+                    <span class="benefit-tag">✓ Desktop-optimized</span>
+                    <span class="benefit-tag">✓ Data-dense display</span>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border-2 border-blue-200 shadow-inner">
+                <div class="flex items-start gap-3">
+                    <div class="text-3xl">💡</div>
+                    <div>
+                        <p class="text-sm text-gray-800 font-medium leading-relaxed">
+                            <strong class="text-blue-900">Best for:</strong> Desktop-heavy workflows, users comfortable with traditional inventory systems, scenarios requiring quick comparison across multiple columns. Ideal for warehouse managers and operations teams who need to process large amounts of data quickly.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- OPTION B: Card-Grid Hybrid -->
+        <section id="option-b" class="variant-card animate-slide-in" style="animation-delay: 0.3s;">
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl shadow-lg">
+                        🎴
+                    </div>
+                    <div>
+                        <h2 class="text-4xl font-bold text-gray-900">Option B: Card-Grid Hybrid</h2>
+                    </div>
+                </div>
+                <p class="text-gray-600 text-lg leading-relaxed">
+                    Visual card-based layout with large product images, ideal for touch interactions and product-focused inventory management. Perfect for retail and POS environments.
+                </p>
+            </div>
+
+            <div class="mb-8">
+                <h4 class="font-bold text-sm text-gray-700 mb-4 uppercase tracking-wide">Industry Leaders Using This Pattern:</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span class="company-tag">Shopify POS</span>
+                    <span class="company-tag">Square Inventory</span>
+                    <span class="company-tag">Toast POS</span>
+                    <span class="company-tag">Lightspeed Retail</span>
+                </div>
+            </div>
+
+            <!-- Interactive Demo -->
+            <div class="tablet-frame mb-8">
+                <div class="tablet-screen">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-br from-purple-50 via-purple-100 to-purple-50 p-6 border-b-2 border-purple-200 shadow-sm">
+                        <h3 class="text-3xl font-bold text-gray-900 mb-4">Inventory List</h3>
+                        <input type="text" placeholder="🔍 Search products..."
+                               class="w-full px-5 py-3 border-2 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all text-base shadow-sm">
+                    </div>
+
+                    <!-- Toolbar -->
+                    <div class="flex flex-wrap justify-between items-center px-6 py-4 bg-white border-b border-gray-200 gap-3">
+                        <div class="flex gap-3">
+                            <button class="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl text-sm font-bold shadow-lg">Grid View</button>
+                            <button class="px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-200 transition-all">List View</button>
+                        </div>
+                        <div class="text-sm font-semibold text-gray-700 bg-gray-100 px-4 py-2 rounded-lg">
+                            14 products
+                        </div>
+                    </div>
+
+                    <!-- Grid Layout -->
+                    <div class="p-6 grid grid-cols-2 gap-5">
+                        <!-- Card 1 - Low Stock -->
+                        <div class="product-card bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-lg hover:border-red-300">
+                            <div class="relative">
+                                <div class="h-40 bg-gradient-to-br from-red-100 via-red-50 to-orange-50 flex items-center justify-center text-6xl">
+                                    🥩
+                                </div>
+                                <div class="absolute top-3 right-3 status-badge bg-red-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                                    ⚠️ LOW
+                                </div>
+                                <div class="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-red-500 to-red-600"></div>
+                            </div>
+                            <div class="p-4">
+                                <h4 class="font-bold text-base text-gray-900 mb-2 line-clamp-2 leading-tight">Doctorscaia Pegas vrag</h4>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="badge text-xs bg-orange-100 text-orange-700 border border-orange-200">🥩 Meat</span>
+                                    <span class="text-xl font-bold text-gray-900">€16.28</span>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="flex-1 stock-indicator">
+                                        <div class="stock-indicator-fill bg-gradient-to-r from-red-500 to-red-600" style="width: 10%;"></div>
+                                    </div>
+                                    <span class="text-red-600 font-bold text-base">1</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-bold transition-all shadow-sm">−</button>
+                                    <button class="flex-1 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl text-sm font-bold transition-all shadow-md">+</button>
+                                    <button class="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all shadow-sm">✏️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2 - Good Stock -->
+                        <div class="product-card bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-lg hover:border-green-300">
+                            <div class="relative">
+                                <div class="h-40 bg-gradient-to-br from-green-100 via-green-50 to-emerald-50 flex items-center justify-center text-6xl">
+                                    🌶️
+                                </div>
+                                <div class="absolute top-3 right-3 bg-green-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                                    ✓ GOOD
+                                </div>
+                                <div class="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-green-500 to-green-600"></div>
+                            </div>
+                            <div class="p-4">
+                                <h4 class="font-bold text-base text-gray-900 mb-2 line-clamp-2 leading-tight">Hrean Veres</h4>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="badge text-xs bg-blue-100 text-blue-700 border border-blue-200">🏪 General</span>
+                                    <span class="text-xl font-bold text-gray-900">€2.55</span>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="flex-1 stock-indicator">
+                                        <div class="stock-indicator-fill bg-gradient-to-r from-green-500 to-green-600" style="width: 100%;"></div>
+                                    </div>
+                                    <span class="text-green-600 font-bold text-base">10</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-bold transition-all shadow-sm">−</button>
+                                    <button class="flex-1 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl text-sm font-bold transition-all shadow-md">+</button>
+                                    <button class="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all shadow-sm">✏️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3 - Medium Stock -->
+                        <div class="product-card bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-lg hover:border-amber-300">
+                            <div class="relative">
+                                <div class="h-40 bg-gradient-to-br from-amber-100 via-amber-50 to-yellow-50 flex items-center justify-center text-6xl">
+                                    🍬
+                                </div>
+                                <div class="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                                    MED
+                                </div>
+                                <div class="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-400 to-amber-500"></div>
+                            </div>
+                            <div class="p-4">
+                                <h4 class="font-bold text-base text-gray-900 mb-2 line-clamp-2 leading-tight">Bomboane Korovka Roshen</h4>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="badge text-xs bg-pink-100 text-pink-700 border border-pink-200">🍭 Sweets</span>
+                                    <span class="text-xl font-bold text-gray-900">€2.16</span>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="flex-1 stock-indicator">
+                                        <div class="stock-indicator-fill bg-gradient-to-r from-amber-400 to-amber-500" style="width: 50%;"></div>
+                                    </div>
+                                    <span class="text-amber-600 font-bold text-base">5</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-bold transition-all shadow-sm">−</button>
+                                    <button class="flex-1 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl text-sm font-bold transition-all shadow-md">+</button>
+                                    <button class="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all shadow-sm">✏️</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 4 - Medium Stock -->
+                        <div class="product-card bg-white rounded-2xl border-2 border-gray-200 overflow-hidden shadow-lg hover:border-amber-300">
+                            <div class="relative">
+                                <div class="h-40 bg-gradient-to-br from-blue-100 via-blue-50 to-indigo-50 flex items-center justify-center text-6xl">
+                                    🧀
+                                </div>
+                                <div class="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                                    MED
+                                </div>
+                                <div class="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-amber-400 to-amber-500"></div>
+                            </div>
+                            <div class="p-4">
+                                <h4 class="font-bold text-base text-gray-900 mb-2 line-clamp-2 leading-tight">Brânză de vaci 5,5% Latti</h4>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="badge text-xs bg-yellow-100 text-yellow-700 border border-yellow-200">🧈 Dairy</span>
+                                    <span class="text-xl font-bold text-gray-900">€10.24</span>
+                                </div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="flex-1 stock-indicator">
+                                        <div class="stock-indicator-fill bg-gradient-to-r from-amber-400 to-amber-500" style="width: 50%;"></div>
+                                    </div>
+                                    <span class="text-amber-600 font-bold text-base">5</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-bold transition-all shadow-sm">−</button>
+                                    <button class="flex-1 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl text-sm font-bold transition-all shadow-md">+</button>
+                                    <button class="px-3 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all shadow-sm">✏️</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="mb-6">
+                <h4 class="font-bold text-sm text-gray-700 mb-4 uppercase tracking-wide">Key Benefits:</h4>
+                <div class="flex flex-wrap gap-2">
+                    <span class="benefit-tag">✓ Visual product recognition</span>
+                    <span class="benefit-tag">✓ Touch-optimized</span>
+                    <span class="benefit-tag">✓ Large tap targets</span>
+                    <span class="benefit-tag">✓ Stock badges</span>
+                    <span class="benefit-tag">✓ Product-focused</span>
+                    <span class="benefit-tag">✓ Modern aesthetics</span>
+                    <span class="benefit-tag">✓ Retail-friendly</span>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-2xl border-2 border-purple-200 shadow-inner">
+                <div class="flex items-start gap-3">
+                    <div class="text-3xl">💡</div>
+                    <div>
+                        <p class="text-sm text-gray-800 font-medium leading-relaxed">
+                            <strong class="text-purple-900">Best for:</strong> Tablet-first workflows, retail/POS environments, visually-driven inventory management, products with strong visual identity. Perfect for grocery stores, cafes, and retail shops where staff need to quickly identify products by appearance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Options C & D: Planned for Future Iteration -->
+        <section id="option-c" class="mb-16 animate-slide-in" style="animation-delay: 0.3s;">
+            <div class="glass-card rounded-3xl p-12 shadow-2xl">
+                <div class="text-center max-w-2xl mx-auto">
+                    <div class="text-6xl mb-4">📋</div>
+                    <h2 class="text-4xl font-bold text-gray-900 mb-4">Option C: Compact List</h2>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Progressive disclosure pattern with expandable rows for detailed information.
+                    </p>
+                    <div class="inline-block px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p class="text-sm text-blue-800">
+                            🚧 <strong>Coming Soon</strong> - This variant will be added in a future iteration based on user feedback and validation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="option-d" class="mb-16 animate-slide-in" style="animation-delay: 0.4s;">
+            <div class="glass-card rounded-3xl p-12 shadow-2xl border-2 border-green-300">
+                <div class="text-center max-w-2xl mx-auto">
+                    <div class="text-6xl mb-4">⭐</div>
+                    <h2 class="text-4xl font-bold text-green-900 mb-4">Option D: Adaptive Smart View</h2>
+                    <div class="inline-block px-3 py-1 bg-green-100 rounded-full mb-4">
+                        <span class="text-green-700 font-semibold text-sm">RECOMMENDED</span>
+                    </div>
+                    <p class="text-lg text-gray-600 mb-6">
+                        Intelligent layout that adapts between table and card views based on screen size and data density.
+                    </p>
+                    <div class="inline-block px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p class="text-sm text-blue-800">
+                            🚧 <strong>Coming Soon</strong> - This adaptive variant will be added after gathering user feedback on Options A and B.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center py-12 mt-16">
+            <div class="glass-card rounded-2xl p-8 shadow-xl">
+                <p class="text-gray-600 font-medium mb-2">Created for Inventory App - Tablet-First Grocery Management</p>
+                <p class="text-gray-500 text-sm">React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui</p>
+                <div class="mt-6 flex justify-center gap-4 text-xs text-gray-400">
+                    <span>✨ Professional UI Design</span>
+                    <span>•</span>
+                    <span>🎨 "Fresh Precision" Aesthetic</span>
+                    <span>•</span>
+                    <span>⚡ Interactive Prototypes</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function toggleExpand(itemId) {
+            const expandableRow = document.getElementById(itemId);
+            const arrow = document.getElementById('arrow-' + itemId);
+
+            expandableRow.classList.toggle('expanded');
+            arrow.style.transform = expandableRow.classList.contains('expanded')
+                ? 'rotate(180deg)'
+                : 'rotate(0deg)';
+        }
+
+        // Smooth scroll for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Add stagger animation to benefit tags
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.benefit-tag, .company-tag').forEach((tag, index) => {
+                tag.style.animationDelay = `${index * 0.05}s`;
+                tag.classList.add('animate-slide-in');
+            });
+        });
+    </script>
+</body>
+</html>

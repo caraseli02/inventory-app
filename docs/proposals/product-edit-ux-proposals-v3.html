@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Edit UX Proposals - Desktop & Tablet</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a1a1a1; }
+
+    /* Smooth transitions */
+    .transition-panel { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+    /* Device frames */
+    .tablet-frame {
+      background: #1a1a1a;
+      border-radius: 24px;
+      padding: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .tablet-screen {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    /* Animation classes */
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideInUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .animate-slide-in-right { animation: slideInRight 0.3s ease-out; }
+    .animate-slide-in-up { animation: slideInUp 0.3s ease-out; }
+    .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+
+    /* Tab styles */
+    .nav-tab {
+      padding: 12px 24px;
+      font-weight: 500;
+      color: #64748b;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-tab:hover { color: #334155; }
+    .nav-tab.active { color: #059669; border-bottom-color: #059669; }
+
+    /* Form styles */
+    .form-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .form-input:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+
+    /* Accordion styles */
+    .accordion-header {
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .accordion-header:hover { background-color: #f8fafc; }
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    .accordion-content.open { max-height: 1000px; }
+
+    /* Recommendation badge */
+    .recommended-badge {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Pattern card */
+    .pattern-card {
+      background: white;
+      border-radius: 16px;
+      border: 2px solid #e2e8f0;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    .pattern-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
+    }
+    .pattern-card.recommended {
+      border-color: #059669;
+      box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.1);
+    }
+
+    /* Quick edit pill */
+    .quick-edit-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-edit-pill:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+    }
+
+    /* Inline edit field */
+    .inline-edit-field {
+      padding: 8px 12px;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .inline-edit-field:hover {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+    }
+    .inline-edit-field.editing {
+      background: white;
+      border-color: #8b5cf6;
+      cursor: text;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Product Edit UX Proposals</h1>
+          <p class="text-sm text-gray-500 mt-1">Desktop & Tablet View - 4 Interactive Variants</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-gray-500">Tech Stack: React + Tailwind + shadcn/ui</span>
+          <a href="#comparison" class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+            View Comparison
+          </a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation -->
+  <nav class="bg-white border-b border-gray-200 sticky top-[73px] z-40">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex gap-1 overflow-x-auto">
+        <a href="#option-a" class="nav-tab">Option A: Full-Screen Modal</a>
+        <a href="#option-b" class="nav-tab">Option B: Side Sheet</a>
+        <a href="#option-c" class="nav-tab">Option C: Split View</a>
+        <a href="#option-d" class="nav-tab active">Option D: Contextual Panels</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-6 py-8 space-y-16">
+
+    <!-- ========================================== -->
+    <!-- OPTION A: Full-Screen Modal with Tabs -->
+    <!-- ========================================== -->
+    <section id="option-a" class="pattern-card">
+      <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <h2 class="text-xl font-bold text-gray-900">Option A: Full-Screen Modal with Tabs</h2>
+              <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium">Current Pattern</span>
+            </div>
+            <p class="text-gray-600 max-w-2xl">
+              A dedicated full-screen overlay that takes over the entire viewport. Uses horizontal tabs to organize
+              form sections. Provides maximum focus on the editing task with no distractions.
+            </p>
+          </div>
+        </div>
+
+        <!-- Companies using this pattern -->
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Used by:</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Airtable</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Notion (Mobile)</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Figma (Prototype View)</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Linear (Issue Detail)</span>
+        </div>
+      </div>
+
+      <!-- Interactive Demo -->
+      <div class="p-8 bg-gray-100">
+        <div class="flex justify-center">
+          <div class="tablet-frame" style="width: 900px;">
+            <div class="tablet-screen" style="height: 600px;">
+              <!-- Demo Content -->
+              <div class="h-full flex flex-col" id="demo-a">
+                <!-- Closed State -->
+                <div id="demo-a-closed" class="h-full flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100">
+                  <div class="text-center">
+                    <div class="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-4">
+                      <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                      </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">Organic Coffee Beans</h3>
+                    <p class="text-sm text-gray-500 mb-4">Click to edit product</p>
+                    <button onclick="openDemoA()" class="px-6 py-3 bg-emerald-600 text-white rounded-xl font-semibold hover:bg-emerald-700 transition-colors">
+                      Edit Product
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Open State (Full Screen Modal) -->
+                <div id="demo-a-open" class="h-full flex-col hidden">
+                  <!-- Header with Tabs -->
+                  <div class="bg-gradient-to-r from-stone-50 to-stone-100 border-b-2 border-stone-200 px-6 py-4">
+                    <div class="flex items-center justify-between mb-4">
+                      <h2 class="text-lg font-bold text-gray-900">Organic Coffee Beans</h2>
+                      <button onclick="closeDemoA()" class="p-2 hover:bg-stone-200 rounded-lg transition-colors">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <!-- Tabs -->
+                    <div class="flex bg-white rounded-lg p-1 shadow-sm">
+                      <button onclick="switchTabA('basic')" id="tab-a-basic" class="flex-1 py-2 px-4 rounded-md text-sm font-medium bg-emerald-600 text-white">Basic</button>
+                      <button onclick="switchTabA('pricing')" id="tab-a-pricing" class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50">Pricing</button>
+                      <button onclick="switchTabA('details')" id="tab-a-details" class="flex-1 py-2 px-4 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-50">Details</button>
+                    </div>
+                  </div>
+
+                  <!-- Content Area -->
+                  <div class="flex-1 overflow-y-auto p-6">
+                    <!-- Basic Tab Content -->
+                    <div id="content-a-basic" class="space-y-5 max-w-lg mx-auto">
+                      <div class="flex justify-center mb-6">
+                        <div class="w-32 h-32 bg-gradient-to-br from-amber-100 to-amber-200 rounded-2xl flex items-center justify-center border-2 border-dashed border-amber-300">
+                          <span class="text-4xl">☕</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label class="form-label">Barcode</label>
+                        <input type="text" class="form-input bg-gray-50" value="8901234567890" disabled>
+                      </div>
+                      <div>
+                        <label class="form-label">Product Name *</label>
+                        <input type="text" class="form-input" value="Organic Coffee Beans">
+                      </div>
+                      <div>
+                        <label class="form-label">Category</label>
+                        <select class="form-input">
+                          <option>Beverages</option>
+                          <option>Pantry</option>
+                          <option>General</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Pricing Tab Content (hidden by default) -->
+                    <div id="content-a-pricing" class="space-y-5 max-w-lg mx-auto hidden">
+                      <div>
+                        <label class="form-label">Base Price</label>
+                        <div class="form-input bg-gray-50 text-gray-600">€12.50</div>
+                        <p class="text-xs text-gray-500 mt-1">Import from Excel</p>
+                      </div>
+                      <div>
+                        <label class="form-label">Markup Tier</label>
+                        <div class="flex rounded-lg border-2 border-gray-200 bg-gray-50 p-1">
+                          <button class="flex-1 py-2 rounded-md text-sm font-medium text-gray-600">50%</button>
+                          <button class="flex-1 py-2 rounded-md text-sm font-medium bg-emerald-600 text-white">70%</button>
+                          <button class="flex-1 py-2 rounded-md text-sm font-medium text-gray-600">100%</button>
+                        </div>
+                      </div>
+                      <div class="p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm font-medium text-gray-700">Store Price</span>
+                          <span class="text-xl font-bold text-emerald-600">€21.25</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Details Tab Content (hidden by default) -->
+                    <div id="content-a-details" class="space-y-5 max-w-lg mx-auto hidden">
+                      <div>
+                        <label class="form-label">Min Stock Level</label>
+                        <input type="number" class="form-input" value="10">
+                      </div>
+                      <div>
+                        <label class="form-label">Current Stock</label>
+                        <div class="form-input bg-gray-50 text-gray-600">45 units</div>
+                      </div>
+                      <div>
+                        <label class="form-label">Supplier</label>
+                        <input type="text" class="form-input" value="Coffee Direct Ltd">
+                      </div>
+                      <div>
+                        <label class="form-label">Expiry Date</label>
+                        <input type="date" class="form-input" value="2025-06-30">
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Footer -->
+                  <div class="bg-gradient-to-r from-stone-50 to-stone-100 border-t-2 border-stone-200 p-4">
+                    <div class="flex gap-3 max-w-lg mx-auto">
+                      <button onclick="closeDemoA()" class="flex-1 py-3 border-2 border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                      </button>
+                      <button class="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity">
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="p-6 border-t border-gray-200">
+        <h3 class="font-semibold text-gray-900 mb-4">Key Features & Benefits</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Maximum Focus</span>
+              <p class="text-sm text-gray-500">Full-screen overlay eliminates distractions from the main interface</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Organized Sections</span>
+              <p class="text-sm text-gray-500">Tabs break complex forms into manageable chunks</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-amber-500 mt-1">△</span>
+            <div>
+              <span class="font-medium text-gray-900">Context Loss</span>
+              <p class="text-sm text-gray-500">User loses sight of the product list and surrounding data</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-amber-500 mt-1">△</span>
+            <div>
+              <span class="font-medium text-gray-900">Higher Commitment</span>
+              <p class="text-sm text-gray-500">Users must consciously "enter" edit mode, creating friction for quick changes</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- OPTION B: Side Sheet / Drawer Pattern -->
+    <!-- ========================================== -->
+    <section id="option-b" class="pattern-card">
+      <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <h2 class="text-xl font-bold text-gray-900">Option B: Side Sheet / Drawer</h2>
+              <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs font-medium">Material Design 3</span>
+            </div>
+            <p class="text-gray-600 max-w-2xl">
+              A panel that slides in from the right edge, allowing users to edit while maintaining visual context
+              of the product list. Ideal for desktop/tablet where screen real estate allows side-by-side viewing.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Used by:</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Google Workspace</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Shopify Admin</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">GitLab</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Stripe Dashboard</span>
+        </div>
+      </div>
+
+      <!-- Interactive Demo -->
+      <div class="p-8 bg-gray-100">
+        <div class="flex justify-center">
+          <div class="tablet-frame" style="width: 900px;">
+            <div class="tablet-screen relative" style="height: 600px;">
+              <!-- Main Content (Product List) -->
+              <div class="h-full flex flex-col bg-stone-50">
+                <!-- Header -->
+                <div class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+                  <h3 class="font-semibold text-gray-900">Products</h3>
+                  <span class="text-sm text-gray-500">24 items</span>
+                </div>
+
+                <!-- Product Grid -->
+                <div class="flex-1 p-4 overflow-y-auto">
+                  <div class="grid grid-cols-3 gap-3">
+                    <!-- Product 1 (Selected) -->
+                    <div onclick="openDemoB()" class="bg-white p-3 rounded-xl border-2 border-emerald-500 shadow-md cursor-pointer">
+                      <div class="w-full aspect-square bg-amber-100 rounded-lg flex items-center justify-center mb-2">
+                        <span class="text-3xl">☕</span>
+                      </div>
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Coffee Beans</h4>
+                      <p class="text-xs text-gray-500">€21.25</p>
+                    </div>
+                    <!-- Product 2 -->
+                    <div class="bg-white p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
+                      <div class="w-full aspect-square bg-green-100 rounded-lg flex items-center justify-center mb-2">
+                        <span class="text-3xl">🥬</span>
+                      </div>
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Organic Kale</h4>
+                      <p class="text-xs text-gray-500">€4.99</p>
+                    </div>
+                    <!-- Product 3 -->
+                    <div class="bg-white p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
+                      <div class="w-full aspect-square bg-orange-100 rounded-lg flex items-center justify-center mb-2">
+                        <span class="text-3xl">🧀</span>
+                      </div>
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Aged Cheddar</h4>
+                      <p class="text-xs text-gray-500">€8.50</p>
+                    </div>
+                    <!-- Product 4 -->
+                    <div class="bg-white p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
+                      <div class="w-full aspect-square bg-red-100 rounded-lg flex items-center justify-center mb-2">
+                        <span class="text-3xl">🍅</span>
+                      </div>
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Tomatoes</h4>
+                      <p class="text-xs text-gray-500">€3.25</p>
+                    </div>
+                    <!-- Product 5 -->
+                    <div class="bg-white p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
+                      <div class="w-full aspect-square bg-yellow-100 rounded-lg flex items-center justify-center mb-2">
+                        <span class="text-3xl">🍌</span>
+                      </div>
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Bananas</h4>
+                      <p class="text-xs text-gray-500">€2.99</p>
+                    </div>
+                    <!-- Product 6 -->
+                    <div class="bg-white p-3 rounded-xl border-2 border-gray-200 hover:border-gray-300 cursor-pointer transition-colors">
+                      <div class="w-full aspect-square bg-blue-100 rounded-lg flex items-center justify-center mb-2">
+                        <span class="text-3xl">🫐</span>
+                      </div>
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Blueberries</h4>
+                      <p class="text-xs text-gray-500">€5.99</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Side Sheet Overlay -->
+              <div id="demo-b-overlay" class="absolute inset-0 bg-black/20 hidden" onclick="closeDemoB()"></div>
+
+              <!-- Side Sheet -->
+              <div id="demo-b-sheet" class="absolute top-0 right-0 bottom-0 w-[360px] bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+                <!-- Sheet Header -->
+                <div class="bg-gradient-to-r from-stone-50 to-stone-100 border-b-2 border-stone-200 px-4 py-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-lg font-bold text-gray-900">Edit Product</h2>
+                    <button onclick="closeDemoB()" class="p-2 hover:bg-stone-200 rounded-lg transition-colors">
+                      <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                      <span class="text-2xl">☕</span>
+                    </div>
+                    <div>
+                      <h3 class="font-semibold text-gray-900">Organic Coffee Beans</h3>
+                      <p class="text-xs text-gray-500">Beverages • 45 in stock</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sheet Content -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-5">
+                  <div>
+                    <label class="form-label">Product Name *</label>
+                    <input type="text" class="form-input" value="Organic Coffee Beans">
+                  </div>
+
+                  <div>
+                    <label class="form-label">Category</label>
+                    <select class="form-input">
+                      <option>Beverages</option>
+                      <option>Pantry</option>
+                    </select>
+                  </div>
+
+                  <div class="border-t border-gray-200 pt-5">
+                    <label class="form-label">Markup Tier</label>
+                    <div class="flex rounded-lg border-2 border-gray-200 bg-gray-50 p-1 mt-1">
+                      <button class="flex-1 py-2 rounded-md text-sm font-medium text-gray-600">50%</button>
+                      <button class="flex-1 py-2 rounded-md text-sm font-medium bg-emerald-600 text-white">70%</button>
+                      <button class="flex-1 py-2 rounded-md text-sm font-medium text-gray-600">100%</button>
+                    </div>
+                    <div class="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                      <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Store Price</span>
+                        <span class="text-lg font-bold text-emerald-600">€21.25</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="border-t border-gray-200 pt-5">
+                    <label class="form-label">Min Stock Level</label>
+                    <input type="number" class="form-input" value="10">
+                  </div>
+
+                  <div>
+                    <label class="form-label">Supplier</label>
+                    <input type="text" class="form-input" value="Coffee Direct Ltd">
+                  </div>
+
+                  <div>
+                    <label class="form-label">Expiry Date</label>
+                    <input type="date" class="form-input" value="2025-06-30">
+                  </div>
+                </div>
+
+                <!-- Sheet Footer -->
+                <div class="border-t-2 border-stone-200 p-4 bg-stone-50">
+                  <button class="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity">
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-sm text-gray-500 mt-4">Click a product card to open the side sheet</p>
+      </div>
+
+      <!-- Features -->
+      <div class="p-6 border-t border-gray-200">
+        <h3 class="font-semibold text-gray-900 mb-4">Key Features & Benefits</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Maintains Context</span>
+              <p class="text-sm text-gray-500">Product list remains visible alongside the edit form</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Quick Multi-Edit</span>
+              <p class="text-sm text-gray-500">Easy to switch between products without closing the panel</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Non-Disruptive</span>
+              <p class="text-sm text-gray-500">Slides in smoothly without jarring full-screen transitions</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-amber-500 mt-1">△</span>
+            <div>
+              <span class="font-medium text-gray-900">Limited Space</span>
+              <p class="text-sm text-gray-500">Narrower form area may require scrolling for many fields</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- OPTION C: Master-Detail Split View -->
+    <!-- ========================================== -->
+    <section id="option-c" class="pattern-card">
+      <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <h2 class="text-xl font-bold text-gray-900">Option C: Master-Detail Split View</h2>
+              <span class="px-2 py-1 bg-cyan-100 text-cyan-700 rounded-md text-xs font-medium">iPad Pattern</span>
+            </div>
+            <p class="text-gray-600 max-w-2xl">
+              A persistent two-panel layout where the left shows the product list (master) and the right shows
+              the selected product's edit form (detail). Optimized for tablets in landscape mode.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Used by:</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Apple Mail (iPad)</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Apple Notes</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Outlook</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Slack (Desktop)</span>
+        </div>
+      </div>
+
+      <!-- Interactive Demo -->
+      <div class="p-8 bg-gray-100">
+        <div class="flex justify-center">
+          <div class="tablet-frame" style="width: 900px;">
+            <div class="tablet-screen flex" style="height: 600px;">
+              <!-- Master Panel (Product List) -->
+              <div class="w-[280px] bg-white border-r-2 border-gray-200 flex flex-col flex-shrink-0">
+                <div class="p-4 border-b border-gray-200">
+                  <div class="relative">
+                    <input type="text" placeholder="Search products..." class="w-full pl-9 pr-3 py-2 bg-gray-100 border-0 rounded-lg text-sm">
+                    <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="flex-1 overflow-y-auto">
+                  <!-- Selected Product -->
+                  <div onclick="selectProductC(1)" id="product-c-1" class="flex items-center gap-3 p-3 bg-emerald-50 border-l-4 border-emerald-500 cursor-pointer">
+                    <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span class="text-xl">☕</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Organic Coffee</h4>
+                      <p class="text-xs text-gray-500">45 in stock</p>
+                    </div>
+                  </div>
+                  <!-- Other Products -->
+                  <div onclick="selectProductC(2)" id="product-c-2" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent">
+                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span class="text-xl">🥬</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Organic Kale</h4>
+                      <p class="text-xs text-gray-500">23 in stock</p>
+                    </div>
+                  </div>
+                  <div onclick="selectProductC(3)" id="product-c-3" class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent">
+                    <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span class="text-xl">🧀</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Aged Cheddar</h4>
+                      <p class="text-xs text-gray-500">12 in stock</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent">
+                    <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span class="text-xl">🍅</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Roma Tomatoes</h4>
+                      <p class="text-xs text-gray-500">67 in stock</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-l-4 border-transparent">
+                    <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span class="text-xl">🍌</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <h4 class="font-medium text-gray-900 text-sm truncate">Organic Bananas</h4>
+                      <p class="text-xs text-gray-500">89 in stock</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Detail Panel (Edit Form) -->
+              <div class="flex-1 bg-stone-50 flex flex-col">
+                <!-- Detail Header -->
+                <div class="bg-white border-b-2 border-gray-200 px-6 py-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                      <div class="w-14 h-14 bg-amber-100 rounded-xl flex items-center justify-center">
+                        <span class="text-3xl">☕</span>
+                      </div>
+                      <div>
+                        <h2 class="text-xl font-bold text-gray-900">Organic Coffee Beans</h2>
+                        <p class="text-sm text-gray-500">Beverages • SKU: 8901234567890</p>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Detail Content -->
+                <div class="flex-1 overflow-y-auto p-6">
+                  <div class="grid grid-cols-2 gap-6">
+                    <!-- Left Column -->
+                    <div class="space-y-5">
+                      <div>
+                        <label class="form-label">Product Name *</label>
+                        <input type="text" class="form-input" value="Organic Coffee Beans">
+                      </div>
+                      <div>
+                        <label class="form-label">Category</label>
+                        <select class="form-input">
+                          <option>Beverages</option>
+                          <option>Pantry</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="form-label">Supplier</label>
+                        <input type="text" class="form-input" value="Coffee Direct Ltd">
+                      </div>
+                      <div>
+                        <label class="form-label">Expiry Date</label>
+                        <input type="date" class="form-input" value="2025-06-30">
+                      </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="space-y-5">
+                      <div>
+                        <label class="form-label">Markup Tier</label>
+                        <div class="flex rounded-lg border-2 border-gray-200 bg-gray-50 p-1">
+                          <button class="flex-1 py-2 rounded-md text-sm font-medium text-gray-600">50%</button>
+                          <button class="flex-1 py-2 rounded-md text-sm font-medium bg-emerald-600 text-white">70%</button>
+                          <button class="flex-1 py-2 rounded-md text-sm font-medium text-gray-600">100%</button>
+                        </div>
+                      </div>
+                      <div class="p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm text-gray-600">Store Price</span>
+                          <span class="text-2xl font-bold text-emerald-600">€21.25</span>
+                        </div>
+                        <p class="text-xs text-emerald-600 mt-1">Base: €12.50 + 70% markup</p>
+                      </div>
+                      <div class="grid grid-cols-2 gap-4">
+                        <div>
+                          <label class="form-label">Current Stock</label>
+                          <div class="form-input bg-gray-50 text-gray-600 font-semibold">45</div>
+                        </div>
+                        <div>
+                          <label class="form-label">Min Stock</label>
+                          <input type="number" class="form-input" value="10">
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Detail Footer -->
+                <div class="bg-white border-t-2 border-gray-200 px-6 py-4">
+                  <div class="flex justify-end gap-3">
+                    <button class="px-6 py-2.5 border-2 border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                      Cancel
+                    </button>
+                    <button class="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity">
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-sm text-gray-500 mt-4">Click products in the left panel to switch between them</p>
+      </div>
+
+      <!-- Features -->
+      <div class="p-6 border-t border-gray-200">
+        <h3 class="font-semibold text-gray-900 mb-4">Key Features & Benefits</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Instant Switching</span>
+              <p class="text-sm text-gray-500">Click any product to immediately see/edit its details</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Always Visible Form</span>
+              <p class="text-sm text-gray-500">No need to open/close dialogs - form is always ready</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Tablet Optimized</span>
+              <p class="text-sm text-gray-500">Perfect for landscape iPad/tablet workflows</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-amber-500 mt-1">△</span>
+            <div>
+              <span class="font-medium text-gray-900">Unsaved Changes Risk</span>
+              <p class="text-sm text-gray-500">Users might switch products without saving - needs confirmation</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- OPTION D: Contextual Panels (RECOMMENDED) -->
+    <!-- ========================================== -->
+    <section id="option-d" class="pattern-card recommended">
+      <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-white">
+        <div class="flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <h2 class="text-xl font-bold text-gray-900">Option D: Contextual Panels with Quick Actions</h2>
+              <span class="recommended-badge">Recommended</span>
+            </div>
+            <p class="text-gray-600 max-w-2xl">
+              A hybrid approach combining the best patterns: expandable sections that reveal edit fields in-place,
+              with a floating quick-action panel for common operations. Reduces cognitive load while maintaining speed.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Inspired by:</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Stripe Dashboard</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Linear</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Notion</span>
+          <span class="px-2 py-1 bg-gray-100 rounded text-xs text-gray-700">Superhuman</span>
+        </div>
+      </div>
+
+      <!-- Interactive Demo -->
+      <div class="p-8 bg-gray-100">
+        <div class="flex justify-center">
+          <div class="tablet-frame" style="width: 900px;">
+            <div class="tablet-screen relative" style="height: 640px;">
+              <!-- Main Content -->
+              <div class="h-full flex flex-col bg-stone-50">
+                <!-- Header -->
+                <div class="bg-white border-b border-gray-200 px-6 py-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                      <button class="p-2 hover:bg-gray-100 rounded-lg">
+                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                      </button>
+                      <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">☕</span>
+                      </div>
+                      <div>
+                        <h2 class="text-lg font-bold text-gray-900">Organic Coffee Beans</h2>
+                        <div class="flex items-center gap-2 mt-0.5">
+                          <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">Beverages</span>
+                          <span class="text-xs text-gray-500">•</span>
+                          <span class="text-xs text-gray-500">45 in stock</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <div class="text-right mr-4">
+                        <div class="text-2xl font-bold text-emerald-600">€21.25</div>
+                        <div class="text-xs text-gray-500">Store price</div>
+                      </div>
+                      <button class="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold text-sm hover:bg-emerald-700 transition-colors">
+                        Save All
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Content with Expandable Sections -->
+                <div class="flex-1 overflow-y-auto">
+                  <div class="max-w-3xl mx-auto p-6 space-y-4">
+
+                    <!-- Quick Actions Bar -->
+                    <div class="bg-white rounded-xl border-2 border-gray-200 p-4">
+                      <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-700">Quick Actions</span>
+                        <div class="flex items-center gap-2">
+                          <button onclick="toggleMarkupD(50)" id="markup-d-50" class="px-3 py-1.5 rounded-lg text-sm font-medium border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors">50%</button>
+                          <button onclick="toggleMarkupD(70)" id="markup-d-70" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-600 text-white border-2 border-emerald-600">70%</button>
+                          <button onclick="toggleMarkupD(100)" id="markup-d-100" class="px-3 py-1.5 rounded-lg text-sm font-medium border-2 border-gray-200 text-gray-600 hover:border-gray-300 transition-colors">100%</button>
+                          <span class="mx-2 text-gray-300">|</span>
+                          <button class="quick-edit-pill">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Photo
+                          </button>
+                          <button class="quick-edit-pill">
+                            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                            </svg>
+                            Scan
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section: Basic Info (Expanded by default) -->
+                    <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                      <div onclick="toggleSectionD('basic')" class="accordion-header flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                          <span class="text-lg">📦</span>
+                          <span class="font-semibold text-gray-900">Basic Information</span>
+                        </div>
+                        <svg id="chevron-basic" class="w-5 h-5 text-gray-400 transform rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </div>
+                      <div id="section-basic" class="accordion-content open">
+                        <div class="p-5 space-y-4">
+                          <div class="grid grid-cols-2 gap-4">
+                            <div>
+                              <label class="form-label">Product Name *</label>
+                              <input type="text" class="form-input" value="Organic Coffee Beans">
+                            </div>
+                            <div>
+                              <label class="form-label">Barcode</label>
+                              <div class="flex gap-2">
+                                <input type="text" class="form-input bg-gray-50 flex-1" value="8901234567890" disabled>
+                                <button class="p-2.5 border-2 border-gray-200 rounded-lg hover:bg-gray-50">
+                                  <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          <div>
+                            <label class="form-label">Category</label>
+                            <div class="flex flex-wrap gap-2">
+                              <button class="px-3 py-1.5 rounded-full text-sm font-medium border-2 border-gray-200 text-gray-600 hover:border-gray-300">General</button>
+                              <button class="px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-700 border-2 border-emerald-200">Beverages</button>
+                              <button class="px-3 py-1.5 rounded-full text-sm font-medium border-2 border-gray-200 text-gray-600 hover:border-gray-300">Pantry</button>
+                              <button class="px-3 py-1.5 rounded-full text-sm font-medium border-2 border-gray-200 text-gray-600 hover:border-gray-300">Dairy</button>
+                              <button class="px-3 py-1.5 rounded-full text-sm font-medium border-2 border-gray-200 text-gray-600 hover:border-gray-300">Produce</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section: Pricing (Collapsed) -->
+                    <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                      <div onclick="toggleSectionD('pricing')" class="accordion-header flex items-center justify-between px-5 py-4">
+                        <div class="flex items-center gap-3">
+                          <span class="text-lg">💰</span>
+                          <span class="font-semibold text-gray-900">Pricing</span>
+                          <span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">€12.50 base • 70% markup</span>
+                        </div>
+                        <svg id="chevron-pricing" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </div>
+                      <div id="section-pricing" class="accordion-content">
+                        <div class="p-5 space-y-4 border-t border-gray-100">
+                          <div class="grid grid-cols-2 gap-4">
+                            <div>
+                              <label class="form-label">Base Price</label>
+                              <div class="form-input bg-gray-50 text-gray-600">€12.50</div>
+                              <p class="text-xs text-gray-500 mt-1">Imported from Excel</p>
+                            </div>
+                            <div>
+                              <label class="form-label">Markup Tier</label>
+                              <div class="flex rounded-lg border-2 border-gray-200 bg-gray-50 p-1">
+                                <button class="flex-1 py-2 rounded-md text-sm font-medium text-gray-600">50%</button>
+                                <button class="flex-1 py-2 rounded-md text-sm font-medium bg-emerald-600 text-white">70%</button>
+                                <button class="flex-1 py-2 rounded-md text-sm font-medium text-gray-600">100%</button>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="p-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
+                            <div class="flex justify-between items-center">
+                              <span class="text-sm font-medium text-gray-700">Store Price</span>
+                              <span class="text-2xl font-bold text-emerald-600">€21.25</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Section: Stock & Supply (Collapsed) -->
+                    <div class="bg-white rounded-xl border-2 border-gray-200 overflow-hidden">
+                      <div onclick="toggleSectionD('stock')" class="accordion-header flex items-center justify-between px-5 py-4">
+                        <div class="flex items-center gap-3">
+                          <span class="text-lg">📊</span>
+                          <span class="font-semibold text-gray-900">Stock & Supply</span>
+                          <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-xs font-medium">45 in stock</span>
+                        </div>
+                        <svg id="chevron-stock" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                      </div>
+                      <div id="section-stock" class="accordion-content">
+                        <div class="p-5 space-y-4 border-t border-gray-100">
+                          <div class="grid grid-cols-3 gap-4">
+                            <div>
+                              <label class="form-label">Current Stock</label>
+                              <div class="form-input bg-gray-50 text-gray-900 font-semibold text-lg">45</div>
+                            </div>
+                            <div>
+                              <label class="form-label">Min Stock Level</label>
+                              <input type="number" class="form-input" value="10">
+                            </div>
+                            <div>
+                              <label class="form-label">Expiry Date</label>
+                              <input type="date" class="form-input" value="2025-06-30">
+                            </div>
+                          </div>
+                          <div>
+                            <label class="form-label">Supplier</label>
+                            <input type="text" class="form-input" value="Coffee Direct Ltd">
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                <!-- Floating Save Bar -->
+                <div id="save-bar-d" class="bg-white border-t-2 border-gray-200 px-6 py-3 hidden animate-slide-in-up">
+                  <div class="max-w-3xl mx-auto flex items-center justify-between">
+                    <span class="text-sm text-gray-600">
+                      <span class="inline-block w-2 h-2 bg-amber-400 rounded-full mr-2"></span>
+                      Unsaved changes
+                    </span>
+                    <div class="flex items-center gap-3">
+                      <button class="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg transition-colors">
+                        Discard
+                      </button>
+                      <button class="px-5 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 transition-colors">
+                        Save Changes
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="text-center text-sm text-gray-500 mt-4">Click section headers to expand/collapse • Markup buttons update instantly</p>
+      </div>
+
+      <!-- Features -->
+      <div class="p-6 border-t border-gray-200">
+        <h3 class="font-semibold text-gray-900 mb-4">Key Features & Benefits</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Progressive Disclosure</span>
+              <p class="text-sm text-gray-500">Show only relevant sections, reducing cognitive load</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Quick Actions First</span>
+              <p class="text-sm text-gray-500">Most common actions (markup, photo, scan) always visible</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Summary in Headers</span>
+              <p class="text-sm text-gray-500">See key values without expanding sections</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <span class="text-emerald-500 mt-1">✓</span>
+            <div>
+              <span class="font-medium text-gray-900">Auto-Save Indicator</span>
+              <p class="text-sm text-gray-500">Floating bar appears only when changes are made</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Why Recommended -->
+        <div class="mt-6 p-5 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
+          <h4 class="font-bold text-emerald-900 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+            </svg>
+            Why This is Recommended
+          </h4>
+          <ul class="space-y-2 text-sm text-emerald-800">
+            <li><strong>Best for inventory workflows:</strong> Markup tier changes are the most frequent edit - having them as quick actions reduces friction significantly.</li>
+            <li><strong>Scalable:</strong> Accordion sections can grow with new features without overwhelming users.</li>
+            <li><strong>Tablet-optimized:</strong> Works equally well in portrait and landscape without layout changes.</li>
+            <li><strong>Combines benefits:</strong> Has the focus of a modal, the context of inline editing, and the organization of tabs.</li>
+            <li><strong>Follows modern patterns:</strong> Aligns with Stripe, Linear, and Notion's approach to complex data editing.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- COMPARISON TABLE -->
+    <!-- ========================================== -->
+    <section id="comparison" class="pattern-card">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-900 mb-2">Comparison Table</h2>
+        <p class="text-gray-600">Side-by-side evaluation of all four patterns</p>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50">
+              <th class="px-6 py-4 text-left font-semibold text-gray-900 border-b border-gray-200">Criteria</th>
+              <th class="px-6 py-4 text-center font-semibold text-gray-900 border-b border-gray-200">A: Full-Screen Modal</th>
+              <th class="px-6 py-4 text-center font-semibold text-gray-900 border-b border-gray-200">B: Side Sheet</th>
+              <th class="px-6 py-4 text-center font-semibold text-gray-900 border-b border-gray-200">C: Split View</th>
+              <th class="px-6 py-4 text-center font-semibold text-gray-900 border-b border-gray-200 bg-emerald-50">D: Contextual Panels ⭐</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Context Preservation</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-red-500">●</span> Poor</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Good</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-emerald-500">●</span> Excellent</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Quick Edits Speed</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-red-500">●</span> Slow</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Medium</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Medium</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-emerald-500">●</span> Fast</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Complex Form Support</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Good</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-emerald-500">●</span> Excellent</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Tablet (Landscape)</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Good</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-emerald-500">●</span> Excellent</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Tablet (Portrait)</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Good</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-red-500">●</span> Poor</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-emerald-500">●</span> Excellent</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Desktop Wide Screen</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Good</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-emerald-500">●</span> Excellent</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Cognitive Load</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Medium</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Medium</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Medium</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-emerald-500">●</span> Low</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Implementation Effort</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Low (Current)</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Medium</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-red-500">●</span> High</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-amber-500">●</span> Medium</td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 font-medium text-gray-900 border-b border-gray-100">Multi-Product Edit Flow</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-red-500">●</span> Poor</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-amber-500">●</span> Good</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100"><span class="text-emerald-500">●</span> Excellent</td>
+              <td class="px-6 py-4 text-center border-b border-gray-100 bg-emerald-50"><span class="text-amber-500">●</span> Good</td>
+            </tr>
+            <tr class="bg-gray-50">
+              <td class="px-6 py-4 font-bold text-gray-900">Overall Score</td>
+              <td class="px-6 py-4 text-center font-bold text-gray-700">6/10</td>
+              <td class="px-6 py-4 text-center font-bold text-gray-700">7.5/10</td>
+              <td class="px-6 py-4 text-center font-bold text-gray-700">7/10</td>
+              <td class="px-6 py-4 text-center font-bold text-emerald-700 bg-emerald-100">9/10</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="p-6 border-t border-gray-200 bg-gray-50">
+        <h3 class="font-semibold text-gray-900 mb-4">Recommendation Summary</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-medium text-gray-800 mb-2">Use Option D (Contextual Panels) when:</h4>
+            <ul class="text-sm text-gray-600 space-y-1">
+              <li>• Markup changes are the most frequent operation</li>
+              <li>• Users need to see key info at a glance</li>
+              <li>• Supporting both tablet portrait and landscape</li>
+              <li>• Progressive disclosure reduces overwhelm</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 mb-2">Alternative considerations:</h4>
+            <ul class="text-sm text-gray-600 space-y-1">
+              <li>• <strong>Option B (Side Sheet)</strong> if multi-product editing is primary use case</li>
+              <li>• <strong>Option C (Split View)</strong> if exclusively tablet landscape usage</li>
+              <li>• <strong>Option A (Full Modal)</strong> if minimal changes needed from current implementation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- RESEARCH SOURCES -->
+    <!-- ========================================== -->
+    <section class="pattern-card">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-xl font-bold text-gray-900 mb-2">Research Sources</h2>
+        <p class="text-gray-600">References and documentation used for this analysis</p>
+      </div>
+
+      <div class="p-6">
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="font-semibold text-gray-900 mb-3">Form UX Best Practices</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="https://www.designstudiouiux.com/blog/form-ux-design-best-practices/" class="text-blue-600 hover:underline" target="_blank">12 Form UI/UX Design Best Practices (2025)</a></li>
+              <li><a href="https://www.interaction-design.org/literature/article/ui-form-design" class="text-blue-600 hover:underline" target="_blank">How to Design UI Forms - IxDF</a></li>
+              <li><a href="https://baymard.com/blog/current-state-ecommerce-product-page-ux" class="text-blue-600 hover:underline" target="_blank">Product Page UX Best Practices - Baymard Institute</a></li>
+              <li><a href="https://www.uxdesigninstitute.com/blog/guide-to-form-design-with-tips/" class="text-blue-600 hover:underline" target="_blank">Ultimate Guide To Form Design - UX Design Institute</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="font-semibold text-gray-900 mb-3">Modal/Sheet/Drawer Patterns</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="https://medium.com/@ninad.kotasthane/modal-vs-drawer-when-to-use-the-right-component-af0a76b952da" class="text-blue-600 hover:underline" target="_blank">Modal vs Drawer: When to Use - Medium</a></li>
+              <li><a href="https://m3.material.io/components/side-sheets/guidelines" class="text-blue-600 hover:underline" target="_blank">Side Sheets Guidelines - Material Design 3</a></li>
+              <li><a href="https://www.nngroup.com/articles/bottom-sheet/" class="text-blue-600 hover:underline" target="_blank">Bottom Sheets: UX Guidelines - NN/g</a></li>
+              <li><a href="https://design.gitlab.com/components/drawer/" class="text-blue-600 hover:underline" target="_blank">Drawer Component - GitLab Pajamas</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="font-semibold text-gray-900 mb-3">Admin & Dashboard Patterns</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="https://docs.stripe.com/stripe-apps/patterns" class="text-blue-600 hover:underline" target="_blank">Design Patterns for Stripe Apps</a></li>
+              <li><a href="https://www.dronahq.com/internal-tools-ux/" class="text-blue-600 hover:underline" target="_blank">Internal Tools UX Best Practices 2025</a></li>
+              <li><a href="https://developer.adobe.com/commerce/admin-developer/pattern-library/containers/slideouts-modals-overlays" class="text-blue-600 hover:underline" target="_blank">Adobe Commerce - Slideouts, Modals, Overlays</a></li>
+              <li><a href="https://www.netguru.com/blog/admin-panel-design" class="text-blue-600 hover:underline" target="_blank">Admin Panel Design - Netguru</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="font-semibold text-gray-900 mb-3">Split View & iPad Patterns</h3>
+            <ul class="space-y-2 text-sm">
+              <li><a href="https://developer.apple.com/design/human-interface-guidelines/split-views" class="text-blue-600 hover:underline" target="_blank">Split Views - Apple HIG</a></li>
+              <li><a href="https://www.kodeco.com/4613809-uisplitviewcontroller-tutorial-getting-started" class="text-blue-600 hover:underline" target="_blank">UISplitViewController Tutorial - Kodeco</a></li>
+              <li><a href="https://moldstud.com/articles/p-designing-apps-for-split-view-multitasking-on-ipad" class="text-blue-600 hover:underline" target="_blank">Designing for iPad Split View Multitasking</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-8 mt-16">
+    <div class="max-w-7xl mx-auto px-6 text-center">
+      <p class="text-gray-400 text-sm">Product Edit UX Proposals • Inventory App • December 2025</p>
+      <p class="text-gray-500 text-xs mt-2">Tech Stack: React + TypeScript + Tailwind CSS + shadcn/ui</p>
+    </div>
+  </footer>
+
+  <script>
+    // Demo A: Full-Screen Modal
+    function openDemoA() {
+      document.getElementById('demo-a-closed').classList.add('hidden');
+      document.getElementById('demo-a-open').classList.remove('hidden');
+      document.getElementById('demo-a-open').classList.add('flex');
+    }
+
+    function closeDemoA() {
+      document.getElementById('demo-a-closed').classList.remove('hidden');
+      document.getElementById('demo-a-open').classList.add('hidden');
+      document.getElementById('demo-a-open').classList.remove('flex');
+    }
+
+    function switchTabA(tab) {
+      // Reset all tabs and content
+      ['basic', 'pricing', 'details'].forEach(t => {
+        document.getElementById(`tab-a-${t}`).classList.remove('bg-emerald-600', 'text-white');
+        document.getElementById(`tab-a-${t}`).classList.add('text-gray-600', 'hover:bg-gray-50');
+        document.getElementById(`content-a-${t}`).classList.add('hidden');
+      });
+
+      // Activate selected tab and content
+      document.getElementById(`tab-a-${tab}`).classList.add('bg-emerald-600', 'text-white');
+      document.getElementById(`tab-a-${tab}`).classList.remove('text-gray-600', 'hover:bg-gray-50');
+      document.getElementById(`content-a-${tab}`).classList.remove('hidden');
+    }
+
+    // Demo B: Side Sheet
+    function openDemoB() {
+      document.getElementById('demo-b-overlay').classList.remove('hidden');
+      document.getElementById('demo-b-sheet').classList.remove('translate-x-full');
+    }
+
+    function closeDemoB() {
+      document.getElementById('demo-b-overlay').classList.add('hidden');
+      document.getElementById('demo-b-sheet').classList.add('translate-x-full');
+    }
+
+    // Demo C: Split View
+    function selectProductC(id) {
+      // Reset all products
+      [1, 2, 3].forEach(i => {
+        const el = document.getElementById(`product-c-${i}`);
+        if (el) {
+          el.classList.remove('bg-emerald-50', 'border-emerald-500');
+          el.classList.add('border-transparent', 'hover:bg-gray-50');
+        }
+      });
+
+      // Select clicked product
+      const selected = document.getElementById(`product-c-${id}`);
+      if (selected) {
+        selected.classList.add('bg-emerald-50', 'border-emerald-500');
+        selected.classList.remove('border-transparent', 'hover:bg-gray-50');
+      }
+    }
+
+    // Demo D: Contextual Panels
+    function toggleSectionD(section) {
+      const content = document.getElementById(`section-${section}`);
+      const chevron = document.getElementById(`chevron-${section}`);
+
+      if (content.classList.contains('open')) {
+        content.classList.remove('open');
+        chevron.classList.remove('rotate-180');
+      } else {
+        content.classList.add('open');
+        chevron.classList.add('rotate-180');
+      }
+
+      // Show save bar when interacting
+      document.getElementById('save-bar-d').classList.remove('hidden');
+    }
+
+    function toggleMarkupD(value) {
+      // Reset all markup buttons
+      [50, 70, 100].forEach(v => {
+        const btn = document.getElementById(`markup-d-${v}`);
+        btn.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-600');
+        btn.classList.add('border-gray-200', 'text-gray-600');
+      });
+
+      // Activate selected button
+      const selected = document.getElementById(`markup-d-${value}`);
+      selected.classList.add('bg-emerald-600', 'text-white', 'border-emerald-600');
+      selected.classList.remove('border-gray-200', 'text-gray-600');
+
+      // Show save bar
+      document.getElementById('save-bar-d').classList.remove('hidden');
+    }
+
+    // Smooth scroll for navigation
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // Update navigation active state on scroll
+    window.addEventListener('scroll', () => {
+      const sections = ['option-a', 'option-b', 'option-c', 'option-d'];
+      const navTabs = document.querySelectorAll('.nav-tab');
+
+      let current = '';
+      sections.forEach(section => {
+        const element = document.getElementById(section);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top <= 200) {
+            current = section;
+          }
+        }
+      });
+
+      navTabs.forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('href') === `#${current}`) {
+          tab.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

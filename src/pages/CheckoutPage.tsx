@@ -11,12 +11,16 @@ import type { CartItem, Product } from '../types';
 import { logger } from '../lib/logger';
 import {
   CheckCircleIcon,
-  ShoppingCartIcon,
   BoxIcon,
 } from '../components/ui/Icons';
 import { CheckoutProgress } from '../components/checkout/CheckoutProgress';
 import { Button } from '../components/ui/button';
-import { ChevronUp, ChevronDown, ScanBarcode, Search } from 'lucide-react';
+import { ChevronDown, ScanBarcode, Search, Share2, Download, Clock } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '../components/ui/collapsible';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +32,7 @@ import {
 import { ProductSearchDropdown } from '../components/search/ProductSearchDropdown';
 import { type InputMode } from '../components/search/InputModeToggle';
 import { ProductBrowsePanel } from '../components/search/ProductBrowsePanel';
+import { MobileCartBar } from '../components/cart/MobileCartBar';
 import { useRecentProducts } from '../hooks/useRecentProducts';
 
 interface CheckoutPageProps {
@@ -42,6 +47,12 @@ interface CheckoutState {
   cart: CartItem[];
   isCheckingOut: boolean;
   checkoutComplete: boolean;
+  lastAddedProduct: string | null; // Name of last added product for feedback
+
+  // Checkout summary (stored when checkout completes)
+  completedItemsCount: number;
+  completedTotalQuantity: number;
+  completedReferenceNumber: string;
 
   // Scanner state
   scannedCode: string | null;
@@ -58,6 +69,7 @@ interface CheckoutState {
   showConfirmDialog: boolean;
   confirmDialogMessage: string;
   showReviewModal: boolean;
+  summaryExpanded: boolean;
 }
 
 /**
@@ -69,8 +81,9 @@ type CheckoutAction =
   | { type: 'UPDATE_CART_ITEM_QUANTITY'; index: number; delta: number; errorMessage?: string }
   | { type: 'SET_CART'; cart: CartItem[] }
   | { type: 'CLEAR_CART' }
+  | { type: 'SET_LAST_ADDED'; productName: string | null }
   | { type: 'START_CHECKOUT' }
-  | { type: 'COMPLETE_CHECKOUT' }
+  | { type: 'COMPLETE_CHECKOUT'; itemsCount: number; totalQuantity: number; referenceNumber: string }
   | { type: 'CANCEL_CHECKOUT' }
 
   // Scanner actions
@@ -92,7 +105,8 @@ type CheckoutAction =
   | { type: 'SHOW_CONFIRM_DIALOG'; message: string }
   | { type: 'HIDE_CONFIRM_DIALOG' }
   | { type: 'SHOW_REVIEW_MODAL' }
-  | { type: 'HIDE_REVIEW_MODAL' };
+  | { type: 'HIDE_REVIEW_MODAL' }
+  | { type: 'TOGGLE_SUMMARY_EXPANDED' };
 
 /**
  * Initial state for CheckoutPage
@@ -101,6 +115,10 @@ const initialState: CheckoutState = {
   cart: [],
   isCheckingOut: false,
   checkoutComplete: false,
+  lastAddedProduct: null,
+  completedItemsCount: 0,
+  completedTotalQuantity: 0,
+  completedReferenceNumber: '',
   scannedCode: null,
   showScanner: true,
   manualCode: '',
@@ -111,6 +129,7 @@ const initialState: CheckoutState = {
   showConfirmDialog: false,
   confirmDialogMessage: '',
   showReviewModal: false,
+  summaryExpanded: false,
 };
 
 /**
@@ -219,6 +238,13 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
       return {
         ...state,
         cart: [],
+        lastAddedProduct: null,
+      };
+
+    case 'SET_LAST_ADDED':
+      return {
+        ...state,
+        lastAddedProduct: action.productName,
       };
 
     case 'START_CHECKOUT':
@@ -233,6 +259,9 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         ...state,
         isCheckingOut: false,
         checkoutComplete: true,
+        completedItemsCount: action.itemsCount,
+        completedTotalQuantity: action.totalQuantity,
+        completedReferenceNumber: action.referenceNumber,
         cart: [],
       };
 
@@ -344,6 +373,12 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         showReviewModal: false,
       };
 
+    case 'TOGGLE_SUMMARY_EXPANDED':
+      return {
+        ...state,
+        summaryExpanded: !state.summaryExpanded,
+      };
+
     default:
       return state;
   }
@@ -403,7 +438,10 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
     });
     playSound('success');
 
-    // Show toast notification
+    // Set last added product for mobile cart bar feedback
+    dispatch({ type: 'SET_LAST_ADDED', productName: productToAdd.fields.Name });
+
+    // Show toast notification (less prominent on mobile since we have cart bar)
     if (isNewItem) {
       toast.success(t('cart.itemAdded'), {
         description: t('cart.itemAddedDescription', { name: productToAdd.fields.Name }),
@@ -683,7 +721,12 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
     // Batch all state updates at the end
     if (failedItems.length === 0 && mergedResults.length > 0) {
-      dispatch({ type: 'COMPLETE_CHECKOUT' });
+      // Calculate summary before clearing cart
+      const itemsCount = mergedResults.length;
+      const totalQuantity = mergedResults.reduce((sum, item) => sum + item.quantity, 0);
+      const referenceNumber = `#INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
+
+      dispatch({ type: 'COMPLETE_CHECKOUT', itemsCount, totalQuantity, referenceNumber });
       playSound('success');
 
       // Invalidate all related caches to ensure fresh data after checkout
@@ -709,20 +752,230 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
   if (state.checkoutComplete) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] text-center animate-in fade-in zoom-in duration-500">
-        <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-6">
-          <CheckCircleIcon className="h-12 w-12 text-emerald-700" />
+      <>
+        {/* Mobile/Tablet View */}
+        <div className="lg:hidden fixed inset-0 bg-[var(--color-cream)] flex flex-col">
+          {/* Header */}
+          <div className="text-center pt-6 pb-4 px-6">
+            <div className="text-xs font-semibold tracking-wider uppercase mb-2" style={{ color: 'var(--color-stone)' }}>
+              {t('checkout.title', 'INVENTORY MANAGEMENT')}
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-stone-dark)' }}>
+              {t('app.title', 'Grocery Inventory')}
+            </h1>
+          </div>
+
+          {/* Content - Centered */}
+          <div className="flex-1 flex flex-col justify-center px-6 pb-8">
+            {/* Success Icon with Pulse Animation */}
+            <div className="text-center mb-8">
+              <div className="relative inline-block mb-6">
+                <div
+                  className="w-24 h-24 md:w-32 md:h-32 rounded-full flex items-center justify-center animate-pulse-gentle"
+                  style={{
+                    background: 'linear-gradient(to bottom right, #D1FAE5, #A7F3D0)',
+                  }}
+                >
+                  <CheckCircleIcon className="h-12 w-12 md:h-16 md:w-16" style={{ color: 'var(--color-forest)' }} />
+                </div>
+              </div>
+
+              <h2 className="text-3xl md:text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-stone-dark)' }}>
+                {t('checkout.complete')}
+              </h2>
+              <p className="text-base md:text-xl" style={{ color: 'var(--color-stone)' }}>
+                {t('checkout.stockUpdated')}
+              </p>
+            </div>
+
+            {/* Collapsible Transaction Summary */}
+            <div className="mb-6">
+              <Collapsible open={state.summaryExpanded} onOpenChange={() => dispatch({ type: 'TOGGLE_SUMMARY_EXPANDED' })}>
+                <div className="bg-white rounded-2xl border-2 shadow-md" style={{ borderColor: 'var(--color-stone)' }}>
+                  <CollapsibleTrigger asChild>
+                    <button className="w-full p-4 flex items-center justify-between text-left">
+                      <span className="font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
+                        {t('checkout.transactionSummary', 'Transaction Summary')}
+                      </span>
+                      <ChevronDown
+                        className={`w-5 h-5 transition-transform ${state.summaryExpanded ? 'rotate-180' : ''}`}
+                        style={{ color: 'var(--color-stone)' }}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="border-t-2 p-4 space-y-2" style={{ borderColor: 'var(--color-stone)' }}>
+                      <div className="flex justify-between text-sm">
+                        <span style={{ color: 'var(--color-stone)' }}>{t('checkout.itemsLabel', 'Items:')}</span>
+                        <span className="font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
+                          {state.completedItemsCount} {t('checkout.products', 'products')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span style={{ color: 'var(--color-stone)' }}>{t('checkout.quantityLabel', 'Quantity:')}</span>
+                        <span className="font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
+                          {state.completedTotalQuantity} {t('checkout.units', 'units')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span style={{ color: 'var(--color-stone)' }}>{t('checkout.referenceLabel', 'Reference:')}</span>
+                        <span className="font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
+                          {state.completedReferenceNumber}
+                        </span>
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-3 gap-2 mb-6">
+              <Button variant="outline" className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
+                <Share2 className="w-5 h-5" style={{ color: 'var(--color-stone)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--color-stone)' }}>
+                  {t('checkout.share', 'Share')}
+                </span>
+              </Button>
+              <Button variant="outline" className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
+                <Download className="w-5 h-5" style={{ color: 'var(--color-stone)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--color-stone)' }}>
+                  {t('checkout.export', 'Export')}
+                </span>
+              </Button>
+              <Button variant="outline" className="p-3 rounded-lg border-2 flex flex-col items-center gap-1 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
+                <Clock className="w-5 h-5" style={{ color: 'var(--color-stone)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--color-stone)' }}>
+                  {t('checkout.history', 'History')}
+                </span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Footer - Back Button */}
+          <div className="px-6 pb-6">
+            <Button
+              onClick={onBack}
+              className="w-full py-4 px-6 rounded-xl font-semibold text-white shadow-lg transition-all hover:shadow-xl"
+              style={{
+                background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+              }}
+            >
+              {t('checkout.backToHome')}
+            </Button>
+          </div>
         </div>
-        <h2 className="text-3xl font-semibold text-gray-900 mb-2">{t('checkout.complete')}</h2>
-        <p className="text-gray-600 mb-8">{t('checkout.stockUpdated')}</p>
-        <Button
-          onClick={onBack}
-          variant="outline"
-          className="px-8 py-3"
-        >
-          {t('checkout.backToHome')}
-        </Button>
-      </div>
+
+        {/* Desktop View */}
+        <div className="hidden lg:flex fixed inset-0 bg-[var(--color-cream)] flex-col">
+          {/* Header */}
+          <div className="text-center pt-12 pb-8 px-12">
+            <div className="text-sm font-semibold tracking-wider uppercase mb-4" style={{ color: 'var(--color-stone)' }}>
+              {t('checkout.title', 'INVENTORY MANAGEMENT')}
+            </div>
+            <h1 className="text-6xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-stone-dark)' }}>
+              {t('app.title', 'Grocery Inventory')}
+            </h1>
+          </div>
+
+          {/* Content - Two Column Layout */}
+          <div className="flex-1 flex justify-center items-center px-16 pb-16">
+            <div className="max-w-6xl w-full grid grid-cols-2 gap-12">
+              {/* Left Column: Success Message */}
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="relative inline-block mb-8">
+                  <div
+                    className="w-40 h-40 rounded-full flex items-center justify-center animate-pulse-gentle"
+                    style={{
+                      background: 'linear-gradient(to bottom right, #D1FAE5, #A7F3D0)',
+                    }}
+                  >
+                    <CheckCircleIcon className="h-20 w-20" style={{ color: 'var(--color-forest)' }} />
+                  </div>
+                </div>
+
+                <h2 className="text-5xl font-bold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-stone-dark)' }}>
+                  {t('checkout.complete')}
+                </h2>
+                <p className="text-xl" style={{ color: 'var(--color-stone)' }}>
+                  {t('checkout.stockUpdatedSuccess', t('checkout.stockUpdated'))}
+                </p>
+              </div>
+
+              {/* Right Column: Transaction Summary & Actions */}
+              <div className="flex flex-col justify-center">
+                {/* Transaction Summary Card */}
+                <div className="bg-white rounded-2xl border-2 shadow-lg mb-6" style={{ borderColor: 'var(--color-stone)' }}>
+                  <div className="p-6 border-b-2" style={{ borderColor: 'var(--color-stone)' }}>
+                    <h3 className="font-semibold text-xl" style={{ color: 'var(--color-stone-dark)' }}>
+                      {t('checkout.transactionSummary', 'Transaction Summary')}
+                    </h3>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg" style={{ color: 'var(--color-stone)' }}>
+                        {t('checkout.productsUpdated', 'Products Updated:')}
+                      </span>
+                      <span className="text-2xl font-bold" style={{ color: 'var(--color-forest)' }}>
+                        {state.completedItemsCount}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg" style={{ color: 'var(--color-stone)' }}>
+                        {t('checkout.totalQuantity', 'Total Quantity:')}
+                      </span>
+                      <span className="text-2xl font-bold" style={{ color: 'var(--color-forest)' }}>
+                        {state.completedTotalQuantity} {t('checkout.units', 'units')}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-lg" style={{ color: 'var(--color-stone)' }}>
+                        {t('checkout.referenceNumber', 'Reference Number:')}
+                      </span>
+                      <span className="text-lg font-semibold" style={{ color: 'var(--color-stone-dark)' }}>
+                        {state.completedReferenceNumber}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <Button variant="outline" className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
+                    <Share2 className="w-6 h-6" style={{ color: 'var(--color-stone)' }} />
+                    <span className="text-sm font-semibold" style={{ color: 'var(--color-stone)' }}>
+                      {t('checkout.share', 'Share')}
+                    </span>
+                  </Button>
+                  <Button variant="outline" className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
+                    <Download className="w-6 h-6" style={{ color: 'var(--color-stone)' }} />
+                    <span className="text-sm font-semibold" style={{ color: 'var(--color-stone)' }}>
+                      {t('checkout.export', 'Export')}
+                    </span>
+                  </Button>
+                  <Button variant="outline" className="p-4 rounded-xl border-2 flex flex-col items-center gap-2 h-auto" style={{ borderColor: 'var(--color-stone)' }}>
+                    <Clock className="w-6 h-6" style={{ color: 'var(--color-stone)' }} />
+                    <span className="text-sm font-semibold" style={{ color: 'var(--color-stone)' }}>
+                      {t('checkout.history', 'History')}
+                    </span>
+                  </Button>
+                </div>
+
+                {/* Back to Home Button */}
+                <Button
+                  onClick={onBack}
+                  className="py-5 px-12 rounded-xl font-semibold text-white text-lg shadow-lg transition-all hover:shadow-xl"
+                  style={{
+                    background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+                  }}
+                >
+                  {t('checkout.backToHome')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -771,6 +1024,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                 <ProductBrowsePanel
                   onProductSelect={handleProductSelect}
                   maxHeight="calc(100dvh - 340px)"
+                  cartItems={state.cart}
                 />
               </div>
             )}
@@ -804,42 +1058,33 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
           </div>
         )}
 
-        {/* Cart Toggle/Collapse */}
-        <div
-          className={`absolute bottom-0 left-0 right-0 bg-white transition-all duration-300 ease-in-out z-20 ${
-            state.isCartExpanded ? 'h-[calc(100dvh-50px)] rounded-t-3xl' : 'h-auto rounded-t-3xl'
-          }`}
-        >
-          {/* Toggle Button */}
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-            <Button
-              onClick={() => dispatch({ type: 'TOGGLE_CART_EXPANDED' })}
-              size="icon"
-              className="h-12 w-12 rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg"
-            >
-              {state.isCartExpanded ? <ChevronDown className="h-6 w-6" /> : <ChevronUp className="h-6 w-6" />}
-            </Button>
-          </div>
+        {/* Mobile Cart Bar - Shows when cart has items and not expanded */}
+        {!state.isCartExpanded && (
+          <MobileCartBar
+            cart={state.cart}
+            total={total}
+            lastAddedProduct={state.lastAddedProduct}
+            onViewCart={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: true })}
+            isCheckingOut={state.isCheckingOut}
+          />
+        )}
 
-          {/* Collapsed Cart Summary */}
-          {!state.isCartExpanded && (
-            <div className="p-6 flex items-center justify-between cursor-pointer" onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: true })}>
-              <div className="flex items-center gap-3">
-                <ShoppingCartIcon className="h-6 w-6 text-stone-900" />
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900">{t('cart.title')}</h3>
-                  <p className="text-sm text-gray-600">{state.cart.length} {t('cart.items')}</p>
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-stone-900">
-                € {total.toFixed(2)}
-              </div>
+        {/* Expanded Cart Overlay */}
+        {state.isCartExpanded && (
+          <div className="absolute bottom-0 left-0 right-0 bg-white h-[calc(100dvh-50px)] rounded-t-3xl transition-all duration-300 ease-in-out z-30">
+            {/* Close Button */}
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+              <Button
+                onClick={() => dispatch({ type: 'SET_CART_EXPANDED', expanded: false })}
+                size="icon"
+                className="h-12 w-12 rounded-full bg-stone-900 hover:bg-stone-800 text-white shadow-lg"
+              >
+                <ChevronDown className="h-6 w-6" />
+              </Button>
             </div>
-          )}
 
-          {/* Expanded Cart */}
-          {state.isCartExpanded && (
-            <div className="h-full flex flex-col">
+            {/* Full Cart View */}
+            <div className="h-full flex flex-col pt-4">
               <Cart
                 cart={state.cart}
                 total={total}
@@ -849,7 +1094,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                   <div className="p-6 pt-4 border-t border-gray-200 space-y-4">
                     <div className="space-y-2">
                       <Button
-                        className="w-full h-10 text-base font-semibold bg-stone-900 hover:bg-stone-800 text-white disabled:bg-stone-400"
+                        className="w-full h-12 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-stone-400 rounded-xl"
                         onClick={handleCheckoutClick}
                         disabled={pendingItems.length === 0 || state.isCheckingOut}
                       >
@@ -865,8 +1110,8 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                 }
               />
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Tablet/Desktop View - New Scanner UI with visible cart */}
@@ -913,6 +1158,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                   <ProductBrowsePanel
                     onProductSelect={handleProductSelect}
                     maxHeight="calc(100dvh - 280px)"
+                    cartItems={state.cart}
                   />
                 </div>
               </div>

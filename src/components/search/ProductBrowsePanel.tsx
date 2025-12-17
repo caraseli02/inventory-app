@@ -1,15 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
-import { Package, Clock, Grid3X3, Plus } from 'lucide-react';
+import { Package, Clock, Grid3X3, Plus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getAllProducts } from '@/lib/api';
 import { useRecentProducts } from '@/hooks/useRecentProducts';
-import type { Product } from '@/types';
+import type { Product, CartItem } from '@/types';
 import { logger } from '@/lib/logger';
 
 // Category definitions with icons and subtle indicator dots
-// Using neutral base with ONE accent color (forest green) for selections
 const CATEGORIES = [
   { id: 'all', icon: Grid3X3, dot: 'bg-zinc-400' },
   { id: 'recent', icon: Clock, dot: 'bg-zinc-400' },
@@ -29,23 +28,29 @@ interface ProductBrowsePanelProps {
   onProductSelect: (product: Product) => void;
   /** Maximum height for the panel */
   maxHeight?: string;
+  /** Current cart items to show selection state */
+  cartItems?: CartItem[];
 }
 
 /**
  * Browse products by category with one-tap addition.
- * Features category tabs and a scrollable product grid.
- * Based on restaurant/retail POS design patterns.
+ * Features category chips and a scrollable 3-column product grid.
+ * Based on Material Design 3 and retail POS design patterns.
  */
 export const ProductBrowsePanel = ({
   onProductSelect,
   maxHeight = '300px',
+  cartItems = [],
 }: ProductBrowsePanelProps) => {
   const { t } = useTranslation();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [itemsToShow, setItemsToShow] = useState(20); // Show 20 items initially
+  const [itemsToShow, setItemsToShow] = useState(21); // Show 21 items initially (7 rows of 3)
   const { recentProducts, hasRecentProducts } = useRecentProducts();
 
-  const ITEMS_PER_PAGE = 20;
+  // Track which product was just added for animation
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
+
+  const ITEMS_PER_PAGE = 21;
 
   // Fetch all products
   const { data: allProducts, isLoading, error } = useQuery({
@@ -53,6 +58,15 @@ export const ProductBrowsePanel = ({
     queryFn: getAllProducts,
     staleTime: 1000 * 60 * 5,
   });
+
+  // Create a map of product ID -> quantity in cart for quick lookup
+  const cartQuantityMap = useMemo(() => {
+    const map = new Map<string, number>();
+    cartItems.forEach(item => {
+      map.set(item.product.id, item.quantity);
+    });
+    return map;
+  }, [cartItems]);
 
   // Get unique categories from products
   const availableCategories = useMemo(() => {
@@ -112,25 +126,53 @@ export const ProductBrowsePanel = ({
     setItemsToShow(ITEMS_PER_PAGE); // Reset pagination when category changes
   };
 
+  const handleProductSelect = useCallback((product: Product) => {
+    // Trigger animation
+    setJustAddedId(product.id);
+
+    // Haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
+
+    // Call parent handler
+    onProductSelect(product);
+  }, [onProductSelect]);
+
+  // Clear animation after delay
+  useEffect(() => {
+    if (justAddedId) {
+      const timer = setTimeout(() => setJustAddedId(null), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [justAddedId]);
+
   const getCategoryLabel = (catId: string) => {
     if (catId === 'all') return t('search.allProducts', 'All');
     if (catId === 'recent') return t('search.recentItems', 'Recent');
     return t(`categories.${catId}`, catId);
   };
 
+  // Get product count for a category
+  const getProductCount = (catId: string): number => {
+    if (catId === 'all') return allProducts?.length ?? 0;
+    if (catId === 'recent') return recentProducts.length;
+    return allProducts?.filter(p => p.fields.Category === catId).length ?? 0;
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {/* Category tabs skeleton */}
+      <div className="space-y-3">
+        {/* Category chips skeleton */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-10 w-24 bg-zinc-100 rounded-lg animate-pulse shrink-0" />
+            <div key={i} className="h-9 w-20 bg-zinc-100 rounded-full animate-pulse shrink-0" />
           ))}
         </div>
-        {/* Product grid skeleton */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-24 bg-zinc-50 rounded-lg animate-pulse" />
+        {/* Product grid skeleton - 3 columns */}
+        <div className="grid grid-cols-3 gap-2">
+          {[...Array(9)].map((_, i) => (
+            <div key={i} className="h-28 bg-zinc-50 rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -148,53 +190,71 @@ export const ProductBrowsePanel = ({
   }
 
   return (
-    <div className="space-y-5">
-      {/* Category Tabs - Horizontally scrollable */}
+    <div className="space-y-3">
+      {/* Category Chips - Material Design 3 style with scroll fade */}
       <div className="relative">
-        <div className="flex gap-3 overflow-x-auto pb-3 scrollbar-hide">
+        {/* Scroll fade mask on right edge */}
+        <div
+          className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide pr-8"
+          style={{
+            maskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to right, black 85%, transparent 100%)',
+          }}
+        >
           {visibleCategories.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             const Icon = cat.icon;
-
-            // Calculate product count based on category type
-            function getProductCount(): number {
-              if (cat.id === 'all') return allProducts?.length ?? 0;
-              if (cat.id === 'recent') return recentProducts.length;
-              return allProducts?.filter(p => p.fields.Category === cat.id).length ?? 0;
-            }
-            const productCount = getProductCount();
-
-            const countClass = isSelected ? 'text-zinc-300' : 'text-zinc-500';
-            const buttonClass = isSelected
-              ? 'bg-zinc-900 text-white hover:bg-zinc-800 shadow-md'
-              : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 border border-zinc-200';
+            const productCount = getProductCount(cat.id);
 
             return (
-              <Button
+              <button
                 key={cat.id}
-                variant={isSelected ? 'default' : 'ghost'}
-                size="default"
-                className={`shrink-0 rounded-xl px-5 h-12 font-semibold transition-all duration-150 text-base ${buttonClass}`}
+                type="button"
                 onClick={() => handleCategorySelect(cat.id)}
+                className={`
+                  shrink-0 px-3 py-2 rounded-full text-sm font-medium
+                  flex items-center gap-1.5
+                  transition-all duration-150
+                  ${isSelected
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50'
+                  }
+                `}
               >
-                {Icon ? (
-                  <Icon className="h-5 w-5 mr-2.5" />
-                ) : (
-                  <span className={`w-2.5 h-2.5 rounded-full ${cat.dot} mr-2.5`} />
+                {/* Checkmark for selected state */}
+                {isSelected && (
+                  <Check className="h-4 w-4" strokeWidth={2.5} />
                 )}
+
+                {/* Icon or colored dot for unselected */}
+                {!isSelected && Icon && (
+                  <Icon className="h-4 w-4 text-zinc-400" />
+                )}
+                {!isSelected && !Icon && (
+                  <span className={`w-2 h-2 rounded-full ${cat.dot}`} />
+                )}
+
                 <span>{getCategoryLabel(cat.id)}</span>
-                <span className={`ml-2.5 text-sm font-bold tabular-nums ${countClass}`}>
+
+                {/* Count badge */}
+                <span className={`
+                  text-xs font-semibold tabular-nums
+                  ${isSelected
+                    ? 'bg-white/20 px-1.5 rounded-full'
+                    : 'text-zinc-400'
+                  }
+                `}>
                   {productCount}
                 </span>
-              </Button>
+              </button>
             );
           })}
         </div>
       </div>
 
-      {/* Product Grid - Scrollable */}
+      {/* Product Grid - 3 columns on mobile, 4 on tablet, 5 on desktop */}
       <div
-        className="overflow-y-auto pb-6"
+        className="overflow-y-auto pb-4 p-1"
         style={{ maxHeight }}
       >
         {sortedProducts.length === 0 ? (
@@ -203,28 +263,30 @@ export const ProductBrowsePanel = ({
             <p className="text-base font-medium">{t('search.noCategoryProducts', 'No products in this category')}</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
               {visibleProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
-                  onSelect={onProductSelect}
+                  onSelect={handleProductSelect}
+                  quantityInCart={cartQuantityMap.get(product.id) ?? 0}
+                  isJustAdded={justAddedId === product.id}
                 />
               ))}
             </div>
 
             {/* Load More Button */}
             {hasMore && (
-              <div className="flex justify-center pt-2 pb-4">
+              <div className="flex justify-center pt-2 pb-2">
                 <Button
                   onClick={loadMore}
                   variant="outline"
-                  size="lg"
-                  className="min-w-[200px] h-12 font-semibold border-2 border-zinc-300 hover:bg-zinc-100 hover:border-zinc-400 text-zinc-700 rounded-xl"
+                  size="default"
+                  className="min-w-[160px] h-10 font-semibold border-2 border-zinc-300 hover:bg-zinc-100 hover:border-zinc-400 text-zinc-700 rounded-full text-sm"
                 >
-                  <Plus className="h-5 w-5 mr-2" />
-                  {t('search.loadMore', 'Load More')} ({sortedProducts.length - itemsToShow} {t('search.remaining', 'remaining')})
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  {t('search.loadMore', 'Load More')} ({sortedProducts.length - itemsToShow})
                 </Button>
               </div>
             )}
@@ -235,19 +297,22 @@ export const ProductBrowsePanel = ({
   );
 };
 
-// Individual product card component
+// Compact product card component optimized for 3-column grid
 interface ProductCardProps {
   product: Product;
   onSelect: (product: Product) => void;
+  quantityInCart: number;
+  isJustAdded: boolean;
 }
 
-const ProductCard = ({ product, onSelect }: ProductCardProps) => {
+const ProductCard = ({ product, onSelect, quantityInCart, isJustAdded }: ProductCardProps) => {
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
   const imageUrl = product.fields.Image?.[0]?.url;
   const price = product.fields.Price;
   const stock = product.fields['Current Stock Level'] ?? 0;
   const isOutOfStock = stock <= 0;
+  const isInCart = quantityInCart > 0;
 
   const handleImageError = () => {
     logger.warn('Failed to load product image', {
@@ -259,23 +324,39 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
   };
 
   return (
-    <Button
-      variant="ghost"
+    <button
+      type="button"
       className={`
-        relative flex flex-col items-center p-4 rounded-xl text-left h-auto min-h-[160px]
-        transition-all duration-150
-        focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900
+        relative flex flex-col items-center p-2 rounded-xl text-left h-auto min-h-[120px] w-full
+        transition-all duration-200 ease-out
+        focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500
         ${isOutOfStock
-          ? 'bg-zinc-50 opacity-50 cursor-not-allowed'
-          : 'bg-white border-2 border-zinc-200 hover:border-zinc-300 hover:shadow-md active:scale-[0.98] cursor-pointer hover:bg-white'
+          ? 'bg-zinc-100 opacity-50 cursor-not-allowed'
+          : isInCart
+            ? 'bg-emerald-50 border-2 border-emerald-500 shadow-md'
+            : 'bg-white border-2 border-zinc-200 hover:border-zinc-300 hover:shadow-md active:scale-[0.97] cursor-pointer'
         }
+        ${isJustAdded ? 'scale-[0.95]' : ''}
       `}
       onClick={() => !isOutOfStock && onSelect(product)}
       disabled={isOutOfStock}
       title={product.fields.Name}
     >
-      {/* Product Image */}
-      <div className="w-20 h-20 rounded-lg bg-zinc-50 flex items-center justify-center overflow-hidden mb-3 border border-zinc-200">
+      {/* Success Checkmark Overlay - Shows briefly when added */}
+      <div
+        className={`
+          absolute inset-0 bg-emerald-500 rounded-xl flex items-center justify-center z-10
+          transition-all duration-200
+          ${isJustAdded ? 'opacity-100' : 'opacity-0 pointer-events-none'}
+        `}
+      >
+        <div className="bg-white rounded-full p-1.5">
+          <Check className="h-6 w-6 text-emerald-500" strokeWidth={3} />
+        </div>
+      </div>
+
+      {/* Product Image - Compact size */}
+      <div className={`w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden mb-1.5 ${isInCart ? 'bg-emerald-100' : 'bg-zinc-100'}`}>
         {imageUrl && !imageError ? (
           <img
             src={imageUrl}
@@ -285,38 +366,47 @@ const ProductCard = ({ product, onSelect }: ProductCardProps) => {
             onError={handleImageError}
           />
         ) : (
-          <Package className="h-8 w-8 text-zinc-300" />
+          <Package className={`h-6 w-6 ${isInCart ? 'text-emerald-400' : 'text-zinc-300'}`} />
         )}
       </div>
 
-      {/* Product Name - increased to text-sm for better readability */}
-      <p className="text-sm font-semibold text-zinc-900 text-center line-clamp-2 leading-tight w-full mb-2">
+      {/* Product Name - Compact */}
+      <p className="text-xs font-semibold text-zinc-900 text-center line-clamp-2 leading-tight w-full mb-1">
         {product.fields.Name}
       </p>
 
-      {/* Price */}
-      {price != null && (
-        <p className="text-base font-bold text-zinc-900">
-          €{price.toFixed(2)}
-        </p>
-      )}
+      {/* Price and Quantity Row */}
+      <div className="flex items-center justify-between w-full gap-1">
+        {price != null && (
+          <p className="text-xs font-bold text-zinc-900">
+            €{price.toFixed(2)}
+          </p>
+        )}
+
+        {/* Quantity indicator - shows when in cart */}
+        {isInCart && (
+          <span className="text-[10px] font-bold bg-emerald-500 text-white px-1.5 py-0.5 rounded-full">
+            ×{quantityInCart}
+          </span>
+        )}
+      </div>
 
       {/* Low stock indicator - subtle amber dot */}
-      {!isOutOfStock && stock <= 5 && (
+      {!isOutOfStock && stock <= 5 && !isInCart && (
         <span
-          className="absolute top-2 right-2 w-2 h-2 bg-amber-400 rounded-full"
+          className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-400 rounded-full"
           title={`${stock} in stock`}
         />
       )}
 
       {/* Out of Stock Overlay */}
       {isOutOfStock && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-xl">
           <span className="text-xs font-medium text-zinc-400">
             {t('search.outOfStock', 'Out')}
           </span>
         </div>
       )}
-    </Button>
+    </button>
   );
 };

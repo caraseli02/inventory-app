@@ -189,7 +189,7 @@ const Scanner = ({ onScanSuccess, scannerId = 'reader' }: ScannerProps) => {
         }
       }
     };
-  }, [regionId, retryCount]);
+  }, [regionId, retryCount, t]);
 
   return (
     <div className="w-full overflow-hidden bg-black relative" style={{ aspectRatio: '4/3' }}>
