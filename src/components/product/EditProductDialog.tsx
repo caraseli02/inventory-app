@@ -185,7 +185,8 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full h-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none relative sm:!inset-0 sm:!left-0 sm:!top-0 sm:!translate-x-0 sm:!translate-y-0 sm:!max-w-full sm:!rounded-none"
+        className="!fixed !inset-0 !left-0 !top-0 !right-0 !bottom-0 w-full !max-w-full !max-h-full !translate-x-0 !translate-y-0 p-0 gap-0 !rounded-none flex flex-col overflow-hidden"
+        style={{ height: '100dvh', minHeight: '-webkit-fill-available' }}
         onOpenAutoFocus={(e) => e.preventDefault()}
         onPointerDownOutside={(e) => {
           if (scannerOpen || cameraOpen) {
@@ -209,9 +210,8 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
           </div>
         )}
 
-        <div className="h-full flex flex-col bg-stone-50">
-          {/* Header */}
-          <div className="bg-white border-b-2 border-stone-200 px-4 sm:px-6 py-4 flex-shrink-0">
+        {/* Header */}
+        <div className="bg-white border-b-2 border-stone-200 px-4 sm:px-6 py-4 shrink-0">
             <DialogHeader className="sr-only">
               <DialogTitle>{t('dialogs.editProduct.title', 'Edit Product')}</DialogTitle>
               <DialogDescription id="edit-product-description">
@@ -269,9 +269,9 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
             </div>
           </div>
 
-          {/* Content with Sections */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4 sm:p-6 space-y-4" id="edit-product-form">
+        {/* Content with Sections - Scrollable area */}
+        <div className="flex-1 overflow-y-auto min-h-0 bg-stone-50">
+          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto p-4 sm:p-6 space-y-4 pb-6" id="edit-product-form">
 
               {/* Quick Actions Bar */}
               <div className="bg-white rounded-xl border-2 border-stone-200 p-4">
@@ -596,18 +596,18 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                 </div>
               </Collapsible>
 
-              {/* Error Message */}
-              {mutation.isError && (
-                <div className="text-red-700 text-sm bg-red-50 p-4 rounded-xl border-2 border-red-200 font-medium flex items-start gap-2">
-                  <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-                  <span>{mutation.error instanceof Error ? mutation.error.message : t('product.updateFailed')}</span>
-                </div>
-              )}
-            </form>
-          </div>
+            {/* Error Message */}
+            {mutation.isError && (
+              <div className="text-red-700 text-sm bg-red-50 p-4 rounded-xl border-2 border-red-200 font-medium flex items-start gap-2">
+                <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                <span>{mutation.error instanceof Error ? mutation.error.message : t('product.updateFailed')}</span>
+              </div>
+            )}
+          </form>
+        </div>
 
-          {/* Footer - Always visible at bottom */}
-          <div className="flex-shrink-0 bg-white border-t-2 border-stone-200 px-4 py-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        {/* Footer - Always visible at bottom */}
+        <div className="shrink-0 bg-white border-t-2 border-stone-200 px-4 py-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="max-w-3xl mx-auto flex items-center justify-between">
               {hasChanges ? (
                 <>
@@ -654,7 +654,6 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
               )}
             </div>
           </div>
-        </div>
 
         {/* Nested dialogs */}
         <BarcodeScannerDialog
