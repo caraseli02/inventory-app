@@ -22,10 +22,15 @@ interface CartProps {
 }
 
 /**
- * Comprehensive cart component that displays cart header, items list, and checkout footer
- * Combines CartHeader, CartItem, and CartFooter components into a cohesive cart UI
+ * Comprehensive cart component that displays cart header, items list, and checkout footer.
+ * Combines CartHeader, CartItem, and CartFooter components into a cohesive cart UI.
+ *
+ * Renders two distinct states:
+ * - Empty state: Animated icon, empty message, and optional "Start Scanning" CTA
+ * - Active state: Scrollable list of cart items with quantity controls
  *
  * @param customFooter - Optional custom footer content to replace default CartFooter
+ * @param onStartScanning - Optional callback for empty state CTA (e.g., navigate to scanner)
  */
 export const Cart = ({
   cart,
@@ -61,7 +66,13 @@ export const Cart = ({
             </p>
             {onStartScanning && (
               <Button
-                onClick={onStartScanning}
+                onClick={() => {
+                  try {
+                    onStartScanning();
+                  } catch (error) {
+                    console.error('Failed to start scanning from empty cart:', error);
+                  }
+                }}
                 className="bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] hover:opacity-90 text-white h-12 px-8 rounded-xl font-bold shadow-lg transition-all hover:scale-105 active:scale-95 animate-ripple"
                 aria-label={t('cart.startScanning', 'Start scanning products')}
               >

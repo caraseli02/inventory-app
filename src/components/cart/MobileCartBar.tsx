@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ShoppingCart, ChevronUp } from 'lucide-react';
+import { ShoppingCart, ChevronUp, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { CartItem } from '@/types';
 
@@ -18,10 +18,10 @@ interface MobileCartBarProps {
 }
 
 /**
- * Persistent cart bar for mobile checkout.
- * Appears at bottom of screen when cart has items.
+ * Persistent cart bar for mobile checkout - always visible at bottom of screen.
+ * Displays different visual states: active (with items) vs. empty state.
  * Shows item count, total, last added product with thumbnail, and view cart button.
- * Enhanced with micro-animations and visual feedback.
+ * View cart button is disabled when empty. Enhanced with micro-animations and visual feedback.
  */
 export const MobileCartBar = ({
   cart,
@@ -44,31 +44,51 @@ export const MobileCartBar = ({
   // Handle last added product animation
   useEffect(() => {
     if (lastAddedProduct) {
-      // Find the product in cart to get its image
-      const addedProduct = cart.find(item => item.product.fields.Name === lastAddedProduct);
-      const imageUrl = addedProduct?.product.fields.Image?.[0]?.url;
+      try {
+        // Find the product in cart to get its image
+        const addedProduct = cart.find(item => item.product.fields.Name === lastAddedProduct);
+        const imageUrl = addedProduct?.product.fields.Image?.[0]?.url;
 
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDisplayedLastAdded(lastAddedProduct);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLastAddedImage(imageUrl || null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setShowLastAdded(true);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAnimateBadge(true);
+        // Multiple state updates are intentionally synchronous to coordinate animation timing
+        // Batched by React 18+ automatic batching. Safe to suppress warning.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setDisplayedLastAdded(lastAddedProduct);
+        setLastAddedImage(imageUrl || null);
+        setShowLastAdded(true);
+        setAnimateBadge(true);
 
-      const badgeTimer = setTimeout(() => {
-        setAnimateBadge(false);
-      }, 500);
+        // Badge bounce animation duration: 500ms (matches animate-bounce-once CSS)
+        const badgeTimer = setTimeout(() => {
+          try {
+            setAnimateBadge(false);
+          } catch (error) {
+            console.error('Failed to clear badge animation:', error);
+          }
+        }, 500);
 
-      const timer = setTimeout(() => {
+        // Auto-hide "last added" feedback after 3s to avoid clutter
+        const timer = setTimeout(() => {
+          try {
+            setShowLastAdded(false);
+          } catch (error) {
+            console.error('Failed to hide last added notification:', error);
+          }
+        }, 3000);
+
+        return () => {
+          try {
+            clearTimeout(timer);
+            clearTimeout(badgeTimer);
+          } catch (error) {
+            console.error('Failed to cleanup timers in MobileCartBar:', error);
+          }
+        };
+      } catch (error) {
+        console.error('Failed to process last added product in MobileCartBar:', error);
+        // Reset to safe state
         setShowLastAdded(false);
-      }, 3000);
-
-      return () => {
-        clearTimeout(timer);
-        clearTimeout(badgeTimer);
-      };
+        setAnimateBadge(false);
+      }
     }
   }, [lastAddedProduct, cart]);
 
@@ -102,12 +122,16 @@ export const MobileCartBar = ({
                         src={lastAddedImage}
                         alt=""
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.warn('Failed to load product thumbnail in cart bar:', lastAddedImage);
+                          e.currentTarget.style.display = 'none';
+                        }}
                       />
                     </div>
                   )}
                   {!lastAddedImage && showLastAdded && (
                     <div className="w-6 h-6 rounded bg-stone-800 flex items-center justify-center shrink-0 border border-emerald-500">
-                      <span className="text-[10px]">📦</span>
+                      <Package className="h-3 w-3 text-stone-400" />
                     </div>
                   )}
                   <p className="text-sm text-emerald-400 font-medium truncate">
@@ -139,7 +163,13 @@ export const MobileCartBar = ({
 
           {/* Right: View Cart button */}
           <Button
-            onClick={onViewCart}
+            onClick={() => {
+              try {
+                onViewCart();
+              } catch (error) {
+                console.error('Failed to open cart view:', error);
+              }
+            }}
             disabled={!hasItems || isCheckingOut}
             className={`font-bold px-5 py-6 rounded-xl flex items-center gap-2 transition-all ${hasItems ? 'bg-emerald-500 hover:bg-emerald-600 text-white hover:scale-105 active:scale-95' : 'bg-stone-700 text-stone-500 cursor-not-allowed opacity-50'}`}
           >
