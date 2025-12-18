@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-12-18T15:55:44.231Z",
+  "tests": [
+    {
+      "name": "Invoice Button Visibility",
+      "button_found": false,
+      "button_count": 0,
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    {
+      "name": "All Visible Buttons",
+      "buttons": [
+        "English"
+      ]
+    }
+  ]
+}

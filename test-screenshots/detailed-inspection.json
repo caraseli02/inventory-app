@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-12-18T15:53:39.377Z",
+  "pages_inspected": [
+    {
+      "page": "Inventory",
+      "url": "http://localhost:5173/inventory",
+      "elements": {
+        "all_buttons": 1,
+        "all_links": 0,
+        "all_inputs": 0,
+        "all_selects": 0
+      },
+      "button_details": [
+        {
+          "text": "English",
+          "visible": true,
+          "classes": "flex items-center justify-between whitespace-nowrap rounded-md px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-auto min-w-[140px] h-9 border-2 border-stone-200 bg-white/80 backdrop-blur-sm hover:border-stone-300 focus:ring-[var(--color-lavender)] transition-colors"
+        }
+      ],
+      "contains_import": false,
+      "contains_invoice": false,
+      "contains_upload": false,
+      "contains_excel": false,
+      "contains_xlsx": false,
+      "file_inputs": 0,
+      "navigation_links": []
+    },
+    {
+      "page": "Homepage",
+      "url": "http://localhost:5173",
+      "elements": {
+        "all_buttons": 1
+      },
+      "button_details": [
+        {
+          "text": "English",
+          "visible": true,
+          "classes": "flex items-center justify-between whitespace-nowrap rounded-md px-3 py-2 text-sm shadow-sm ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-1 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1 w-auto min-w-[140px] h-9 border-2 border-stone-200 bg-white/80 backdrop-blur-sm hover:border-stone-300 focus:ring-[var(--color-lavender)] transition-colors"
+        }
+      ],
+      "has_scanner": false,
+      "has_video": false,
+      "page_content_keywords": {
+        "scan": true,
+        "camera": false,
+        "barcode": true
+      }
+    }
+  ]
+}
