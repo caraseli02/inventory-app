@@ -89,8 +89,21 @@ Complete documentation for the Inventory App project.
 
 ### Mockups & Designs
 - **[mockups/](./mockups/)** - Interactive UI mockups
-  - `invoice-upload-ui-variants.html` - Invoice upload UI variants
-  - `checkout-ux-proposals.html` - Checkout UX proposals
+  - `checkout-ux-proposals.html` - Checkout cart UI (4 variants, 88KB)
+  - `checkout-completion-ux-proposals.html` - Checkout completion screens (83KB)
+  - `inventory-ux-proposals.html` - Inventory management UI (51KB)
+  - `invoice-upload-ui-variants.html` - Invoice upload UI (72KB)
+  - `README.md` - Mockups documentation
+
+- **[proposals/](./proposals/)** - UX design proposals
+  - `product-edit-ux-proposals-v3.html` - Product edit dialog variants (79KB)
+  - `README.md` - Proposals documentation
+
+- **[public/test-invoices/](../public/test-invoices/)** - Test invoice HTML files
+  - `invoice-simple.html` - Simple invoice (5 products, no barcodes)
+  - `invoice-with-barcodes.html` - Invoice with EAN-13 barcodes (7 products)
+  - `invoice-mixed.html` - Realistic mixed invoice (9 products)
+  - `README.md` - Testing instructions
 
 ---
 
