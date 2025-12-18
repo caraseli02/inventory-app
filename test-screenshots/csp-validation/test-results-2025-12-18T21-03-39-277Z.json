@@ -1,0 +1,124 @@
+{
+  "timestamp": "2025-12-18T21:03:26.402Z",
+  "consoleMessages": [
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "log",
+      "text": "📦 Using Supabase as database backend"
+    },
+    {
+      "type": "debug",
+      "text": "[DEBUG] Fetching all products "
+    },
+    {
+      "type": "info",
+      "text": "[INFO] All products fetched {recordCount: 17}"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "log",
+      "text": "📦 Using Supabase as database backend"
+    },
+    {
+      "type": "debug",
+      "text": "[DEBUG] Fetching all products "
+    },
+    {
+      "type": "info",
+      "text": "[INFO] All products fetched {recordCount: 17}"
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connecting..."
+    },
+    {
+      "type": "debug",
+      "text": "[vite] connected."
+    },
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "log",
+      "text": "📦 Using Supabase as database backend"
+    },
+    {
+      "type": "debug",
+      "text": "[DEBUG] Fetching all products "
+    },
+    {
+      "type": "info",
+      "text": "[INFO] All products fetched {recordCount: 17}"
+    }
+  ],
+  "errors": [],
+  "warnings": [],
+  "cspViolations": [],
+  "scenarios": [
+    {
+      "id": 1,
+      "name": "Initial load",
+      "status": "PASS"
+    },
+    {
+      "id": 2,
+      "name": "CSP check",
+      "status": "PASS",
+      "violations": 0
+    },
+    {
+      "id": 3,
+      "name": "Font loading",
+      "status": "PASS",
+      "fontErrors": 0
+    },
+    {
+      "id": 4,
+      "name": "Service Worker",
+      "status": "PASS",
+      "sw": {
+        "supported": true,
+        "registered": false
+      }
+    },
+    {
+      "id": 5,
+      "name": "Language selector",
+      "status": "PASS"
+    },
+    {
+      "id": 6,
+      "name": "Inventory page",
+      "status": "PASS"
+    },
+    {
+      "id": 7,
+      "name": "Network analysis",
+      "status": "PASS"
+    }
+  ],
+  "verdict": "PASS"
+}
