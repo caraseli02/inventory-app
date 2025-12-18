@@ -1,6 +1,6 @@
 # Grocery Inventory App
 
-**Quick grocery inventory management via barcode scanning.** Scan products, manage stock, sync to Airtable. Built for tablets/phones.
+**Quick grocery inventory management via barcode scanning.** Scan products, manage stock, sync to Supabase or Airtable. Built for tablets/phones.
 
 **🚀 Ready to launch?** See [LAUNCH_CHECKLIST.md](LAUNCH_CHECKLIST.md) for step-by-step deployment guide.
 
@@ -22,7 +22,7 @@ pnpm install
 **2. Set up environment:**
 ```bash
 cp .env.example .env
-# Edit .env and add your Airtable credentials
+# Edit .env and add your backend credentials (Supabase or Airtable)
 ```
 
 **3. Run locally:**
@@ -36,11 +36,42 @@ pnpm build                    # Test build
 vercel                        # Deploy (see LAUNCH_CHECKLIST.md)
 ```
 
-## Environment Variables
+## Backend Configuration
 
-Required for both local and production:
-- `VITE_AIRTABLE_API_KEY` - Your Airtable personal access token
-- `VITE_AIRTABLE_BASE_ID` - Your Airtable base ID
+**Choose your backend** - The app automatically detects which backend to use based on environment variables.
+
+### Option 1: Supabase (Recommended) 🌟
+
+**Why Supabase?**
+- ✅ Open source & self-hostable
+- ✅ Real-time subscriptions
+- ✅ Built-in authentication
+- ✅ Row Level Security (RLS)
+- ✅ Free tier: 500MB database, 50,000 monthly active users
+
+**Setup Guide**: See [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md) for detailed instructions.
+
+**Required Environment Variables:**
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_key_here
+```
+
+### Option 2: Airtable (Legacy)
+
+**Note**: Airtable support is maintained for backward compatibility but Supabase is recommended for new projects.
+
+**Required Environment Variables:**
+```bash
+VITE_AIRTABLE_API_KEY=your_airtable_personal_access_token
+VITE_AIRTABLE_BASE_ID=your_airtable_base_id
+```
+
+**Migration**: Already using Airtable? See [docs/MIGRATION_GUIDE.md](docs/MIGRATION_GUIDE.md) to migrate to Supabase.
+
+### Backend Priority
+
+If both backends are configured, **Supabase takes priority**. To switch backends, simply set/unset the respective environment variables.
 
 **Never commit `.env` files.** They're gitignored by default.
 
@@ -55,7 +86,7 @@ Required for both local and production:
 
 - React 19 + TypeScript + Vite
 - TailwindCSS v4
-- Airtable (backend)
+- **Supabase** (recommended backend) or Airtable (legacy)
 - html5-qrcode (scanner)
 - React Query (data)
 - PWA ready
@@ -85,8 +116,14 @@ Required for both local and production:
 
 ## Security Notice
 
-**Current MVP approach:** Airtable credentials are in the client bundle. This is acceptable for initial validation with trusted testers.
+### Supabase (Recommended)
+**Built-in security:** Supabase uses Row Level Security (RLS) policies to protect your data. The publishable key is safe to expose client-side.
 
-**For production use:** Implement the backend proxy (see `docs/specs/backend_proxy.md`) before sharing widely.
+**Best practice:** Configure RLS policies in your Supabase dashboard to restrict access based on user roles.
 
-Use Vercel's password protection feature to secure your deployment during MVP testing.
+### Airtable (Legacy)
+**Current approach:** Airtable credentials are in the client bundle. This is acceptable for initial validation with trusted testers.
+
+**For production use:** Implement the backend proxy (see `docs/specs/backend_proxy.md`) before sharing widely, or migrate to Supabase.
+
+**During testing:** Use Vercel's password protection feature to secure your deployment during MVP testing.

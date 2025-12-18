@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a tablet-first grocery inventory app built with React + TypeScript + Vite. The app scans grocery barcodes, syncs inventory to Airtable, and provides a clean UI for stock management. Key features include barcode scanning (html5-qrcode), PWA support, and AI-powered product suggestions via OpenFoodFacts.
+This is a tablet-first grocery inventory app built with React + TypeScript + Vite. The app scans grocery barcodes, syncs inventory to **Supabase** (or Airtable for legacy support), and provides a clean UI for stock management. Key features include barcode scanning (html5-qrcode), PWA support, AI-powered product suggestions via OpenFoodFacts, and a flexible backend abstraction layer.
 
 ## Commands
 
@@ -25,8 +25,8 @@ cp .env.example .env  # Create environment file
 
 ### Core Principles
 - **shadcn/ui primitives only**: NEVER use raw HTML elements (`<button>`, `<input>`, etc.) - always use shadcn components from `@/components/ui/`
-- **UI and logic separation**: Components never talk to Airtable directly; all backend calls live in `/lib`
-- **Backend abstraction**: Airtable calls isolated in `lib/airtable.ts` and `lib/api.ts` for easy migration
+- **UI and logic separation**: Components never talk to the backend directly; all backend calls live in `/lib`
+- **Backend abstraction**: **API provider pattern** - `lib/api-provider.ts` automatically selects between Supabase (`lib/supabase-api.ts`) or Airtable (`lib/api.ts`) based on environment variables
 - **Modular AI layer**: AI helpers in `lib/ai/` imported only when needed
 - **PWA-first**: Optimized for tablet/mobile fullscreen experience
 - **Design consistency**: Follow the "Fresh Precision" aesthetic with CSS variables, gradients, and organic rounded corners
@@ -42,8 +42,13 @@ src/
 ├── pages/            # Top-level page components (ScanPage.tsx, CheckoutPage.tsx)
 ├── lib/              # Business logic & external services
 │   ├── utils.ts      # Utility functions (cn helper for shadcn)
-│   ├── airtable.ts   # Airtable client initialization & table constants
-│   ├── api.ts        # CRUD functions (getProductByBarcode, createProduct, etc.)
+│   ├── api-provider.ts  # Backend abstraction layer (Supabase or Airtable)
+│   ├── supabase.ts   # Supabase client initialization
+│   ├── supabase-api.ts  # Supabase CRUD functions
+│   ├── airtable.ts   # Airtable client (legacy)
+│   ├── api.ts        # Airtable CRUD functions (legacy)
+│   ├── database.types.ts  # Generated Supabase types
+│   ├── errors.ts     # Custom error classes (ValidationError, NetworkError)
 │   └── ai/           # AI helpers (OpenFoodFacts integration)
 ├── hooks/            # Custom React hooks (useProductLookup)
 ├── types/            # TypeScript types (Product, StockMovement)
@@ -52,16 +57,86 @@ src/
 
 ### Data Flow
 1. Scanner captures barcode → `hooks/useProductLookup.ts`
-2. Hook calls `lib/api.ts` functions
-3. API functions use `lib/airtable.ts` to interact with Airtable
-4. AI suggestions fetched from `lib/ai/` when product not found
+2. Hook calls `lib/api-provider.ts` functions
+3. API provider routes to either:
+   - `lib/supabase-api.ts` (if `VITE_SUPABASE_URL` is set) ✅ **Recommended**
+   - `lib/api.ts` (if `VITE_AIRTABLE_API_KEY` is set) - Legacy
+4. Backend interacts with Supabase PostgreSQL or Airtable
+5. AI suggestions fetched from `lib/ai/` when product not found
 
-### Airtable Integration
+### Backend Integration
+
+#### API Provider Pattern (`lib/api-provider.ts`)
+
+The app uses a **provider pattern** to abstract backend operations. The backend is automatically selected based on environment variables:
+
+```typescript
+// Priority: Supabase > Airtable > None
+const useSupabase = !!import.meta.env.VITE_SUPABASE_URL;
+const useAirtable = !!import.meta.env.VITE_AIRTABLE_API_KEY;
+```
+
+**How it works**:
+1. On app initialization, `api-provider.ts` checks which env vars are set
+2. It dynamically imports the appropriate backend module (`supabase-api.ts` or `api.ts`)
+3. All API functions are exported through a unified interface
+4. Components import from `lib/api-provider.ts` and are backend-agnostic
+
+**Switching backends**: Just set/unset environment variables - no code changes needed!
+
+#### Supabase Backend (Recommended) 🌟
+
+**Location**: `lib/supabase-api.ts`
+
+**Features**:
+- PostgreSQL database with Row Level Security (RLS)
+- Type-safe queries with generated TypeScript types (`database.types.ts`)
+- Comprehensive validation layer with custom error classes
+- Structured logging (debug, info, error levels)
+- Client-side stock calculation from movements
+
+**Database Schema**:
+- Two tables: `products` and `stock_movements`
+- Products store all product fields (name, barcode, price, category, etc.)
+- Stock movements store signed quantities (+/- based on IN/OUT type)
+- Current stock calculated by summing all movements for a product
+
+**Key Functions**:
+- `getProductByBarcode(barcode)` - Lookup product by barcode
+- `createProduct(data)` - Create new product with validation
+- `updateProduct(productId, data)` - Update existing product
+- `deleteProduct(productId)` - Delete product (with FK constraint checks)
+- `getAllProducts()` - Fetch all products with calculated stock levels
+- `addStockMovement(productId, quantity, type)` - Record IN/OUT movement
+- `getStockMovements(productId)` - Get movement history
+
+**Error Handling**:
+- Custom error classes: `ValidationError`, `NetworkError`, `AuthorizationError`
+- PostgreSQL error code mapping (23503 = FK violation, PGRST116 = RLS policy violation)
+- User-friendly error messages with actionable guidance
+
+**Type Safety**:
+```typescript
+// Generated from Supabase schema
+import type { Database } from './database.types';
+type ProductRow = Database['public']['Tables']['products']['Row'];
+type ProductInsert = Database['public']['Tables']['products']['Insert'];
+```
+
+#### Airtable Backend (Legacy)
+
+**Location**: `lib/api.ts` + `lib/airtable.ts`
+
+**Note**: Maintained for backward compatibility. New projects should use Supabase.
+
+**Features**:
 - Two tables: `Products` and `Stock Movements`
 - Table names defined as constants in `lib/airtable.ts` (use `TABLES.PRODUCTS`, `TABLES.STOCK_MOVEMENTS`)
 - Product lookup uses `filterByFormula` for barcode matching
 - Stock movements use signed quantities (+/- based on IN/OUT type) for rollup calculation
 - Image field expects Airtable attachment format: `[{ url: string }]`
+
+**Migration Path**: See `docs/MIGRATION_GUIDE.md` for step-by-step migration from Airtable to Supabase.
 
 ### AI/Product Suggestions
 - OpenFoodFacts API integration in `lib/ai/openFoodFacts.ts`
@@ -101,14 +176,20 @@ The app supports importing/exporting product data from Excel files, enabling cus
 
 **Architecture Roadmap**:
 ```
-Phase 1 (Current): SheetJS + Airtable
-  └── Import/Export xlsx, keep Airtable as database
+Phase 1 (COMPLETE): SheetJS + Supabase ✅
+  └── Import/Export xlsx, Supabase as primary database
+  └── Airtable legacy support maintained for backward compatibility
 
-Phase 2 (Future): SheetJS + Dexie.js (IndexedDB)
-  └── Replace Airtable with local-first storage, full offline
+Phase 2 (Future): Dexie.js + Supabase
+  └── Add local-first IndexedDB storage for offline support
+  └── Sync with Supabase when online
+  └── Full PWA offline capabilities
 
-Phase 3 (Optional): SheetJS + Dexie.js + Supabase
-  └── Multi-device sync, user auth, cloud backup
+Phase 3 (Optional): Multi-tenant + Authentication
+  └── User authentication with Supabase Auth
+  └── Row Level Security (RLS) policies
+  └── Multi-device sync per user
+  └── Real-time collaboration features
 ```
 
 ### Image Upload & Camera Capture
@@ -248,15 +329,58 @@ To implement barcode scanning (from `docs/specs/scanner.md`):
 
 ## Security & Environment
 
-### Required Environment Variables
-- `VITE_AIRTABLE_API_KEY`: Airtable personal access token (read/write)
-- `VITE_AIRTABLE_BASE_ID`: Base ID for inventory workspace
+### Backend Environment Variables
 
-### Planned (Not Yet Implemented)
-- `VITE_BACKEND_PROXY_URL`: Backend proxy to hide Airtable credentials
-- `VITE_PROXY_AUTH_TOKEN`: Auth token for proxy
+The app automatically detects which backend to use based on which environment variables are set. **If both are set, Supabase takes priority.**
 
-**Important**: Never commit `.env` files. Currently, Airtable credentials are exposed client-side; backend proxy is planned per `docs/specs/backend_proxy.md`.
+#### Option 1: Supabase (Recommended) 🌟
+
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Security Model**:
+- ✅ **Safe to expose client-side**: The publishable key (also called "anon" key) is designed for browser use
+- ✅ **Row Level Security (RLS)**: Protect data with PostgreSQL policies in Supabase dashboard
+- ✅ **No credentials in bundle**: API keys don't grant write access without proper RLS policies
+- ✅ **Authentication ready**: Easy to add user authentication with Supabase Auth when needed
+
+**Setup Guide**: See `docs/SUPABASE_SETUP.md` for detailed instructions.
+
+#### Option 2: Airtable (Legacy)
+
+```bash
+VITE_AIRTABLE_API_KEY=patAbcd1234567890...
+VITE_AIRTABLE_BASE_ID=appXyzAbcd1234567
+```
+
+**Security Model**:
+- ⚠️ **Credentials exposed client-side**: Airtable API key is embedded in the production bundle
+- ⚠️ **Full access**: API key grants read/write access to the entire base
+- ⚠️ **For trusted users only**: Acceptable for MVP testing with known users
+- ⚠️ **Backend proxy recommended**: See `docs/specs/backend_proxy.md` for production hardening
+
+**Migration Path**: If currently using Airtable, see `docs/MIGRATION_GUIDE.md` to migrate to Supabase.
+
+### Additional Environment Variables
+
+**Image Upload** (Optional):
+```bash
+# Development fallback (free tier)
+VITE_IMGBB_API_KEY=your_imgbb_api_key_here
+
+# Production (Vercel Blob - set in Vercel dashboard)
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
+```
+
+**Invoice OCR** (Optional - Phase 1 feature):
+```bash
+VITE_GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_key
+VITE_OPENAI_API_KEY=your_openai_api_key
+```
+
+**Important**: Never commit `.env` files. They're gitignored by default.
 
 ## Documentation
 
