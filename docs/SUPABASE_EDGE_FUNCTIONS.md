@@ -17,18 +17,23 @@ The app uses two Supabase Edge Functions to securely process invoices:
 
 ## Prerequisites
 
-1. **Supabase CLI** - Install it:
+1. **Supabase CLI** - Use NPX (recommended, no installation needed):
    ```bash
-   # macOS/Linux
+   # No installation required! Just use npx:
+   npx supabase --version
+   ```
+
+   **Alternative installation methods** (if you prefer a global install):
+   ```bash
+   # macOS/Linux (Homebrew)
    brew install supabase/tap/supabase
 
    # Windows (PowerShell)
    scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
    scoop install supabase
-
-   # npm (all platforms)
-   npm install -g supabase
    ```
+
+   **Note**: Throughout this guide, if you see `supabase` commands, you can replace them with `npx supabase`.
 
 2. **Supabase Project** - You should already have one from the database setup
    - Project URL: `https://your-project.supabase.co`
@@ -45,10 +50,10 @@ The app uses two Supabase Edge Functions to securely process invoices:
 cd /path/to/inventory-app
 
 # Login to Supabase (opens browser)
-supabase login
+npx supabase login
 
 # Link to your project
-supabase link --project-ref your-project-ref
+npx supabase link --project-ref your-project-ref
 
 # You can find your project-ref in the Supabase dashboard URL:
 # https://app.supabase.com/project/[project-ref]/...
@@ -60,10 +65,10 @@ Edge Functions need access to the API keys. Set them as secrets in your Supabase
 
 ```bash
 # Set Google Cloud Vision API key
-supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_key_here
+npx supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_key_here
 
 # Set OpenAI API key
-supabase secrets set OPENAI_API_KEY=your_openai_key_here
+npx supabase secrets set OPENAI_API_KEY=your_openai_key_here
 ```
 
 **Alternative: Set via Supabase Dashboard**
@@ -80,10 +85,10 @@ Deploy both functions to your Supabase project:
 
 ```bash
 # Deploy invoice-ocr function
-supabase functions deploy invoice-ocr
+npx supabase functions deploy invoice-ocr
 
 # Deploy invoice-parse function
-supabase functions deploy invoice-parse
+npx supabase functions deploy invoice-parse
 ```
 
 **Expected output:**
@@ -104,7 +109,7 @@ Test that the functions are working correctly:
 echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" > /tmp/test-image-base64.txt
 
 # Test the function
-supabase functions invoke invoice-ocr \
+npx supabase functions invoke invoice-ocr \
   --data '{"imageBase64":"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="}'
 ```
 
@@ -112,7 +117,7 @@ supabase functions invoke invoice-ocr \
 
 ```bash
 # Test with sample OCR text
-supabase functions invoke invoice-parse \
+npx supabase functions invoke invoice-parse \
   --data '{"ocrText":"Invoice #12345\nSupplier: Test Store\nProduct A - Qty: 2 - Price: €10.00\nTotal: €20.00"}'
 ```
 
@@ -137,15 +142,15 @@ supabase functions invoke invoice-parse \
 **Solution**:
 ```bash
 # Check if secrets are set
-supabase secrets list
+npx supabase secrets list
 
 # If missing, set them:
-supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=your_key
-supabase secrets set OPENAI_API_KEY=your_key
+npx supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=your_key
+npx supabase secrets set OPENAI_API_KEY=your_key
 
 # Re-deploy functions (secrets only apply after re-deploy)
-supabase functions deploy invoice-ocr
-supabase functions deploy invoice-parse
+npx supabase functions deploy invoice-ocr
+npx supabase functions deploy invoice-parse
 ```
 
 ### Error: "Failed to invoke function"
@@ -155,12 +160,12 @@ supabase functions deploy invoice-parse
 **Solution**:
 1. Check if functions are deployed:
    ```bash
-   supabase functions list
+   npx supabase functions list
    ```
 2. Re-deploy if needed:
    ```bash
-   supabase functions deploy invoice-ocr
-   supabase functions deploy invoice-parse
+   npx supabase functions deploy invoice-ocr
+   npx supabase functions deploy invoice-parse
    ```
 
 ### Error: "CORS error in browser"
@@ -177,8 +182,8 @@ export const corsHeaders = {
 
 Then re-deploy:
 ```bash
-supabase functions deploy invoice-ocr
-supabase functions deploy invoice-parse
+npx supabase functions deploy invoice-ocr
+npx supabase functions deploy invoice-parse
 ```
 
 ### Error: "Google Cloud Vision API quota exceeded"
@@ -205,15 +210,15 @@ You can run Edge Functions locally for testing:
 
 ```bash
 # Start local Supabase (includes Edge Functions runtime)
-supabase start
+npx supabase start
 
 # The functions will be available at:
 # http://localhost:54321/functions/v1/invoice-ocr
 # http://localhost:54321/functions/v1/invoice-parse
 
 # Set local secrets
-supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=your_key --local
-supabase secrets set OPENAI_API_KEY=your_key --local
+npx supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=your_key --local
+npx supabase secrets set OPENAI_API_KEY=your_key --local
 
 # Test locally
 curl -X POST http://localhost:54321/functions/v1/invoice-ocr \
@@ -295,8 +300,8 @@ If you encounter issues:
 1. Check the [Troubleshooting](#troubleshooting) section above
 2. Review Supabase Edge Function logs:
    ```bash
-   supabase functions logs invoice-ocr
-   supabase functions logs invoice-parse
+   npx supabase functions logs invoice-ocr
+   npx supabase functions logs invoice-parse
    ```
 3. Check browser console for client-side errors
 4. Open an issue in the project repository
