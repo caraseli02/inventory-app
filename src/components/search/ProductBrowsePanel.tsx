@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { Package, Clock, Grid3X3, Plus, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getAllProducts } from '@/lib/api';
+import { getAllProducts } from '@/lib/api-provider';
 import { useRecentProducts } from '@/hooks/useRecentProducts';
 import type { Product, CartItem } from '@/types';
 import { logger } from '@/lib/logger';

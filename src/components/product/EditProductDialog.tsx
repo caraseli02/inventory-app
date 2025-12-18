@@ -1,6 +1,6 @@
 import { useState, useMemo, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { updateProduct } from '../../lib/api';
+import { updateProduct } from '../../lib/api-provider';
 import { uploadImage, isDataUrl } from '../../lib/imageUpload';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';

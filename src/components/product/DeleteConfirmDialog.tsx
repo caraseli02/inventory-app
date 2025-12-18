@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Package, AlertTriangle } from 'lucide-react';
-import { deleteProduct } from '../../lib/api';
+import { deleteProduct } from '../../lib/api-provider';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { logger } from '../../lib/logger';

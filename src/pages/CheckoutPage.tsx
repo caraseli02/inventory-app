@@ -6,7 +6,7 @@ import { ScannerFrame } from '../components/scanner/ScannerFrame';
 import { Cart } from '../components/cart/Cart';
 import { PageHeader } from '../components/ui/PageHeader';
 import { useProductLookup } from '../hooks/useProductLookup';
-import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api';
+import { addStockMovement, ValidationError, NetworkError, AuthorizationError } from '../lib/api-provider';
 import type { CartItem, Product } from '../types';
 import { logger } from '../lib/logger';
 import {

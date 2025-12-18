@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useId, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createProduct, addStockMovement } from '../../lib/api';
+import { createProduct, addStockMovement } from '../../lib/api-provider';
 import { suggestProductDetails } from '../../lib/ai';
 import { uploadImage, isDataUrl } from '../../lib/imageUpload';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
