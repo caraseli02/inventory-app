@@ -53,6 +53,14 @@ export const VALID_INVOICE_EXTENSIONS = ['.jpg', '.jpeg', '.png'] as const;
  * Step 1: Perform OCR using Google Cloud Vision API via Supabase Edge Function
  * Free tier: 1,000 pages/month
  * Security: API key is kept secure on the server side
+ *
+ * @param file - Image file to process (JPG/PNG only)
+ * @returns Extracted text from the invoice
+ * @throws Error if file is corrupted, network fails, or API returns error
+ *
+ * Note: This function does not implement automatic retries. Network errors
+ * should be handled by the caller if retry logic is needed. Timeout is
+ * handled by the Edge Function (30 seconds).
  */
 async function performOCR(file: File): Promise<string> {
   logger.info('Starting OCR processing', {
@@ -83,20 +91,32 @@ async function performOCR(file: File): Promise<string> {
     });
 
     if (error) {
+      const errorMessage = error.message || 'Failed to perform OCR on invoice image';
       logger.error('Invoice OCR Edge Function error', {
         fileName: file.name,
-        error: error.message,
-        context: error.context,
+        errorMessage,
+        errorContext: error.context,
+        timestamp: new Date().toISOString(),
       });
-      throw new Error(error.message || 'Failed to perform OCR on invoice image');
+      throw new Error(errorMessage); // Throw the SAME message we logged
     }
 
-    if (!data || !data.text) {
-      logger.error('Invalid response from OCR Edge Function', {
+    // Validate response structure
+    if (!data || typeof data !== 'object') {
+      logger.error('Invalid response structure from OCR Edge Function', {
         fileName: file.name,
-        data,
+        receivedData: data,
       });
-      throw new Error('Invalid response from OCR service');
+      throw new Error('Invalid response from OCR service - please ensure you are using the latest app version');
+    }
+
+    if (!data.text || typeof data.text !== 'string') {
+      logger.error('Missing or invalid text field in OCR response', {
+        fileName: file.name,
+        dataKeys: Object.keys(data),
+        textType: typeof data.text,
+      });
+      throw new Error('Invalid text data from OCR service');
     }
 
     logger.info('OCR processing completed successfully', {
@@ -106,16 +126,27 @@ async function performOCR(file: File): Promise<string> {
 
     return data.text;
   } catch (error) {
-    // Handle network errors and other exceptions
-    if (error instanceof Error && error.message) {
+    // If error was already thrown with a message, re-throw it
+    if (error instanceof Error && error.message && !error.message.includes('Invalid response')) {
       throw error;
     }
+
+    // Check for actual network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      const networkErrorMessage = 'Network error while processing invoice. Please check your internet connection.';
+      logger.error('Network error during OCR', {
+        fileName: file.name,
+        errorMessage: error.message,
+      });
+      throw new Error(networkErrorMessage);
+    }
+
     logger.error('Unexpected error during OCR', {
       fileName: file.name,
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error('Network error while processing invoice. Please check your internet connection.');
+    throw new Error('An unexpected error occurred during OCR processing. Please try again.');
   }
 }
 
@@ -136,16 +167,29 @@ async function parseInvoiceText(ocrText: string): Promise<InvoiceData> {
     });
 
     if (error) {
+      const errorMessage = error.message || 'Failed to parse invoice text';
       logger.error('Invoice parse Edge Function error', {
-        error: error.message,
-        context: error.context,
+        errorMessage,
+        errorContext: error.context,
+        timestamp: new Date().toISOString(),
       });
-      throw new Error(error.message || 'Failed to parse invoice text');
+      throw new Error(errorMessage); // Throw the SAME message we logged
     }
 
-    if (!data) {
-      logger.error('No data returned from parse Edge Function');
-      throw new Error('Invalid response from parsing service');
+    // Validate response structure
+    if (!data || typeof data !== 'object') {
+      logger.error('Invalid response structure from parse Edge Function', {
+        receivedData: data,
+      });
+      throw new Error('Invalid response from parsing service - please ensure you are using the latest app version');
+    }
+
+    if (!Array.isArray(data.products)) {
+      logger.error('Missing or invalid products field in parse response', {
+        dataKeys: Object.keys(data),
+        productsType: typeof data.products,
+      });
+      throw new Error('Invalid product data from parsing service');
     }
 
     // The Edge Function already validates and cleans the data
@@ -165,15 +209,25 @@ async function parseInvoiceText(ocrText: string): Promise<InvoiceData> {
 
     return invoiceData;
   } catch (error) {
-    // Handle network errors and other exceptions
-    if (error instanceof Error && error.message) {
+    // If error was already thrown with a message, re-throw it
+    if (error instanceof Error && error.message && !error.message.includes('Invalid response')) {
       throw error;
     }
+
+    // Check for actual network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      const networkErrorMessage = 'Network error while parsing invoice. Please check your internet connection.';
+      logger.error('Network error during invoice parsing', {
+        errorMessage: error.message,
+      });
+      throw new Error(networkErrorMessage);
+    }
+
     logger.error('Unexpected error during invoice parsing', {
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error('Network error while parsing invoice. Please check your internet connection.');
+    throw new Error('An unexpected error occurred during invoice parsing. Please try again.');
   }
 }
 
@@ -199,9 +253,10 @@ export async function extractInvoiceData(
     try {
       onProgress?.(progress);
     } catch (error) {
-      logger.debug('Progress callback failed', {
+      logger.warn('Progress callback failed - UI progress updates may be inaccurate', {
         progress,
         errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
       });
     }
   };
@@ -314,6 +369,8 @@ function fileToBase64(file: File): Promise<string> {
         fileType: file.type,
         errorName: error?.name,
         errorMessage: error?.message,
+        errorCode: error && 'code' in error ? (error as { code?: number }).code : undefined, // Some browsers include error codes
+        errorFull: error, // Log the full error object
       });
 
       // Provide user-friendly error messages based on error type

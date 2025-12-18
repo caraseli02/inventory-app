@@ -96,9 +96,9 @@ Migrated invoice OCR functionality from client-side API calls to secure server-s
 ```
 ┌─────────────┐     Authenticated     ┌────────────────────┐
 │   Browser   │────────request───────>│  Supabase Edge     │
-│             │                        │    Functions       │
-│ invoiceOCR  │<───────response───────│                    │
-│   .ts       │                        │  (Secure Keys)     │
+│             │  (with Supabase       │    Functions       │
+│ invoiceOCR  │   anon/JWT key)       │                    │
+│   .ts       │<───────response───────│  (Secure Keys)     │
 └─────────────┘                        └────────────────────┘
                                               │
                                               ├──> Google Cloud Vision

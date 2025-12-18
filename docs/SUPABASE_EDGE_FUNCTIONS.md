@@ -241,14 +241,14 @@ Keep track of your usage to avoid unexpected costs:
 - **Monitor**: https://platform.openai.com/usage
 
 ### Supabase Edge Functions
-- **Free tier**: 500,000 invocations/month (2 million compute seconds)
+- **Free tier**: 500,000 invocations/month OR 2 million compute seconds/month
 - **After free tier**: $2 per 1 million invocations
 - **Monitor**: Supabase Dashboard → Usage
 
 **Typical monthly cost for small business (100 invoices/month)**:
-- Google Cloud Vision: $0 (under free tier)
-- OpenAI: ~$0.01
-- Supabase Edge Functions: $0 (under free tier)
+- Google Cloud Vision: $0 (under 1,000 pages free tier)
+- OpenAI: ~$0.01 (100 invoices × $0.0001)
+- Supabase Edge Functions: $0 (200 invocations under 500,000 free tier)
 - **Total: ~$0.01/month** 🎉
 
 ## Security Best Practices

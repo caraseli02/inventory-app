@@ -11,8 +11,11 @@
 
 import { corsHeaders, handleCorsPreFlight } from '../_shared/cors.ts';
 
-// Deno.serve is the standard way to create Edge Functions
 Deno.serve(async (req) => {
+  // Generate request ID for tracking
+  const requestId = crypto.randomUUID();
+  const requestStart = Date.now();
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return handleCorsPreFlight();
@@ -33,7 +36,10 @@ Deno.serve(async (req) => {
     // Get API key from environment
     const apiKey = Deno.env.get('GOOGLE_CLOUD_VISION_API_KEY');
     if (!apiKey) {
-      console.error('Google Cloud Vision API key not configured');
+      console.error('Google Cloud Vision API key not configured', {
+        requestId,
+        timestamp: new Date().toISOString(),
+      });
       return new Response(
         JSON.stringify({ error: 'Server configuration error: API key not set' }),
         {
@@ -57,11 +63,15 @@ Deno.serve(async (req) => {
     }
 
     console.log('Starting OCR processing', {
+      requestId,
       imageSize: imageBase64.length,
       timestamp: new Date().toISOString(),
     });
 
-    // Call Google Cloud Vision API
+    // Call Google Cloud Vision API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     const visionResponse = await fetch(
       `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
       {
@@ -84,8 +94,11 @@ Deno.serve(async (req) => {
             },
           ],
         }),
+        signal: controller.signal,
       }
     );
+
+    clearTimeout(timeoutId);
 
     if (!visionResponse.ok) {
       const errorData = await visionResponse.json().catch(() => ({}));
@@ -108,11 +121,26 @@ Deno.serve(async (req) => {
         );
       }
       if (visionResponse.status === 429) {
+        const retryAfter = visionResponse.headers.get('Retry-After');
+        const errorMessage = retryAfter
+          ? `Service quota exceeded. Please try again in ${retryAfter} seconds.`
+          : 'Service quota exceeded. Please try again in a few minutes.';
+
+        console.warn('Rate limit hit for Google Cloud Vision API', {
+          requestId,
+          retryAfter,
+          timestamp: new Date().toISOString(),
+        });
+
         return new Response(
-          JSON.stringify({ error: 'Service quota exceeded. Please try again later.' }),
+          JSON.stringify({ error: errorMessage }),
           {
             status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+              ...(retryAfter && { 'Retry-After': retryAfter }),
+            }
           }
         );
       }
@@ -156,14 +184,55 @@ Deno.serve(async (req) => {
     );
 
   } catch (error) {
+    // Clear timeout if it exists
+    if (typeof timeoutId !== 'undefined') {
+      clearTimeout(timeoutId);
+    }
+
+    // Log full error details for debugging
     console.error('Invoice OCR function error', {
-      error: error.message,
-      stack: error.stack,
+      requestId,
+      errorName: error?.constructor?.name,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      requestDuration: Date.now() - requestStart,
+      timestamp: new Date().toISOString(),
     });
 
+    // Handle timeout errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('Google Cloud Vision API timeout', {
+        requestId,
+        timeout: 30000,
+        timestamp: new Date().toISOString(),
+      });
+      return new Response(
+        JSON.stringify({ error: 'OCR service timeout. The image may be too large or the service is slow. Please try again.' }),
+        { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return new Response(
+        JSON.stringify({ error: 'Network error: Unable to reach Google Cloud Vision API. Please try again.' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle JSON parsing errors
+    if (error instanceof SyntaxError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format. Please ensure you are using the latest app version.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generic fallback for truly unexpected errors
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Failed to process invoice image'
+        error: 'An unexpected error occurred. Please try again or contact support if the issue persists.',
+        errorType: error?.constructor?.name || 'Unknown',
       }),
       {
         status: 500,

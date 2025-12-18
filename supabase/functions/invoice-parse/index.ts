@@ -27,8 +27,11 @@ interface RawInvoiceData {
   products?: InvoiceProduct[];
 }
 
-// Deno.serve is the standard way to create Edge Functions
 Deno.serve(async (req) => {
+  // Generate request ID for tracking
+  const requestId = crypto.randomUUID();
+  const requestStart = Date.now();
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return handleCorsPreFlight();
@@ -49,7 +52,10 @@ Deno.serve(async (req) => {
     // Get API key from environment
     const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
-      console.error('OpenAI API key not configured');
+      console.error('OpenAI API key not configured', {
+        requestId,
+        timestamp: new Date().toISOString(),
+      });
       return new Response(
         JSON.stringify({ error: 'Server configuration error: API key not set' }),
         {
@@ -73,6 +79,7 @@ Deno.serve(async (req) => {
     }
 
     console.log('Starting AI-powered invoice parsing', {
+      requestId,
       ocrTextLength: ocrText.length,
       timestamp: new Date().toISOString(),
     });
@@ -117,7 +124,10 @@ Important:
 Invoice OCR Text:
 ${ocrText}`;
 
-    // Call OpenAI API
+    // Call OpenAI API with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -139,7 +149,10 @@ ${ocrText}`;
         temperature: 0, // Deterministic output
         max_tokens: 2000,
       }),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!openaiResponse.ok) {
       const errorData = await openaiResponse.json().catch(() => ({}));
@@ -162,11 +175,26 @@ ${ocrText}`;
         );
       }
       if (openaiResponse.status === 429) {
+        const retryAfter = openaiResponse.headers.get('Retry-After');
+        const errorMessage = retryAfter
+          ? `API rate limit exceeded. Please try again in ${retryAfter} seconds.`
+          : 'API rate limit exceeded. Please try again in a few minutes.';
+
+        console.warn('Rate limit hit for OpenAI API', {
+          requestId,
+          retryAfter,
+          timestamp: new Date().toISOString(),
+        });
+
         return new Response(
-          JSON.stringify({ error: 'API rate limit exceeded. Please try again later.' }),
+          JSON.stringify({ error: errorMessage }),
           {
             status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json',
+              ...(retryAfter && { 'Retry-After': retryAfter }),
+            }
           }
         );
       }
@@ -183,12 +211,16 @@ ${ocrText}`;
     const result = await openaiResponse.json();
     const content = result.choices[0]?.message?.content;
 
-    if (!content) {
-      console.error('No response from OpenAI API', {
+    // Check for empty or missing content
+    if (!content || content.trim().length === 0) {
+      console.error('Empty or missing response from OpenAI API', {
+        requestId,
         resultChoices: result.choices?.length,
+        contentLength: content?.length,
+        timestamp: new Date().toISOString(),
       });
       return new Response(
-        JSON.stringify({ error: 'No response from AI service' }),
+        JSON.stringify({ error: 'The AI service returned an empty response. The invoice text may be unreadable or the service is experiencing issues.' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -204,11 +236,15 @@ ${ocrText}`;
       invoiceData = JSON.parse(jsonText);
     } catch (error) {
       console.error('Failed to parse OpenAI JSON response', {
+        requestId,
         error: error.message,
+        responseLength: jsonText.length,
         responsePreview: jsonText.substring(0, 200),
+        responseFull: jsonText.length < 5000 ? jsonText : jsonText.substring(0, 5000) + '... (truncated)',
+        timestamp: new Date().toISOString(),
       });
       return new Response(
-        JSON.stringify({ error: 'Failed to parse AI response. The invoice format may be unsupported.' }),
+        JSON.stringify({ error: 'The AI service returned an invalid response. This may indicate the invoice format is unsupported or the image quality is too low. Please try a clearer image or contact support.' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -217,6 +253,8 @@ ${ocrText}`;
     }
 
     // Validate and clean data
+    // Convert null to undefined to match TypeScript InvoiceData type expectations
+    // Filter out products without names and normalize numeric values
     const cleanedData = {
       supplier: invoiceData.supplier || undefined,
       invoiceNumber: invoiceData.invoiceNumber || undefined,
@@ -249,14 +287,55 @@ ${ocrText}`;
     );
 
   } catch (error) {
+    // Clear timeout if it exists
+    if (typeof timeoutId !== 'undefined') {
+      clearTimeout(timeoutId);
+    }
+
+    // Log full error details for debugging
     console.error('Invoice parse function error', {
-      error: error.message,
-      stack: error.stack,
+      requestId,
+      errorName: error?.constructor?.name,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      requestDuration: Date.now() - requestStart,
+      timestamp: new Date().toISOString(),
     });
 
+    // Handle timeout errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('OpenAI API timeout', {
+        requestId,
+        timeout: 30000,
+        timestamp: new Date().toISOString(),
+      });
+      return new Response(
+        JSON.stringify({ error: 'AI parsing service timeout. The invoice text may be too long or the service is slow. Please try again.' }),
+        { status: 504, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle network errors
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return new Response(
+        JSON.stringify({ error: 'Network error: Unable to reach OpenAI API. Please try again.' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle JSON parsing errors
+    if (error instanceof SyntaxError) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format. Please ensure you are using the latest app version.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generic fallback for truly unexpected errors
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Failed to parse invoice text'
+        error: 'An unexpected error occurred. Please try again or contact support if the issue persists.',
+        errorType: error?.constructor?.name || 'Unknown',
       }),
       {
         status: 500,
