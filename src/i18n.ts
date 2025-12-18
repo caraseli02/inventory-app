@@ -5,8 +5,16 @@ import en from './locales/en.json';
 import ro from './locales/ro.json';
 import ru from './locales/ru.json';
 
-const supportedLanguages = ['es', 'en', 'ro', 'ru'] as const;
-type SupportedLanguage = (typeof supportedLanguages)[number];
+export const supportedLanguages = ['es', 'en', 'ro', 'ru'] as const;
+export type SupportedLanguage = (typeof supportedLanguages)[number];
+
+// Language display names in their native form (for selector UI)
+export const languageNames: Record<SupportedLanguage, string> = {
+  es: 'Español',
+  en: 'English',
+  ro: 'Română',
+  ru: 'Русский',
+};
 
 const getInitialLanguage = () => {
   if (typeof window !== 'undefined') {
