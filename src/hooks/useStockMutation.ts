@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { addStockMovement } from '../lib/api';
+import { addStockMovement } from '../lib/api-provider';
 import { toast } from 'sonner';
 import { logger } from '../lib/logger';
 import type { Product, StockMovement } from '../types';

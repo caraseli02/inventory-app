@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
-import { getStockMovements, getAllProducts } from '../../lib/api';
+import { getStockMovements, getAllProducts } from '../../lib/api-provider';
 import { useQuery } from '@tanstack/react-query';
 import { useStockMutation } from '../../hooks/useStockMutation';
 import { useProductLookup } from '../../hooks/useProductLookup';

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllProducts } from '../lib/api';
+import { getAllProducts } from '../lib/api-provider';
 import { logger } from '../lib/logger';
 import type { Product } from '../types';
 

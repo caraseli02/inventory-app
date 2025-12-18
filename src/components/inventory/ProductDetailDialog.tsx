@@ -7,7 +7,7 @@ import { Badge } from '../ui/badge';
 import { Spinner } from '../ui/spinner';
 import { ProductImage } from '../ui/product-image';
 import { Card, CardContent } from '../ui/card';
-import { getStockMovements } from '../../lib/api';
+import { getStockMovements } from '../../lib/api-provider';
 import { logger } from '../../lib/logger';
 import type { Product } from '../../types';
 

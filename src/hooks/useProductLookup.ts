@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getProductByBarcode } from '../lib/api';
+import { getProductByBarcode } from '../lib/api-provider';
 
 /**
  * React Query hook for looking up products by barcode

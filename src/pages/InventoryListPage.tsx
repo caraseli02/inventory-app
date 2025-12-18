@@ -17,7 +17,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ImportDialog } from '../components/xlsx/ImportDialog';
 import { InvoiceUploadDialog } from '../components/invoice/InvoiceUploadDialog';
 import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
-import { addStockMovement, createProduct, getProductByBarcode } from '../lib/api';
+import { addStockMovement, createProduct, getProductByBarcode } from '../lib/api-provider';
 import type { ImportedProduct } from '../lib/xlsx';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../hooks/useToast';
