@@ -5,10 +5,14 @@
  * 1. Google Cloud Vision API for OCR (1,000 pages free/month)
  * 2. GPT-4o mini for parsing OCR text into structured JSON (~$0.001/invoice)
  *
+ * Security: API calls are proxied through Supabase Edge Functions
+ * to keep API keys secure on the server side.
+ *
  * Total cost: $0-0.10/month for typical small business
  */
 
 import { logger } from './logger';
+import { supabase } from './supabase';
 
 export interface InvoiceProduct {
   name: string;
@@ -41,41 +45,16 @@ export interface InvoiceOCRFailure {
 
 export type InvoiceOCRResult = InvoiceOCRSuccess | InvoiceOCRFailure;
 
-// Internal types for API response parsing (moved to module scope)
-interface RawInvoiceProduct {
-  name: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  barcode?: string | null;
-}
-
-interface RawInvoiceData {
-  supplier?: string | null;
-  invoiceNumber?: string | null;
-  invoiceDate?: string | null;
-  totalAmount?: number | null;
-  products?: RawInvoiceProduct[];
-}
-
 // Valid file types for invoice upload
 export const VALID_INVOICE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'] as const;
 export const VALID_INVOICE_EXTENSIONS = ['.jpg', '.jpeg', '.png'] as const;
 
 /**
- * Step 1: Perform OCR using Google Cloud Vision API
+ * Step 1: Perform OCR using Google Cloud Vision API via Supabase Edge Function
  * Free tier: 1,000 pages/month
+ * Security: API key is kept secure on the server side
  */
 async function performOCR(file: File): Promise<string> {
-  const apiKey = import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
-
-  if (!apiKey) {
-    logger.error('Google Cloud Vision API key not configured', {
-      envVar: 'VITE_GOOGLE_CLOUD_VISION_API_KEY',
-    });
-    throw new Error('Google Cloud Vision API key not configured. Please set VITE_GOOGLE_CLOUD_VISION_API_KEY in your .env file.');
-  }
-
   logger.info('Starting OCR processing', {
     fileName: file.name,
     fileSize: file.size,
@@ -97,244 +76,105 @@ async function performOCR(file: File): Promise<string> {
     throw new Error('Failed to read invoice file. Please ensure the file is not corrupted.');
   }
 
-  // Call Google Cloud Vision API
-  let response: Response;
+  // Call Supabase Edge Function for OCR
   try {
-    response = await fetch(
-      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          requests: [
-            {
-              image: {
-                content: base64Content,
-              },
-              features: [
-                {
-                  type: 'DOCUMENT_TEXT_DETECTION',
-                  maxResults: 1,
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
+    const { data, error } = await supabase.functions.invoke('invoice-ocr', {
+      body: { imageBase64: base64Content },
+    });
+
+    if (error) {
+      logger.error('Invoice OCR Edge Function error', {
+        fileName: file.name,
+        error: error.message,
+        context: error.context,
+      });
+      throw new Error(error.message || 'Failed to perform OCR on invoice image');
+    }
+
+    if (!data || !data.text) {
+      logger.error('Invalid response from OCR Edge Function', {
+        fileName: file.name,
+        data,
+      });
+      throw new Error('Invalid response from OCR service');
+    }
+
+    logger.info('OCR processing completed successfully', {
+      fileName: file.name,
+      textLength: data.text.length,
+    });
+
+    return data.text;
   } catch (error) {
-    logger.error('Google Cloud Vision API network error', {
+    // Handle network errors and other exceptions
+    if (error instanceof Error && error.message) {
+      throw error;
+    }
+    logger.error('Unexpected error during OCR', {
       fileName: file.name,
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error('Network error while contacting Google Cloud Vision API. Please check your internet connection.');
+    throw new Error('Network error while processing invoice. Please check your internet connection.');
   }
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    const errorMessage = error.error?.message || `Google Cloud Vision API error: ${response.statusText}`;
-
-    logger.error('Google Cloud Vision API request failed', {
-      fileName: file.name,
-      status: response.status,
-      statusText: response.statusText,
-      errorMessage,
-    });
-
-    if (response.status === 401) {
-      throw new Error('Google Cloud Vision API authentication failed. Please check your API key.');
-    }
-    if (response.status === 429) {
-      throw new Error('Google Cloud Vision API quota exceeded. Please try again later or upgrade your plan.');
-    }
-
-    throw new Error(errorMessage);
-  }
-
-  const result = await response.json();
-  const textAnnotations = result.responses[0]?.textAnnotations;
-
-  if (!textAnnotations || textAnnotations.length === 0) {
-    logger.warn('No text detected in invoice image', {
-      fileName: file.name,
-      fileType: file.type,
-    });
-    throw new Error('No text detected in the image. Please ensure the invoice is clear and readable.');
-  }
-
-  logger.info('OCR processing completed successfully', {
-    fileName: file.name,
-    textLength: textAnnotations[0].description.length,
-  });
-
-  return textAnnotations[0].description;
 }
 
 /**
- * Step 2: Parse OCR text into structured invoice data using GPT-4o mini
+ * Step 2: Parse OCR text into structured invoice data using GPT-4o mini via Supabase Edge Function
  * Cost: ~$0.001 per invoice
+ * Security: API key is kept secure on the server side
  */
 async function parseInvoiceText(ocrText: string): Promise<InvoiceData> {
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-
-  if (!apiKey) {
-    logger.error('OpenAI API key not configured', {
-      envVar: 'VITE_OPENAI_API_KEY',
-      requiredFor: 'AI-powered invoice parsing',
-    });
-    throw new Error(
-      'AI invoice extraction requires OpenAI API key. Please set VITE_OPENAI_API_KEY in your .env file. ' +
-      'Get a free key at https://platform.openai.com/api-keys'
-    );
-  }
-
   logger.debug('Starting AI-powered invoice parsing', {
     ocrTextLength: ocrText.length,
   });
 
-  const prompt = `You are an invoice data extraction assistant. Extract the following information from this invoice OCR text:
-
-1. Supplier name (if present)
-2. Invoice number (if present)
-3. Invoice date (if present, in YYYY-MM-DD format)
-4. All products/line items with:
-   - Product name
-   - Quantity (as a number)
-   - Unit price (as a number, in euros)
-   - Total price (as a number, in euros)
-   - Barcode (if present, usually 8-13 digits)
-
-Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{
-  "supplier": "string or null",
-  "invoiceNumber": "string or null",
-  "invoiceDate": "YYYY-MM-DD or null",
-  "totalAmount": number or null,
-  "products": [
-    {
-      "name": "string",
-      "quantity": number,
-      "unitPrice": number,
-      "totalPrice": number,
-      "barcode": "string or null"
-    }
-  ]
-}
-
-Important:
-- Product name is REQUIRED (skip rows without a product name)
-- If quantity is missing, use 1
-- If prices are missing, use 0
-- Extract all line items, not just the first few
-- Remove any VAT/tax line items
-- Barcodes are usually EAN-13 (13 digits) or UPC (12 digits)
-
-Invoice OCR Text:
-${ocrText}`;
-
-  let response: Response;
+  // Call Supabase Edge Function for parsing
   try {
-    response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a precise invoice data extraction assistant. Always return valid JSON only, no markdown or explanations.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0, // Deterministic output
-        max_tokens: 2000,
-      }),
+    const { data, error } = await supabase.functions.invoke('invoice-parse', {
+      body: { ocrText },
     });
+
+    if (error) {
+      logger.error('Invoice parse Edge Function error', {
+        error: error.message,
+        context: error.context,
+      });
+      throw new Error(error.message || 'Failed to parse invoice text');
+    }
+
+    if (!data) {
+      logger.error('No data returned from parse Edge Function');
+      throw new Error('Invalid response from parsing service');
+    }
+
+    // The Edge Function already validates and cleans the data
+    const invoiceData: InvoiceData = {
+      supplier: data.supplier,
+      invoiceNumber: data.invoiceNumber,
+      invoiceDate: data.invoiceDate,
+      totalAmount: data.totalAmount,
+      products: data.products || [],
+    };
+
+    logger.info('Invoice parsing completed successfully', {
+      productCount: invoiceData.products.length,
+      hasSupplier: !!invoiceData.supplier,
+      hasInvoiceNumber: !!invoiceData.invoiceNumber,
+    });
+
+    return invoiceData;
   } catch (error) {
-    logger.error('OpenAI API network error', {
+    // Handle network errors and other exceptions
+    if (error instanceof Error && error.message) {
+      throw error;
+    }
+    logger.error('Unexpected error during invoice parsing', {
       errorMessage: error instanceof Error ? error.message : String(error),
       errorStack: error instanceof Error ? error.stack : undefined,
     });
-    throw new Error('Network error while contacting OpenAI API. Please check your internet connection.');
+    throw new Error('Network error while parsing invoice. Please check your internet connection.');
   }
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    const errorMessage = error.error?.message || `OpenAI API error: ${response.statusText}`;
-
-    logger.error('OpenAI API request failed', {
-      status: response.status,
-      statusText: response.statusText,
-      errorMessage,
-    });
-
-    if (response.status === 401) {
-      throw new Error('OpenAI API authentication failed. Please check your API key.');
-    }
-    if (response.status === 429) {
-      throw new Error('OpenAI API rate limit exceeded. Please try again later.');
-    }
-
-    throw new Error(errorMessage);
-  }
-
-  const result = await response.json();
-  const content = result.choices[0]?.message?.content;
-
-  if (!content) {
-    logger.error('No response from OpenAI API', {
-      resultChoices: result.choices?.length,
-    });
-    throw new Error('No response from OpenAI API');
-  }
-
-  // Parse JSON response (remove markdown code blocks if present)
-  const jsonText = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-  let invoiceData: RawInvoiceData;
-  try {
-    invoiceData = JSON.parse(jsonText);
-  } catch (error) {
-    logger.error('Failed to parse OpenAI JSON response', {
-      errorMessage: error instanceof Error ? error.message : String(error),
-      responsePreview: jsonText.substring(0, 200),
-    });
-    throw new Error('Failed to parse AI response. The invoice format may be unsupported.');
-  }
-
-  // Validate and clean data
-  const cleanedData = {
-    supplier: invoiceData.supplier || undefined,
-    invoiceNumber: invoiceData.invoiceNumber || undefined,
-    invoiceDate: invoiceData.invoiceDate || undefined,
-    totalAmount: invoiceData.totalAmount || undefined,
-    products: (invoiceData.products || [])
-      .filter((p: RawInvoiceProduct) => p.name?.trim())
-      .map((p: RawInvoiceProduct) => ({
-        name: p.name.trim(),
-        quantity: Number(p.quantity) || 1,
-        unitPrice: Number(p.unitPrice) || 0,
-        totalPrice: Number(p.totalPrice) || 0,
-        barcode: p.barcode || undefined,
-      })),
-  };
-
-  logger.info('Invoice parsing completed successfully', {
-    productCount: cleanedData.products.length,
-    hasSupplier: !!cleanedData.supplier,
-    hasInvoiceNumber: !!cleanedData.invoiceNumber,
-  });
-
-  return cleanedData;
 }
 
 /**

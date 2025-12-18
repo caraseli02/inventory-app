@@ -374,11 +374,14 @@ VITE_IMGBB_API_KEY=your_imgbb_api_key_here
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
 ```
 
-**Invoice OCR** (Optional - Phase 1 feature):
-```bash
-VITE_GOOGLE_CLOUD_VISION_API_KEY=your_google_cloud_vision_key
-VITE_OPENAI_API_KEY=your_openai_api_key
-```
+**Invoice OCR** (Optional - secured via Supabase Edge Functions):
+- No client-side environment variables needed!
+- API keys are configured server-side in Supabase Dashboard
+- See `docs/SUPABASE_EDGE_FUNCTIONS.md` for setup guide
+- Edge Functions:
+  - `invoice-ocr` - Google Cloud Vision OCR (server-side)
+  - `invoice-parse` - OpenAI GPT-4o mini parsing (server-side)
+- Cost: ~$0.001 per invoice (1,000 pages free/month)
 
 **Important**: Never commit `.env` files. They're gitignored by default.
 
