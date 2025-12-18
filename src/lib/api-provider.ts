@@ -125,86 +125,101 @@ const initApi = async () => {
 const apiReady = initApi();
 
 // Export wrapper functions that wait for initialization
+/**
+ * Fetches a product by its barcode
+ * @param barcode - Product barcode to lookup
+ * @returns Product if found, null if not found
+ * @throws {Error} If API initialization fails or backend query fails
+ */
 export const getProductByBarcode: GetProductByBarcode = async (barcode) => {
-  try {
-    await apiReady;
-  } catch {
-    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
-  }
+  await apiReady; // Let initialization errors propagate naturally
   if (!_getProductByBarcode) {
-    throw new Error('getProductByBarcode function not available after initialization');
+    throw new Error('getProductByBarcode function not available after initialization. This indicates a critical system error.');
   }
   return _getProductByBarcode(barcode);
 };
 
+/**
+ * Creates a new product
+ * @param data - Product data to create
+ * @returns Created product record
+ * @throws {Error} If API initialization fails or creation fails
+ */
 export const createProduct: CreateProduct = async (data) => {
-  try {
-    await apiReady;
-  } catch {
-    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
-  }
+  await apiReady;
   if (!_createProduct) {
-    throw new Error('createProduct function not available after initialization');
+    throw new Error('createProduct function not available after initialization. This indicates a critical system error.');
   }
   return _createProduct(data);
 };
 
+/**
+ * Updates an existing product
+ * @param productId - Product ID to update
+ * @param data - Partial product data to update
+ * @returns Updated product record
+ * @throws {Error} If API initialization fails or update fails
+ */
 export const updateProduct: UpdateProduct = async (productId, data) => {
-  try {
-    await apiReady;
-  } catch {
-    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
-  }
+  await apiReady;
   if (!_updateProduct) {
-    throw new Error('updateProduct function not available after initialization');
+    throw new Error('updateProduct function not available after initialization. This indicates a critical system error.');
   }
   return _updateProduct(productId, data);
 };
 
+/**
+ * Deletes a product
+ * @param productId - Product ID to delete
+ * @throws {Error} If API initialization fails or deletion fails
+ */
 export const deleteProduct: DeleteProduct = async (productId) => {
-  try {
-    await apiReady;
-  } catch {
-    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
-  }
+  await apiReady;
   if (!_deleteProduct) {
-    throw new Error('deleteProduct function not available after initialization');
+    throw new Error('deleteProduct function not available after initialization. This indicates a critical system error.');
   }
   return _deleteProduct(productId);
 };
 
+/**
+ * Fetches all products
+ * @returns Array of all products with current stock levels
+ * @throws {Error} If API initialization fails or fetch fails
+ */
 export const getAllProducts: GetAllProducts = async () => {
-  try {
-    await apiReady;
-  } catch {
-    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
-  }
+  await apiReady;
   if (!_getAllProducts) {
-    throw new Error('getAllProducts function not available after initialization');
+    throw new Error('getAllProducts function not available after initialization. This indicates a critical system error.');
   }
   return _getAllProducts();
 };
 
+/**
+ * Records a stock movement (IN or OUT)
+ * @param productId - Product ID
+ * @param quantity - Quantity (positive number)
+ * @param type - Movement type: 'IN' or 'OUT'
+ * @returns Created stock movement record
+ * @throws {Error} If API initialization fails or movement creation fails
+ */
 export const addStockMovement: AddStockMovement = async (productId, quantity, type) => {
-  try {
-    await apiReady;
-  } catch {
-    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
-  }
+  await apiReady;
   if (!_addStockMovement) {
-    throw new Error('addStockMovement function not available after initialization');
+    throw new Error('addStockMovement function not available after initialization. This indicates a critical system error.');
   }
   return _addStockMovement(productId, quantity, type);
 };
 
+/**
+ * Fetches stock movement history for a product
+ * @param productId - Product ID
+ * @returns Array of stock movements
+ * @throws {Error} If API initialization fails or fetch fails
+ */
 export const getStockMovements: GetStockMovements = async (productId) => {
-  try {
-    await apiReady;
-  } catch {
-    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
-  }
+  await apiReady;
   if (!_getStockMovements) {
-    throw new Error('getStockMovements function not available after initialization');
+    throw new Error('getStockMovements function not available after initialization. This indicates a critical system error.');
   }
   return _getStockMovements(productId);
 };

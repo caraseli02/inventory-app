@@ -2,31 +2,7 @@ import type { Attachment, FieldSet, Record as AirtableRecord } from 'airtable';
 import base, { TABLES } from './airtable';
 import type { Product, ProductFields, StockMovement, MarkupPercentage } from '../types';
 import { logger } from './logger';
-
-// Custom error types for better error handling
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-    Object.setPrototypeOf(this, ValidationError.prototype);
-  }
-}
-
-export class NetworkError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'NetworkError';
-    Object.setPrototypeOf(this, NetworkError.prototype);
-  }
-}
-
-export class AuthorizationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'AuthorizationError';
-    Object.setPrototypeOf(this, AuthorizationError.prototype);
-  }
-}
+import { ValidationError, NetworkError, AuthorizationError } from './errors';
 
 const productsTable = base<ProductFields>(TABLES.PRODUCTS);
 
@@ -556,3 +532,6 @@ export const deleteProduct = async (productId: string): Promise<void> => {
     throw error;
   }
 };
+
+// Re-export error types for backward compatibility
+export { ValidationError, NetworkError, AuthorizationError };

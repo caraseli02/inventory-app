@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test';
+import path from 'path';
 
 test('Import products from xlsx file', async ({ page }) => {
   // Navigate to home page
   await page.goto('/');
   await page.waitForLoadState('networkidle');
-  
+
   console.log('Step 1: Navigated to home page');
   await page.screenshot({ path: '/tmp/01_home_page.png', fullPage: true });
 
@@ -19,7 +20,7 @@ test('Import products from xlsx file', async ({ page }) => {
   // Look for Import button (it should be in the filters bar)
   console.log('Step 3: Looking for Import button...');
   const importButton = page.getByRole('button', { name: /import/i }).first();
-  
+
   await expect(importButton).toBeVisible({ timeout: 5000 });
   await page.screenshot({ path: '/tmp/03_before_click_import.png', fullPage: true });
 
@@ -37,7 +38,7 @@ test('Import products from xlsx file', async ({ page }) => {
   // Find file input and upload
   console.log('Step 5: Uploading xlsx file...');
   const fileInput = page.locator('input[type="file"]');
-  await fileInput.setInputFiles('/Users/vladislavcaraseli/Documents/inventory-app/public/magazin.xlsx');
+  await fileInput.setInputFiles(path.join(process.cwd(), 'public/magazin.xlsx'));
   
   await page.waitForTimeout(3000);
   await page.screenshot({ path: '/tmp/05_file_selected.png', fullPage: true });

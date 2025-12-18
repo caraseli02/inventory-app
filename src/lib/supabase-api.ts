@@ -58,6 +58,7 @@ export const mapSupabaseStockMovement = (row: StockMovementRow): StockMovement =
 
 /**
  * Calculates current stock level from stock movements
+ * @throws Error if unable to fetch stock movements
  */
 const calculateStockLevel = async (productId: string): Promise<number> => {
   const { data, error } = await supabase
@@ -66,8 +67,12 @@ const calculateStockLevel = async (productId: string): Promise<number> => {
     .eq('product_id', productId);
 
   if (error) {
-    logger.warn('Failed to calculate stock level', { productId, error: error.message });
-    return 0;
+    logger.error('Failed to calculate stock level', {
+      productId,
+      error: error.message,
+      errorCode: error.code,
+    });
+    throw new Error(`Unable to calculate stock level: ${error.message}. Please try again or contact support.`);
   }
 
   return (data as StockMovementRow[]).reduce((sum, row) => sum + row.quantity, 0);
@@ -208,9 +213,10 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
  * Records a stock movement (IN or OUT) for a product in Supabase
  *
  * @param productId - Product UUID
- * @param quantity - Absolute quantity value (always positive)
- * @param type - Movement type: 'IN' for receiving, 'OUT' for removing
+ * @param quantity - Quantity value (must be positive; negative values will throw ValidationError)
+ * @param type - Movement type: 'IN' for receiving (stores positive), 'OUT' for removing (stores negative)
  * @returns Created StockMovement record
+ * @throws {ValidationError} If quantity is not a positive finite number
  */
 export const addStockMovement = async (
   productId: string,
@@ -231,7 +237,7 @@ export const addStockMovement = async (
   logger.info('Adding stock movement', { productId, quantity, type });
 
   // Quantity is signed: negative for OUT, positive for IN
-  const finalQuantity = type === 'OUT' ? -Math.abs(quantity) : Math.abs(quantity);
+  const finalQuantity = type === 'OUT' ? -quantity : quantity;
   const dateStr = new Date().toISOString().split('T')[0];
 
   try {
@@ -322,15 +328,20 @@ export const getAllProducts = async (): Promise<Product[]> => {
       .select('product_id, quantity');
 
     if (movementsError) {
-      logger.warn('Failed to fetch stock movements for stock levels', { error: movementsError.message });
+      logger.error('Failed to fetch stock movements for stock levels', {
+        error: movementsError.message,
+        errorCode: movementsError.code,
+      });
+      throw new Error(
+        `Unable to load complete product data: ${movementsError.message}. ` +
+        `Please try again or contact support if the issue persists.`
+      );
     }
 
     // Calculate stock levels per product
     const stockLevels: Record<string, number> = {};
-    if (movements) {
-      for (const m of movements as { product_id: string; quantity: number }[]) {
-        stockLevels[m.product_id] = (stockLevels[m.product_id] || 0) + m.quantity;
-      }
+    for (const m of movements as { product_id: string; quantity: number }[]) {
+      stockLevels[m.product_id] = (stockLevels[m.product_id] || 0) + m.quantity;
     }
 
     logger.info('All products fetched', {
@@ -432,6 +443,8 @@ export const updateProduct = async (
  * Deletes a product from Supabase
  *
  * @param productId - Product UUID
+ * @throws {ValidationError} If product not found or has stock movement history
+ * @throws {Error} If deletion fails
  */
 export const deleteProduct = async (productId: string): Promise<void> => {
   // Validate product ID
@@ -452,20 +465,36 @@ export const deleteProduct = async (productId: string): Promise<void> => {
       .delete()
       .eq('id', productId)
       .select()
-      .single();
+      .maybeSingle(); // Use maybeSingle to avoid .single() throwing on zero matches
 
-    if (error) throw error;
+    if (error) {
+      // Check for common Supabase/PostgreSQL error codes
+      if (error.code === '23503') {
+        // Foreign key violation
+        throw new ValidationError(
+          'Cannot delete this product because it has stock movement history. ' +
+          'Please archive the product instead of deleting it.'
+        );
+      }
+      if (error.code === 'PGRST116') {
+        // RLS policy violation
+        throw new ValidationError('You do not have permission to delete this product.');
+      }
+      throw error;
+    }
 
     if (!data) {
-      throw new ValidationError(`Product not found: ${productId}`);
+      throw new Error(`Product not found (ID: ${productId}). It may have already been deleted.`);
     }
 
     logger.info('Product deleted successfully', { productId });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode = (error as { code?: string })?.code;
     logger.error('Failed to delete product', {
       productId,
       errorMessage,
+      errorCode,
       errorStack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString(),
     });
