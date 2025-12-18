@@ -1078,7 +1078,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
 
         {/* Expanded Cart Overlay */}
         {state.isCartExpanded && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white h-[calc(100dvh-50px)] rounded-t-3xl transition-all duration-300 ease-in-out z-30">
+          <div className="absolute bottom-0 left-0 right-0 bg-white h-[calc(100dvh-98px)] rounded-t-3xl transition-all duration-300 ease-in-out z-30">
             {/* Close Button */}
             <div className="absolute -top-6 left-1/2 -translate-x-1/2">
               <Button
@@ -1130,7 +1130,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
         />
 
         {/* Two Column Layout - Header is 50px */}
-        <div className="flex flex-row gap-6 h-[calc(100dvh-50px)] px-6 py-6">
+        <div className="flex flex-row gap-6 h-[calc(100dvh-98px)] px-6 py-6">
           {/* Left Column: Search/Scanner */}
           <div className="w-[48%] flex flex-col gap-6">
             {/* Progress Indicator - Only show in scan mode */}
