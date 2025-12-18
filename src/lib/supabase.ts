@@ -14,13 +14,15 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 if (!supabaseUrl || !supabasePublishableKey) {
-  console.warn('Missing Supabase credentials. Please check .env file.');
-  console.warn('Required: VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY');
+  throw new Error(
+    'Missing Supabase credentials. Please set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in your .env file. ' +
+    'See: https://supabase.com/docs/guides/api/api-keys'
+  );
 }
 
 export const supabase = createClient<Database>(
-  supabaseUrl || '',
-  supabasePublishableKey || ''
+  supabaseUrl,
+  supabasePublishableKey
 );
 
 export default supabase;

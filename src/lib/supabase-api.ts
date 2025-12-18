@@ -2,31 +2,7 @@ import { supabase } from './supabase';
 import type { Product, StockMovement, MarkupPercentage } from '../types';
 import type { ProductRow, ProductInsert, ProductUpdate, StockMovementRow } from './database.types';
 import { logger } from './logger';
-
-// Custom error types for better error handling
-export class ValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ValidationError';
-    Object.setPrototypeOf(this, ValidationError.prototype);
-  }
-}
-
-export class NetworkError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'NetworkError';
-    Object.setPrototypeOf(this, NetworkError.prototype);
-  }
-}
-
-export class AuthorizationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'AuthorizationError';
-    Object.setPrototypeOf(this, AuthorizationError.prototype);
-  }
-}
+import { ValidationError } from './errors';
 
 /**
  * Validates that a string is non-empty and non-whitespace
@@ -471,12 +447,18 @@ export const deleteProduct = async (productId: string): Promise<void> => {
   logger.info('Deleting product', { productId });
 
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('products')
       .delete()
-      .eq('id', productId);
+      .eq('id', productId)
+      .select()
+      .single();
 
     if (error) throw error;
+
+    if (!data) {
+      throw new ValidationError(`Product not found: ${productId}`);
+    }
 
     logger.info('Product deleted successfully', { productId });
   } catch (error) {

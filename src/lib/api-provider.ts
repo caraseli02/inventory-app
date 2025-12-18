@@ -69,26 +69,55 @@ let _getAllProducts: GetAllProducts;
 let _addStockMovement: AddStockMovement;
 let _getStockMovements: GetStockMovements;
 
+// Track initialization error for better error messages
+let initError: Error | null = null;
+
 // Initialize the API module
 const initApi = async () => {
-  if (useSupabase) {
-    const supabaseApi = await import('./supabase-api');
-    _getProductByBarcode = supabaseApi.getProductByBarcode;
-    _createProduct = supabaseApi.createProduct;
-    _updateProduct = supabaseApi.updateProduct;
-    _deleteProduct = supabaseApi.deleteProduct;
-    _getAllProducts = supabaseApi.getAllProducts;
-    _addStockMovement = supabaseApi.addStockMovement;
-    _getStockMovements = supabaseApi.getStockMovements;
-  } else {
-    const airtableApi = await import('./api');
-    _getProductByBarcode = airtableApi.getProductByBarcode;
-    _createProduct = airtableApi.createProduct;
-    _updateProduct = airtableApi.updateProduct;
-    _deleteProduct = airtableApi.deleteProduct;
-    _getAllProducts = airtableApi.getAllProducts;
-    _addStockMovement = airtableApi.addStockMovement;
-    _getStockMovements = airtableApi.getStockMovements;
+  try {
+    if (useSupabase) {
+      const supabaseApi = await import('./supabase-api');
+
+      // Validate all required exports are present
+      if (!supabaseApi.getProductByBarcode) throw new Error('Missing getProductByBarcode export from supabase-api');
+      if (!supabaseApi.createProduct) throw new Error('Missing createProduct export from supabase-api');
+      if (!supabaseApi.updateProduct) throw new Error('Missing updateProduct export from supabase-api');
+      if (!supabaseApi.deleteProduct) throw new Error('Missing deleteProduct export from supabase-api');
+      if (!supabaseApi.getAllProducts) throw new Error('Missing getAllProducts export from supabase-api');
+      if (!supabaseApi.addStockMovement) throw new Error('Missing addStockMovement export from supabase-api');
+      if (!supabaseApi.getStockMovements) throw new Error('Missing getStockMovements export from supabase-api');
+
+      _getProductByBarcode = supabaseApi.getProductByBarcode;
+      _createProduct = supabaseApi.createProduct;
+      _updateProduct = supabaseApi.updateProduct;
+      _deleteProduct = supabaseApi.deleteProduct;
+      _getAllProducts = supabaseApi.getAllProducts;
+      _addStockMovement = supabaseApi.addStockMovement;
+      _getStockMovements = supabaseApi.getStockMovements;
+    } else {
+      const airtableApi = await import('./api');
+
+      // Validate all required exports are present
+      if (!airtableApi.getProductByBarcode) throw new Error('Missing getProductByBarcode export from api');
+      if (!airtableApi.createProduct) throw new Error('Missing createProduct export from api');
+      if (!airtableApi.updateProduct) throw new Error('Missing updateProduct export from api');
+      if (!airtableApi.deleteProduct) throw new Error('Missing deleteProduct export from api');
+      if (!airtableApi.getAllProducts) throw new Error('Missing getAllProducts export from api');
+      if (!airtableApi.addStockMovement) throw new Error('Missing addStockMovement export from api');
+      if (!airtableApi.getStockMovements) throw new Error('Missing getStockMovements export from api');
+
+      _getProductByBarcode = airtableApi.getProductByBarcode;
+      _createProduct = airtableApi.createProduct;
+      _updateProduct = airtableApi.updateProduct;
+      _deleteProduct = airtableApi.deleteProduct;
+      _getAllProducts = airtableApi.getAllProducts;
+      _addStockMovement = airtableApi.addStockMovement;
+      _getStockMovements = airtableApi.getStockMovements;
+    }
+  } catch (error) {
+    initError = error instanceof Error ? error : new Error(String(error));
+    console.error('Failed to initialize API:', initError.message);
+    throw initError;
   }
 };
 
@@ -97,39 +126,88 @@ const apiReady = initApi();
 
 // Export wrapper functions that wait for initialization
 export const getProductByBarcode: GetProductByBarcode = async (barcode) => {
-  await apiReady;
+  try {
+    await apiReady;
+  } catch {
+    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
+  }
+  if (!_getProductByBarcode) {
+    throw new Error('getProductByBarcode function not available after initialization');
+  }
   return _getProductByBarcode(barcode);
 };
 
 export const createProduct: CreateProduct = async (data) => {
-  await apiReady;
+  try {
+    await apiReady;
+  } catch {
+    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
+  }
+  if (!_createProduct) {
+    throw new Error('createProduct function not available after initialization');
+  }
   return _createProduct(data);
 };
 
 export const updateProduct: UpdateProduct = async (productId, data) => {
-  await apiReady;
+  try {
+    await apiReady;
+  } catch {
+    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
+  }
+  if (!_updateProduct) {
+    throw new Error('updateProduct function not available after initialization');
+  }
   return _updateProduct(productId, data);
 };
 
 export const deleteProduct: DeleteProduct = async (productId) => {
-  await apiReady;
+  try {
+    await apiReady;
+  } catch {
+    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
+  }
+  if (!_deleteProduct) {
+    throw new Error('deleteProduct function not available after initialization');
+  }
   return _deleteProduct(productId);
 };
 
 export const getAllProducts: GetAllProducts = async () => {
-  await apiReady;
+  try {
+    await apiReady;
+  } catch {
+    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
+  }
+  if (!_getAllProducts) {
+    throw new Error('getAllProducts function not available after initialization');
+  }
   return _getAllProducts();
 };
 
 export const addStockMovement: AddStockMovement = async (productId, quantity, type) => {
-  await apiReady;
+  try {
+    await apiReady;
+  } catch {
+    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
+  }
+  if (!_addStockMovement) {
+    throw new Error('addStockMovement function not available after initialization');
+  }
   return _addStockMovement(productId, quantity, type);
 };
 
 export const getStockMovements: GetStockMovements = async (productId) => {
-  await apiReady;
+  try {
+    await apiReady;
+  } catch {
+    throw new Error(`API not initialized: ${initError?.message || 'Unknown initialization error'}`);
+  }
+  if (!_getStockMovements) {
+    throw new Error('getStockMovements function not available after initialization');
+  }
   return _getStockMovements(productId);
 };
 
 // Re-export error types for convenience
-export { ValidationError, NetworkError, AuthorizationError } from './supabase-api';
+export { ValidationError, NetworkError, AuthorizationError } from './errors';
