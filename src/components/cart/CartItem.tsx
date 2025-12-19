@@ -35,7 +35,7 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
   const { t } = useTranslation();
   const imageUrl = item.product.fields.Image?.[0]?.url;
   const price = item.product.fields.Price;
-  const category = item.product.fields.Category ? t(`categories.${item.product.fields.Category}`) : t('categories.General');
+  const category = item.product.fields.Category ? t(`categories.${item.product.fields.Category}`, item.product.fields.Category) : t('categories.General');
   const { status, statusMessage } = item;
   const isProcessing = status === 'processing';
 

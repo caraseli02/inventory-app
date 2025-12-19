@@ -72,7 +72,7 @@ const ProductDetail = ({ barcode, productId, onScanNew }: ProductDetailProps) =>
     return <ProductSkeleton />;
   }
 
-  const displayCategory = product.fields.Category ? t(`categories.${product.fields.Category}`) : t('categories.Uncategorized');
+  const displayCategory = product.fields.Category ? t(`categories.${product.fields.Category}`, product.fields.Category) : t('categories.Uncategorized');
   const displayPrice =
     product.fields.Price != null ? `€${product.fields.Price.toFixed(2)}` : 'N/A';
   const expiryDisplay = product.fields['Expiry Date'] || t('product.noExpiry');

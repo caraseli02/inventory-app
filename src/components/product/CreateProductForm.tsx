@@ -327,6 +327,7 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
                   <SelectItem value="Beverages">{t('categories.Beverages')}</SelectItem>
                   <SelectItem value="Household">{t('categories.Household')}</SelectItem>
                   <SelectItem value="Conserve">{t('categories.Conserve')}</SelectItem>
+                  <SelectItem value="Cereale">{t('categories.Cereale')}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-stone-600 mt-1.5">{t('product.categoryHelp', 'Select the product category')}</p>

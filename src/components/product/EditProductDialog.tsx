@@ -37,7 +37,7 @@ const getInitialFormData = (product: Product) => ({
   supplier: product.fields.Supplier || '',
 });
 
-const CATEGORIES = ['General', 'Produce', 'Dairy', 'Meat', 'Pantry', 'Snacks', 'Beverages', 'Household', 'Conserve'] as const;
+const CATEGORIES = ['General', 'Produce', 'Dairy', 'Meat', 'Pantry', 'Snacks', 'Beverages', 'Household', 'Conserve', 'Cereale'] as const;
 
 function EditProductDialog({ product, open, onOpenChange }: EditProductDialogProps) {
   const { t } = useTranslation();
@@ -248,7 +248,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                   <h2 className="text-lg font-bold text-stone-900 truncate">{product.fields.Name}</h2>
                   <div className="flex items-center gap-2 mt-0.5">
                     <Badge variant="secondary" className="bg-stone-100 text-stone-600 border-stone-200 text-xs">
-                      {t(`categories.${formData.category}`)}
+                      {t(`categories.${formData.category}`, formData.category)}
                     </Badge>
                     <span className="text-xs text-stone-500">•</span>
                     <span className="text-xs text-stone-500">{currentStock} {t('product.inStock')}</span>
@@ -412,7 +412,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                                   : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50'
                               }`}
                             >
-                              {t(`categories.${cat}`)}
+                              {t(`categories.${cat}`, cat)}
                             </Button>
                           ))}
                         </div>
