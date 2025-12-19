@@ -147,6 +147,22 @@ export default defineConfig({
                 statuses: [0, 200]
               }
             }
+          },
+          {
+            // Supabase Edge Functions - don't cache, always get fresh
+            urlPattern: /^https:\/\/.*\.supabase\.co\/functions\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-functions-cache',
+              networkTimeoutSeconds: 10,
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 5 // <== 5 minutes fallback only
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
           }
         ]
       }

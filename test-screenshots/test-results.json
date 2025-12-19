@@ -1,0 +1,79 @@
+{
+  "test_run": "Invoice OCR Visual Review",
+  "timestamp": "2025-12-18T15:52:52.227Z",
+  "tests": [
+    {
+      "name": "Homepage/Scanner",
+      "url": "http://localhost:5173",
+      "title": "Grocery Inventory Manager",
+      "buttons": 1,
+      "navigation": false,
+      "viewport": {
+        "width": 1280,
+        "height": 720
+      }
+    },
+    {
+      "name": "Inventory Page",
+      "url": "http://localhost:5173/inventory",
+      "title": "Grocery Inventory Manager",
+      "buttons": 1,
+      "cards": 3
+    },
+    {
+      "name": "Invoice Import Feature",
+      "import_button_found": false,
+      "button_count": 0,
+      "button_texts": []
+    },
+    {
+      "name": "Mobile Responsiveness",
+      "viewport": {
+        "width": 375,
+        "height": 667
+      },
+      "pages_tested": [
+        "homepage",
+        "inventory"
+      ]
+    },
+    {
+      "name": "Language Selector",
+      "selector_found": false,
+      "selector_count": 0
+    }
+  ],
+  "console_logs": [
+    "debug: [vite] connecting...",
+    "debug: [vite] connected.",
+    "info: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "log: 📦 Using Supabase as database backend",
+    "debug: [DEBUG] Fetching all products ",
+    "info: [INFO] All products fetched {recordCount: 16}",
+    "debug: [vite] connecting...",
+    "debug: [vite] connected.",
+    "info: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "log: 📦 Using Supabase as database backend",
+    "debug: [DEBUG] Fetching all products ",
+    "info: [INFO] All products fetched {recordCount: 16}",
+    "debug: [vite] connecting...",
+    "debug: [vite] connected.",
+    "info: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "log: 📦 Using Supabase as database backend",
+    "debug: [DEBUG] Fetching all products ",
+    "info: [INFO] All products fetched {recordCount: 16}",
+    "debug: [vite] connecting...",
+    "debug: [vite] connected.",
+    "info: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "log: 📦 Using Supabase as database backend",
+    "debug: [DEBUG] Fetching all products ",
+    "info: [INFO] All products fetched {recordCount: 16}",
+    "debug: [vite] connecting...",
+    "debug: [vite] connected.",
+    "info: %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold",
+    "log: 📦 Using Supabase as database backend",
+    "debug: [DEBUG] Fetching all products ",
+    "info: [INFO] All products fetched {recordCount: 16}"
+  ],
+  "errors": []
+}
