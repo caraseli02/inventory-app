@@ -57,16 +57,22 @@
     "manualEntryHint": "Aún puedes ingresar códigos de barras manualmente abajo",
     "alignCode": "Alinea el código dentro del marco",
     "scanBarcode": "Escanear",
+    "scan": "Escanear",
     "initFailed": "Error al iniciar el escáner.",
     "permissionError": "Por favor otorga permisos de cámara en la configuración de tu navegador.",
     "notFoundError": "No se encontró cámara. Conecta una cámara o usa la entrada manual.",
     "inUseError": "La cámara está siendo usada por otra aplicación. Cierra otras apps.",
     "httpsError": "La cámara requiere una conexión segura (HTTPS).",
     "checkPermissions": "Por favor verifica los permisos de cámara e intenta de nuevo.",
-    "cleanupFailed": "Error al limpiar la cámara. Es posible que necesites recargar la página."
+    "cleanupFailed": "Error al limpiar la cámara. Es posible que necesites recargar la página.",
+    "cameraRegion": "Cámara del escáner de códigos de barras",
+    "dialogDescription": "Escanea códigos de barras posicionándolos dentro del marco del escáner",
+    "retryAccessCamera": "Intentar acceder a la cámara nuevamente",
+    "videoStream": "Transmisión de video de la cámara para escanear códigos"
   },
   "camera": {
     "title": "Tomar Foto",
+    "description": "Captura una foto del producto usando la cámara de tu dispositivo",
     "capture": "Tomar Foto",
     "retake": "Volver a Tomar",
     "usePhoto": "Usar Foto",
@@ -75,14 +81,17 @@
     "permissionDenied": "Permiso de cámara denegado. Por favor permite el acceso a la cámara.",
     "notFound": "No se encontró cámara en este dispositivo.",
     "inUse": "La cámara está siendo usada por otra aplicación.",
-    "uploadError": "Error al subir la imagen. Intenta usar una URL en su lugar."
+    "uploadError": "Error al subir la imagen. Intenta usar una URL en su lugar.",
+    "captureError": "No se pudo capturar la foto. Intenta de nuevo.",
+    "photo": "Foto"
   },
   "scannerFrame": {
     "enterManually": "O ingresa el código de barras manualmente:",
     "barcodePlaceholder": "1234567890",
     "adding": "Agregando...",
     "add": "Agregar",
-    "notFound": "No Encontrado"
+    "notFound": "No Encontrado",
+    "tryAgain": "Intentar de nuevo"
   },
   "product": {
     "newProduct": "Nuevo Producto",
@@ -91,15 +100,24 @@
     "barcode": "Código de Barras",
     "barcodeCannotChange": "El código de barras no se puede cambiar",
     "barcodeAddNow": "Agrega un código de barras para habilitar el escaneo",
+    "barcodeHelp": "Identificador único del producto para escanear",
     "name": "Nombre del Producto",
     "namePlaceholder": "ej. Bananas Orgánicas",
+    "nameHelp": "Ingresa un nombre descriptivo para el producto",
     "category": "Categoría",
+    "categoryHelp": "Selecciona la categoría del producto para organizarlo",
     "price": "Precio",
     "pricePlaceholder": "0.00",
+    "priceHelp": "Costo original del proveedor (antes del margen)",
     "initialStock": "Stock Inicial",
+    "initialStockHelp": "Cantidad inicial para agregar al inventario",
     "expiryDate": "Fecha de Vencimiento",
+    "expiryDateHelp": "Fecha de vencimiento del producto (opcional)",
     "imageUrl": "URL de Imagen",
     "imageUrlPlaceholder": "https://ejemplo.com/imagen.jpg",
+    "imageHelp": "Pega una URL o toma una foto con la cámara",
+    "noImage": "Sin imagen",
+    "tapToAddImage": "Toca para agregar imagen",
     "inStock": "En Stock",
     "expiry": "Vencimiento",
     "noExpiry": "Sin fecha de vencimiento",
@@ -140,7 +158,13 @@
     "currentStock": "Stock Actual",
     "currentStockHelp": "Gestionado mediante movimientos de stock",
     "supplier": "Proveedor",
-    "supplierPlaceholder": "Ingresa el nombre del proveedor"
+    "supplierPlaceholder": "Ingresa el nombre del proveedor",
+    "quickActions": "Acciones rápidas",
+    "unsavedChanges": "Cambios sin guardar",
+    "discard": "Descartar",
+    "close": "Cerrar",
+    "base": "base",
+    "stockLevel": "Stock: {{stock}}"
   },
   "categories": {
     "General": "General",
@@ -157,7 +181,11 @@
   "markup": {
     "label": "Margen",
     "explanation": "El precio de tienda se calcula agregando el % de margen al costo base",
-    "formula": "Precio Tienda = Base × (1 + {{percent}}%)"
+    "formula": "{{markup}}% de margen: €{{base}} → €{{store}}",
+    "selectTier": "Selecciona el nivel de margen para establecer el precio de tienda",
+    "tier50": "Margen 50%",
+    "tier70": "Margen 70%",
+    "tier100": "Margen 100%"
   },
   "inventory": {
     "title": "Lista de Inventario",
@@ -168,6 +196,8 @@
     "adjustFilters": "Intenta ajustar tus filtros o búsqueda",
     "emptyStateHint": "Importa productos o créalos mediante el escáner",
     "barcode": "Código de barras",
+    "importExcel": "Importar Excel",
+    "importInvoice": "Importar factura",
     "lowStock": "Bajo",
     "mediumStock": "Medio",
     "goodStock": "Bueno",
@@ -215,6 +245,7 @@
       "clear": "Limpiar",
       "clearAll": "Limpiar Todos los Filtros",
       "clearFilter": "Limpiar filtro {{filter}}",
+      "filterCount": "{{count}} filtros activos",
       "more": "más",
       "actions": "Acciones",
       "productsCount": "{{count}} productos",
@@ -247,6 +278,9 @@
     "items": "artículos",
     "empty": "El carrito está vacío",
     "emptyHint": "Escanea productos para agregarlos a tu carrito",
+    "itemsList": "Artículos del carrito",
+    "emptyState": "El carrito está vacío",
+    "startScanning": "Comenzar a escanear productos",
     "emptyCheckoutHint": "Escanea productos para agregarlos a tu carrito",
     "total": "Total",
     "totalWithCount": "Total ({{count}} artículos)",
@@ -267,6 +301,11 @@
     "removeItem": "Quitar artículo del carrito",
     "itemRemoved": "Artículo Eliminado",
     "itemRemovedDescription": "{{name}} eliminado del carrito",
+    "decreaseQuantityFor": "Disminuir cantidad de {{name}}",
+    "increaseQuantityFor": "Aumentar cantidad de {{name}}",
+    "removeItemFor": "Eliminar {{name}} del carrito",
+    "quantityLabel": "Cantidad: {{quantity}}",
+    "viewCart": "Ver carrito",
     "quickAdd": {
       "title": "Agregar Rápido",
       "placeholder": "Escanear o ingresar código",
@@ -277,6 +316,7 @@
     "title": "Escanea códigos de barras para agregar al carrito",
     "complete": "Pago Completado",
     "stockUpdated": "El stock se ha actualizado para todos los artículos.",
+    "stockUpdatedSuccess": "El stock se ha actualizado para todos los artículos.",
     "backToHome": "Volver al Inicio",
     "confirmTitle": "Confirmar Pago",
     "confirmMessage": "¿Completar el pago de {{count}} artículos? Total: {{total}}",
@@ -299,7 +339,23 @@
     "grandTotal": "Total General",
     "proceedToCheckout": "Proceder al Pago",
     "editCart": "Editar Carrito",
-    "missingPrices": "{{count}} artículo(s) sin precio"
+    "missingPrices": "{{count}} artículo(s) sin precio",
+    "transactionSummary": "Resumen de transacción",
+    "itemsLabel": "Artículos:",
+    "products": "productos",
+    "quantityLabel": "Cantidad:",
+    "units": "unidades",
+    "referenceLabel": "Referencia:",
+    "share": "Compartir",
+    "export": "Exportar",
+    "history": "Historial",
+    "productsUpdated": "Productos actualizados:",
+    "totalQuantity": "Cantidad total:",
+    "referenceNumber": "Número de referencia:"
+  },
+  "common": {
+    "close": "Cerrar",
+    "edit": "Editar"
   },
   "dialogs": {
     "productDetail": {
@@ -321,6 +377,7 @@
     },
     "deleteConfirm": {
       "title": "¿Eliminar Producto?",
+      "description": "Confirma la eliminación del producto del inventario",
       "aboutToDelete": "Estás a punto de eliminar permanentemente:",
       "barcode": "Código de barras",
       "currentStock": "Stock Actual",
@@ -338,7 +395,10 @@
     },
     "editProduct": {
       "title": "Editar Producto",
-      "description": "Edita los detalles del producto y guarda los cambios"
+      "description": "Edita los detalles del producto y guarda los cambios",
+      "sectionBasic": "Información básica",
+      "sectionPricing": "Precios",
+      "sectionStock": "Stock y suministro"
     }
   },
   "toast": {
@@ -396,7 +456,8 @@
     "componentStack": "Pila de Componentes:",
     "tryRefreshing": "Intenta actualizar la página",
     "unknownError": "Ocurrió un error desconocido",
-    "productCreationFailed": "Error al crear el producto."
+    "productCreationFailed": "Error al crear el producto.",
+    "imageUploadFailed": "No se pudo subir la imagen del producto. Intenta nuevamente o continúa sin imagen."
   },
   "import": {
     "button": "Importar",
@@ -438,6 +499,88 @@
     "tableCategory": "Categoría",
     "tablePrice": "Precio",
     "tableStock": "Stock"
+  },
+  "invoiceUpload": {
+    "title": "Importar desde factura",
+    "stepDescriptions": {
+      "upload": "Sube una factura para extraer automáticamente los datos de productos",
+      "preview": "Revisa los productos extraídos antes de importar",
+      "importing": "Creando productos en tu inventario...",
+      "complete": "Los productos de la factura se han importado correctamente"
+    },
+    "dropzone": {
+      "title": "Arrastra y suelta tu factura aquí",
+      "subtitle": "o haz clic para buscar archivos",
+      "fileTypes": "Admite JPG, PNG (máx. 10MB)",
+      "selectFile": "Seleccionar archivo de factura"
+    },
+    "progress": {
+      "preparing": "Preparando factura...",
+      "extracting": "Extrayendo texto con IA...",
+      "analyzing": "Analizando productos...",
+      "finalizing": "Finalizando..."
+    },
+    "howItWorks": {
+      "title": "Cómo funciona",
+      "step1": "Paso 1: La IA lee el texto de tu factura (Google Cloud Vision)",
+      "step2": "Paso 2: Extrae nombres de productos, cantidades y precios",
+      "step3": "Paso 3: Revisas y confirmas antes de importar",
+      "free": "Prácticamente gratis: 1.000 páginas/mes incluidas"
+    },
+    "errors": {
+      "invalidFile": "Selecciona un archivo JPG o PNG.",
+      "processFailed": "No se pudo procesar la factura. ",
+      "apiKey": "Revisa la configuración de la API.",
+      "network": "Revisa tu conexión a internet e inténtalo de nuevo.",
+      "quota": "Límite de servicio alcanzado. Inténtalo más tarde.",
+      "generic": "Inténtalo de nuevo o contacta soporte si el problema persiste.",
+      "importFailed": "La importación falló. ",
+      "networkRetry": "Error de red. Revisa la conexión e inténtalo de nuevo.",
+      "rateLimit": "Se superó el límite de tasa. Espera un momento e inténtalo nuevamente.",
+      "importFailedTitle": "Importación fallida",
+      "extractionFailed": "Extracción fallida"
+    },
+    "preview": {
+      "extracted": "Se extrajeron correctamente {{count}} productos",
+      "supplier": "Proveedor:",
+      "invoiceNumber": "Factura #:",
+      "date": "Fecha:",
+      "total": "Total:",
+      "noBarcodeTitle": "Nota: Algunos productos no tienen códigos de barras",
+      "noBarcodeDescription": "Puedes escanear códigos más tarde usando el botón de edición de cada producto."
+    },
+    "table": {
+      "productName": "Nombre del producto",
+      "barcode": "Código de barras",
+      "quantity": "Cant.",
+      "unitPrice": "Precio unitario",
+      "total": "Total",
+      "actions": "Acciones",
+      "noBarcode": "Sin código de barras",
+      "save": "Guardar cambios",
+      "cancel": "Cancelar",
+      "edit": "Editar producto",
+      "remove": "Eliminar producto"
+    },
+    "importInfo": {
+      "title": "¿Qué sucede después?",
+      "addedCount": "{{count}} productos se añadirán a tu inventario",
+      "stockIn": "Se crearán movimientos de entrada con las cantidades extraídas",
+      "missingBarcodes": "Los productos sin código se pueden editar más tarde para añadir códigos",
+      "editLater": "Puedes modificar los detalles en cualquier momento desde inventario"
+    },
+    "status": {
+      "importing": "Importando productos...",
+      "importingProgress": "{{current}} de {{total}} productos creados",
+      "completeTitle": "¡Importación completada!",
+      "completeSubtitle": "Se importaron {{count}} productos desde la factura"
+    },
+    "actions": {
+      "cancel": "Cancelar",
+      "back": "Atrás",
+      "importCount": "Importar {{count}} productos",
+      "done": "Listo"
+    }
   },
   "export": {
     "button": "Exportar",

@@ -90,14 +90,20 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 }}
                 className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-all hover:scale-105 active:scale-95 touch-feedback"
                 disabled={isProcessing}
-                aria-label={t('cart.decreaseQuantityFor', `Decrease quantity for ${item.product.fields.Name}`)}
+                aria-label={t('cart.decreaseQuantityFor', {
+                  name: item.product.fields.Name,
+                  defaultValue: `Decrease quantity for ${item.product.fields.Name}`,
+                })}
               >
                 <Minus className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
               </Button>
 
               <span
                 className="font-bold text-lg min-w-[2.5rem] text-center tabular-nums transition-all"
-                aria-label={t('cart.quantityLabel', `Quantity: ${item.quantity}`)}
+                aria-label={t('cart.quantityLabel', {
+                  quantity: item.quantity,
+                  defaultValue: `Quantity: ${item.quantity}`,
+                })}
               >
                 {item.quantity}
               </span>
@@ -115,7 +121,10 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 }}
                 className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg bg-white border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 transition-all hover:scale-105 active:scale-95 touch-feedback"
                 disabled={isProcessing}
-                aria-label={t('cart.increaseQuantityFor', `Increase quantity for ${item.product.fields.Name}`)}
+                aria-label={t('cart.increaseQuantityFor', {
+                  name: item.product.fields.Name,
+                  defaultValue: `Increase quantity for ${item.product.fields.Name}`,
+                })}
               >
                 <Plus className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
               </Button>
@@ -140,7 +149,10 @@ export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
                 }}
                 className="h-11 w-11 sm:h-10 sm:w-10 rounded-lg text-stone-400 hover:text-[var(--color-terracotta)] hover:bg-red-50 transition-all hover:scale-110 active:scale-95 touch-feedback"
                 disabled={isProcessing}
-                aria-label={t('cart.removeItemFor', `Remove ${item.product.fields.Name} from cart`)}
+                aria-label={t('cart.removeItemFor', {
+                  name: item.product.fields.Name,
+                  defaultValue: `Remove ${item.product.fields.Name} from cart`,
+                })}
               >
                 <TrashIcon className="h-5 w-5 sm:h-4 sm:w-4" aria-hidden="true" />
               </Button>

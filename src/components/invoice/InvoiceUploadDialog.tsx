@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -35,23 +36,8 @@ interface InvoiceUploadDialogProps {
 
 type InvoiceStep = 'upload' | 'preview' | 'importing' | 'complete';
 
-// Step descriptions lookup
-const STEP_DESCRIPTIONS: Record<InvoiceStep, string> = {
-  upload: 'Upload an invoice to automatically extract product data',
-  preview: 'Review extracted products before importing',
-  importing: 'Creating products in your inventory...',
-  complete: 'Invoice products have been imported successfully',
-};
-
-// Progress message helper
-function getProgressMessage(progress: number): string {
-  if (progress < 40) return 'Preparing invoice...';
-  if (progress < 70) return 'Extracting text with AI...';
-  if (progress < 90) return 'Analyzing products...';
-  return 'Finalizing...';
-}
-
 export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUploadDialogProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<InvoiceStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
@@ -89,7 +75,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
 
     if (!validExtensions.includes(fileExt)) {
-      setError('Please select a JPG or PNG file.');
+      setError(t('invoiceUpload.errors.invalidFile', 'Please select a JPG or PNG file.'));
       return;
     }
 
@@ -120,19 +106,19 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
       });
 
       // Provide user-friendly error message
-      let userMessage = 'Failed to process invoice. ';
+      let userMessage = t('invoiceUpload.errors.processFailed', 'Failed to process invoice. ');
       if (err instanceof Error) {
         if (err.message.includes('API key')) {
-          userMessage += 'Please check your API configuration.';
+          userMessage += t('invoiceUpload.errors.apiKey', 'Please check your API configuration.');
         } else if (err.message.includes('network') || err.message.includes('fetch')) {
-          userMessage += 'Please check your internet connection and try again.';
+          userMessage += t('invoiceUpload.errors.network', 'Please check your internet connection and try again.');
         } else if (err.message.includes('quota') || err.message.includes('rate limit')) {
-          userMessage += 'Service limit reached. Please try again later.';
+          userMessage += t('invoiceUpload.errors.quota', 'Service limit reached. Please try again later.');
         } else {
           userMessage += err.message;
         }
       } else {
-        userMessage += 'Please try again or contact support if the issue persists.';
+        userMessage += t('invoiceUpload.errors.generic', 'Please try again or contact support if the issue persists.');
       }
 
       setError(userMessage);
@@ -236,16 +222,16 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
       });
 
       // Provide specific error message based on error type
-      let errorMessage = 'Import failed. ';
+      let errorMessage = t('invoiceUpload.errors.importFailed', 'Import failed. ');
       if (error instanceof Error) {
         if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage += 'Network error occurred. Please check your connection and try again.';
+          errorMessage += t('invoiceUpload.errors.networkRetry', 'Network error occurred. Please check your connection and try again.');
         } else if (error.message.includes('quota') || error.message.includes('rate limit')) {
-          errorMessage += 'Rate limit exceeded. Please wait a moment and try again.';
+          errorMessage += t('invoiceUpload.errors.rateLimit', 'Rate limit exceeded. Please wait a moment and try again.');
         } else if (error.message.includes('validation')) {
           errorMessage += error.message;
         } else {
-          errorMessage += 'Please try again or contact support if the issue persists.';
+          errorMessage += t('invoiceUpload.errors.generic', 'Please try again or contact support if the issue persists.');
         }
       }
 
@@ -260,9 +246,18 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-stone-200">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Receipt className="h-6 w-6 text-[var(--color-forest)]" />
-            Import from Invoice
+            {t('invoiceUpload.title', 'Import from Invoice')}
           </DialogTitle>
-          <DialogDescription className="text-base">{STEP_DESCRIPTIONS[step]}</DialogDescription>
+          <DialogDescription className="text-base">
+            {t(`invoiceUpload.stepDescriptions.${step}` as const, {
+              defaultValue: {
+                upload: 'Upload an invoice to automatically extract product data',
+                preview: 'Review extracted products before importing',
+                importing: 'Creating products in your inventory...',
+                complete: 'Invoice products have been imported successfully',
+              }[step],
+            })}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-auto px-6 py-4">
@@ -285,11 +280,13 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
               >
                 <Upload className="h-12 w-12 mx-auto text-stone-400 mb-4" />
                 <p className="text-lg font-medium text-stone-700 mb-2">
-                  Drag and drop your invoice here
+                  {t('invoiceUpload.dropzone.title', 'Drag and drop your invoice here')}
                 </p>
-                <p className="text-sm text-stone-500 mb-4">or click to browse files</p>
+                <p className="text-sm text-stone-500 mb-4">
+                  {t('invoiceUpload.dropzone.subtitle', 'or click to browse files')}
+                </p>
                 <p className="text-xs text-stone-400 mb-4">
-                  Supports JPG, PNG (max 10MB)
+                  {t('invoiceUpload.dropzone.fileTypes', 'Supports JPG, PNG (max 10MB)')}
                 </p>
                 <input
                   type="file"
@@ -306,7 +303,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                     disabled={isProcessing}
                     onClick={() => document.getElementById('invoice-upload')?.click()}
                   >
-                    Select Invoice File
+                    {t('invoiceUpload.dropzone.selectFile', 'Select Invoice File')}
                   </Button>
                 </label>
               </div>
@@ -318,7 +315,14 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                     <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
                     <div className="flex-1">
                       <p className="font-medium text-blue-900">{fileName}</p>
-                      <p className="text-sm text-blue-600">{getProgressMessage(ocrProgress)}</p>
+                      <p className="text-sm text-blue-600">
+                        {(() => {
+                          if (ocrProgress < 40) return t('invoiceUpload.progress.preparing', 'Preparing invoice...');
+                          if (ocrProgress < 70) return t('invoiceUpload.progress.extracting', 'Extracting text with AI...');
+                          if (ocrProgress < 90) return t('invoiceUpload.progress.analyzing', 'Analyzing products...');
+                          return t('invoiceUpload.progress.finalizing', 'Finalizing...');
+                        })()}
+                      </p>
                     </div>
                     <span className="text-sm font-medium text-blue-700">{ocrProgress}%</span>
                   </div>
@@ -335,21 +339,20 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
               <div className="bg-stone-50 border border-stone-200 rounded-lg p-4">
                 <p className="text-sm font-medium text-stone-700 mb-2 flex items-center gap-2">
                   <Receipt className="h-4 w-4" />
-                  How it works
+                  {t('invoiceUpload.howItWorks.title', 'How it works')}
                 </p>
                 <ul className="text-xs text-stone-600 space-y-1.5">
                   <li>
-                    • <strong>Step 1:</strong> AI reads text from your invoice (Google Cloud
-                    Vision)
+                    • {t('invoiceUpload.howItWorks.step1', 'Step 1: AI reads text from your invoice (Google Cloud Vision)')}
                   </li>
                   <li>
-                    • <strong>Step 2:</strong> Extracts product names, quantities, and prices
+                    • {t('invoiceUpload.howItWorks.step2', 'Step 2: Extracts product names, quantities, and prices')}
                   </li>
                   <li>
-                    • <strong>Step 3:</strong> You review and confirm before importing
+                    • {t('invoiceUpload.howItWorks.step3', 'Step 3: You review and confirm before importing')}
                   </li>
                   <li className="pt-1 text-[var(--color-forest)] font-medium">
-                    ✓ Essentially free: 1,000 pages/month included
+                    ✓ {t('invoiceUpload.howItWorks.free', 'Essentially free: 1,000 pages/month included')}
                   </li>
                 </ul>
               </div>
@@ -360,7 +363,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                   <div className="flex items-start gap-2">
                     <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-medium text-red-700">Extraction failed</p>
+                      <p className="font-medium text-red-700">
+                        {t('invoiceUpload.errors.extractionFailed', 'Extraction failed')}
+                      </p>
                       <p className="text-sm text-red-600 mt-1">{error}</p>
                     </div>
                   </div>
@@ -376,18 +381,21 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                 <CheckCircle2 className="h-8 w-8 text-[var(--color-forest)] flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-stone-900">
-                    Successfully extracted {editableProducts.length} products
+                    {t('invoiceUpload.preview.extracted', {
+                      count: editableProducts.length,
+                      defaultValue: 'Successfully extracted {{count}} products',
+                    })}
                   </p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm">
                     {invoiceData.supplier && (
                       <>
-                        <span className="text-stone-600">Supplier:</span>
+                        <span className="text-stone-600">{t('invoiceUpload.preview.supplier', 'Supplier:')}</span>
                         <span className="font-medium text-stone-900">{invoiceData.supplier}</span>
                       </>
                     )}
                     {invoiceData.invoiceNumber && (
                       <>
-                        <span className="text-stone-600">Invoice #:</span>
+                        <span className="text-stone-600">{t('invoiceUpload.preview.invoiceNumber', 'Invoice #:')}</span>
                         <span className="font-medium text-stone-900 font-mono text-xs">
                           {invoiceData.invoiceNumber}
                         </span>
@@ -395,7 +403,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                     )}
                     {invoiceData.invoiceDate && (
                       <>
-                        <span className="text-stone-600">Date:</span>
+                        <span className="text-stone-600">{t('invoiceUpload.preview.date', 'Date:')}</span>
                         <span className="font-medium text-stone-900">
                           {invoiceData.invoiceDate}
                         </span>
@@ -403,7 +411,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                     )}
                     {invoiceData.totalAmount && (
                       <>
-                        <span className="text-stone-600">Total:</span>
+                        <span className="text-stone-600">{t('invoiceUpload.preview.total', 'Total:')}</span>
                         <span className="font-semibold text-stone-900">
                           €{invoiceData.totalAmount.toFixed(2)}
                         </span>
@@ -417,10 +425,10 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
               {editableProducts.some((p) => !p.barcode) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-sm font-medium text-amber-800 mb-1">
-                    Note: Some products don't have barcodes
+                    {t('invoiceUpload.preview.noBarcodeTitle', "Note: Some products don't have barcodes")}
                   </p>
                   <p className="text-xs text-amber-700">
-                    You can scan barcodes later using the edit button for each product.
+                    {t('invoiceUpload.preview.noBarcodeDescription', 'You can scan barcodes later using the edit button for each product.')}
                   </p>
                 </div>
               )}
@@ -432,22 +440,22 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                     <TableHeader className="bg-stone-100 sticky top-0 z-10">
                       <TableRow>
                         <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[35%]">
-                          Product Name
+                          {t('invoiceUpload.table.productName', 'Product Name')}
                         </TableHead>
                         <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[20%]">
-                          Barcode
+                          {t('invoiceUpload.table.barcode', 'Barcode')}
                         </TableHead>
                         <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[10%]">
-                          Qty
+                          {t('invoiceUpload.table.quantity', 'Qty')}
                         </TableHead>
                         <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[12%]">
-                          Unit Price
+                          {t('invoiceUpload.table.unitPrice', 'Unit Price')}
                         </TableHead>
                         <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[12%]">
-                          Total
+                          {t('invoiceUpload.table.total', 'Total')}
                         </TableHead>
                         <TableHead className="px-4 py-3 text-center font-semibold text-stone-700 w-[11%]">
-                          Actions
+                          {t('invoiceUpload.table.actions', 'Actions')}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -473,7 +481,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                 <Input
                                   value={product.barcode || ''}
                                   onChange={(e) => handleProductFieldChange(i, 'barcode', e.target.value)}
-                                  placeholder="No barcode"
+                                  placeholder={t('invoiceUpload.table.noBarcode', 'No barcode')}
                                   className="h-9 text-xs font-mono w-full"
                                 />
                               ) : product.barcode ? (
@@ -481,7 +489,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                   {product.barcode}
                                 </code>
                               ) : (
-                                <span className="text-xs text-stone-400 italic">No barcode</span>
+                                <span className="text-xs text-stone-400 italic">
+                                  {t('invoiceUpload.table.noBarcode', 'No barcode')}
+                                </span>
                               )}
                             </TableCell>
                             <TableCell className="px-4 py-3 text-right">
@@ -534,7 +544,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                       size="sm"
                                       onClick={handleSaveEdit}
                                       className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                                      title="Save changes"
+                                      title={t('invoiceUpload.table.save', 'Save changes')}
                                     >
                                       <Check className="h-5 w-5" />
                                     </Button>
@@ -543,7 +553,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                       size="sm"
                                       onClick={handleCancelEdit}
                                       className="h-8 w-8 p-0 text-stone-600 hover:text-stone-700 hover:bg-stone-100"
-                                      title="Cancel"
+                                      title={t('invoiceUpload.table.cancel', 'Cancel')}
                                     >
                                       <X className="h-5 w-5" />
                                     </Button>
@@ -555,7 +565,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                       size="sm"
                                       onClick={() => handleEditProduct(i)}
                                       className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                      title="Edit product"
+                                      title={t('invoiceUpload.table.edit', 'Edit product')}
                                     >
                                       <Edit2 className="h-5 w-5" />
                                     </Button>
@@ -564,7 +574,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                       size="sm"
                                       onClick={() => handleRemoveProduct(i)}
                                       className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      title="Remove product"
+                                      title={t('invoiceUpload.table.remove', 'Remove product')}
                                     >
                                       <Trash2 className="h-5 w-5" />
                                     </Button>
@@ -582,25 +592,32 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
 
               {/* Import Info */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm font-medium text-blue-900 mb-2">What happens next?</p>
+                <p className="text-sm font-medium text-blue-900 mb-2">
+                  {t('invoiceUpload.importInfo.title', 'What happens next?')}
+                </p>
                 <ul className="text-xs text-blue-800 space-y-1">
                   <li>
-                    • {editableProducts.length} products will be added to your inventory
+                    • {t('invoiceUpload.importInfo.addedCount', {
+                      count: editableProducts.length,
+                      defaultValue: '{{count}} products will be added to your inventory',
+                    })}
                   </li>
                   <li>
-                    • Stock IN movements will be created with the extracted quantities
+                    • {t('invoiceUpload.importInfo.stockIn', 'Stock IN movements will be created with the extracted quantities')}
                   </li>
                   <li>
-                    • Products without barcodes can be edited later to add barcodes
+                    • {t('invoiceUpload.importInfo.missingBarcodes', 'Products without barcodes can be edited later to add barcodes')}
                   </li>
-                  <li>• You can modify product details anytime from the inventory page</li>
+                  <li>• {t('invoiceUpload.importInfo.editLater', 'You can modify product details anytime from the inventory page')}</li>
                 </ul>
               </div>
 
               {/* Import Errors */}
               {importErrors.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <p className="font-medium text-red-700">Import failed</p>
+                  <p className="font-medium text-red-700">
+                    {t('invoiceUpload.errors.importFailedTitle', 'Import failed')}
+                  </p>
                   {importErrors.map((err, i) => (
                     <p key={i} className="text-sm text-red-600 mt-1">
                       {err}
@@ -614,9 +631,15 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
           {step === 'importing' && (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-[var(--color-forest)] mb-4" />
-              <p className="text-lg font-medium text-stone-700">Importing products...</p>
+              <p className="text-lg font-medium text-stone-700">
+                {t('invoiceUpload.status.importing', 'Importing products...')}
+              </p>
               <p className="text-sm text-stone-500 mt-2">
-                {importProgress.current} of {importProgress.total} products created
+                {t('invoiceUpload.status.importingProgress', {
+                  current: importProgress.current,
+                  total: importProgress.total,
+                  defaultValue: '{{current}} of {{total}} products created',
+                })}
               </p>
             </div>
           )}
@@ -624,9 +647,14 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
           {step === 'complete' && (
             <div className="flex flex-col items-center justify-center py-12">
               <CheckCircle2 className="h-16 w-16 text-[var(--color-forest)] mb-4" />
-              <p className="text-xl font-semibold text-stone-900 mb-2">Import Complete!</p>
+              <p className="text-xl font-semibold text-stone-900 mb-2">
+                {t('invoiceUpload.status.completeTitle', 'Import Complete!')}
+              </p>
               <p className="text-stone-600">
-                Successfully imported {editableProducts.length} products from invoice
+                {t('invoiceUpload.status.completeSubtitle', {
+                  count: editableProducts.length,
+                  defaultValue: 'Successfully imported {{count}} products from invoice',
+                })}
               </p>
             </div>
           )}
@@ -635,21 +663,24 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
         <DialogFooter className="px-6 py-4 border-t border-stone-200">
           {step === 'upload' && (
             <Button variant="outline" onClick={handleClose} disabled={isProcessing}>
-              Cancel
+              {t('invoiceUpload.actions.cancel', 'Cancel')}
             </Button>
           )}
 
           {step === 'preview' && (
             <>
               <Button variant="outline" onClick={resetState}>
-                Back
+                {t('invoiceUpload.actions.back', 'Back')}
               </Button>
               <Button
                 onClick={handleConfirmImport}
                 className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
                 disabled={!editableProducts.length}
               >
-                Import {editableProducts.length} Products
+                {t('invoiceUpload.actions.importCount', {
+                  count: editableProducts.length,
+                  defaultValue: 'Import {{count}} Products',
+                })}
               </Button>
             </>
           )}
@@ -659,7 +690,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
               onClick={handleClose}
               className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
             >
-              Done
+              {t('invoiceUpload.actions.done', 'Done')}
             </Button>
           )}
         </DialogFooter>
