@@ -347,60 +347,24 @@ textarea:focus-visible,
 }
 
 /* Ensure minimum touch target size (44px) for WCAG 2.1 AA compliance */
+/* NOTE: We exclude [role="button"] from general rules because it's often used on
+   complex container elements (like Cards) that should NOT be constrained to 44px.
+   Instead, actual buttons inside those containers get the touch target treatment. */
 @media (pointer: coarse) {
   button,
   a,
   input[type="checkbox"],
   input[type="radio"],
-  [role="button"],
   [role="tab"],
   label[for] {
-    min-height: 44px !important;
-    min-width: 44px !important;
-    /* Ensure internal spacing for better touch accuracy */
-    padding: max(0.5rem, 8px);
+    min-height: 44px;
+    min-width: 44px;
   }
 
   /* Ensure icon buttons maintain proper size */
-  button[aria-label]:not([class*="h-"]),
-  [role="button"][aria-label]:not([class*="h-"]) {
-    height: 44px;
-    width: 44px;
-  }
-
-  /* Override smaller Tailwind sizes on touch devices for interactive elements */
-  button.h-6,
-  button.w-6,
-  a.h-6,
-  a.w-6,
-  [role="button"].h-6,
-  [role="button"].w-6,
-  button.h-7,
-  button.w-7,
-  a.h-7,
-  a.w-7,
-  [role="button"].h-7,
-  [role="button"].w-7,
-  button.h-8,
-  button.w-8,
-  a.h-8,
-  a.w-8,
-  [role="button"].h-8,
-  [role="button"].w-8,
-  button.h-9,
-  button.w-9,
-  a.h-9,
-  a.w-9,
-  [role="button"].h-9,
-  [role="button"].w-9,
-  button.h-10,
-  button.w-10,
-  a.h-10,
-  a.w-10,
-  [role="button"].h-10,
-  [role="button"].w-10 {
-    min-height: 44px !important;
-    min-width: 44px !important;
+  button[aria-label]:not([class*="h-"]) {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 

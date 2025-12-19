@@ -302,12 +302,16 @@ export interface InvoiceData {
 ```
 
 **3. Environment Variables**:
-```bash
-# Google Cloud Vision (free 1,000 pages/month)
-VITE_GOOGLE_CLOUD_VISION_API_KEY=your_api_key_here
 
-# GPT-4o mini (optional, for better parsing)
-VITE_OPENAI_API_KEY=your_api_key_here  # If already using OpenAI
+> **Note**: API keys are now configured server-side via Supabase Edge Functions for security.
+> See `docs/SUPABASE_EDGE_FUNCTIONS.md` for current setup instructions.
+
+```bash
+# Server-side secrets (set via Supabase Dashboard or CLI):
+# npx supabase secrets set GOOGLE_CLOUD_VISION_API_KEY=your_api_key_here
+# npx supabase secrets set OPENAI_API_KEY=your_api_key_here
+
+# No client-side API keys required - all handled by Edge Functions
 ```
 
 **4. Product Mapping Logic**:

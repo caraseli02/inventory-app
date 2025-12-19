@@ -21,6 +21,7 @@ export const corsHeaders = {
   // Set via: npx supabase secrets set ALLOWED_ORIGIN=https://yourdomain.com
   'Access-Control-Allow-Origin': allowedOrigin,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 export function handleCorsPreFlight() {

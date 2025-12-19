@@ -32,6 +32,9 @@ Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const requestStart = Date.now();
 
+  // Declare timeoutId outside try block so it's accessible in catch
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return handleCorsPreFlight();
@@ -126,7 +129,7 @@ ${ocrText}`;
 
     // Call OpenAI API with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -237,7 +240,7 @@ ${ocrText}`;
     } catch (error) {
       console.error('Failed to parse OpenAI JSON response', {
         requestId,
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         responseLength: jsonText.length,
         responsePreview: jsonText.substring(0, 200),
         responseFull: jsonText.length < 5000 ? jsonText : jsonText.substring(0, 5000) + '... (truncated)',
@@ -288,7 +291,7 @@ ${ocrText}`;
 
   } catch (error) {
     // Clear timeout if it exists
-    if (typeof timeoutId !== 'undefined') {
+    if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
     }
 
@@ -332,10 +335,10 @@ ${ocrText}`;
     }
 
     // Generic fallback for truly unexpected errors
+    // Note: errorType is logged above but not exposed to client for security
     return new Response(
       JSON.stringify({
         error: 'An unexpected error occurred. Please try again or contact support if the issue persists.',
-        errorType: error?.constructor?.name || 'Unknown',
       }),
       {
         status: 500,

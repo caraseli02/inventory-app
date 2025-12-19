@@ -16,6 +16,9 @@ Deno.serve(async (req) => {
   const requestId = crypto.randomUUID();
   const requestStart = Date.now();
 
+  // Declare timeoutId outside try block so it's accessible in catch
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return handleCorsPreFlight();
@@ -70,7 +73,7 @@ Deno.serve(async (req) => {
 
     // Call Google Cloud Vision API with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
     const visionResponse = await fetch(
       `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
@@ -185,7 +188,7 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     // Clear timeout if it exists
-    if (typeof timeoutId !== 'undefined') {
+    if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
     }
 
@@ -229,10 +232,10 @@ Deno.serve(async (req) => {
     }
 
     // Generic fallback for truly unexpected errors
+    // Note: errorType is logged above but not exposed to client for security
     return new Response(
       JSON.stringify({
         error: 'An unexpected error occurred. Please try again or contact support if the issue persists.',
-        errorType: error?.constructor?.name || 'Unknown',
       }),
       {
         status: 500,

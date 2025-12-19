@@ -126,17 +126,27 @@ async function performOCR(file: File): Promise<string> {
 
     return data.text;
   } catch (error) {
-    // If error was already thrown with a message, re-throw it
-    if (error instanceof Error && error.message && !error.message.includes('Invalid response')) {
+    // If error was already thrown with a specific message, re-throw it
+    // This includes our validation errors and Edge Function errors
+    if (error instanceof Error && error.message) {
       throw error;
     }
 
-    // Check for actual network errors
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    // Check for network-related errors (expanded detection)
+    const isNetworkError =
+      (error instanceof TypeError &&
+        (error.message.includes('fetch') ||
+          error.message.includes('network') ||
+          error.message.includes('Failed to fetch'))) ||
+      (error instanceof Error && error.name === 'AbortError') ||
+      (error instanceof DOMException && error.name === 'NetworkError');
+
+    if (isNetworkError) {
       const networkErrorMessage = 'Network error while processing invoice. Please check your internet connection.';
       logger.error('Network error during OCR', {
         fileName: file.name,
-        errorMessage: error.message,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
       });
       throw new Error(networkErrorMessage);
     }
@@ -154,6 +164,13 @@ async function performOCR(file: File): Promise<string> {
  * Step 2: Parse OCR text into structured invoice data using GPT-4o mini via Supabase Edge Function
  * Cost: ~$0.001 per invoice
  * Security: API key is kept secure on the server side
+ *
+ * @param ocrText - Raw text extracted from invoice by OCR
+ * @returns Structured invoice data with products array
+ * @throws Error if network fails, API returns error, or response is malformed
+ *
+ * Note: The 30-second timeout is enforced server-side by the Edge Function.
+ * Client-side network timeouts depend on the Supabase client configuration.
  */
 async function parseInvoiceText(ocrText: string): Promise<InvoiceData> {
   logger.debug('Starting AI-powered invoice parsing', {
@@ -209,16 +226,26 @@ async function parseInvoiceText(ocrText: string): Promise<InvoiceData> {
 
     return invoiceData;
   } catch (error) {
-    // If error was already thrown with a message, re-throw it
-    if (error instanceof Error && error.message && !error.message.includes('Invalid response')) {
+    // If error was already thrown with a specific message, re-throw it
+    // This includes our validation errors and Edge Function errors
+    if (error instanceof Error && error.message) {
       throw error;
     }
 
-    // Check for actual network errors
-    if (error instanceof TypeError && error.message.includes('fetch')) {
+    // Check for network-related errors (expanded detection)
+    const isNetworkError =
+      (error instanceof TypeError &&
+        (error.message.includes('fetch') ||
+          error.message.includes('network') ||
+          error.message.includes('Failed to fetch'))) ||
+      (error instanceof Error && error.name === 'AbortError') ||
+      (error instanceof DOMException && error.name === 'NetworkError');
+
+    if (isNetworkError) {
       const networkErrorMessage = 'Network error while parsing invoice. Please check your internet connection.';
       logger.error('Network error during invoice parsing', {
-        errorMessage: error.message,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
       });
       throw new Error(networkErrorMessage);
     }
