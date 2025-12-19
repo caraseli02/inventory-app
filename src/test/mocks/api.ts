@@ -186,15 +186,17 @@ export function createMockApiModule() {
 }
 
 /**
- * Reset all mock functions
+ * Reset all mock functions (including implementations)
+ * Using mockReset instead of mockClear to also reset mock implementations
+ * This prevents test pollution when tests modify mock behavior
  */
 export function resetMocks(): void {
-  mockGetProductByBarcode.mockClear()
-  mockCreateProduct.mockClear()
-  mockUpdateProduct.mockClear()
-  mockDeleteProduct.mockClear()
-  mockGetAllProducts.mockClear()
-  mockAddStockMovement.mockClear()
-  mockGetStockMovements.mockClear()
+  mockGetProductByBarcode.mockReset()
+  mockCreateProduct.mockReset()
+  mockUpdateProduct.mockReset()
+  mockDeleteProduct.mockReset()
+  mockGetAllProducts.mockReset()
+  mockAddStockMovement.mockReset()
+  mockGetStockMovements.mockReset()
   resetMockData()
 }

@@ -21,10 +21,10 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 9
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Check TypeScript
         run: pnpm exec tsc -b --noEmit
@@ -34,3 +34,6 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          VITE_SUPABASE_URL: 'https://mock.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'mock-key'

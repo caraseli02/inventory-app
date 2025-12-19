@@ -24,7 +24,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm dev',
+    // Use preview (production build) in CI, dev server locally
+    command: process.env.CI ? 'pnpm preview --port 5173' : 'pnpm dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

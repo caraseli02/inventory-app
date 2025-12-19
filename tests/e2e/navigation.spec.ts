@@ -19,12 +19,11 @@ test.describe('Navigation', () => {
   test('should navigate to inventory list', async ({ page }) => {
     await page.goto('/')
 
-    // Click on inventory link/button
+    // Click on inventory link/button - fail if not found
     const inventoryLink = page.getByRole('link', { name: /inventory/i })
-    if (await inventoryLink.isVisible()) {
-      await inventoryLink.click()
-      await expect(page).toHaveURL(/inventory/)
-    }
+    await expect(inventoryLink).toBeVisible({ timeout: 5000 })
+    await inventoryLink.click()
+    await expect(page).toHaveURL(/inventory/)
   })
 
   test('should be responsive on mobile viewport', async ({ page }) => {
@@ -33,6 +32,8 @@ test.describe('Navigation', () => {
 
     // App should still be visible and functional
     await expect(page.locator('body')).toBeVisible()
+    // Verify main content is visible on mobile
+    await expect(page.locator('main, [role="main"]').first()).toBeVisible()
   })
 
   test('should be responsive on tablet viewport', async ({ page }) => {
@@ -41,6 +42,8 @@ test.describe('Navigation', () => {
 
     // App should still be visible and functional
     await expect(page.locator('body')).toBeVisible()
+    // Verify main content is visible on tablet
+    await expect(page.locator('main, [role="main"]').first()).toBeVisible()
   })
 
   test('should show error boundary on JavaScript error', async ({ page }) => {
@@ -54,29 +57,44 @@ test.describe('Navigation', () => {
 })
 
 test.describe('PWA Features', () => {
-  test('should have a web manifest', async ({ page }) => {
+  test('should have a web manifest in production build', async ({ page }) => {
     await page.goto('/')
 
-    // Check for manifest link in head (may not be present in dev mode)
+    // Check for manifest link in head
+    // Note: In dev mode, vite-plugin-pwa may not inject manifest
+    // This test is meaningful in production build (CI runs against preview)
     const manifest = page.locator('link[rel="manifest"]')
     const count = await manifest.count()
-    // In dev mode, manifest may not be injected by vite-plugin-pwa
-    expect(count).toBeGreaterThanOrEqual(0)
+
+    // Skip assertion in dev mode, but verify in production
+    if (process.env.CI) {
+      expect(count).toBeGreaterThan(0)
+    } else {
+      // In dev mode, just log the status for debugging
+      console.log(`Manifest links found: ${count} (dev mode - not enforced)`)
+    }
   })
 
-  test('should register service worker', async ({ page }) => {
+  test('should have service worker support', async ({ page }) => {
     await page.goto('/')
 
-    // Check if service worker is registered (in development, may not be active)
-    const swRegistration = await page.evaluate(async () => {
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations()
-        return registrations.length > 0 || true // Always true in dev mode
-      }
-      return false
+    // Check if service worker API is available
+    const swSupported = await page.evaluate(() => {
+      return 'serviceWorker' in navigator
     })
 
-    expect(swRegistration).toBeTruthy()
+    expect(swSupported).toBe(true)
+
+    // In production (CI), verify service worker is actually registered
+    if (process.env.CI) {
+      // Wait a bit for SW registration
+      await page.waitForTimeout(2000)
+      const swRegistered = await page.evaluate(async () => {
+        const registrations = await navigator.serviceWorker.getRegistrations()
+        return registrations.length > 0
+      })
+      expect(swRegistered).toBe(true)
+    }
   })
 })
 
@@ -86,7 +104,7 @@ test.describe('Accessibility', () => {
   }) => {
     await page.goto('/')
 
-    // Check for basic accessibility elements
+    // Check for basic accessibility elements - fail if not found
     await expect(page.locator('main, [role="main"]').first()).toBeVisible()
   })
 
@@ -95,6 +113,7 @@ test.describe('Accessibility', () => {
 
     // Should have at least one heading
     const headings = page.locator('h1, h2, h3, h4, h5, h6')
+    await expect(headings.first()).toBeVisible()
     const headingCount = await headings.count()
     expect(headingCount).toBeGreaterThan(0)
   })
@@ -112,8 +131,9 @@ test.describe('Accessibility', () => {
       return el?.tagName.toLowerCase()
     })
 
-    // Focus should be on some element (not body)
-    // Note: This test may need adjustment based on page structure
+    // Focus should be on some interactive element (not body or html)
     expect(focusedElement).toBeDefined()
+    expect(focusedElement).not.toBe('body')
+    expect(focusedElement).not.toBe('html')
   })
 })

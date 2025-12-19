@@ -69,10 +69,24 @@ export function renderWithProviders(
 }
 
 /**
- * Wait for queries to settle
+ * Wait for all queries to settle
+ * This properly waits for both refetching and any pending queries
  */
 export async function waitForQueries(queryClient: QueryClient): Promise<void> {
+  // Wait for any pending queries to complete
   await queryClient.refetchQueries()
+
+  // Also wait until there are no fetching queries
+  return new Promise<void>((resolve) => {
+    const checkFetching = () => {
+      if (queryClient.isFetching() === 0) {
+        resolve()
+      } else {
+        setTimeout(checkFetching, 10)
+      }
+    }
+    checkFetching()
+  })
 }
 
 /**

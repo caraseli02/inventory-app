@@ -11,20 +11,17 @@ test.describe('Product Creation', () => {
   test('should open create product dialog from scan page', async ({ page }) => {
     await page.goto('/')
 
-    // Look for "Add Product" or "Create Product" button
+    // Look for "Add Product" or "Create Product" button - fail if not found
     const addButton = page
       .getByRole('button', { name: /add|create|new/i })
       .first()
 
-    if (await addButton.isVisible()) {
-      await addButton.click()
+    await expect(addButton).toBeVisible({ timeout: 5000 })
+    await addButton.click()
 
-      // Dialog should open - check for dialog or sheet component
-      const dialog = page.locator('[role="dialog"], [data-state="open"]')
-      const dialogCount = await dialog.count()
-      // Dialog may or may not open depending on UI implementation
-      expect(dialogCount).toBeGreaterThanOrEqual(0)
-    }
+    // Dialog should open - wait for it with proper assertion
+    const dialog = page.locator('[role="dialog"], [data-state="open"]')
+    await expect(dialog.first()).toBeVisible({ timeout: 5000 })
   })
 
   test('should show required field validation', async ({ page }) => {
@@ -35,23 +32,24 @@ test.describe('Product Creation', () => {
       .getByRole('button', { name: /add|create|new/i })
       .first()
 
-    if (await addButton.isVisible()) {
-      await addButton.click()
+    await expect(addButton).toBeVisible({ timeout: 5000 })
+    await addButton.click()
 
-      // Try to submit without filling required fields
-      const submitButton = page.locator(
-        '[role="dialog"] button[type="submit"], [role="dialog"] button:has-text("Save"), [role="dialog"] button:has-text("Create")'
-      )
+    // Wait for dialog
+    const dialog = page.locator('[role="dialog"]')
+    await expect(dialog).toBeVisible({ timeout: 5000 })
 
-      if (await submitButton.first().isVisible()) {
-        await submitButton.first().click()
+    // Try to submit without filling required fields
+    const submitButton = page.locator(
+      '[role="dialog"] button[type="submit"], [role="dialog"] button:has-text("Save"), [role="dialog"] button:has-text("Create")'
+    )
 
-        // Should show validation error or prevent submission
-        // The form should still be open
-        const dialog = page.locator('[role="dialog"]')
-        await expect(dialog).toBeVisible()
-      }
-    }
+    await expect(submitButton.first()).toBeVisible({ timeout: 5000 })
+    await submitButton.first().click()
+
+    // Should show validation error or prevent submission
+    // The form should still be open (not closed on invalid submit)
+    await expect(dialog).toBeVisible()
   })
 
   test('should have name field in product form', async ({ page }) => {
@@ -61,22 +59,22 @@ test.describe('Product Creation', () => {
       .getByRole('button', { name: /add|create|new/i })
       .first()
 
-    if (await addButton.isVisible()) {
-      await addButton.click()
+    await expect(addButton).toBeVisible({ timeout: 5000 })
+    await addButton.click()
 
-      // Look for name input
-      const nameInput = page.locator(
-        '[role="dialog"] input[name="name"], [role="dialog"] input[placeholder*="name" i], [role="dialog"] label:has-text("Name") + input, [role="dialog"] label:has-text("Name") ~ input'
-      )
+    // Wait for dialog
+    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 })
 
-      if (await nameInput.first().isVisible()) {
-        await expect(nameInput.first()).toBeVisible()
+    // Look for name input - fail if not found
+    const nameInput = page.locator(
+      '[role="dialog"] input[name="name"], [role="dialog"] input[placeholder*="name" i], [role="dialog"] label:has-text("Name") + input, [role="dialog"] label:has-text("Name") ~ input'
+    )
 
-        // Fill in the name
-        await nameInput.first().fill('Test Product')
-        await expect(nameInput.first()).toHaveValue('Test Product')
-      }
-    }
+    await expect(nameInput.first()).toBeVisible({ timeout: 5000 })
+
+    // Fill in the name
+    await nameInput.first().fill('Test Product')
+    await expect(nameInput.first()).toHaveValue('Test Product')
   })
 
   test('should close dialog on cancel', async ({ page }) => {
@@ -86,75 +84,60 @@ test.describe('Product Creation', () => {
       .getByRole('button', { name: /add|create|new/i })
       .first()
 
-    if (await addButton.isVisible()) {
-      await addButton.click()
+    await expect(addButton).toBeVisible({ timeout: 5000 })
+    await addButton.click()
 
-      // Wait a moment for dialog to appear
-      await page.waitForTimeout(500)
+    // Wait for dialog with proper assertion instead of waitForTimeout
+    const dialog = page.locator('[role="dialog"], [data-state="open"]')
+    await expect(dialog.first()).toBeVisible({ timeout: 5000 })
 
-      const dialog = page.locator('[role="dialog"], [data-state="open"]')
-      const dialogVisible = (await dialog.count()) > 0
+    // Close the dialog
+    const closeButton = page.locator(
+      '[role="dialog"] button[aria-label="Close"], [role="dialog"] button:has-text("Cancel"), button:has-text("Cancel"), [data-dismiss]'
+    )
 
-      if (dialogVisible) {
-        // Close the dialog
-        const closeButton = page.locator(
-          '[role="dialog"] button[aria-label="Close"], [role="dialog"] button:has-text("Cancel"), button:has-text("Cancel"), [data-dismiss]'
-        )
+    await expect(closeButton.first()).toBeVisible({ timeout: 5000 })
+    await closeButton.first().click()
 
-        if (await closeButton.first().isVisible()) {
-          await closeButton.first().click()
-          // Dialog should close - verify by checking it's gone
-          await page.waitForTimeout(300)
-        }
-      }
-    }
-    // Test passes if we get here without errors
-    expect(true).toBe(true)
+    // Dialog should close - verify by checking it's gone
+    await expect(dialog.first()).toBeHidden({ timeout: 5000 })
   })
 })
 
 test.describe('Product Form Fields', () => {
-  test('should have category selection', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/')
 
     const addButton = page
       .getByRole('button', { name: /add|create|new/i })
       .first()
 
-    if (await addButton.isVisible()) {
-      await addButton.click()
+    await expect(addButton).toBeVisible({ timeout: 5000 })
+    await addButton.click()
 
-      // Look for category select
-      const categorySelect = page.locator(
-        '[role="dialog"] select[name="category"], [role="dialog"] [role="combobox"]:has-text("Category"), [role="dialog"] label:has-text("Category") ~ [role="combobox"]'
-      )
+    // Wait for dialog
+    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 })
+  })
 
-      if (await categorySelect.first().isVisible()) {
-        await expect(categorySelect.first()).toBeVisible()
-      }
-    }
+  test('should have category selection', async ({ page }) => {
+    // Look for category select - fail if not found
+    const categorySelect = page.locator(
+      '[role="dialog"] select[name="category"], [role="dialog"] [role="combobox"], [role="dialog"] label:has-text("Category") ~ [role="combobox"], [role="dialog"] button:has-text("Category")'
+    )
+
+    await expect(categorySelect.first()).toBeVisible({ timeout: 5000 })
   })
 
   test('should have price input', async ({ page }) => {
-    await page.goto('/')
+    // Look for price input - fail if not found
+    const priceInput = page.locator(
+      '[role="dialog"] input[name="price"], [role="dialog"] input[type="number"]:near(:text("Price")), [role="dialog"] label:has-text("Price") ~ input'
+    )
 
-    const addButton = page
-      .getByRole('button', { name: /add|create|new/i })
-      .first()
+    await expect(priceInput.first()).toBeVisible({ timeout: 5000 })
 
-    if (await addButton.isVisible()) {
-      await addButton.click()
-
-      // Look for price input
-      const priceInput = page.locator(
-        '[role="dialog"] input[name="price"], [role="dialog"] input[type="number"]:near(:has-text("Price")), [role="dialog"] label:has-text("Price") ~ input'
-      )
-
-      if (await priceInput.first().isVisible()) {
-        await priceInput.first().fill('9.99')
-        await expect(priceInput.first()).toHaveValue('9.99')
-      }
-    }
+    await priceInput.first().fill('9.99')
+    await expect(priceInput.first()).toHaveValue('9.99')
   })
 })
 
@@ -162,14 +145,12 @@ test.describe('Manual Barcode Entry', () => {
   test('should have manual barcode entry option', async ({ page }) => {
     await page.goto('/')
 
-    // Look for manual entry button or input
+    // Look for manual entry button or input - fail if not found
     const manualEntry = page.locator(
-      'button:has-text("Manual"), input[placeholder*="barcode" i], [data-testid="manual-entry"]'
+      'button:has-text("Manual"), input[placeholder*="barcode" i], [data-testid="manual-entry"], input[name="barcode"]'
     )
 
-    if (await manualEntry.first().isVisible()) {
-      await expect(manualEntry.first()).toBeVisible()
-    }
+    await expect(manualEntry.first()).toBeVisible({ timeout: 5000 })
   })
 
   test('should accept valid barcode input', async ({ page }) => {
@@ -177,9 +158,9 @@ test.describe('Manual Barcode Entry', () => {
 
     const barcodeInput = page.getByPlaceholder(/barcode|code/i)
 
-    if (await barcodeInput.first().isVisible()) {
-      await barcodeInput.first().fill('1234567890123')
-      await expect(barcodeInput.first()).toHaveValue('1234567890123')
-    }
+    await expect(barcodeInput.first()).toBeVisible({ timeout: 5000 })
+
+    await barcodeInput.first().fill('1234567890123')
+    await expect(barcodeInput.first()).toHaveValue('1234567890123')
   })
 })
