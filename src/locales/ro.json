@@ -57,16 +57,22 @@
     "manualEntryHint": "Poți introduce coduri de bare manual mai jos",
     "alignCode": "Aliniază codul în cadru",
     "scanBarcode": "Scanează",
+    "scan": "Scanează",
     "initFailed": "Nu s-a putut porni scannerul.",
     "permissionError": "Te rugăm să acorzi permisiuni pentru cameră în setările browserului.",
     "notFoundError": "Nu a fost găsită o cameră. Conectează o cameră sau folosește introducerea manuală.",
     "inUseError": "Camera este folosită de o altă aplicație. Închide celelalte aplicații.",
     "httpsError": "Camera necesită o conexiune securizată (HTTPS).",
     "checkPermissions": "Te rugăm să verifici permisiunile pentru cameră și să încerci din nou.",
-    "cleanupFailed": "Curățarea camerei a eșuat. Este posibil să fie nevoie să reîmprospătezi pagina."
+    "cleanupFailed": "Curățarea camerei a eșuat. Este posibil să fie nevoie să reîmprospătezi pagina.",
+    "cameraRegion": "Cameră scanner coduri de bare",
+    "dialogDescription": "Scanează coduri de bare poziționându-le în cadrul scannerului",
+    "retryAccessCamera": "Încearcă din nou accesul la cameră",
+    "videoStream": "Flux video al camerei pentru scanarea codurilor"
   },
   "camera": {
     "title": "Fă o fotografie",
+    "description": "Fă o fotografie a produsului folosind camera dispozitivului",
     "capture": "Fă fotografie",
     "retake": "Refă",
     "usePhoto": "Folosește fotografia",
@@ -75,14 +81,17 @@
     "permissionDenied": "Permisiunea pentru cameră a fost refuzată. Te rugăm să permiți accesul.",
     "notFound": "Nu a fost găsită o cameră pe acest dispozitiv.",
     "inUse": "Camera este folosită de o altă aplicație.",
-    "uploadError": "Încărcarea imaginii a eșuat. Încearcă să folosești o adresă URL."
+    "uploadError": "Încărcarea imaginii a eșuat. Încearcă să folosești o adresă URL.",
+    "captureError": "Nu s-a putut captura fotografia. Încearcă din nou.",
+    "photo": "Fotografie"
   },
   "scannerFrame": {
     "enterManually": "Sau introdu codul de bare manual:",
     "barcodePlaceholder": "1234567890",
     "adding": "Se adaugă...",
     "add": "Adaugă",
-    "notFound": "Negăsit"
+    "notFound": "Negăsit",
+    "tryAgain": "Încearcă din nou"
   },
   "product": {
     "newProduct": "Produs nou",
@@ -149,7 +158,13 @@
     "currentStock": "Stoc curent",
     "currentStockHelp": "Gestionat prin mișcări de stoc",
     "supplier": "Furnizor",
-    "supplierPlaceholder": "Introduceți numele furnizorului"
+    "supplierPlaceholder": "Introduceți numele furnizorului",
+    "quickActions": "Acțiuni rapide",
+    "unsavedChanges": "Modificări nesalvate",
+    "discard": "Renunță",
+    "close": "Închide",
+    "base": "bază",
+    "stockLevel": "Stoc: {{stock}}"
   },
   "categories": {
     "General": "General",
@@ -181,6 +196,16 @@
     "adjustFilters": "Încearcă să ajustezi filtrele sau căutarea",
     "emptyStateHint": "Importă produse sau creează-le prin scanner",
     "barcode": "Cod de bare",
+    "importExcel": "Importă Excel",
+    "importInvoice": "Importă factură",
+    "allCategories": "Toate categoriile",
+    "clearSearch": "Șterge căutarea",
+    "import": "Importă",
+    "export": "Exportă",
+    "openFilters": "Deschide filtrele",
+    "productsCount": "{{count}} produse",
+    "productsFiltered": "{{filtered}} din {{total}}",
+    "searchPlaceholder": "Caută după nume sau cod de bare...",
     "lowStock": "Scăzut",
     "mediumStock": "Mediu",
     "goodStock": "Bun",
@@ -188,13 +213,27 @@
     "refresh": "Reîmprospătează",
     "refreshed": "Actualizat",
     "dataRefreshed": "Datele de inventar au fost actualizate",
+    "search": "Caută",
+    "sort": {
+      "name": "Nume",
+      "stock": "Stoc",
+      "price": "Preț",
+      "category": "Categorie",
+      "ascending": "Crescător",
+      "descending": "Descrescător"
+    },
     "filters": {
+      "title": "Filtre și acțiuni",
+      "description": "Filtrează și sortează inventarul",
       "search": "Caută produse...",
       "searchPlaceholder": "Caută după nume sau cod de bare...",
       "allCategories": "Toate categoriile",
       "category": "Toate categoriile",
       "clearCategory": "Șterge filtrul de categorie",
+      "stockStatus": "Starea stocului",
+      "allProducts": "Toate produsele",
       "lowStock": "Stoc scăzut",
+      "lowStockOnly": "Numai stoc scăzut",
       "lowStockTooltip": "Afișează produsele cu stoc egal sau sub nivelul minim",
       "sortBy": "Sortează după",
       "sortByName": "Nume",
@@ -203,7 +242,12 @@
       "sortByCategory": "Categorie",
       "ascending": "Crescător",
       "descending": "Descrescător",
+      "filterCount": "{{count}} filtre active",
       "clear": "Curăță",
+      "clearAll": "Curăță toate filtrele",
+      "clearFilter": "Curăță filtrul {{filter}}",
+      "more": "mai multe",
+      "actions": "Acțiuni",
       "productsCount": "{{count}} produse",
       "productsFiltered": "{{filtered}} din {{total}}",
       "refreshInventory": "Reîmprospătează inventarul",
@@ -234,6 +278,9 @@
     "items": "articole",
     "empty": "Coșul este gol",
     "emptyHint": "Scanează produse pentru a le adăuga în coș",
+    "itemsList": "Articole din coș",
+    "emptyState": "Coșul este gol",
+    "startScanning": "Începe scanarea produselor",
     "emptyCheckoutHint": "Scanează produse pentru a le adăuga în coș",
     "total": "Total",
     "totalWithCount": "Total ({{count}} articole)",
@@ -254,6 +301,11 @@
     "removeItem": "Elimină articolul din coș",
     "itemRemoved": "Articol eliminat",
     "itemRemovedDescription": "{{name}} a fost eliminat din coș",
+    "decreaseQuantityFor": "Redu cantitatea pentru {{name}}",
+    "increaseQuantityFor": "Mărește cantitatea pentru {{name}}",
+    "removeItemFor": "Elimină {{name}} din coș",
+    "quantityLabel": "Cantitate: {{quantity}}",
+    "viewCart": "Vezi coșul",
     "quickAdd": {
       "title": "Adăugare rapidă",
       "placeholder": "Scanează sau introdu codul",
@@ -264,6 +316,7 @@
     "title": "Scanează coduri de bare pentru a adăuga în coș",
     "complete": "Plată finalizată",
     "stockUpdated": "Stocul a fost actualizat pentru toate articolele.",
+    "stockUpdatedSuccess": "Stocul a fost actualizat pentru toate articolele.",
     "backToHome": "Înapoi la început",
     "confirmTitle": "Confirmă plata",
     "confirmMessage": "Finalizezi plata pentru {{count}} articole? Total: {{total}}",
@@ -286,7 +339,23 @@
     "grandTotal": "Total general",
     "proceedToCheckout": "Continuă cu plata",
     "editCart": "Editează coșul",
-    "missingPrices": "{{count}} articol(e) fără preț"
+    "missingPrices": "{{count}} articol(e) fără preț",
+    "transactionSummary": "Rezumat tranzacție",
+    "itemsLabel": "Articole:",
+    "products": "produse",
+    "quantityLabel": "Cantitate:",
+    "units": "unități",
+    "referenceLabel": "Referință:",
+    "share": "Distribuie",
+    "export": "Exportă",
+    "history": "Istoric",
+    "productsUpdated": "Produse actualizate:",
+    "totalQuantity": "Cantitate totală:",
+    "referenceNumber": "Număr de referință:"
+  },
+  "common": {
+    "close": "Închide",
+    "edit": "Editează"
   },
   "dialogs": {
     "productDetail": {
@@ -308,6 +377,7 @@
     },
     "deleteConfirm": {
       "title": "Ștergi produsul?",
+      "description": "Confirmă ștergerea produsului din inventar",
       "aboutToDelete": "Urmează să ștergi permanent:",
       "barcode": "Cod de bare",
       "currentStock": "Stoc curent",
@@ -325,7 +395,10 @@
     },
     "editProduct": {
       "title": "Editează produsul",
-      "description": "Editează detaliile produsului și salvează modificările"
+      "description": "Editează detaliile produsului și salvează modificările",
+      "sectionBasic": "Informații de bază",
+      "sectionPricing": "Prețuri",
+      "sectionStock": "Stoc și aprovizionare"
     }
   },
   "toast": {
@@ -383,7 +456,8 @@
     "componentStack": "Stack-ul componentei:",
     "tryRefreshing": "Încearcă să reîmprospătezi pagina",
     "unknownError": "A apărut o eroare necunoscută",
-    "productCreationFailed": "Crearea produsului a eșuat."
+    "productCreationFailed": "Crearea produsului a eșuat.",
+    "imageUploadFailed": "Încărcarea imaginii produsului a eșuat. Încearcă din nou sau continuă fără imagine."
   },
   "import": {
     "button": "Importă",
@@ -425,6 +499,88 @@
     "tableCategory": "Categorie",
     "tablePrice": "Preț",
     "tableStock": "Stoc"
+  },
+  "invoiceUpload": {
+    "title": "Importă din factură",
+    "stepDescriptions": {
+      "upload": "Încarcă o factură pentru a extrage automat datele produselor",
+      "preview": "Revizuiește produsele extrase înainte de import",
+      "importing": "Se creează produse în inventar...",
+      "complete": "Produsele din factură au fost importate cu succes"
+    },
+    "dropzone": {
+      "title": "Trage și plasează factura aici",
+      "subtitle": "sau apasă pentru a alege fișiere",
+      "fileTypes": "Acceptă JPG, PNG (maxim 10MB)",
+      "selectFile": "Selectează fișierul facturii"
+    },
+    "progress": {
+      "preparing": "Se pregătește factura...",
+      "extracting": "Se extrage text cu IA...",
+      "analyzing": "Se analizează produsele...",
+      "finalizing": "Se finalizează..."
+    },
+    "howItWorks": {
+      "title": "Cum funcționează",
+      "step1": "Pasul 1: IA citește textul din factură (Google Cloud Vision)",
+      "step2": "Pasul 2: Extrage nume de produse, cantități și prețuri",
+      "step3": "Pasul 3: Revizuiești și confirmi înainte de import",
+      "free": "Practic gratuit: 1.000 pagini/lună incluse"
+    },
+    "errors": {
+      "invalidFile": "Selectează un fișier JPG sau PNG.",
+      "processFailed": "Procesarea facturii a eșuat. ",
+      "apiKey": "Verifică configurarea cheii API.",
+      "network": "Verifică conexiunea la internet și încearcă din nou.",
+      "quota": "Limită de serviciu atinsă. Încearcă din nou mai târziu.",
+      "generic": "Încearcă din nou sau contactează suportul dacă problema persistă.",
+      "importFailed": "Importul a eșuat. ",
+      "networkRetry": "A apărut o eroare de rețea. Verifică conexiunea și încearcă din nou.",
+      "rateLimit": "Limită de rată depășită. Așteaptă puțin și încearcă din nou.",
+      "importFailedTitle": "Import eșuat",
+      "extractionFailed": "Extragerea a eșuat"
+    },
+    "preview": {
+      "extracted": "Au fost extrase cu succes {{count}} produse",
+      "supplier": "Furnizor:",
+      "invoiceNumber": "Factura #:",
+      "date": "Data:",
+      "total": "Total:",
+      "noBarcodeTitle": "Notă: Unele produse nu au coduri de bare",
+      "noBarcodeDescription": "Poți scana codurile mai târziu folosind butonul de editare pentru fiecare produs."
+    },
+    "table": {
+      "productName": "Nume produs",
+      "barcode": "Cod de bare",
+      "quantity": "Cant.",
+      "unitPrice": "Preț unitar",
+      "total": "Total",
+      "actions": "Acțiuni",
+      "noBarcode": "Fără cod de bare",
+      "save": "Salvează modificările",
+      "cancel": "Anulează",
+      "edit": "Editează produsul",
+      "remove": "Elimină produsul"
+    },
+    "importInfo": {
+      "title": "Ce urmează?",
+      "addedCount": "{{count}} produse vor fi adăugate în inventar",
+      "stockIn": "Vor fi create mișcări de intrare cu cantitățile extrase",
+      "missingBarcodes": "Produsele fără cod se pot edita mai târziu pentru a adăuga coduri",
+      "editLater": "Poți modifica detaliile oricând din pagina de inventar"
+    },
+    "status": {
+      "importing": "Se importă produsele...",
+      "importingProgress": "{{current}} din {{total}} produse create",
+      "completeTitle": "Import finalizat!",
+      "completeSubtitle": "S-au importat {{count}} produse din factură"
+    },
+    "actions": {
+      "cancel": "Anulează",
+      "back": "Înapoi",
+      "importCount": "Importă {{count}} produse",
+      "done": "Gata"
+    }
   },
   "export": {
     "button": "Exportă",

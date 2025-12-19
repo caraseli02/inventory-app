@@ -51,13 +51,18 @@
     "manualEntryHint": "You can still enter barcodes manually below",
     "alignCode": "Align code within frame",
     "scanBarcode": "Scan",
+    "scan": "Scan",
     "initFailed": "Failed to start scanner.",
     "permissionError": "Please grant camera permissions in your browser settings.",
     "notFoundError": "No camera found. Please connect a camera or use manual entry.",
     "inUseError": "Camera is already in use. Close other apps using the camera.",
     "httpsError": "Camera requires a secure connection (HTTPS).",
     "checkPermissions": "Please check camera permissions and try again.",
-    "cleanupFailed": "Camera cleanup failed. You may need to reload the page to use the scanner again."
+    "cleanupFailed": "Camera cleanup failed. You may need to reload the page to use the scanner again.",
+    "cameraRegion": "Barcode scanner camera",
+    "dialogDescription": "Scan product barcodes by positioning them within the scanner frame",
+    "retryAccessCamera": "Try to access camera again",
+    "videoStream": "Camera video stream for barcode scanning"
   },
   "scan": {
     "productNotFound": "Product Not Found",
@@ -67,6 +72,7 @@
   },
   "camera": {
     "title": "Take Photo",
+    "description": "Capture a photo of the product using your device camera",
     "capture": "Take Photo",
     "retake": "Retake",
     "usePhoto": "Use Photo",
@@ -75,14 +81,17 @@
     "permissionDenied": "Camera permission denied. Please allow camera access.",
     "notFound": "No camera found on this device.",
     "inUse": "Camera is in use by another application.",
-    "uploadError": "Failed to upload image. Please try using a URL instead."
+    "uploadError": "Failed to upload image. Please try using a URL instead.",
+    "captureError": "Failed to capture photo. Please try again.",
+    "photo": "Photo"
   },
   "scannerFrame": {
     "enterManually": "Or enter barcode manually:",
     "barcodePlaceholder": "1234567890",
     "adding": "Adding...",
     "add": "Add",
-    "notFound": "Not Found"
+    "notFound": "Not Found",
+    "tryAgain": "Try again"
   },
   "product": {
     "newProduct": "New Product",
@@ -149,7 +158,13 @@
     "currentStock": "Current Stock",
     "currentStockHelp": "Managed via stock movements",
     "supplier": "Supplier",
-    "supplierPlaceholder": "Enter supplier name"
+    "supplierPlaceholder": "Enter supplier name",
+    "quickActions": "Quick Actions",
+    "unsavedChanges": "Unsaved changes",
+    "discard": "Discard",
+    "close": "Close",
+    "base": "base",
+    "stockLevel": "Stock: {{stock}}"
   },
   "categories": {
     "General": "General",
@@ -181,6 +196,9 @@
     "adjustFilters": "Try adjusting your filters or search query",
     "emptyStateHint": "Import products or create them via the scanner",
     "barcode": "Barcode",
+    "search": "Search",
+    "importExcel": "Import Excel",
+    "importInvoice": "Import Invoice",
     "lowStock": "Low",
     "mediumStock": "Medium",
     "goodStock": "Good",
@@ -262,6 +280,9 @@
     "items": "items",
     "empty": "Cart is empty",
     "emptyHint": "Scan products to add them to your cart",
+    "itemsList": "Shopping cart items",
+    "emptyState": "Cart is empty",
+    "startScanning": "Start scanning products",
     "emptyCheckoutHint": "Scan products to add them to your cart",
     "total": "Total",
     "totalWithCount": "Total ({{count}} items)",
@@ -282,6 +303,11 @@
     "removeItem": "Remove item from cart",
     "itemRemoved": "Item Removed",
     "itemRemovedDescription": "{{name}} removed from cart",
+    "decreaseQuantityFor": "Decrease quantity for {{name}}",
+    "increaseQuantityFor": "Increase quantity for {{name}}",
+    "removeItemFor": "Remove {{name}} from cart",
+    "quantityLabel": "Quantity: {{quantity}}",
+    "viewCart": "View Cart",
     "quickAdd": {
       "title": "Quick Add",
       "placeholder": "Scan or enter code",
@@ -292,6 +318,7 @@
     "title": "Scan barcodes to add to cart",
     "complete": "Checkout Complete",
     "stockUpdated": "Stock has been updated for all items.",
+    "stockUpdatedSuccess": "Stock has been updated for all items.",
     "backToHome": "Back to Home",
     "confirmTitle": "Confirm Checkout",
     "confirmMessage": "Complete checkout for {{count}} items? Total: {{total}}",
@@ -314,7 +341,23 @@
     "grandTotal": "Grand Total",
     "proceedToCheckout": "Proceed to Checkout",
     "editCart": "Edit Cart",
-    "missingPrices": "{{count}} item(s) missing price"
+    "missingPrices": "{{count}} item(s) missing price",
+    "transactionSummary": "Transaction Summary",
+    "itemsLabel": "Items:",
+    "products": "products",
+    "quantityLabel": "Quantity:",
+    "units": "units",
+    "referenceLabel": "Reference:",
+    "share": "Share",
+    "export": "Export",
+    "history": "History",
+    "productsUpdated": "Products Updated:",
+    "totalQuantity": "Total Quantity:",
+    "referenceNumber": "Reference Number:"
+  },
+  "common": {
+    "close": "Close",
+    "edit": "Edit"
   },
   "dialogs": {
     "productDetail": {
@@ -336,6 +379,7 @@
     },
     "deleteConfirm": {
       "title": "Delete Product?",
+      "description": "Confirm deletion of product from inventory",
       "aboutToDelete": "You are about to permanently delete:",
       "barcode": "Barcode",
       "currentStock": "Current Stock",
@@ -353,7 +397,10 @@
     },
     "editProduct": {
       "title": "Edit Product",
-      "description": "Edit product details and save changes"
+      "description": "Edit product details and save changes",
+      "sectionBasic": "Basic Information",
+      "sectionPricing": "Pricing",
+      "sectionStock": "Stock & Supply"
     }
   },
   "toast": {
@@ -411,7 +458,8 @@
     "componentStack": "Component Stack:",
     "tryRefreshing": "Try refreshing the page",
     "unknownError": "Unknown error occurred",
-    "productCreationFailed": "Failed to create product."
+    "productCreationFailed": "Failed to create product.",
+    "imageUploadFailed": "Failed to upload product image. Please try again or proceed without an image."
   },
   "import": {
     "button": "Import",
@@ -453,6 +501,88 @@
     "tableCategory": "Category",
     "tablePrice": "Price",
     "tableStock": "Stock"
+  },
+  "invoiceUpload": {
+    "title": "Import from Invoice",
+    "stepDescriptions": {
+      "upload": "Upload an invoice to automatically extract product data",
+      "preview": "Review extracted products before importing",
+      "importing": "Creating products in your inventory...",
+      "complete": "Invoice products have been imported successfully"
+    },
+    "dropzone": {
+      "title": "Drag and drop your invoice here",
+      "subtitle": "or click to browse files",
+      "fileTypes": "Supports JPG, PNG (max 10MB)",
+      "selectFile": "Select Invoice File"
+    },
+    "progress": {
+      "preparing": "Preparing invoice...",
+      "extracting": "Extracting text with AI...",
+      "analyzing": "Analyzing products...",
+      "finalizing": "Finalizing..."
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "step1": "Step 1: AI reads text from your invoice (Google Cloud Vision)",
+      "step2": "Step 2: Extracts product names, quantities, and prices",
+      "step3": "Step 3: You review and confirm before importing",
+      "free": "Essentially free: 1,000 pages/month included"
+    },
+    "errors": {
+      "invalidFile": "Please select a JPG or PNG file.",
+      "processFailed": "Failed to process invoice. ",
+      "apiKey": "Please check your API configuration.",
+      "network": "Please check your internet connection and try again.",
+      "quota": "Service limit reached. Please try again later.",
+      "generic": "Please try again or contact support if the issue persists.",
+      "importFailed": "Import failed. ",
+      "networkRetry": "Network error occurred. Please check your connection and try again.",
+      "rateLimit": "Rate limit exceeded. Please wait a moment and try again.",
+      "importFailedTitle": "Import failed",
+      "extractionFailed": "Extraction failed"
+    },
+    "preview": {
+      "extracted": "Successfully extracted {{count}} products",
+      "supplier": "Supplier:",
+      "invoiceNumber": "Invoice #:",
+      "date": "Date:",
+      "total": "Total:",
+      "noBarcodeTitle": "Note: Some products don't have barcodes",
+      "noBarcodeDescription": "You can scan barcodes later using the edit button for each product."
+    },
+    "table": {
+      "productName": "Product Name",
+      "barcode": "Barcode",
+      "quantity": "Qty",
+      "unitPrice": "Unit Price",
+      "total": "Total",
+      "actions": "Actions",
+      "noBarcode": "No barcode",
+      "save": "Save changes",
+      "cancel": "Cancel",
+      "edit": "Edit product",
+      "remove": "Remove product"
+    },
+    "importInfo": {
+      "title": "What happens next?",
+      "addedCount": "{{count}} products will be added to your inventory",
+      "stockIn": "Stock IN movements will be created with the extracted quantities",
+      "missingBarcodes": "Products without barcodes can be edited later to add barcodes",
+      "editLater": "You can modify product details anytime from the inventory page"
+    },
+    "status": {
+      "importing": "Importing products...",
+      "importingProgress": "{{current}} of {{total}} products created",
+      "completeTitle": "Import Complete!",
+      "completeSubtitle": "Successfully imported {{count}} products from invoice"
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "back": "Back",
+      "importCount": "Import {{count}} Products",
+      "done": "Done"
+    }
   },
   "export": {
     "button": "Export",
