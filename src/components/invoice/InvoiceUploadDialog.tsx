@@ -125,7 +125,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     } finally {
       setIsProcessing(false);
     }
-  }, []);
+  }, [t]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
