@@ -17,10 +17,10 @@ test.describe('Product Creation', () => {
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
 
-    // Switch to Search mode by clicking the Search tab
-    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
-    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
-    await searchModeButton.click()
+    // Switch to Search mode by clicking the Search toggle
+    const searchModeToggle = page.getByText('Search').first()
+    await expect(searchModeToggle).toBeVisible({ timeout: 5000 })
+    await searchModeToggle.click()
 
     // Wait for search input to become visible and enter a non-existent barcode
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
@@ -51,9 +51,9 @@ test.describe('Product Creation', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Switch to Search mode
-    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
-    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
-    await searchModeButton.click()
+    const searchModeToggle = page.getByText('Search').first()
+    await expect(searchModeToggle).toBeVisible({ timeout: 5000 })
+    await searchModeToggle.click()
 
     // Enter non-existent barcode
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
@@ -86,9 +86,9 @@ test.describe('Product Creation', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Switch to Search mode
-    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
-    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
-    await searchModeButton.click()
+    const searchModeToggle = page.getByText('Search').first()
+    await expect(searchModeToggle).toBeVisible({ timeout: 5000 })
+    await searchModeToggle.click()
 
     // Enter non-existent barcode and click Add New
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
@@ -116,9 +116,9 @@ test.describe('Product Creation', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Switch to Search mode
-    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
-    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
-    await searchModeButton.click()
+    const searchModeToggle = page.getByText('Search').first()
+    await expect(searchModeToggle).toBeVisible({ timeout: 5000 })
+    await searchModeToggle.click()
 
     // Enter non-existent barcode and click Add New
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
@@ -152,9 +152,9 @@ test.describe('Product Form Fields', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Switch to Search mode
-    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
-    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
-    await searchModeButton.click()
+    const searchModeToggle = page.getByText('Search').first()
+    await expect(searchModeToggle).toBeVisible({ timeout: 5000 })
+    await searchModeToggle.click()
 
     // Enter non-existent barcode to trigger product creation
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
@@ -202,14 +202,14 @@ test.describe('Manual Barcode Entry', () => {
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
 
-    // Should have mode toggle (Search/Scan tabs)
-    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
-    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
-    const scanButton = page.getByRole('button', { name: /scan/i })
-    await expect(scanButton).toBeVisible({ timeout: 5000 })
+    // Should have mode toggle (Search/Scan toggles)
+    const searchModeToggle = page.getByText('Search').first()
+    await expect(searchModeToggle).toBeVisible({ timeout: 5000 })
+    const scanToggle = page.getByText('Scan').first()
+    await expect(scanToggle).toBeVisible({ timeout: 5000 })
 
     // Click Search mode to make search input visible
-    await searchModeButton.click()
+    await searchModeToggle.click()
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
     await expect(searchInput).toBeVisible({ timeout: 5000 })
   })
@@ -223,9 +223,9 @@ test.describe('Manual Barcode Entry', () => {
     await page.waitForLoadState('domcontentloaded')
 
     // Switch to Search mode
-    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
-    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
-    await searchModeButton.click()
+    const searchModeToggle = page.getByText('Search').first()
+    await expect(searchModeToggle).toBeVisible({ timeout: 5000 })
+    await searchModeToggle.click()
 
     // Use search input to enter a barcode
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
