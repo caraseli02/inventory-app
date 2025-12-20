@@ -100,6 +100,14 @@ playwright-report/
 playwright.*.config.ts
 !playwright.config.ts
 !playwright.cart.config.ts
+!playwright.visual.config.ts
+
+# Visual regression test artifacts
+/tests/visual-baseline/
+/tests/visual-current/
+/tests/visual-diff/
+/tests/visual-results/
+/playwright-visual-report/
 
 # Theme and build artifacts
 .themes/
