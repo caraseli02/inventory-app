@@ -1,0 +1,187 @@
+name: Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  detect-tests:
+    name: Detect Test Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      run_all_tests: ${{ steps.detect.outputs.run_all_tests }}
+      run_unit_tests: ${{ steps.detect.outputs.run_unit_tests }}
+      run_integration_tests: ${{ steps.detect.outputs.run_integration_tests }}
+      run_e2e_tests: ${{ steps.detect.outputs.run_e2e_tests }}
+      specific_tests: ${{ steps.detect.outputs.specific_tests }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for proper diff
+
+      - name: Fetch base branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+          else
+            git fetch origin main
+          fi
+
+      - name: Detect which tests to run
+        id: detect
+        run: |
+          chmod +x scripts/detect-tests.sh
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ./scripts/detect-tests.sh ${{ github.base_ref }}
+          else
+            ./scripts/detect-tests.sh main
+          fi
+
+      - name: Show test strategy
+        run: |
+          echo "Test Strategy Outputs:"
+          echo "  run_all_tests=${{ steps.detect.outputs.run_all_tests }}"
+          echo "  run_unit_tests=${{ steps.detect.outputs.run_unit_tests }}"
+          echo "  run_integration_tests=${{ steps.detect.outputs.run_integration_tests }}"
+          echo "  run_e2e_tests=${{ steps.detect.outputs.run_e2e_tests }}"
+
+  unit-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    needs: detect-tests
+    if: needs.detect-tests.outputs.run_all_tests == 'true' || needs.detect-tests.outputs.run_unit_tests == 'true' || needs.detect-tests.outputs.run_integration_tests == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run TypeScript check
+        run: pnpm tsc -b --noEmit
+
+      - name: Run linter
+        run: pnpm lint
+
+      - name: Run unit tests
+        if: needs.detect-tests.outputs.run_all_tests == 'true' || needs.detect-tests.outputs.run_unit_tests == 'true'
+        run: pnpm test:unit
+
+      - name: Run integration tests
+        if: needs.detect-tests.outputs.run_all_tests == 'true' || needs.detect-tests.outputs.run_integration_tests == 'true'
+        run: pnpm test:integration
+
+      - name: Run tests with coverage
+        if: needs.detect-tests.outputs.run_all_tests == 'true'
+        run: pnpm test:coverage
+
+      - name: Upload coverage report
+        if: needs.detect-tests.outputs.run_all_tests == 'true'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+          verbose: true
+
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [detect-tests, unit-tests]
+    if: |
+      always() &&
+      (needs.detect-tests.outputs.run_all_tests == 'true' || needs.detect-tests.outputs.run_e2e_tests == 'true') &&
+      (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build application
+        run: pnpm build
+        env:
+          # Use mock env vars for build
+          VITE_SUPABASE_URL: 'https://mock.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'mock-key'
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
+        env:
+          CI: true
+          VITE_SUPABASE_URL: 'https://mock.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'mock-key'
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    needs: [detect-tests, unit-tests]
+    if: |
+      always() &&
+      (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build for production
+        run: pnpm build
+        env:
+          VITE_SUPABASE_URL: 'https://mock.supabase.co'
+          VITE_SUPABASE_PUBLISHABLE_KEY: 'mock-key'
+
+      - name: Check build output
+        run: ls -la dist/
