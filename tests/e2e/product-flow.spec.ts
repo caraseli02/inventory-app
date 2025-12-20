@@ -8,99 +8,114 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Product Creation', () => {
-  test('should open create product dialog from scan page', async ({ page }) => {
+  test('should open create product form after scanning non-existent barcode', async ({ page }) => {
     await page.goto('/')
 
-    // Look for "Add Product" or "Create Product" button - fail if not found
-    const addButton = page
-      .getByRole('button', { name: /add|create|new/i })
-      .first()
+    // Navigate to Scanner page
+    const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
+    await expect(scannerCard).toBeVisible({ timeout: 5000 })
+    await scannerCard.click()
+    await page.waitForLoadState('domcontentloaded')
 
-    await expect(addButton).toBeVisible({ timeout: 5000 })
-    await addButton.click()
+    // Switch to Search mode (if not already) and enter a non-existent barcode
+    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await expect(searchInput).toBeVisible({ timeout: 5000 })
 
-    // Dialog should open - wait for it with proper assertion
-    const dialog = page.locator('[role="dialog"], [data-state="open"]')
-    await expect(dialog.first()).toBeVisible({ timeout: 5000 })
+    // Enter a barcode that doesn't exist
+    await searchInput.fill('TESTNONEXISTENT123')
+    await searchInput.press('Enter')
+
+    // Wait for "Product Not Found" or "Add New" button to appear
+    const addNewButton = page.getByRole('button', { name: /add new|create/i })
+    await expect(addNewButton).toBeVisible({ timeout: 5000 })
+
+    // Click to open create form
+    await addNewButton.click()
+
+    // Form should be visible (not a dialog, but an in-page form)
+    const nameInput = page.locator('input[name="name"], input[placeholder*="name" i]').first()
+    await expect(nameInput).toBeVisible({ timeout: 5000 })
   })
 
   test('should show required field validation', async ({ page }) => {
     await page.goto('/')
 
-    // Open create dialog
-    const addButton = page
-      .getByRole('button', { name: /add|create|new/i })
-      .first()
+    // Navigate to Scanner page and trigger product creation
+    const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
+    await scannerCard.click()
+    await page.waitForLoadState('domcontentloaded')
 
-    await expect(addButton).toBeVisible({ timeout: 5000 })
-    await addButton.click()
+    // Enter non-existent barcode
+    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await searchInput.fill('TESTNONEXISTENT456')
+    await searchInput.press('Enter')
 
-    // Wait for dialog
-    const dialog = page.locator('[role="dialog"]')
-    await expect(dialog).toBeVisible({ timeout: 5000 })
+    // Click "Add New"
+    const addNewButton = page.getByRole('button', { name: /add new|create/i })
+    await expect(addNewButton).toBeVisible({ timeout: 5000 })
+    await addNewButton.click()
 
     // Try to submit without filling required fields
-    const submitButton = page.locator(
-      '[role="dialog"] button[type="submit"], [role="dialog"] button:has-text("Save"), [role="dialog"] button:has-text("Create")'
-    )
-
-    await expect(submitButton.first()).toBeVisible({ timeout: 5000 })
-    await submitButton.first().click()
+    const submitButton = page.getByRole('button', { name: /save|create|add product/i })
+    await expect(submitButton).toBeVisible({ timeout: 5000 })
+    await submitButton.click()
 
     // Should show validation error or prevent submission
-    // The form should still be open (not closed on invalid submit)
-    await expect(dialog).toBeVisible()
+    // Form should still be visible (not closed on invalid submit)
+    const nameInput = page.locator('input[name="name"], input[placeholder*="name" i]').first()
+    await expect(nameInput).toBeVisible()
   })
 
   test('should have name field in product form', async ({ page }) => {
     await page.goto('/')
 
-    const addButton = page
-      .getByRole('button', { name: /add|create|new/i })
-      .first()
+    // Navigate to Scanner page and trigger product creation
+    const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
+    await scannerCard.click()
+    await page.waitForLoadState('domcontentloaded')
 
-    await expect(addButton).toBeVisible({ timeout: 5000 })
-    await addButton.click()
+    // Enter non-existent barcode and click Add New
+    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await searchInput.fill('TESTNONEXISTENT789')
+    await searchInput.press('Enter')
+    const addNewButton = page.getByRole('button', { name: /add new|create/i })
+    await addNewButton.click()
 
-    // Wait for dialog
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 })
-
-    // Look for name input - fail if not found
-    const nameInput = page.locator(
-      '[role="dialog"] input[name="name"], [role="dialog"] input[placeholder*="name" i], [role="dialog"] label:has-text("Name") + input, [role="dialog"] label:has-text("Name") ~ input'
-    )
-
-    await expect(nameInput.first()).toBeVisible({ timeout: 5000 })
+    // Look for name input
+    const nameInput = page.locator('input[name="name"], input[placeholder*="name" i]').first()
+    await expect(nameInput).toBeVisible({ timeout: 5000 })
 
     // Fill in the name
-    await nameInput.first().fill('Test Product')
-    await expect(nameInput.first()).toHaveValue('Test Product')
+    await nameInput.fill('Test Product')
+    await expect(nameInput).toHaveValue('Test Product')
   })
 
-  test('should close dialog on cancel', async ({ page }) => {
+  test('should close form on cancel', async ({ page }) => {
     await page.goto('/')
 
-    const addButton = page
-      .getByRole('button', { name: /add|create|new/i })
-      .first()
+    // Navigate to Scanner page and trigger product creation
+    const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
+    await scannerCard.click()
+    await page.waitForLoadState('domcontentloaded')
 
-    await expect(addButton).toBeVisible({ timeout: 5000 })
-    await addButton.click()
+    // Enter non-existent barcode and click Add New
+    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await searchInput.fill('TESTNONEXISTENT000')
+    await searchInput.press('Enter')
+    const addNewButton = page.getByRole('button', { name: /add new|create/i })
+    await addNewButton.click()
 
-    // Wait for dialog with proper assertion instead of waitForTimeout
-    const dialog = page.locator('[role="dialog"], [data-state="open"]')
-    await expect(dialog.first()).toBeVisible({ timeout: 5000 })
+    // Wait for form
+    const nameInput = page.locator('input[name="name"], input[placeholder*="name" i]').first()
+    await expect(nameInput).toBeVisible({ timeout: 5000 })
 
-    // Close the dialog
-    const closeButton = page.locator(
-      '[role="dialog"] button[aria-label="Close"], [role="dialog"] button:has-text("Cancel"), button:has-text("Cancel"), [data-dismiss]'
-    )
+    // Close the form
+    const cancelButton = page.getByRole('button', { name: /cancel|back|close/i })
+    await expect(cancelButton).toBeVisible({ timeout: 5000 })
+    await cancelButton.click()
 
-    await expect(closeButton.first()).toBeVisible({ timeout: 5000 })
-    await closeButton.first().click()
-
-    // Dialog should close - verify by checking it's gone
-    await expect(dialog.first()).toBeHidden({ timeout: 5000 })
+    // Form should close - verify by checking name input is gone
+    await expect(nameInput).toBeHidden({ timeout: 5000 })
   })
 })
 
@@ -108,59 +123,78 @@ test.describe('Product Form Fields', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
 
-    const addButton = page
-      .getByRole('button', { name: /add|create|new/i })
-      .first()
+    // Navigate to Scanner page
+    const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
+    await scannerCard.click()
+    await page.waitForLoadState('domcontentloaded')
 
-    await expect(addButton).toBeVisible({ timeout: 5000 })
-    await addButton.click()
+    // Enter non-existent barcode to trigger product creation
+    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await searchInput.fill('TESTNONEXISTENT999')
+    await searchInput.press('Enter')
 
-    // Wait for dialog
-    await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 })
+    // Click "Add New" to open form
+    const addNewButton = page.getByRole('button', { name: /add new|create/i })
+    await expect(addNewButton).toBeVisible({ timeout: 5000 })
+    await addNewButton.click()
+
+    // Wait for form to be visible
+    const nameInput = page.locator('input[name="name"], input[placeholder*="name" i]').first()
+    await expect(nameInput).toBeVisible({ timeout: 5000 })
   })
 
   test('should have category selection', async ({ page }) => {
-    // Look for category select - fail if not found
+    // Look for category select/combobox
     const categorySelect = page.locator(
-      '[role="dialog"] select[name="category"], [role="dialog"] [role="combobox"], [role="dialog"] label:has-text("Category") ~ [role="combobox"], [role="dialog"] button:has-text("Category")'
+      'select[name="category"], [role="combobox"], button:has-text("Category")'
     )
-
     await expect(categorySelect.first()).toBeVisible({ timeout: 5000 })
   })
 
   test('should have price input', async ({ page }) => {
-    // Look for price input - fail if not found
+    // Look for price input
     const priceInput = page.locator(
-      '[role="dialog"] input[name="price"], [role="dialog"] input[type="number"]:near(:text("Price")), [role="dialog"] label:has-text("Price") ~ input'
-    )
+      'input[name="price"], input[type="number"]'
+    ).first()
 
-    await expect(priceInput.first()).toBeVisible({ timeout: 5000 })
+    await expect(priceInput).toBeVisible({ timeout: 5000 })
 
-    await priceInput.first().fill('9.99')
-    await expect(priceInput.first()).toHaveValue('9.99')
+    await priceInput.fill('9.99')
+    await expect(priceInput).toHaveValue('9.99')
   })
 })
 
 test.describe('Manual Barcode Entry', () => {
-  test('should have manual barcode entry option', async ({ page }) => {
+  test('should have search/scan modes on scanner page', async ({ page }) => {
     await page.goto('/')
 
-    // Look for manual entry button or input - fail if not found
-    const manualEntry = page.locator(
-      'button:has-text("Manual"), input[placeholder*="barcode" i], [data-testid="manual-entry"], input[name="barcode"]'
-    )
+    // Navigate to Scanner page
+    const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
+    await scannerCard.click()
+    await page.waitForLoadState('domcontentloaded')
 
-    await expect(manualEntry.first()).toBeVisible({ timeout: 5000 })
+    // Should have search input (Search mode) - already visible by default
+    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await expect(searchInput).toBeVisible({ timeout: 5000 })
+
+    // Should have mode toggle (Search/Scan tabs)
+    const scanButton = page.getByRole('button', { name: /scan/i })
+    await expect(scanButton).toBeVisible({ timeout: 5000 })
   })
 
-  test('should accept valid barcode input', async ({ page }) => {
+  test('should accept barcode via search input', async ({ page }) => {
     await page.goto('/')
 
-    const barcodeInput = page.getByPlaceholder(/barcode|code/i)
+    // Navigate to Scanner page
+    const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
+    await scannerCard.click()
+    await page.waitForLoadState('domcontentloaded')
 
-    await expect(barcodeInput.first()).toBeVisible({ timeout: 5000 })
+    // Use search input to enter a barcode
+    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await expect(searchInput).toBeVisible({ timeout: 5000 })
 
-    await barcodeInput.first().fill('1234567890123')
-    await expect(barcodeInput.first()).toHaveValue('1234567890123')
+    await searchInput.fill('1234567890123')
+    await expect(searchInput).toHaveValue('1234567890123')
   })
 })
