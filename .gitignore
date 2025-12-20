@@ -1,11 +1,9 @@
-# Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
+# Build outputs
 dist
 .vercel
+
+# Cache directories
+.cache
 
 # Node dependencies
 node_modules
