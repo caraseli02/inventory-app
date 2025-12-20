@@ -17,7 +17,12 @@ test.describe('Product Creation', () => {
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
 
-    // Switch to Search mode (if not already) and enter a non-existent barcode
+    // Switch to Search mode by clicking the Search tab
+    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
+    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
+    await searchModeButton.click()
+
+    // Wait for search input to become visible and enter a non-existent barcode
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
     await expect(searchInput).toBeVisible({ timeout: 5000 })
 
@@ -45,8 +50,14 @@ test.describe('Product Creation', () => {
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
 
+    // Switch to Search mode
+    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
+    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
+    await searchModeButton.click()
+
     // Enter non-existent barcode
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await expect(searchInput).toBeVisible({ timeout: 5000 })
     await searchInput.fill('TESTNONEXISTENT456')
     await searchInput.press('Enter')
 
@@ -74,8 +85,14 @@ test.describe('Product Creation', () => {
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
 
+    // Switch to Search mode
+    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
+    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
+    await searchModeButton.click()
+
     // Enter non-existent barcode and click Add New
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await expect(searchInput).toBeVisible({ timeout: 5000 })
     await searchInput.fill('TESTNONEXISTENT789')
     await searchInput.press('Enter')
     const addNewButton = page.getByRole('button', { name: /add new|create/i })
@@ -98,8 +115,14 @@ test.describe('Product Creation', () => {
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
 
+    // Switch to Search mode
+    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
+    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
+    await searchModeButton.click()
+
     // Enter non-existent barcode and click Add New
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await expect(searchInput).toBeVisible({ timeout: 5000 })
     await searchInput.fill('TESTNONEXISTENT000')
     await searchInput.press('Enter')
     const addNewButton = page.getByRole('button', { name: /add new|create/i })
@@ -128,8 +151,14 @@ test.describe('Product Form Fields', () => {
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
 
+    // Switch to Search mode
+    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
+    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
+    await searchModeButton.click()
+
     // Enter non-existent barcode to trigger product creation
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await expect(searchInput).toBeVisible({ timeout: 5000 })
     await searchInput.fill('TESTNONEXISTENT999')
     await searchInput.press('Enter')
 
@@ -173,13 +202,16 @@ test.describe('Manual Barcode Entry', () => {
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
 
-    // Should have search input (Search mode) - already visible by default
-    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
-    await expect(searchInput).toBeVisible({ timeout: 5000 })
-
     // Should have mode toggle (Search/Scan tabs)
+    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
+    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
     const scanButton = page.getByRole('button', { name: /scan/i })
     await expect(scanButton).toBeVisible({ timeout: 5000 })
+
+    // Click Search mode to make search input visible
+    await searchModeButton.click()
+    const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
+    await expect(searchInput).toBeVisible({ timeout: 5000 })
   })
 
   test('should accept barcode via search input', async ({ page }) => {
@@ -189,6 +221,11 @@ test.describe('Manual Barcode Entry', () => {
     const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
     await scannerCard.click()
     await page.waitForLoadState('domcontentloaded')
+
+    // Switch to Search mode
+    const searchModeButton = page.getByRole('button', { name: /search/i }).first()
+    await expect(searchModeButton).toBeVisible({ timeout: 5000 })
+    await searchModeButton.click()
 
     // Use search input to enter a barcode
     const searchInput = page.getByPlaceholder(/search by name or barcode/i).first()
