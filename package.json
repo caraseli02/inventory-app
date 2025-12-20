@@ -11,7 +11,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:unit": "vitest run --exclude 'tests/integration/**' --exclude 'tests/e2e/**'",
-    "test:integration": "vitest run --include 'tests/integration/**'",
+    "test:integration": "vitest run tests/integration",
     "test:coverage": "vitest run --coverage",
     "test:coverage:check": "vitest run --coverage --coverage.thresholdAutoUpdate=false",
     "test:watch": "vitest --watch",
