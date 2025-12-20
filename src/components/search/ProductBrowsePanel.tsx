@@ -20,6 +20,7 @@ const CATEGORIES = [
   { id: 'Beverages', icon: null, dot: 'bg-cyan-400' },
   { id: 'Household', icon: null, dot: 'bg-slate-400' },
   { id: 'Conserve', icon: null, dot: 'bg-yellow-500' },
+  { id: 'Cereale', icon: null, dot: 'bg-amber-400' },
   { id: 'General', icon: null, dot: 'bg-zinc-400' },
 ] as const;
 

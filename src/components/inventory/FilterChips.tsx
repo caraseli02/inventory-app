@@ -29,7 +29,7 @@ export const FilterChips = ({ filters, onClearFilter }: FilterChipsProps) => {
   if (filters.category) {
     chips.push({
       key: 'category',
-      label: t(`categories.${filters.category}`),
+      label: t(`categories.${filters.category}`, filters.category),
     });
   }
 

@@ -100,7 +100,7 @@ export const MobileFilterSheet = ({
                 >
                   <RadioGroupItem value={category} id={`cat-${category}`} />
                   <Label htmlFor={`cat-${category}`} className="flex-1 cursor-pointer font-medium">
-                    {t(`categories.${category}`)}
+                    {t(`categories.${category}`, category)}
                   </Label>
                 </div>
               ))}

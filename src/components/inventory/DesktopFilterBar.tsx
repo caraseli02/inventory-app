@@ -84,7 +84,7 @@ export const DesktopFilterBar = ({
             <SelectItem value="all">{t('inventory.filters.allCategories', 'All Categories')}</SelectItem>
             {categories.map((category) => (
               <SelectItem key={category} value={category}>
-                {t(`categories.${category}`)}
+                {t(`categories.${category}`, category)}
               </SelectItem>
             ))}
           </SelectContent>

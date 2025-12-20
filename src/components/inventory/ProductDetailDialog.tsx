@@ -80,7 +80,7 @@ export const ProductDetailDialog = ({
             </DialogTitle>
             {product.fields.Category && (
               <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200 mt-1">
-                {t(`categories.${product.fields.Category}`)}
+                {t(`categories.${product.fields.Category}`, product.fields.Category)}
               </Badge>
             )}
             <DialogDescription id="product-detail-description" className="sr-only">
