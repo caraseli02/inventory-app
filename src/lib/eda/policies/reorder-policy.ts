@@ -56,6 +56,43 @@ export async function checkLowStockPolicy(productId: string): Promise<void> {
     // Check if we already proposed a reorder recently?
     // For MVP transparency, we'll just propose it. The Human Review UI can filter duplicates.
 
+    // 2.5 IDEMPOTENCY CHECK: Check if we already have a pending proposal for this product
+    // We don't want to spam the inbox with 100s of "Reorder" events for the same product.
+    // A proposal is "Pending" if:
+    // 1. There is an ActionProposed event for this Product + Type=REORDER
+    // 2. There is NO HumanDecisionRecorded event for that specific ActionId
+
+    // Fetch all events for this aggregate (which is technically the *Product* stream for the trigger, 
+    // but the Action events are separate aggregates usually.
+    // However, for MVP simplicity, we might iterate all events or use a specialized query.
+    // Let's use `eventStore.getAllEvents()` and filter in memory since the dataset is small for this demo.
+    // In production, this would be a SQL query: "SELECT * FROM projections.pending_actions WHERE product_id = ?"
+
+    const allEvents = await eventStore.getAllEvents();
+
+    const pendingProposal = allEvents.find(e => {
+      // Is it a proposal for this product?
+      if (e.type !== 'ActionProposed') return false;
+      const p = e.payload as ActionProposedPayload;
+      if (p.productId !== productId || p.actionType !== 'REORDER') return false;
+
+      // Has it been decided?
+      const isDecided = allEvents.some(d =>
+        d.type === 'HumanDecisionRecorded' &&
+        (d.payload as any).actionId === p.actionId
+      );
+
+      return !isDecided;
+    });
+
+    if (pendingProposal) {
+      logger.info('Reorder Policy skipped: Pending proposal already exists', {
+        productId,
+        existingActionId: (pendingProposal.payload as any).actionId
+      });
+      return;
+    }
+
     // 3. Append Proposal Event
     const actionId = crypto.randomUUID();
     await eventStore.append({

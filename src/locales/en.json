@@ -627,5 +627,14 @@
     "none": "None",
     "manualEdit": "Manual Edit",
     "proposedAction": "Proposed Action:"
+  },
+  "agentInbox": {
+    "title": "Agent Inbox",
+    "empty": "No Peding Actions",
+    "approve": "Approve",
+    "reject": "Reject",
+    "reorder": "Reorder Restock",
+    "confidence": "Confidence",
+    "reason": "Reason"
   }
 }

@@ -34,11 +34,10 @@ const ProductListItemComponent = ({
 
   return (
     <Card
-      className={`group cursor-pointer border-2 bg-white p-4 transition-all duration-150 rounded-xl ${
-        isLowStock
+      className={`group cursor-pointer border-2 bg-white p-4 transition-all duration-150 rounded-xl ${isLowStock
           ? 'border-orange-200 bg-orange-50/30 hover:border-orange-300'
           : 'border-stone-200 hover:border-stone-300'
-      } hover:shadow-md active:scale-[0.99]`}
+        } hover:shadow-md active:scale-[0.99]`}
       onClick={() => onViewDetails(product)}
       role="button"
       tabIndex={0}
@@ -92,9 +91,8 @@ const ProductListItemComponent = ({
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-stone-500">{t('product.stock')}:</span>
               <span
-                className={`text-xl font-bold tabular-nums ${
-                  isLowStock ? 'text-[var(--color-terracotta)]' : 'text-stone-900'
-                }`}
+                className={`text-xl font-bold tabular-nums ${isLowStock ? 'text-[var(--color-terracotta)]' : 'text-stone-900'
+                  }`}
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
@@ -122,7 +120,7 @@ const ProductListItemComponent = ({
             variant="outline"
             className="h-11 flex-1 border-2 border-stone-300 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
             onClick={() => onQuickAdjust(product.id, -1)}
-            disabled={isLoading || currentStock === 0}
+            disabled={isLoading || currentStock <= 0}
             aria-label={t('inventory.table.removeUnit')}
           >
             {isLoading ? (
