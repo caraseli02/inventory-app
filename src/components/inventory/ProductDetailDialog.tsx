@@ -10,6 +10,7 @@ import { Card, CardContent } from '../ui/card';
 import { getStockMovements } from '../../lib/api-provider';
 import { logger } from '../../lib/logger';
 import type { Product } from '../../types';
+import { ProductHistory } from '../ProductHistory';
 
 interface ProductDetailDialogProps {
   product: Product | null;
@@ -75,22 +76,22 @@ export const ProductDetailDialog = ({
       >
         {/* Header with gradient */}
         <DialogHeader className="pt-[max(0.75rem,env(safe-area-inset-top))] px-6 pb-4 sm:px-8 sm:pt-6 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 border-b border-zinc-200 shrink-0">
-            <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-1">
-              {product.fields.Name}
-            </DialogTitle>
-            {product.fields.Category && (
-              <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200 mt-1">
-                {t(`categories.${product.fields.Category}`, product.fields.Category)}
-              </Badge>
-            )}
-            <DialogDescription id="product-detail-description" className="sr-only">
-              {t('dialogs.productDetail.title')} - {product.fields.Name}
-            </DialogDescription>
-          </DialogHeader>
+          <DialogTitle className="text-2xl sm:text-3xl font-bold text-zinc-900 mb-1">
+            {product.fields.Name}
+          </DialogTitle>
+          {product.fields.Category && (
+            <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-zinc-200 mt-1">
+              {t(`categories.${product.fields.Category}`, product.fields.Category)}
+            </Badge>
+          )}
+          <DialogDescription id="product-detail-description" className="sr-only">
+            {t('dialogs.productDetail.title')} - {product.fields.Name}
+          </DialogDescription>
+        </DialogHeader>
 
-          {/* Main Content Area - Full height with scrolling */}
-          <div className="flex-1 overflow-y-auto min-h-0">
-            <div className="p-6 sm:p-8 space-y-6 pb-24">
+        {/* Main Content Area - Full height with scrolling */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="p-6 sm:p-8 space-y-6 pb-24">
             {/* Product Hero Section */}
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Product Image */}
@@ -280,9 +281,8 @@ export const ProductDetailDialog = ({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div
-                              className={`p-2 rounded-lg ${
-                                movement.fields.Type === 'IN' ? 'bg-emerald-50' : 'bg-zinc-100'
-                              }`}
+                              className={`p-2 rounded-lg ${movement.fields.Type === 'IN' ? 'bg-emerald-50' : 'bg-zinc-100'
+                                }`}
                             >
                               {movement.fields.Type === 'IN' ? (
                                 <ArrowDownToLine className="h-4 w-4 text-emerald-600" />
@@ -313,9 +313,13 @@ export const ProductDetailDialog = ({
                             {movement.fields.Type}
                           </Badge>
                         </div>
+
                       </CardContent>
                     </Card>
                   ))}
+                  <div className="mt-8">
+                    <ProductHistory productId={product.id} />
+                  </div>
                 </div>
               ) : (
                 <Card className="border-zinc-200">
@@ -328,35 +332,35 @@ export const ProductDetailDialog = ({
               )}
             </div>
           </div>
-          </div>
+        </div>
 
-          {/* Footer with Actions - Always at bottom */}
-          <div className="border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4 shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        {/* Footer with Actions - Always at bottom */}
+        <div className="border-t border-zinc-200 bg-gradient-to-br from-zinc-50 via-white to-zinc-50 px-6 py-4 sm:px-8 flex justify-between items-center gap-4 shrink-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="border-zinc-300 hover:bg-zinc-100"
+          >
+            <X className="h-4 w-4 mr-2" />
+            {t('dialogs.productDetail.close')}
+          </Button>
+          {onEdit && (
             <Button
-              variant="outline"
-              onClick={onClose}
-              className="border-zinc-300 hover:bg-zinc-100"
+              onClick={() => {
+                onClose();
+                onEdit(product);
+              }}
+              className="font-semibold"
+              style={{
+                background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
+                color: 'white',
+              }}
             >
-              <X className="h-4 w-4 mr-2" />
-              {t('dialogs.productDetail.close')}
+              <Pencil className="h-4 w-4 mr-2" />
+              {t('common.edit', 'Edit')}
             </Button>
-            {onEdit && (
-              <Button
-                onClick={() => {
-                  onClose();
-                  onEdit(product);
-                }}
-                className="font-semibold"
-                style={{
-                  background: 'linear-gradient(to bottom right, var(--color-forest), var(--color-forest-dark))',
-                  color: 'white',
-                }}
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                {t('common.edit', 'Edit')}
-              </Button>
-            )}
-          </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

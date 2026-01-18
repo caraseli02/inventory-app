@@ -1,85 +1,65 @@
-import { nanoid } from "nanoid";
-import { appendEvent } from "./eventStore.js";
-import { projectStockLevelChanged } from "../projectors/stockProjection.js";
-import { projectDailySales } from "../projectors/salesProjection.js";
-import { proposeActionsForProduct } from "../agents/recommendationAgent.js";
-import { requiresHumanReview } from "../policies/confidencePolicy.js";
-import { isAllowedBusinessRule } from "../policies/businessRulesPolicy.js";
-import { canChangePriceToday, markPriceChangedToday } from "../policies/coordinationPolicy.js";
-import { requiresHumanReviewForReorder } from "../policies/reorderPolicy.js";
-import { isWithinBusinessHours } from "../policies/timeOfDayPolicy.js";
-import { db } from "./db.js";
+import { appendEvent } from "./eventStore";
+import { projectStockLevelChanged } from "../projectors/stockProjection";
+import { projectDailySales } from "../projectors/salesProjection";
+import { proposeActionsForProduct } from "../agents/recommendationAgent";
+import { requiresHumanReview } from "../policies/confidencePolicy";
+import { isAllowedBusinessRule } from "../policies/businessRulesPolicy";
+import { canChangePriceToday, markPriceChangedToday } from "../policies/coordinationPolicy";
+import { requiresHumanReviewForReorder } from "../policies/reorderPolicy";
+import { isWithinBusinessHours } from "../policies/timeOfDayPolicy";
+import { db } from "./db";
 import type {
   ActionProposedPayload,
   EventEnvelope,
   HumanDecisionRecordedPayload,
   ProductDiscontinuedPayload,
   StockLevelChangedPayload,
-} from "./types.js";
-import { projectHourlySales } from "../projectors/hourlySalesProjection.js";
+} from "./types";
+import { projectHourlySales } from "../projectors/hourlySalesProjection";
 
 /**
- * # Workflow Orchestrator (Event → Policy → Execution)
- *
- * This file coordinates the end‑to‑end flow:
- * - event ingestion
- * - projection updates
- * - agent proposals
- * - policy gates
- * - authorization + execution
- *
- * Invariants enforced here:
- * - All state changes are represented as events.
- * - Agents only propose; policies decide; execution is dumb.
- * - Every decision (approve/reject/suppress/review) is auditable.
+ * # Workflow Orchestrator (Supabase Version)
  */
 
-/**
- * Standard ISO timestamp helper.
- */
 function nowIso(): string {
   return new Date().toISOString();
 }
 
-// helper function to check if a product is discontinued
-  function isProductDiscontinued(productId: string): boolean {
-    const row = db.prepare(`SELECT 1 FROM discontinued_products WHERE product_id = ?`).get(productId);
-    return row !== undefined;
-  }
-
-/**
- * Update the action_state projection.
- *
- * Note: this is derived state, not a source of truth. Each update here
- * corresponds to an immutable event in the event log.
- */
-function recordActionState(actionId: string, productId: string, actionType: string, status: string, ts: string): void {
-  db.prepare(`
-    INSERT INTO action_state (action_id, product_id, action_type, status, ts)
-    VALUES (?, ?, ?, ?, ?)
-    ON CONFLICT(action_id) DO UPDATE SET status = excluded.status, ts = excluded.ts
-  `).run(actionId, productId, actionType, status, ts);
+async function isProductDiscontinued(productId: string): Promise<boolean> {
+  const { data, error } = await db
+    .from('discontinued_products')
+    .select('product_id')
+    .eq('product_id', productId)
+    .single();
+  
+  if (error && error.code !== 'PGRST116') throw error;
+  return !!data;
 }
 
-/**
- * Ingest a stock change and trigger the full workflow.
- *
- * Flow:
- * 1) Append StockLevelChanged event (fact)
- * 2) Update projections
- * 3) Ask agent for proposals
- * 4) Process each proposal through policy gates
- */
-export function handleStockLevelChanged(input: {
+async function recordActionState(actionId: string, productId: string, actionType: string, status: string, ts: string): Promise<void> {
+  const { error } = await db
+    .from('action_state')
+    .upsert({
+      action_id: actionId,
+      product_id: productId,
+      action_type: actionType,
+      status: status,
+      ts: ts
+    });
+  
+  if (error) throw error;
+}
+
+export async function handleStockLevelChanged(input: {
   productId: string;
   delta: number;
   reason: "SALE" | "DELIVERY" | "ADJUSTMENT";
   threshold?: number;
   source?: string;
-}): { eventId: string; proposedActionIds: string[] } {
+}): Promise<{ eventId: string; proposedActionIds: string[] }> {
   const ts = nowIso();
   const event: EventEnvelope<"StockLevelChanged", StockLevelChangedPayload> = {
-    id: nanoid(),
+    id: crypto.randomUUID(),
     type: "StockLevelChanged",
     ts,
     aggregateType: "Product",
@@ -93,25 +73,24 @@ export function handleStockLevelChanged(input: {
     },
   };
 
-  appendEvent(event);
+  await appendEvent(event);
 
-  // Projection updates (rebuildable)
-  projectStockLevelChanged(ts, event.payload);
-  projectDailySales(ts, event.payload);
-  projectHourlySales({
-  productId: input.productId,
-  delta: input.delta,
-  reason: input.reason,
-  ts,
-});
+  // Projection updates
+  await projectStockLevelChanged(ts, event.payload);
+  await projectDailySales(ts, event.payload);
+  await projectHourlySales({
+    productId: input.productId,
+    delta: input.delta,
+    reason: input.reason,
+    ts,
+  });
 
-  // Skip proposals for discontinued products
-  if (isProductDiscontinued(input.productId)) {
+  if (await isProductDiscontinued(input.productId)) {
     return { eventId: event.id, proposedActionIds: [] };
   }
 
-  // Agent proposes actions (bounded)
-  const proposals = proposeActionsForProduct({
+  // Agent proposes actions
+  const proposals = await proposeActionsForProduct({
     ts,
     productId: input.productId,
     experimentId: "GROCERY_OPT_V1",
@@ -119,24 +98,15 @@ export function handleStockLevelChanged(input: {
   });
 
   for (const proposal of proposals) {
-    emitAndProcessActionProposed(ts, input.productId, proposal, event.id);
+    await emitAndProcessActionProposed(ts, input.productId, proposal, event.id);
   }
 
   return { eventId: event.id, proposedActionIds: proposals.map((p) => p.actionId) };
 }
 
-/**
- * Take one ActionProposed payload and run all policy gates in order.
- *
- * Outcomes:
- * - ActionRequiresHumanReview
- * - ActionRejected
- * - ActionSuppressed
- * - ActionAuthorized → execution
- */
-function emitAndProcessActionProposed(ts: string, productId: string, proposal: ActionProposedPayload, causationId: string): void {
+async function emitAndProcessActionProposed(ts: string, productId: string, proposal: ActionProposedPayload, causationId: string): Promise<void> {
   const proposedEvent: EventEnvelope<"ActionProposed", ActionProposedPayload> = {
-    id: nanoid(),
+    id: crypto.randomUUID(),
     type: "ActionProposed",
     ts,
     aggregateType: "Action",
@@ -146,13 +116,12 @@ function emitAndProcessActionProposed(ts: string, productId: string, proposal: A
     payload: proposal,
   };
 
-  appendEvent(proposedEvent);
-  recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "PROPOSED", ts);
+  await appendEvent(proposedEvent);
+  await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "PROPOSED", ts);
 
-  // Policy Gate 1: confidence
   if (requiresHumanReview(proposal.confidence)) {
-    appendEvent({
-      id: nanoid(),
+    await appendEvent({
+      id: crypto.randomUUID(),
       type: "ActionRequiresHumanReview",
       ts,
       aggregateType: "Action",
@@ -161,14 +130,13 @@ function emitAndProcessActionProposed(ts: string, productId: string, proposal: A
       causationId: proposedEvent.id,
       payload: { actionId: proposal.actionId, reason: "LOW_CONFIDENCE" },
     });
-    recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "NEEDS_HUMAN_REVIEW", ts);
+    await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "NEEDS_HUMAN_REVIEW", ts);
     return;
   }
 
-  // Policy Gate 1b: reorder policy (all reorders need human review)
   if (requiresHumanReviewForReorder(proposal.actionType)) {
-    appendEvent({
-      id: nanoid(),
+    await appendEvent({
+      id: crypto.randomUUID(),
       type: "ActionRequiresHumanReview",
       ts,
       aggregateType: "Action",
@@ -177,15 +145,14 @@ function emitAndProcessActionProposed(ts: string, productId: string, proposal: A
       causationId: proposedEvent.id,
       payload: { actionId: proposal.actionId, reason: "REORDER_REQUIRES_APPROVAL" },
     });
-    recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "NEEDS_HUMAN_REVIEW", ts);
+    await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "NEEDS_HUMAN_REVIEW", ts);
     return;
   }
 
-  // Policy Gate 2: business rules
   const rule = isAllowedBusinessRule({ actionType: proposal.actionType, suggestedValueCents: proposal.suggestedValueCents });
   if (!rule.ok) {
-    appendEvent({
-      id: nanoid(),
+    await appendEvent({
+      id: crypto.randomUUID(),
       type: "ActionRejected",
       ts,
       aggregateType: "Action",
@@ -194,15 +161,14 @@ function emitAndProcessActionProposed(ts: string, productId: string, proposal: A
       causationId: proposedEvent.id,
       payload: { actionId: proposal.actionId, reason: rule.reason },
     });
-    recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "REJECTED", ts);
+    await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "REJECTED", ts);
     return;
   }
 
-  // Policy Gate 4: coordination (one price change per product per day)
   if (proposal.actionType === "PRICE_INCREASE" || proposal.actionType === "PRICE_DECREASE") {
-    if (!canChangePriceToday({ productId: proposal.productId, ts })) {
-      appendEvent({
-        id: nanoid(),
+    if (!(await canChangePriceToday({ productId: proposal.productId, ts }))) {
+      await appendEvent({
+        id: crypto.randomUUID(),
         type: "ActionSuppressed",
         ts,
         aggregateType: "Action",
@@ -211,14 +177,13 @@ function emitAndProcessActionProposed(ts: string, productId: string, proposal: A
         causationId: proposedEvent.id,
         payload: { actionId: proposal.actionId, reason: "PRICE_ALREADY_CHANGED_TODAY" },
       });
-      recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "SUPPRESSED", ts);
+      await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "SUPPRESSED", ts);
       return;
     }
 
-    // Policy Gate 5: time of day (price changes only during business hours)
     if (!isWithinBusinessHours(ts)) {
-      appendEvent({
-        id: nanoid(),
+      await appendEvent({
+        id: crypto.randomUUID(),
         type: "ActionSuppressed",
         ts,
         aggregateType: "Action",
@@ -227,13 +192,13 @@ function emitAndProcessActionProposed(ts: string, productId: string, proposal: A
         causationId: proposedEvent.id,
         payload: { actionId: proposal.actionId, reason: "OUTSIDE_BUSINESS_HOURS" },
       });
-      recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "SUPPRESSED", ts);
+      await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "SUPPRESSED", ts);
       return;
     }
   }
 
-  appendEvent({
-    id: nanoid(),
+  await appendEvent({
+    id: crypto.randomUUID(),
     type: "ActionAuthorized",
     ts,
     aggregateType: "Action",
@@ -242,25 +207,18 @@ function emitAndProcessActionProposed(ts: string, productId: string, proposal: A
     causationId: proposedEvent.id,
     payload: { actionId: proposal.actionId },
   });
-  recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "AUTHORIZED", ts);
+  await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "AUTHORIZED", ts);
 
-  // Execution (dumb) – do the side-effect now for MVP
-  executeAuthorizedAction(ts, proposal);
+  await executeAuthorizedAction(ts, proposal);
 }
 
-/**
- * Record a human decision and continue the workflow.
- *
- * - Rejected → ActionRejected
- * - Approved → ActionAuthorized + execution
- */
-export function handleHumanDecision(
+export async function handleHumanDecision(
   input: HumanDecisionRecordedPayload,
-): { ok: true } | { ok: false; reason: "NOT_FOUND" | "MISSING_PROPOSAL" } {
+): Promise<{ ok: true } | { ok: false; reason: "NOT_FOUND" | "MISSING_PROPOSAL" }> {
   const ts = nowIso();
 
-  appendEvent({
-    id: nanoid(),
+  await appendEvent({
+    id: crypto.randomUUID(),
     type: "HumanDecisionRecorded",
     ts,
     aggregateType: "Action",
@@ -268,62 +226,58 @@ export function handleHumanDecision(
     payload: input,
   });
 
-  const action = db
-    .prepare(`SELECT action_id, product_id, action_type, status FROM action_state WHERE action_id = ?`)
-    .get(input.actionId) as { action_id: string; product_id: string; action_type: string; status: string } | undefined;
+  const { data: action, error } = await db
+    .from('action_state')
+    .select('action_id, product_id, action_type, status')
+    .eq('action_id', input.actionId)
+    .single();
 
-  if (!action) return { ok: false, reason: "NOT_FOUND" };
+  if (error || !action) return { ok: false, reason: "NOT_FOUND" };
 
   if (input.decision === "REJECTED") {
-    appendEvent({
-      id: nanoid(),
+    await appendEvent({
+      id: crypto.randomUUID(),
       type: "ActionRejected",
       ts,
       aggregateType: "Action",
       aggregateId: input.actionId,
       payload: { actionId: input.actionId, reason: "HUMAN_REJECTED" },
     });
-    recordActionState(input.actionId, action.product_id, action.action_type, "REJECTED", ts);
+    await recordActionState(input.actionId, action.product_id, action.action_type, "REJECTED", ts);
     return { ok: true };
   }
 
-  // If human approves, authorize and execute
-  appendEvent({
-    id: nanoid(),
+  await appendEvent({
+    id: crypto.randomUUID(),
     type: "ActionAuthorized",
     ts,
     aggregateType: "Action",
     aggregateId: input.actionId,
     payload: { actionId: input.actionId },
   });
-  recordActionState(input.actionId, action.product_id, action.action_type, "AUTHORIZED", ts);
+  await recordActionState(input.actionId, action.product_id, action.action_type, "AUTHORIZED", ts);
 
-  // For MVP we need the proposal payload to execute; easiest: find it from events
-  // (In a bigger system you'd keep projections/materialized views for proposals.)
-  const proposalRow = db
-    .prepare(`SELECT payload FROM events WHERE type = 'ActionProposed' AND aggregate_id = ? ORDER BY ts ASC LIMIT 1`)
-    .get(input.actionId) as { payload: string } | undefined;
+  const { data: proposalRow, error: proposalError } = await db
+    .from('events')
+    .select('payload')
+    .eq('type', 'ActionProposed')
+    .eq('aggregate_id', input.actionId)
+    .order('ts', { ascending: true })
+    .limit(1)
+    .single();
 
-  if (!proposalRow) return { ok: false, reason: "MISSING_PROPOSAL" };
+  if (proposalError || !proposalRow) return { ok: false, reason: "MISSING_PROPOSAL" };
 
-  const proposal = JSON.parse(proposalRow.payload) as ActionProposedPayload;
-  executeAuthorizedAction(ts, proposal);
+  const proposal = proposalRow.payload as unknown as ActionProposedPayload;
+  await executeAuthorizedAction(ts, proposal);
 
   return { ok: true };
 }
 
-/**
- * A function to handle the ProductDiscontinued event
- *
- * This will:
- * - Append the ProductDiscontinued event
- * - Update the discontinued_products projection
- */
-
-export function handleProductDiscontinued(input: ProductDiscontinuedPayload): { eventId: string } {
+export async function handleProductDiscontinued(input: ProductDiscontinuedPayload): Promise<{ eventId: string }> {
   const ts = nowIso();
   const event: EventEnvelope<"ProductDiscontinued", ProductDiscontinuedPayload> = {
-    id: nanoid(),
+    id: crypto.randomUUID(),
     type: "ProductDiscontinued",
     ts,
     aggregateType: "Product",
@@ -335,61 +289,56 @@ export function handleProductDiscontinued(input: ProductDiscontinuedPayload): { 
     },
   };
 
-  appendEvent(event);
+  await appendEvent(event);
 
-  // Update the discontinued_products projection
-  db.prepare(`
-    INSERT INTO discontinued_products (product_id, reason, discontinued_by, discontinued_at)
-    VALUES (?, ?, ?, ?)
-    ON CONFLICT(product_id) DO UPDATE SET reason = excluded.reason, discontinued_at = excluded.discontinued_at, source = excluded.source
-  `).run(input.productId, input.reason, ts, input.discontinuedBy);
+  const { error } = await db
+    .from('discontinued_products')
+    .upsert({
+      product_id: input.productId,
+      reason: input.reason,
+      discontinued_by: input.discontinuedBy,
+      discontinued_at: ts
+    });
+
+  if (error) throw error;
 
   return { eventId: event.id };
 }
 
-/**
- * Execute authorized actions.
- *
- * IMPORTANT:
- * - No policies here.
- * - Only side effects + events.
- */
-function executeAuthorizedAction(ts: string, proposal: ActionProposedPayload): void {
+async function executeAuthorizedAction(ts: string, proposal: ActionProposedPayload): Promise<void> {
   if (proposal.actionType === "REORDER") {
-    appendEvent({
-      id: nanoid(),
+    await appendEvent({
+      id: crypto.randomUUID(),
       type: "ReorderPlaced",
       ts,
       aggregateType: "Product",
       aggregateId: proposal.productId,
       payload: { productId: proposal.productId, actionId: proposal.actionId, notes: proposal.reason },
     });
-    recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "EXECUTED", ts);
+    await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "EXECUTED", ts);
     return;
   }
 
   if (proposal.actionType === "PRICE_DECREASE" || proposal.actionType === "PRICE_INCREASE") {
-    executePriceChange(ts, proposal);
+    await executePriceChange(ts, proposal);
   }
 }
 
-/**
- * Execute a price change and emit the PriceChanged event.
- * Updates projections after the event is written.
- */
-function executePriceChange(ts: string, proposal: ActionProposedPayload): void {
-  const existing = db
-    .prepare(`SELECT price_cents FROM product_prices WHERE product_id = ?`)
-    .get(proposal.productId) as { price_cents: number } | undefined;
+async function executePriceChange(ts: string, proposal: ActionProposedPayload): Promise<void> {
+  const { data } = await db
+    .from('product_prices')
+    .select('price_cents')
+    .eq('product_id', proposal.productId)
+    .single();
 
-  const current = existing?.price_cents ?? 500;
+  const current = data?.price_cents ?? 500;
   const delta = Math.abs(proposal.suggestedValueCents);
   const next = proposal.actionType === "PRICE_DECREASE"
     ? Math.max(1, current - delta)
     : current + delta;
 
-  appendEvent({
-    id: nanoid(),
+  await appendEvent({
+    id: crypto.randomUUID(),
     type: "PriceChanged",
     ts,
     aggregateType: "Product",
@@ -397,14 +346,16 @@ function executePriceChange(ts: string, proposal: ActionProposedPayload): void {
     payload: { productId: proposal.productId, oldPriceCents: current, newPriceCents: next, actionId: proposal.actionId },
   });
 
-  db.prepare(`
-    INSERT INTO product_prices (product_id, price_cents, updated_at)
-    VALUES (?, ?, ?)
-    ON CONFLICT(product_id) DO UPDATE SET price_cents = excluded.price_cents, updated_at = excluded.updated_at
-  `).run(proposal.productId, next, ts);
+  const { error: upsertError } = await db
+    .from('product_prices')
+    .upsert({
+      product_id: proposal.productId,
+      price_cents: next,
+      updated_at: ts
+    });
 
-  markPriceChangedToday({ productId: proposal.productId, ts });
-  recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "EXECUTED", ts);
+  if (upsertError) throw upsertError;
+
+  await markPriceChangedToday({ productId: proposal.productId, ts });
+  await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "EXECUTED", ts);
 }
-
-

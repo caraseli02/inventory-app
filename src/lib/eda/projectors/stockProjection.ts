@@ -1,111 +1,68 @@
-import { db } from "../core/db.js";
-import type { StockLevelChangedPayload } from "../core/types.js";
+import { db } from "../core/db";
+import type { StockLevelChangedPayload } from "../core/types";
 
 /**
- * # Stock Projection (Derived State)
+ * # Stock Projection (Derived State - Supabase Version)
  *
- * This file maintains the **current stock level per product** as a projection.
- *
- * Why this exists:
- * - The event log (`events`) is the source of truth, but querying "current stock"
- *   by replaying every event on every request is too slow.
- * - A projection is a rebuildable cache/materialized view. If it is ever wrong,
- *   we can delete it and rebuild it from the immutable event log.
- *
- * What this projection stores:
- * - Table: `stock_levels(product_id, quantity, updated_at)`
- * - `quantity` is derived from the cumulative sum of `StockLevelChanged.delta`.
- * - `updated_at` tracks when the projection was last updated (ISO timestamp).
- *
- * Determinism / replayability:
- * - Given the same ordered list of `StockLevelChanged` events, the resulting
- *   `stock_levels` rows are the same.
- * - This is why rebuild reads from the event log ordered by `ts ASC`.
- *
- * Important constraint:
- * - Only events should be considered “facts”.
- * - The projection is allowed to be deleted and rebuilt; it must not contain
- *   information that cannot be recovered from events.
+ * maintaining current stock level per product.
  */
 
-/**
- * Apply one `StockLevelChanged` event to the `stock_levels` projection.
- *
- * This is called during normal operation (right after appending the event),
- * and also during replay (rebuild) when processing historical events.
- *
- * @param ts ISO timestamp of the event (used as projection updated_at)
- * @param payload The event payload containing `productId` and `delta`
- * @returns The new projected quantity after applying the delta
- */
-export function projectStockLevelChanged(ts: string, payload: StockLevelChangedPayload): number {
-  // Read current projected quantity (projection is the fast “current state” view).
-  const existing = db
-    .prepare(`SELECT quantity FROM stock_levels WHERE product_id = ?`)
-    .get(payload.productId) as { quantity: number } | undefined;
+export async function projectStockLevelChanged(ts: string, payload: StockLevelChangedPayload): Promise<number> {
+  // Read current projected quantity
+  const { data, error: selectError } = await db
+    .from('stock_levels')
+    .select('quantity')
+    .eq('product_id', payload.productId)
+    .single();
 
-  const current = existing?.quantity ?? 0;
+  if (selectError && selectError.code !== 'PGRST116') { // PGRST116 is "no rows found"
+    throw selectError;
+  }
 
-  // Stock is clamped to >= 0 for this MVP.
-  // (The event log still stores the raw delta; clamping is a projection rule.)
+  const current = data?.quantity ?? 0;
   const next = Math.max(0, current + payload.delta);
 
   // Upsert the projection row.
-  db.prepare(`
-    INSERT INTO stock_levels (product_id, quantity, updated_at)
-    VALUES (?, ?, ?)
-    ON CONFLICT(product_id) DO UPDATE SET
-      quantity = excluded.quantity,
-      updated_at = excluded.updated_at
-  `).run(payload.productId, next, ts);
+  const { error: upsertError } = await db
+    .from('stock_levels')
+    .upsert({
+      product_id: payload.productId,
+      quantity: next,
+      updated_at: ts
+    });
+
+  if (upsertError) throw upsertError;
 
   return next;
 }
 
-/**
- * Convenience read for "current stock level".
- *
- * Note:
- * - This reads the projection, not the event log.
- * - If you need full history, query `events` instead.
- */
-export function getCurrentStockLevel(productId: string): number {
-  const row = db
-    .prepare(`SELECT quantity FROM stock_levels WHERE product_id = ?`)
-    .get(productId) as { quantity: number } | undefined;
+export async function getCurrentStockLevel(productId: string): Promise<number> {
+  const { data, error } = await db
+    .from('stock_levels')
+    .select('quantity')
+    .eq('product_id', productId)
+    .single();
 
-  return row?.quantity ?? 0;
+  if (error && error.code !== 'PGRST116') throw error;
+
+  return data?.quantity ?? 0;
 }
 
-/**
- * Rebuild the entire `stock_levels` projection from the immutable event log.
- *
- * This is the “proof” that the projection is derived state:
- * - Delete all projection rows
- * - Replay all `StockLevelChanged` events in deterministic order
- *
- * When to use:
- * - After changing projection logic
- * - If you suspect projection drift/corruption
- * - As part of a “replay from scratch” workflow
- */
-export function rebuildStockLevels(): void {
-  // Delete projection rows (never delete events here).
-  db.prepare(`DELETE FROM stock_levels`).run();
+export async function rebuildStockLevels(): Promise<void> {
+  // Clear projection
+  const { error: deleteError } = await db.from('stock_levels').delete().neq('product_id', '_none_');
+  if (deleteError) throw deleteError;
 
-  // Replay only the events we need for this projection.
-  const rows = db
-    .prepare(`
-      SELECT payload, ts
-      FROM events
-      WHERE type = 'StockLevelChanged'
-      ORDER BY ts ASC
-    `)
-    .all() as Array<{ payload: string; ts: string }>;
+  // Replay events
+  const { data: events, error: eventsError } = await db
+    .from('events')
+    .select('payload, ts')
+    .eq('type', 'StockLevelChanged')
+    .order('ts', { ascending: true });
 
-  // Apply each historical event in order to reconstruct the same derived state.
-  for (const row of rows) {
-    const payload = JSON.parse(row.payload) as StockLevelChangedPayload;
-    projectStockLevelChanged(row.ts, payload);
+  if (eventsError) throw eventsError;
+
+  for (const event of events) {
+    await projectStockLevelChanged(event.ts, event.payload as StockLevelChangedPayload);
   }
 }

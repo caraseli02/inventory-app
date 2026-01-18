@@ -1,6 +1,7 @@
 import { z } from "zod";
+import type { Json } from "../../database.types";
 
-export type EventEnvelope<TType extends string, TPayload> = {
+export type EventEnvelope<TType extends string, TPayload extends Json> = {
   id: string;
   type: TType;
   ts: string;
