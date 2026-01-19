@@ -445,13 +445,7 @@ export const updateProduct = async (
     const dbUpdates: ProductUpdate = {};
     let hasChanges = false;
 
-    // Helper to compare values loosely (e.g. null vs undefined vs empty string consistency)
-    const isDifferent = (val1: any, val2: any) => {
-      // Treat null and undefined as equivalent for comparison if needed, 
-      // but strict equality is usually safer.
-      // Special case: Markup type might need normalized comparison?
-      return val1 !== val2;
-    };
+
 
     // 2. Calculate Diff
     // We map DTO keys (Capitalized) to DB keys (snake_case) manually or via logic
