@@ -1,5 +1,6 @@
 import { db } from "./db";
 import type { EventEnvelope } from "./types";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Json } from "../../database.types";
 
 /**
@@ -83,7 +84,7 @@ export async function readEventsByAggregate(input: {
   aggregateType?: string;
 }): Promise<Array<EventEnvelope<string, any>>> {
   let query = db.from('events').select('*').eq('aggregate_id', input.aggregateId);
-  
+
   if (input.aggregateType) {
     query = query.eq('aggregate_type', input.aggregateType);
   }

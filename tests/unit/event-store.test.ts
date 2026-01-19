@@ -39,7 +39,7 @@ describe('EventStore', () => {
     it('should insert event into supabase', async () => {
       const insertMock = vi.fn().mockResolvedValue({ error: null });
       const fromMock = vi.fn().mockReturnValue({ insert: insertMock });
-      // @ts-ignore
+      // @ts-expect-error - Mocking Supabase client structure
       supabase.from.mockImplementation(fromMock);
 
       await eventStore.appendEvent(mockEvent);
@@ -60,7 +60,7 @@ describe('EventStore', () => {
     it('should throw error if insert fails', async () => {
       const insertMock = vi.fn().mockResolvedValue({ error: { message: 'DB Error' } });
       const fromMock = vi.fn().mockReturnValue({ insert: insertMock });
-      // @ts-ignore
+      // @ts-expect-error - Mocking Supabase client structure
       supabase.from.mockImplementation(fromMock);
 
       await expect(eventStore.appendEvent(mockEvent)).rejects.toThrow('Failed to append event TestEvent: DB Error');
@@ -72,7 +72,7 @@ describe('EventStore', () => {
       const orderMock = vi.fn().mockResolvedValue({ data: [mockRow], error: null });
       const eqMock = vi.fn().mockReturnValue({ order: orderMock });
       const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
-      // @ts-ignore
+      // @ts-expect-error - Mocking Supabase client structure
       supabase.from.mockReturnValue({ select: selectMock });
 
       const events = await eventStore.readEventsByType('TestEvent');
@@ -89,7 +89,7 @@ describe('EventStore', () => {
   describe('createEventStore convenience wrapper', () => {
     it('should auto-generate id and ts on append', async () => {
       const insertMock = vi.fn().mockResolvedValue({ error: null });
-      // @ts-ignore
+      // @ts-expect-error - Mocking Supabase client structure
       supabase.from.mockReturnValue({ insert: insertMock });
 
       const store = eventStore.createEventStore();

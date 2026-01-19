@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { eventStore } from '../../event-store/store';
 import { ActionProposedPayload } from '../../event-store/types';
 import { supabase } from '../../supabase';

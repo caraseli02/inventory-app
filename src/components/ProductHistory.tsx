@@ -7,9 +7,10 @@ interface ProductHistoryProps {
   productId: string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function renderPayload(event: EventEnvelope<string, any>, t: (key: string) => string) {
   switch (event.type) {
-    case 'StockLevelChanged':
+    case 'StockLevelChanged': {
       const { delta, reason } = event.payload;
       return (
         <span>
@@ -17,9 +18,10 @@ function renderPayload(event: EventEnvelope<string, any>, t: (key: string) => st
           <span className="text-gray-400 text-xs ml-2">({reason})</span>
         </span>
       );
+    }
     case 'ProductCreated':
       return <span>{t('productHistory.created')} <strong>{event.payload.name}</strong></span>;
-    case 'ProductUpdated':
+    case 'ProductUpdated': {
       // Show which fields changed
       const updates = event.payload.updates || {};
       const changedFields = Object.keys(updates).filter(k => k !== 'id').join(', ');
@@ -29,7 +31,8 @@ function renderPayload(event: EventEnvelope<string, any>, t: (key: string) => st
           <span className="text-gray-400 text-xs ml-2">({t('productHistory.manualEdit')})</span>
         </span>
       );
-    case 'ActionProposed':
+    }
+    case 'ActionProposed': {
       const { actionType, reason: proposalReason } = event.payload;
       return (
         <span className="text-purple-700">
@@ -38,6 +41,7 @@ function renderPayload(event: EventEnvelope<string, any>, t: (key: string) => st
           <span className="text-gray-500 text-xs">{proposalReason}</span>
         </span>
       );
+    }
     default:
       return (
         <pre className="whitespace-pre-wrap text-xs text-gray-500">
@@ -50,6 +54,7 @@ function renderPayload(event: EventEnvelope<string, any>, t: (key: string) => st
 export function ProductHistory({ productId }: ProductHistoryProps) {
   const { t } = useTranslation();
   // 1. STATE: We need to store the events we fetch
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [events, setEvents] = useState<EventEnvelope<string, any>[]>([]);
   const [loading, setLoading] = useState(true);
 

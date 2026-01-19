@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { eventStore } from '../lib/event-store/store';
-import { ActionProposedPayload } from '../lib/event-store/types';
+import { ActionProposedPayload, type EventEnvelope } from '../lib/event-store/types';
 
 export interface InboxItem {
   id: string; // The Action ID
@@ -28,11 +28,12 @@ export function useAgentInbox() {
       const allEvents = await eventStore.getAllEvents();
 
       // 2. Filter for Proposals and Decisions
-      const proposals = allEvents.filter(e => e.type === 'ActionProposed');
+      const proposals = allEvents.filter(e => e.type === 'ActionProposed') as EventEnvelope<'ActionProposed', ActionProposedPayload>[];
       const decisions = allEvents.filter(e => e.type === 'HumanDecisionRecorded');
 
       // 3. Create a Set of Resolved Action IDs
       const resolvedActionIds = new Set(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         decisions.map(d => (d.payload as any).actionId)
       );
 
@@ -49,7 +50,7 @@ export function useAgentInbox() {
       const productMap = new Map<string, string>(productsList.map(p => [p.id, p.name]));
 
       // 4. Derive "Pending" State
-      const pendingProposals = proposals.filter((p: any) => {
+      const pendingProposals = proposals.filter(p => {
         const payload = p.payload as ActionProposedPayload;
         // Filter 1: Not resolved
         if (resolvedActionIds.has(payload.actionId)) return false;
@@ -92,7 +93,7 @@ export function useAgentInbox() {
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       ));
 
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to fetch inbox:', err);
     } finally {
       setLoading(false);
