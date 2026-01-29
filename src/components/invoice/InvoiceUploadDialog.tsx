@@ -238,7 +238,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
       setImportErrors([errorMessage]);
       setStep('preview');
     }
-  }, [editableProducts, invoiceData, onImport]);
+  }, [editableProducts, invoiceData, onImport, t]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -270,10 +270,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                 onDragLeave={handleDragLeave}
                 className={`
                   border-2 border-dashed rounded-xl p-8 text-center transition-colors
-                  ${
-                    isDragging
-                      ? 'border-[var(--color-lavender)] bg-[var(--color-lavender)]/5'
-                      : 'border-stone-300 hover:border-stone-400'
+                  ${isDragging
+                    ? 'border-[var(--color-lavender)] bg-[var(--color-lavender)]/5'
+                    : 'border-stone-300 hover:border-stone-400'
                   }
                   ${isProcessing ? 'opacity-50 pointer-events-none' : ''}
                 `}

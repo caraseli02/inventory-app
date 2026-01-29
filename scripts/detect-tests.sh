@@ -28,7 +28,7 @@ if echo "$CHANGED_FILES" | grep -qE "package\.json|tsconfig\.json|vite\.config|v
 fi
 
 # Check if test infrastructure changed
-if echo "$CHANGED_FILES" | grep -qE "src/test/|\.github/workflows/test\.yml"; then
+if echo "$CHANGED_FILES" | grep -qE "src/test/|\.github/workflows/ci\.yml"; then
   echo "⚠️  Test infrastructure changed - running ALL tests"
   RUN_ALL_TESTS=true
 fi

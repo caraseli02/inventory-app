@@ -22,9 +22,6 @@ test.describe('Inventory List', () => {
   })
 
   test('should display inventory page elements', async ({ page }) => {
-    // Should show the page content
-    await expect(page.locator('body')).toBeVisible()
-    // Should have main content area
     await expect(page.locator('main, [role="main"]').first()).toBeVisible()
   })
 

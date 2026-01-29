@@ -153,6 +153,300 @@ export interface Database {
           }
         ];
       };
+      events: {
+        Row: {
+          id: string;
+          type: string;
+          ts: string;
+          aggregate_type: string;
+          aggregate_id: string;
+          correlation_id: string | null;
+          causation_id: string | null;
+          payload: Json;
+        };
+        Insert: {
+          id: string;
+          type: string;
+          ts?: string;
+          aggregate_type: string;
+          aggregate_id: string;
+          correlation_id?: string | null;
+          causation_id?: string | null;
+          payload: Json;
+        };
+        Update: {
+          id?: string;
+          type?: string;
+          ts?: string;
+          aggregate_type?: string;
+          aggregate_id?: string;
+          correlation_id?: string | null;
+          causation_id?: string | null;
+          payload?: Json;
+        };
+        Relationships: [];
+      };
+      stock_levels: {
+        Row: {
+          product_id: string;
+          quantity: number;
+          updated_at: string;
+        };
+        Insert: {
+          product_id: string;
+          quantity: number;
+          updated_at?: string;
+        };
+        Update: {
+          product_id?: string;
+          quantity?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      product_prices: {
+        Row: {
+          product_id: string;
+          price_cents: number;
+          updated_at: string;
+        };
+        Insert: {
+          product_id: string;
+          price_cents: number;
+          updated_at?: string;
+        };
+        Update: {
+          product_id?: string;
+          price_cents?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      action_state: {
+        Row: {
+          action_id: string;
+          product_id: string;
+          action_type: string;
+          status: string;
+          ts: string;
+        };
+        Insert: {
+          action_id: string;
+          product_id: string;
+          action_type: string;
+          status: string;
+          ts?: string;
+        };
+        Update: {
+          action_id?: string;
+          product_id?: string;
+          action_type?: string;
+          status?: string;
+          ts?: string;
+        };
+        Relationships: [];
+      };
+      daily_price_changes: {
+        Row: {
+          product_id: string;
+          day: string;
+        };
+        Insert: {
+          product_id: string;
+          day: string;
+        };
+        Update: {
+          product_id?: string;
+          day?: string;
+        };
+        Relationships: [];
+      };
+      daily_sales: {
+        Row: {
+          product_id: string;
+          day: string;
+          total_sold: number;
+          total_delivered: number;
+          transaction_count: number;
+        };
+        Insert: {
+          product_id: string;
+          day: string;
+          total_sold?: number;
+          total_delivered?: number;
+          transaction_count?: number;
+        };
+        Update: {
+          product_id?: string;
+          day?: string;
+          total_sold?: number;
+          total_delivered?: number;
+          transaction_count?: number;
+        };
+        Relationships: [];
+      };
+      hourly_sales: {
+        Row: {
+          product_id: string;
+          hour: string;
+          total_sold: number;
+          transaction_count: number;
+        };
+        Insert: {
+          product_id: string;
+          hour: string;
+          total_sold?: number;
+          transaction_count?: number;
+        };
+        Update: {
+          product_id?: string;
+          hour?: string;
+          total_sold?: number;
+          transaction_count?: number;
+        };
+        Relationships: [];
+      };
+      product_velocity: {
+        Row: {
+          product_id: string;
+          window_days: number;
+          units_sold: number;
+          avg_per_day: number;
+          first_sale_ts: string | null;
+          last_sale_ts: string | null;
+          last_updated: string;
+        };
+        Insert: {
+          product_id: string;
+          window_days: number;
+          units_sold?: number;
+          avg_per_day?: number;
+          first_sale_ts?: string | null;
+          last_sale_ts?: string | null;
+          last_updated?: string;
+        };
+        Update: {
+          product_id?: string;
+          window_days?: number;
+          units_sold?: number;
+          avg_per_day?: number;
+          first_sale_ts?: string | null;
+          last_sale_ts?: string | null;
+          last_updated?: string;
+        };
+        Relationships: [];
+      };
+      stock_health: {
+        Row: {
+          product_id: string;
+          current_stock: number;
+          avg_daily_consumption: number;
+          days_until_stockout: number | null;
+          health_status: string;
+          last_updated: string;
+        };
+        Insert: {
+          product_id: string;
+          current_stock: number;
+          avg_daily_consumption?: number;
+          days_until_stockout?: number | null;
+          health_status: string;
+          last_updated?: string;
+        };
+        Update: {
+          product_id?: string;
+          current_stock?: number;
+          avg_daily_consumption?: number;
+          days_until_stockout?: number | null;
+          health_status?: string;
+          last_updated?: string;
+        };
+        Relationships: [];
+      };
+      agent_performance: {
+        Row: {
+          confidence_bucket: string;
+          total_proposals: number;
+          approved_count: number;
+          rejected_count: number;
+          approval_rate: number;
+          last_updated: string;
+        };
+        Insert: {
+          confidence_bucket: string;
+          total_proposals?: number;
+          approved_count?: number;
+          rejected_count?: number;
+          approval_rate?: number;
+          last_updated?: string;
+        };
+        Update: {
+          confidence_bucket?: string;
+          total_proposals?: number;
+          approved_count?: number;
+          rejected_count?: number;
+          approval_rate?: number;
+          last_updated?: string;
+        };
+        Relationships: [];
+      };
+      decision_latency: {
+        Row: {
+          action_id: string;
+          product_id: string;
+          action_type: string;
+          confidence: number;
+          proposed_at: string;
+          decided_at: string | null;
+          latency_seconds: number | null;
+          decision: string | null;
+          last_updated: string;
+        };
+        Insert: {
+          action_id: string;
+          product_id: string;
+          action_type: string;
+          confidence: number;
+          proposed_at: string;
+          decided_at?: string | null;
+          latency_seconds?: number | null;
+          decision?: string | null;
+          last_updated?: string;
+        };
+        Update: {
+          action_id?: string;
+          product_id?: string;
+          action_type?: string;
+          confidence?: number;
+          proposed_at?: string;
+          decided_at?: string | null;
+          latency_seconds?: number | null;
+          decision?: string | null;
+          last_updated?: string;
+        };
+        Relationships: [];
+      };
+      discontinued_products: {
+        Row: {
+          product_id: string;
+          reason: string;
+          discontinued_by: string;
+          discontinued_at: string;
+        };
+        Insert: {
+          product_id: string;
+          reason: string;
+          discontinued_by: string;
+          discontinued_at?: string;
+        };
+        Update: {
+          product_id?: string;
+          reason?: string;
+          discontinued_by?: string;
+          discontinued_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       product_stock: {
@@ -177,7 +471,16 @@ export interface Database {
         Relationships: [];
       };
     };
-    Functions: Record<string, never>;
+    Functions: {
+      increment_hourly_sales: {
+        Args: {
+          p_product_id: string;
+          p_hour: string;
+          p_delta: number;
+        };
+        Returns: void;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

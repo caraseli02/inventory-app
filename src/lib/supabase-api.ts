@@ -3,6 +3,9 @@ import type { Product, StockMovement, MarkupPercentage } from '../types';
 import type { ProductRow, ProductInsert, ProductUpdate, StockMovementRow } from './database.types';
 import { logger } from './logger';
 import { ValidationError } from './errors';
+import { eventStore } from './event-store/store';
+import { ProductCreatedPayload, StockLevelChangedPayload, ProductUpdatedPayload } from './event-store/types';
+import { checkLowStockPolicy } from './eda/policies/reorder-policy';
 
 /**
  * Validates that a string is non-empty and non-whitespace
@@ -160,15 +163,17 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
     throw new ValidationError(`Price must be a finite number, got: ${data.Price}`);
   }
 
-  logger.info('Creating new product', {
+  // [EDA] Generate ID client-side so we can use it for the event AND the database
+  const newProductId = crypto.randomUUID();
+
+  logger.info('Creating new product (EDA)', {
     name: data.Name,
+    newProductId,
     barcode: data.Barcode || '(no barcode)',
-    hasCategory: !!data.Category,
-    hasPrice: data.Price != null,
-    hasImage: !!data.Image,
   });
 
   const insertData: ProductInsert = {
+    id: newProductId, // Explicitly set the ID
     name: data.Name,
     barcode: data.Barcode || null,
     category: data.Category || null,
@@ -185,6 +190,7 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
   };
 
   try {
+    // 1. Perform Read Model Update (Supabase Insert)
     const { data: newProduct, error } = await supabase
       .from('products')
       .insert(insertData)
@@ -192,6 +198,20 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
       .single();
 
     if (error) throw error;
+
+    // 2. [EDA] Append Domain Event
+    // We do this AFTER the DB write to ensure we don't log events for failed operations
+    // (Consensus: Better to miss an event than to have a phantom event without DB change)
+    await eventStore.append({
+      type: 'ProductCreated',
+      aggregateType: 'Product',
+      aggregateId: newProductId,
+      payload: {
+        productId: newProductId,
+        name: data.Name,
+        initialPriceCents: data.Price ? Math.round(data.Price * 100) : 0,
+      } as ProductCreatedPayload,
+    });
 
     const productData = newProduct as ProductRow;
     logger.info('Product created successfully', { productId: productData.id, name: productData.name });
@@ -234,13 +254,14 @@ export const addStockMovement = async (
     throw new ValidationError(`Type must be 'IN' or 'OUT', got: ${type}`);
   }
 
-  logger.info('Adding stock movement', { productId, quantity, type });
+  logger.info('Adding stock movement (EDA)', { productId, quantity, type });
 
   // Quantity is signed: negative for OUT, positive for IN
   const finalQuantity = type === 'OUT' ? -quantity : quantity;
   const dateStr = new Date().toISOString().split('T')[0];
 
   try {
+    // 1. Perform Read Model Update (Supabase Insert)
     const { data: movement, error } = await supabase
       .from('stock_movements')
       .insert({
@@ -254,8 +275,40 @@ export const addStockMovement = async (
 
     if (error) throw error;
 
+    // 2. [EDA] Append Domain Event
+    // We treat manual add/remove as an "ADJUSTMENT".
+    try {
+      await eventStore.append({
+        type: 'StockLevelChanged',
+        aggregateType: 'Product',
+        aggregateId: productId,
+        payload: {
+          productId,
+          delta: finalQuantity,
+          reason: 'ADJUSTMENT',
+          source: 'manual_ui',
+        } as StockLevelChangedPayload,
+      });
+    } catch (evtError) {
+      logger.error('Failed to append StockLevelChanged event', { error: evtError });
+      // We don't throw here because the DB write succeeded, which is the source of truth for the UI
+    }
+
     const movementData = movement as StockMovementRow;
     logger.info('Stock movement recorded', { movementId: movementData.id, finalQuantity, type });
+
+    // 3. [EDA] Run Reactors (Synchronous for MVP)
+    // Check if we need to reorder
+    try {
+      await checkLowStockPolicy(productId);
+    } catch (policyError) {
+      // Policy failure should NOT roll back the stock movement
+      logger.warn('Reorder policy check failed', {
+        productId,
+        error: policyError instanceof Error ? policyError.message : String(policyError)
+      });
+    }
+
     return mapSupabaseStockMovement(movementData);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
@@ -387,46 +440,136 @@ export const updateProduct = async (
     throw new ValidationError(`Price must be a finite number, got: ${data.Price}`);
   }
 
-  logger.info('Updating product', {
-    productId,
-    hasName: data.Name !== undefined,
-    hasCategory: data.Category !== undefined,
-    hasPrice: data.Price !== undefined,
-    hasImage: data.Image !== undefined,
-  });
-
-  const updateData: ProductUpdate = {};
-
-  // Only add fields that are provided
-  if (data.Name !== undefined) updateData.name = data.Name;
-  if (data.Barcode !== undefined) updateData.barcode = data.Barcode || null;
-  if (data.Category !== undefined) updateData.category = data.Category || null;
-  if (data.Price !== undefined) updateData.price = data.Price ?? null;
-  if (data['Price 50%'] !== undefined) updateData.price_50 = data['Price 50%'] ?? null;
-  if (data['Price 70%'] !== undefined) updateData.price_70 = data['Price 70%'] ?? null;
-  if (data['Price 100%'] !== undefined) updateData.price_100 = data['Price 100%'] ?? null;
-  if (data.Markup !== undefined) updateData.markup = data.Markup ?? null;
-  if (data['Expiry Date'] !== undefined) updateData.expiry_date = data['Expiry Date'] || null;
-  if (data['Min Stock Level'] !== undefined) updateData.min_stock_level = data['Min Stock Level'] ?? null;
-  if (data['Ideal Stock'] !== undefined) updateData.ideal_stock = data['Ideal Stock'] ?? null;
-  if (data.Supplier !== undefined) updateData.supplier = data.Supplier || null;
-  if (data.Image !== undefined) updateData.image_url = data.Image || null;
-
   try {
+    // 1. Fetch current state for Diffing
+    const { data: currentRow, error: fetchError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', productId)
+      .single();
+
+    if (fetchError || !currentRow) {
+      throw new Error(`Product not found: ${productId}`);
+    }
+
+    const currentProduct = mapSupabaseProduct(currentRow as ProductRow);
+    const updatesForEvent: Partial<CreateProductDTO> = {};
+    const dbUpdates: ProductUpdate = {};
+    let hasChanges = false;
+
+
+
+    // 2. Calculate Diff
+    // We map DTO keys (Capitalized) to DB keys (snake_case) manually or via logic
+    if (data.Name !== undefined && data.Name !== currentProduct.fields.Name) {
+      updatesForEvent.Name = data.Name;
+      dbUpdates.name = data.Name;
+      hasChanges = true;
+    }
+    if (data.Barcode !== undefined && data.Barcode !== currentProduct.fields.Barcode) {
+      updatesForEvent.Barcode = data.Barcode;
+      dbUpdates.barcode = data.Barcode || null;
+      hasChanges = true;
+    }
+    if (data.Category !== undefined && data.Category !== currentProduct.fields.Category) {
+      updatesForEvent.Category = data.Category;
+      dbUpdates.category = data.Category || null;
+      hasChanges = true;
+    }
+    if (data.Price !== undefined && data.Price !== currentProduct.fields.Price) {
+      updatesForEvent.Price = data.Price;
+      dbUpdates.price = data.Price ?? null;
+      hasChanges = true;
+    }
+    if (data['Price 50%'] !== undefined && data['Price 50%'] !== currentProduct.fields['Price 50%']) {
+      updatesForEvent['Price 50%'] = data['Price 50%'];
+      dbUpdates.price_50 = data['Price 50%'] ?? null;
+      hasChanges = true;
+    }
+    if (data['Price 70%'] !== undefined && data['Price 70%'] !== currentProduct.fields['Price 70%']) {
+      updatesForEvent['Price 70%'] = data['Price 70%'];
+      dbUpdates.price_70 = data['Price 70%'] ?? null;
+      hasChanges = true;
+    }
+    if (data['Price 100%'] !== undefined && data['Price 100%'] !== currentProduct.fields['Price 100%']) {
+      updatesForEvent['Price 100%'] = data['Price 100%'];
+      dbUpdates.price_100 = data['Price 100%'] ?? null;
+      hasChanges = true;
+    }
+    if (data.Markup !== undefined && data.Markup !== currentProduct.fields.Markup) {
+      updatesForEvent.Markup = data.Markup;
+      dbUpdates.markup = data.Markup ?? null;
+      hasChanges = true;
+    }
+    if (data['Expiry Date'] !== undefined && data['Expiry Date'] !== currentProduct.fields['Expiry Date']) {
+      updatesForEvent['Expiry Date'] = data['Expiry Date'];
+      dbUpdates.expiry_date = data['Expiry Date'] || null;
+      hasChanges = true;
+    }
+    if (data['Min Stock Level'] !== undefined && data['Min Stock Level'] !== currentProduct.fields['Min Stock Level']) {
+      updatesForEvent['Min Stock Level'] = data['Min Stock Level'];
+      dbUpdates.min_stock_level = data['Min Stock Level'] ?? null;
+      hasChanges = true;
+    }
+    if (data['Ideal Stock'] !== undefined && data['Ideal Stock'] !== currentProduct.fields['Ideal Stock']) {
+      updatesForEvent['Ideal Stock'] = data['Ideal Stock'];
+      dbUpdates.ideal_stock = data['Ideal Stock'] ?? null;
+      hasChanges = true;
+    }
+    if (data.Supplier !== undefined && data.Supplier !== currentProduct.fields.Supplier) {
+      updatesForEvent.Supplier = data.Supplier;
+      dbUpdates.supplier = data.Supplier || null;
+      hasChanges = true;
+    }
+    // Image compare (simplified, assuming first image URL)
+    const currentImageUrl = currentProduct.fields.Image?.[0]?.url;
+    if (data.Image !== undefined && data.Image !== currentImageUrl) {
+      updatesForEvent.Image = data.Image;
+      dbUpdates.image_url = data.Image || null;
+      hasChanges = true;
+    }
+
+    logger.info('Updating product (EDA) - Diff Result', {
+      productId,
+      receivedFields: Object.keys(data),
+      changedFields: Object.keys(updatesForEvent),
+      hasChanges
+    });
+
+    if (!hasChanges) {
+      logger.info('No changes detected, skipping update', { productId });
+      return currentProduct;
+    }
+
+    // 3. Perform Read Model Update (Supabase Update)
+    // We only send the fields that changed (dbUpdates)
     const { data: updatedProduct, error } = await supabase
       .from('products')
-      .update(updateData)
+      .update(dbUpdates)
       .eq('id', productId)
       .select()
       .single();
 
     if (error) throw error;
 
+    // 4. [EDA] Append Domain Event (Only with real updates & after DB success)
+    await eventStore.append({
+      type: 'ProductUpdated',
+      aggregateType: 'Product',
+      aggregateId: productId,
+      payload: {
+        productId,
+        updates: updatesForEvent,
+        reason: 'manual_edit',
+      } as ProductUpdatedPayload,
+    });
+
     const productData = updatedProduct as ProductRow;
     const stockLevel = await calculateStockLevel(productId);
 
     logger.info('Product updated successfully', { productId, name: productData.name });
     return mapSupabaseProduct(productData, stockLevel);
+
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Failed to update product', {

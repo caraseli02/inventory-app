@@ -239,11 +239,9 @@
       "search": "Search products...",
       "searchPlaceholder": "Search by name or barcode...",
       "allCategories": "All Categories",
-      "category": "All categories",
       "clearCategory": "Clear category filter",
       "lowStock": "Low Stock",
       "lowStockTooltip": "Show products with stock at or below minimum level",
-      "sortBy": "Sort by",
       "sortByName": "Name",
       "sortByStock": "Stock",
       "sortByPrice": "Price",
@@ -616,5 +614,27 @@
     "noCategoryProducts": "No products in this category",
     "loadMore": "Load More",
     "remaining": "remaining"
+  },
+  "productHistory": {
+    "title": "Audit Log (Source of Truth)",
+    "loading": "Loading history...",
+    "empty": "No history found (This product is fresh!)",
+    "added": "Added",
+    "removed": "Removed",
+    "units": "units",
+    "created": "Created with name",
+    "updated": "Updated fields:",
+    "none": "None",
+    "manualEdit": "Manual Edit",
+    "proposedAction": "Proposed Action:"
+  },
+  "agentInbox": {
+    "title": "Agent Inbox",
+    "empty": "No Peding Actions",
+    "approve": "Approve",
+    "reject": "Reject",
+    "reorder": "Reorder Restock",
+    "confidence": "Confidence",
+    "reason": "Reason"
   }
 }
