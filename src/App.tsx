@@ -77,7 +77,9 @@ function App() {
             {view === 'home' ? (
               <div className="w-full max-w-5xl animate-in fade-in duration-300">
                 {/* AGENT INBOX INTEGRATION */}
-                <AgentInbox />
+                <ErrorBoundary>
+                  <AgentInbox />
+                </ErrorBoundary>
 
                 <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 md:grid-cols-3">
                   <Card
@@ -138,10 +140,10 @@ function App() {
                   </Card>
                   <Card
                     className={`group relative cursor-pointer rounded-2xl border-2 bg-white p-5 sm:p-6 text-left transition hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 sm:col-span-2 md:col-span-1 min-h-[180px] sm:min-h-[200px] ${lowStockError
-                        ? 'border-stone-400 hover:border-stone-500'
-                        : hasAlerts
-                          ? 'border-[var(--color-terracotta)] hover:border-[var(--color-terracotta-dark)]'
-                          : 'border-stone-200 hover:border-stone-300'
+                      ? 'border-stone-400 hover:border-stone-500'
+                      : hasAlerts
+                        ? 'border-[var(--color-terracotta)] hover:border-[var(--color-terracotta-dark)]'
+                        : 'border-stone-200 hover:border-stone-300'
                       }`}
                     onClick={() => setView('inventory')}
                     role="button"
@@ -168,18 +170,18 @@ function App() {
                     <div className="flex h-full flex-col justify-between gap-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className={`flex h-12 w-12 items-center justify-center rounded-xl group-hover:scale-110 transition-all ${lowStockError
-                            ? 'bg-stone-200 text-stone-500 group-hover:bg-stone-300'
-                            : hasAlerts
-                              ? 'bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] group-hover:bg-[var(--color-terracotta)]/20'
-                              : 'bg-stone-100 text-stone-600 group-hover:bg-stone-200'
+                          ? 'bg-stone-200 text-stone-500 group-hover:bg-stone-300'
+                          : hasAlerts
+                            ? 'bg-[var(--color-terracotta)]/10 text-[var(--color-terracotta)] group-hover:bg-[var(--color-terracotta)]/20'
+                            : 'bg-stone-100 text-stone-600 group-hover:bg-stone-200'
                           }`}>
                           <ListIcon className="h-6 w-6" />
                         </div>
                         <Badge variant="secondary" className={`px-2.5 py-1 text-xs font-semibold tracking-wide uppercase ${lowStockError
-                            ? 'bg-stone-200 border-stone-300 text-stone-600'
-                            : hasAlerts
-                              ? 'bg-[var(--color-terracotta)]/10 border-[var(--color-terracotta)]/30 text-[var(--color-terracotta)]'
-                              : 'bg-stone-100 border-stone-200'
+                          ? 'bg-stone-200 border-stone-300 text-stone-600'
+                          : hasAlerts
+                            ? 'bg-[var(--color-terracotta)]/10 border-[var(--color-terracotta)]/30 text-[var(--color-terracotta)]'
+                            : 'bg-stone-100 border-stone-200'
                           }`}>
                           {lowStockError
                             ? t('home.viewInventory.errorBadge', 'Error')
@@ -192,10 +194,10 @@ function App() {
                       <div className="space-y-1">
                         <h2 className="text-lg sm:text-xl font-bold text-stone-900">{t('home.viewInventory.title')}</h2>
                         <p className={`text-sm leading-snug ${lowStockError
-                            ? 'text-stone-500'
-                            : hasAlerts
-                              ? 'text-[var(--color-terracotta)]'
-                              : 'text-stone-500'
+                          ? 'text-stone-500'
+                          : hasAlerts
+                            ? 'text-[var(--color-terracotta)]'
+                            : 'text-stone-500'
                           }`}>
                           {lowStockError
                             ? t('alerts.loadError', 'Unable to check stock levels')
