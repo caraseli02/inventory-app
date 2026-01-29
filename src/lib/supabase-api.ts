@@ -190,10 +190,18 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
   };
 
   try {
-    // 1. [EDA] Append Domain Event
-    // We do this BEFORE the DB write (or in parallel) to establish the event log as the intent.
-    // In a full EDA system, we might *only* do this and let a reactor handle the DB insert.
-    // For now (Hybrid), we do both.
+    // 1. Perform Read Model Update (Supabase Insert)
+    const { data: newProduct, error } = await supabase
+      .from('products')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // 2. [EDA] Append Domain Event
+    // We do this AFTER the DB write to ensure we don't log events for failed operations
+    // (Consensus: Better to miss an event than to have a phantom event without DB change)
     await eventStore.append({
       type: 'ProductCreated',
       aggregateType: 'Product',
@@ -204,15 +212,6 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
         initialPriceCents: data.Price ? Math.round(data.Price * 100) : 0,
       } as ProductCreatedPayload,
     });
-
-    // 2. Perform Read Model Update (Supabase Insert)
-    const { data: newProduct, error } = await supabase
-      .from('products')
-      .insert(insertData)
-      .select()
-      .single();
-
-    if (error) throw error;
 
     const productData = newProduct as ProductRow;
     logger.info('Product created successfully', { productId: productData.id, name: productData.name });
@@ -262,21 +261,7 @@ export const addStockMovement = async (
   const dateStr = new Date().toISOString().split('T')[0];
 
   try {
-    // 1. [EDA] Append Domain Event
-    // We treat manual add/remove as an "ADJUSTMENT".
-    await eventStore.append({
-      type: 'StockLevelChanged',
-      aggregateType: 'Product',
-      aggregateId: productId,
-      payload: {
-        productId,
-        delta: finalQuantity,
-        reason: 'ADJUSTMENT',
-        source: 'manual_ui',
-      } as StockLevelChangedPayload,
-    });
-
-    // 2. Perform Read Model Update (Supabase Insert)
+    // 1. Perform Read Model Update (Supabase Insert)
     const { data: movement, error } = await supabase
       .from('stock_movements')
       .insert({
@@ -290,12 +275,39 @@ export const addStockMovement = async (
 
     if (error) throw error;
 
+    // 2. [EDA] Append Domain Event
+    // We treat manual add/remove as an "ADJUSTMENT".
+    try {
+      await eventStore.append({
+        type: 'StockLevelChanged',
+        aggregateType: 'Product',
+        aggregateId: productId,
+        payload: {
+          productId,
+          delta: finalQuantity,
+          reason: 'ADJUSTMENT',
+          source: 'manual_ui',
+        } as StockLevelChangedPayload,
+      });
+    } catch (evtError) {
+      logger.error('Failed to append StockLevelChanged event', { error: evtError });
+      // We don't throw here because the DB write succeeded, which is the source of truth for the UI
+    }
+
     const movementData = movement as StockMovementRow;
     logger.info('Stock movement recorded', { movementId: movementData.id, finalQuantity, type });
 
     // 3. [EDA] Run Reactors (Synchronous for MVP)
     // Check if we need to reorder
-    await checkLowStockPolicy(productId);
+    try {
+      await checkLowStockPolicy(productId);
+    } catch (policyError) {
+      // Policy failure should NOT roll back the stock movement
+      logger.warn('Reorder policy check failed', {
+        productId,
+        error: policyError instanceof Error ? policyError.message : String(policyError)
+      });
+    }
 
     return mapSupabaseStockMovement(movementData);
   } catch (error) {
@@ -529,7 +541,18 @@ export const updateProduct = async (
       return currentProduct;
     }
 
-    // 3. [EDA] Append Domain Event (Only with real updates)
+    // 3. Perform Read Model Update (Supabase Update)
+    // We only send the fields that changed (dbUpdates)
+    const { data: updatedProduct, error } = await supabase
+      .from('products')
+      .update(dbUpdates)
+      .eq('id', productId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // 4. [EDA] Append Domain Event (Only with real updates & after DB success)
     await eventStore.append({
       type: 'ProductUpdated',
       aggregateType: 'Product',
@@ -540,17 +563,6 @@ export const updateProduct = async (
         reason: 'manual_edit',
       } as ProductUpdatedPayload,
     });
-
-    // 4. Perform Read Model Update (Supabase Update)
-    // We only send the fields that changed (dbUpdates)
-    const { data: updatedProduct, error } = await supabase
-      .from('products')
-      .update(dbUpdates)
-      .eq('id', productId)
-      .select()
-      .single();
-
-    if (error) throw error;
 
     const productData = updatedProduct as ProductRow;
     const stockLevel = await calculateStockLevel(productId);
