@@ -1,40 +1,53 @@
 ---
-title: Short Descriptive Title (e.g., Scanner Infinite Loop Fix)
-category: frontend # [frontend, backend, infrastructure, security, ux]
-severity: HIGH # [HIGH, MEDIUM, LOW]
-date: 2026-02-01 # YYYY-MM-DD
-tags: [scanner, camera, performance, bugfix]
-module: ScannerComponent # Component or module name
-related_github_issue: 123 # Issue ID (integer) or null
-status: resolved # [resolved, deprecated]
+module: ComponentName
+date: 2026-02-01
+problem_type: ui_bug
+component: react_component
 symptoms:
-  - "Scanner does not stop after successful scan"
-  - "Camera preview freezes"
-commit: "a1b2c3d" # Optional: Git commit hash of the fix
+  - "Observable symptom 1"
+  - "Observable symptom 2"
+root_cause: dependency_array
+resolution_type: code_fix
+severity: high
+tags: [keyword1, keyword2]
+related_github_issue: null
+commit: null
 ---
 
 # Problem Description
+
 Brief description of the issue. What went wrong? What was the impact?
 
 # Symptoms
-*   List observable behaviors
-*   Error messages (if any)
-*   Steps to reproduce
+
+- List observable behaviors
+- Error messages (if any)
+- Steps to reproduce
 
 # Root Cause Analysis
+
 Why did this happen? Technical details of the failure.
-*   "The generic `useEffect` dependency array was missing `isScanning`..."
+
+```typescript
+// ❌ BEFORE - The problematic code
+```
 
 # Solution
+
 Step-by-step explanation of the fix.
-1.  Added guard clause to scanner logic.
-2.  Updated state management for `isScanning`.
+
+```typescript
+// ✅ AFTER - The fixed code
+```
 
 # Files Changed
-*   `src/components/Scanner.tsx`: Fixed dependency array.
-*   `src/hooks/useCamera.ts`: Added debounce.
+
+- `src/path/to/file.tsx` (lines X-Y)
 
 # Prevention
+
 How do we ensure this doesn't happen again?
-*   [ ] Added unit test for this scenario.
-*   [ ] Updated linter rule.
+
+- [ ] Added unit test for this scenario
+- [ ] Updated linting rules
+- [ ] Added to critical patterns

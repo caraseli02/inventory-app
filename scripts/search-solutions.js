@@ -14,9 +14,13 @@ function getAllFiles(dirPath, arrayOfFiles) {
 
   files.forEach(function (file) {
     if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+      // Skip archive and patterns directories
+      if (file === '_archive' || file === 'patterns') {
+        return;
+      }
       arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles);
     } else {
-      if (file.endsWith('.md') && file !== 'README.md' && file !== '_template.md') {
+      if (file.endsWith('.md') && file !== 'README.md' && file !== '_template.md' && !file.includes('MAINTENANCE.md')) {
         arrayOfFiles.push(path.join(dirPath, file));
       }
     }
@@ -47,8 +51,10 @@ function calculateScore(doc, query) {
   const qTerms = query.toLowerCase().split(/\s+/);
   let score = 0;
 
-  const title = (doc.frontmatter.title || '').toLowerCase();
-  const category = (doc.frontmatter.category || '').toLowerCase();
+  const moduleName = (doc.frontmatter.module || '').toLowerCase();
+  const problemType = (doc.frontmatter.problem_type || '').toLowerCase();
+  const component = (doc.frontmatter.component || '').toLowerCase();
+  const rootCause = (doc.frontmatter.root_cause || '').toLowerCase();
   const body = doc.body.toLowerCase();
   const tags = (doc.frontmatter.tags || []).map(t => t.toLowerCase());
 
@@ -56,14 +62,19 @@ function calculateScore(doc, query) {
     // Exact tag match (+10)
     if (tags.includes(term)) score += 10;
 
-    // Category match (+5)
-    if (category === term) score += 5;
+    // Module name match (+8)
+    if (moduleName.includes(term)) score += 8;
 
-    // Keyword in title (+8)
-    if (title.includes(term)) score += 8;
+    // Component match (+5)
+    if (component === term || component.includes(term)) score += 5;
 
-    // Keyword in body (+3 per occurrence, max capped maybe?)
-    // Simple occurrence count is expensive, just check inclusion for now or regex count
+    // Problem type match (+5)
+    if (problemType === term || problemType.includes(term)) score += 5;
+
+    // Root cause match (+5)
+    if (rootCause === term || rootCause.includes(term)) score += 5;
+
+    // Keyword in body (+3 per occurrence)
     const matches = (body.match(new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
     score += matches * 3;
 
@@ -115,15 +126,12 @@ function main() {
     return;
   }
 
-  // Output JSON for easy parsing by agent? Or human readable?
-  // Plan says "Return top 3 matches with summaries".
-  // I'll output JSON.
-
   const output = results.map(r => ({
     score: r.score,
-    title: r.doc.frontmatter.title,
+    module: r.doc.frontmatter.module,
     path: path.relative(path.resolve(__dirname, '..'), r.doc.filePath),
-    category: r.doc.frontmatter.category,
+    problem_type: r.doc.frontmatter.problem_type,
+    component: r.doc.frontmatter.component,
     severity: r.doc.frontmatter.severity,
     summary: r.doc.body.trim().split('\n').slice(0, 2).join(' ').replace(/[#*]/g, '').trim()
   }));

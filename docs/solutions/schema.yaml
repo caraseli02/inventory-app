@@ -1,0 +1,130 @@
+# Compound-Docs Schema for React/TypeScript/Vite Stack
+# Adapted from compound-engineering-plugin for non-Rails projects
+
+required_fields:
+  module:
+    type: string
+    description: "Module/component name (e.g., 'ScannerComponent', 'CheckoutPage')"
+    examples:
+      - "ScannerComponent"
+      - "CheckoutPage"
+      - "EditProductDialog"
+      - "useProductLookup"
+
+  date:
+    type: string
+    pattern: '^\d{4}-\d{2}-\d{2}$'
+    description: "Date when this problem was solved (YYYY-MM-DD)"
+
+  problem_type:
+    type: enum
+    values:
+      - build_error          # Vite, TypeScript compilation errors
+      - runtime_error        # Runtime exceptions, crashes
+      - performance_issue    # Re-renders, memory leaks, slow queries
+      - state_issue          # React state management bugs
+      - api_error            # Supabase, fetch, network issues
+      - ui_bug               # Component rendering, styling issues
+      - scanner_issue        # html5-qrcode specific problems
+      - pwa_issue            # Service worker, manifest, offline
+      - integration_issue    # Third-party library issues
+      - logic_error          # Business logic bugs
+      - developer_experience # DX issues, tooling, workflow
+      - documentation_gap    # Missing or unclear docs
+    description: "Primary category of the problem"
+
+  component:
+    type: enum
+    values:
+      - react_component      # React functional components
+      - custom_hook          # useXxx hooks
+      - api_client           # lib/api-provider, supabase-api
+      - scanner              # Scanner component (html5-qrcode)
+      - form_component       # shadcn form elements
+      - dialog_component     # Modal dialogs, sheets
+      - page_component       # Top-level page components
+      - utility              # lib/utils, helpers
+      - type_definition      # TypeScript types
+      - pwa_config           # Service worker, manifest
+      - build_config         # Vite, ESLint, Tailwind config
+    description: "Component type involved"
+
+  symptoms:
+    type: array[string]
+    min_items: 1
+    max_items: 5
+    description: "Observable symptoms (error messages, visual issues)"
+    examples:
+      - "Scanner loops continuously when barcode in view"
+      - "White screen after deployment"
+      - "Dialog background is transparent"
+
+  root_cause:
+    type: enum
+    values:
+      - dependency_array     # useEffect dependency issues
+      - missing_validation   # Input validation missing
+      - state_race           # Concurrent state updates
+      - missing_error_handler # Unhandled errors
+      - wrong_api_usage      # Incorrect API calls
+      - type_error           # TypeScript type mismatches
+      - memory_leak          # Uncleared subscriptions/timers
+      - config_error         # Environment/config issues
+      - logic_error          # Algorithm/business logic bug
+      - missing_cleanup      # useEffect cleanup missing
+      - stale_closure        # Stale React closure issues
+      - csp_violation        # Content Security Policy issues
+    description: "Fundamental cause of the problem"
+
+  resolution_type:
+    type: enum
+    values:
+      - code_fix             # Fixed by changing source code
+      - config_change        # Fixed by changing configuration
+      - dependency_update    # Fixed by updating package
+      - type_fix             # Fixed TypeScript types
+      - refactor             # Fixed by restructuring code
+      - environment_setup    # Fixed by environment config
+      - documentation_update # Added/updated documentation
+    description: "Type of fix applied"
+
+  severity:
+    type: enum
+    values:
+      - critical             # Blocks production or development
+      - high                 # Impairs core functionality
+      - medium               # Affects specific feature
+      - low                  # Minor issue or edge case
+    description: "Impact severity"
+
+optional_fields:
+  tags:
+    type: array[string]
+    max_items: 8
+    description: "Searchable keywords (lowercase, hyphen-separated)"
+
+  related_github_issue:
+    type: integer
+    description: "GitHub Issue number if applicable"
+
+  commit:
+    type: string
+    description: "Git commit hash of the fix"
+
+# Category mapping (problem_type → directory)
+category_mapping:
+  build_error: build-errors
+  runtime_error: runtime-errors
+  performance_issue: performance-issues
+  state_issue: state-issues
+  api_error: api-errors
+  ui_bug: ui-bugs
+  scanner_issue: scanner-issues
+  pwa_issue: pwa-issues
+  integration_issue: integration-issues
+  logic_error: logic-errors
+  developer_experience: dx-issues
+  documentation_gap: documentation
+
+# File naming convention
+file_naming: "{symptom-slug}-{module}-{YYYYMMDD}.md"

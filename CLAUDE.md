@@ -245,8 +245,8 @@ This project follows a **spec-driven development** approach. All features and cr
 
 1.  **Report**: Create a GitHub Issue with clear reproduction steps.
 2.  **Fix**: Implement the fix in a branch.
-3.  **Document**: Create a solution entry in `docs/solutions/` using `_template.md`.
-    *   One solution per issue.
+3.  **Document**: Create a solution entry in `docs/solutions/` using `_template.md` and following `docs/solutions/schema.yaml`.
+    *   One solution per issue, placed in the correct sub-directory (e.g., `ui-bugs/`, `logic-errors/`).
     *   Must reference the GitHub Issue number.
     *   Must be validated by pre-commit hooks.
 4.  **Close**: Link the solution in the GitHub Issue and close it.

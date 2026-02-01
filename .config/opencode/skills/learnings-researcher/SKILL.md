@@ -28,10 +28,11 @@ Output:
 [
   {
     "score": 45,
-    "title": "Scanner Infinite Loop",
-    "path": "docs/solutions/frontend/scanner-infinite-loop.md",
-    "category": "frontend",
-    "severity": "HIGH",
+    "module": "ScannerComponent",
+    "path": "docs/solutions/scanner-issues/scanner-infinite-loop.md",
+    "problem_type": "scanner_issue",
+    "component": "scanner",
+    "severity": "high",
     "summary": "Scanner component was re-initializing on every render..."
   }
 ]
