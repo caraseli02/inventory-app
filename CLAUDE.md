@@ -241,6 +241,16 @@ This project follows a **spec-driven development** approach. All features and cr
 4. **Update status** - When completing implementation, update the spec's Status field
 5. **Keep specs authoritative** - Specs are the single source of truth; update them when requirements change
 
+### Bug Fix Workflow
+
+1.  **Report**: Create a GitHub Issue with clear reproduction steps.
+2.  **Fix**: Implement the fix in a branch.
+3.  **Document**: Create a solution entry in `docs/solutions/` using `_template.md`.
+    *   One solution per issue.
+    *   Must reference the GitHub Issue number.
+    *   Must be validated by pre-commit hooks.
+4.  **Close**: Link the solution in the GitHub Issue and close it.
+
 ### Spec Structure
 
 Each spec follows this format:
@@ -391,6 +401,7 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
 - Architecture reference: `docs/project_architecture_structure.md`
 - Documentation index: `docs/README.md`
 - ADRs (Architecture Decision Records): `docs/adrs/`
+- **Solutions Knowledge Base**: `docs/solutions/` (Searchable history of resolved issues)
 - **Project management files** (root directory):
   - `feature_list.json` - Complete feature tracking with testing status
   - `claude-progress.md` - Project completeness and sprint tracking
