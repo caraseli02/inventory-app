@@ -6,6 +6,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a tablet-first grocery inventory app built with React + TypeScript + Vite. The app scans grocery barcodes, syncs inventory to **Supabase** (or Airtable for legacy support), and provides a clean UI for stock management. Key features include barcode scanning (html5-qrcode), PWA support, AI-powered product suggestions via OpenFoodFacts, and a flexible backend abstraction layer.
 
+---
+
+## 💬 Communication Standards
+
+**Be extremely concise. Sacrifice grammar for the sake of concision.**
+
+Apply throughout all interactions: plans, explanations, code reviews, feedback. Prioritize clarity & brevity over perfect English.
+
+---
+
 ## Commands
 
 ### Development
