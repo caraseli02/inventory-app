@@ -1,3 +1,7 @@
+> ⚠️ **Archived Content** - This file has been moved to `docs/solutions/`.
+> See [docs/solutions/README.md](../../solutions/README.md) for the knowledge base.
+> Archived on: 2026-02-01
+
 # Production Troubleshooting Guide
 
 This document covers all production issues encountered and their solutions. Use this guide when debugging similar issues in the future.
