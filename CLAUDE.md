@@ -246,10 +246,24 @@ This project follows a **spec-driven development** approach. All features and cr
 1.  **Report**: Create a GitHub Issue with clear reproduction steps.
 2.  **Fix**: Implement the fix in a branch.
 3.  **Document**: Create a solution entry in `docs/solutions/` using `_template.md` and following `docs/solutions/schema.yaml`.
+    *   ⚠️ **CRITICAL**: Must follow [Pattern 4: Documentation Schema Compliance](docs/solutions/patterns/critical-patterns.md#pattern-4-documentation-schema-compliance)
     *   One solution per issue, placed in the correct sub-directory (e.g., `ui-bugs/`, `logic-errors/`).
-    *   Must reference the GitHub Issue number.
-    *   Must be validated by pre-commit hooks.
+    *   Must use correct enum values for `problem_type`, `component`, `root_cause`, `resolution_type`.
+    *   Must reference the GitHub Issue number (if applicable).
+    *   Pre-commit hooks will validate schema automatically.
 4.  **Close**: Link the solution in the GitHub Issue and close it.
+
+**Quick Reference**:
+```bash
+# Use template
+cp docs/solutions/_template.md docs/solutions/[category]/[name].md
+
+# Validate before commit (automatic via git hooks)
+node scripts/validate-docs.js docs/solutions/[category]/[name].md
+
+# Search existing solutions
+node scripts/search-solutions.js --query "your search terms"
+```
 
 ### Spec Structure
 
