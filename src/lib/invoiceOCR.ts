@@ -1,18 +1,4 @@
-/**
- * Invoice OCR and Data Extraction
- *
- * Hybrid approach using:
- * 1. Google Cloud Vision API for OCR (1,000 pages free/month)
- * 2. GPT-4o mini for parsing OCR text into structured JSON (~$0.001/invoice)
- *
- * Security: API calls are proxied through Supabase Edge Functions
- * to keep API keys secure on the server side.
- *
- * Total cost: $0-0.10/month for typical small business
- */
-
 import { logger } from './logger';
-import { supabase } from './supabase';
 
 export interface InvoiceProduct {
   name: string;
@@ -34,234 +20,40 @@ export interface InvoiceData {
 export interface InvoiceOCRSuccess {
   readonly success: true;
   readonly data: InvoiceData;
-  readonly ocrText?: string;
 }
 
 export interface InvoiceOCRFailure {
   readonly success: false;
   readonly error: string;
-  readonly ocrText?: string;
 }
 
 export type InvoiceOCRResult = InvoiceOCRSuccess | InvoiceOCRFailure;
 
-// Valid file types for invoice upload
-export const VALID_INVOICE_TYPES = ['image/jpeg', 'image/jpg', 'image/png'] as const;
-export const VALID_INVOICE_EXTENSIONS = ['.jpg', '.jpeg', '.png'] as const;
+// Valid file types for invoice upload (PDF only)
+export const VALID_INVOICE_TYPES = ['application/pdf'] as const;
+export const VALID_INVOICE_EXTENSIONS = ['.pdf'] as const;
 
-/**
- * Step 1: Perform OCR using Google Cloud Vision API via Supabase Edge Function
- * Free tier: 1,000 pages/month
- * Security: API key is kept secure on the server side
- *
- * @param file - Image file to process (JPG/PNG only)
- * @returns Extracted text from the invoice
- * @throws Error if file is corrupted, network fails, or API returns error
- *
- * Note: This function does not implement automatic retries. Network errors
- * should be handled by the caller if retry logic is needed. Timeout is
- * handled by the Edge Function (30 seconds).
- */
-async function performOCR(file: File): Promise<string> {
-  logger.info('Starting OCR processing', {
-    fileName: file.name,
-    fileSize: file.size,
-    fileType: file.type,
-  });
-
-  // Convert file to base64
-  let base64Content: string;
-  try {
-    const base64 = await fileToBase64(file);
-    base64Content = base64.split(',')[1]; // Remove data:image/...;base64, prefix
-  } catch (error) {
-    logger.error('Failed to convert file to base64', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      errorMessage: error instanceof Error ? error.message : String(error),
-    });
-    throw new Error('Failed to read invoice file. Please ensure the file is not corrupted.');
-  }
-
-  // Call Supabase Edge Function for OCR
-  try {
-    const { data, error } = await supabase.functions.invoke('invoice-ocr', {
-      body: { imageBase64: base64Content },
-    });
-
-    if (error) {
-      const errorMessage = error.message || 'Failed to perform OCR on invoice image';
-      logger.error('Invoice OCR Edge Function error', {
-        fileName: file.name,
-        errorMessage,
-        errorContext: error.context,
-        timestamp: new Date().toISOString(),
-      });
-      throw new Error(errorMessage); // Throw the SAME message we logged
-    }
-
-    // Validate response structure
-    if (!data || typeof data !== 'object') {
-      logger.error('Invalid response structure from OCR Edge Function', {
-        fileName: file.name,
-        receivedData: data,
-      });
-      throw new Error('Invalid response from OCR service - please ensure you are using the latest app version');
-    }
-
-    if (!data.text || typeof data.text !== 'string') {
-      logger.error('Missing or invalid text field in OCR response', {
-        fileName: file.name,
-        dataKeys: Object.keys(data),
-        textType: typeof data.text,
-      });
-      throw new Error('Invalid text data from OCR service');
-    }
-
-    logger.info('OCR processing completed successfully', {
-      fileName: file.name,
-      textLength: data.text.length,
-    });
-
-    return data.text;
-  } catch (error) {
-    // If error was already thrown with a specific message, re-throw it
-    // This includes our validation errors and Edge Function errors
-    if (error instanceof Error && error.message) {
-      throw error;
-    }
-
-    // Check for network-related errors (expanded detection)
-    const isNetworkError =
-      (error instanceof TypeError &&
-        (error.message.includes('fetch') ||
-          error.message.includes('network') ||
-          error.message.includes('Failed to fetch'))) ||
-      (error instanceof Error && error.name === 'AbortError') ||
-      (error instanceof DOMException && error.name === 'NetworkError');
-
-    if (isNetworkError) {
-      const networkErrorMessage = 'Network error while processing invoice. Please check your internet connection.';
-      logger.error('Network error during OCR', {
-        fileName: file.name,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
-      });
-      throw new Error(networkErrorMessage);
-    }
-
-    logger.error('Unexpected error during OCR', {
-      fileName: file.name,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
-    });
-    throw new Error('An unexpected error occurred during OCR processing. Please try again.');
-  }
+// FastAPI response interface
+interface FastAPIExtractResponse {
+  products: Array<{
+    name: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    raw_code?: string;
+  }>;
+  supplier?: string;
+  invoice_number?: string;
+  date?: string;
+  total_amount?: number;
+  currency?: string;
+  confidence_score?: number;
 }
 
 /**
- * Step 2: Parse OCR text into structured invoice data using GPT-4o mini via Supabase Edge Function
- * Cost: ~$0.001 per invoice
- * Security: API key is kept secure on the server side
+ * Main function: Extract invoice data from uploaded PDF
  *
- * @param ocrText - Raw text extracted from invoice by OCR
- * @returns Structured invoice data with products array
- * @throws Error if network fails, API returns error, or response is malformed
- *
- * Note: The 30-second timeout is enforced server-side by the Edge Function.
- * Client-side network timeouts depend on the Supabase client configuration.
- */
-async function parseInvoiceText(ocrText: string): Promise<InvoiceData> {
-  logger.debug('Starting AI-powered invoice parsing', {
-    ocrTextLength: ocrText.length,
-  });
-
-  // Call Supabase Edge Function for parsing
-  try {
-    const { data, error } = await supabase.functions.invoke('invoice-parse', {
-      body: { ocrText },
-    });
-
-    if (error) {
-      const errorMessage = error.message || 'Failed to parse invoice text';
-      logger.error('Invoice parse Edge Function error', {
-        errorMessage,
-        errorContext: error.context,
-        timestamp: new Date().toISOString(),
-      });
-      throw new Error(errorMessage); // Throw the SAME message we logged
-    }
-
-    // Validate response structure
-    if (!data || typeof data !== 'object') {
-      logger.error('Invalid response structure from parse Edge Function', {
-        receivedData: data,
-      });
-      throw new Error('Invalid response from parsing service - please ensure you are using the latest app version');
-    }
-
-    if (!Array.isArray(data.products)) {
-      logger.error('Missing or invalid products field in parse response', {
-        dataKeys: Object.keys(data),
-        productsType: typeof data.products,
-      });
-      throw new Error('Invalid product data from parsing service');
-    }
-
-    // The Edge Function already validates and cleans the data
-    const invoiceData: InvoiceData = {
-      supplier: data.supplier,
-      invoiceNumber: data.invoiceNumber,
-      invoiceDate: data.invoiceDate,
-      totalAmount: data.totalAmount,
-      products: data.products || [],
-    };
-
-    logger.info('Invoice parsing completed successfully', {
-      productCount: invoiceData.products.length,
-      hasSupplier: !!invoiceData.supplier,
-      hasInvoiceNumber: !!invoiceData.invoiceNumber,
-    });
-
-    return invoiceData;
-  } catch (error) {
-    // If error was already thrown with a specific message, re-throw it
-    // This includes our validation errors and Edge Function errors
-    if (error instanceof Error && error.message) {
-      throw error;
-    }
-
-    // Check for network-related errors (expanded detection)
-    const isNetworkError =
-      (error instanceof TypeError &&
-        (error.message.includes('fetch') ||
-          error.message.includes('network') ||
-          error.message.includes('Failed to fetch'))) ||
-      (error instanceof Error && error.name === 'AbortError') ||
-      (error instanceof DOMException && error.name === 'NetworkError');
-
-    if (isNetworkError) {
-      const networkErrorMessage = 'Network error while parsing invoice. Please check your internet connection.';
-      logger.error('Network error during invoice parsing', {
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorType: error instanceof Error ? error.constructor.name : 'Unknown',
-      });
-      throw new Error(networkErrorMessage);
-    }
-
-    logger.error('Unexpected error during invoice parsing', {
-      errorMessage: error instanceof Error ? error.message : String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
-    });
-    throw new Error('An unexpected error occurred during invoice parsing. Please try again.');
-  }
-}
-
-/**
- * Main function: Extract invoice data from uploaded file
- *
- * @param file - Invoice file (JPG, PNG only - PDF support removed)
+ * @param file - Invoice PDF file
  * @param onProgress - Optional callback for progress updates (0-100)
  * @returns Invoice data extraction result
  */
@@ -283,7 +75,6 @@ export async function extractInvoiceData(
       logger.warn('Progress callback failed - UI progress updates may be inaccurate', {
         progress,
         errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
       });
     }
   };
@@ -291,9 +82,8 @@ export async function extractInvoiceData(
   try {
     safeProgress(10);
 
-    // Validate file type (PDF removed)
-    const validTypes: string[] = Array.from(VALID_INVOICE_TYPES);
-    if (!validTypes.includes(file.type)) {
+    // Validate file type (PDF only)
+    if (!VALID_INVOICE_TYPES.includes(file.type)) {
       logger.warn('Invalid file type rejected', {
         fileName: file.name,
         fileType: file.type,
@@ -301,14 +91,29 @@ export async function extractInvoiceData(
       });
       return {
         success: false,
-        error: 'Invalid file type. Please upload a JPG or PNG file.',
+        error: 'Invalid file type. Please upload a PDF file.',
+      };
+    }
+
+    // Validate file extension
+    const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
+    const validExtensions = VALID_INVOICE_EXTENSIONS as readonly string[];
+    if (!validExtensions.includes(fileExt)) {
+      logger.warn('Invalid file extension rejected', {
+        fileName: file.name,
+        fileExtension: fileExt,
+        validExtensions: Array.from(VALID_INVOICE_EXTENSIONS),
+      });
+      return {
+        success: false,
+        error: 'Invalid file extension. Please upload a PDF file.',
       };
     }
 
     safeProgress(20);
 
     // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       logger.warn('File size exceeds limit', {
         fileName: file.name,
@@ -322,41 +127,189 @@ export async function extractInvoiceData(
     }
 
     safeProgress(30);
+
+    // Prepare request to FastAPI /extract endpoint
+    const apiUrl = import.meta.env.VITE_INVOICE_API_URL || 'http://localhost:8000';
+    const extractUrl = `${apiUrl}/extract`;
+
+    // Prepare FormData with the file
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Prepare headers with optional API key
+    const headers: Record<string, string> = {};
+    const apiKey = import.meta.env.VITE_INVOICE_API_KEY;
+    const requireAuth = import.meta.env.VITE_INVOICE_API_REQUIRE_AUTH === 'true';
+
+    if (requireAuth || apiKey) {
+      headers['X-API-Key'] = apiKey || '';
+    }
+
+    logger.debug('Sending request to FastAPI /extract endpoint', {
+      url: extractUrl,
+      hasApiKey: !!apiKey,
+      requireAuth,
+      fileName: file.name,
+    });
+
     safeProgress(40);
 
-    // Step 1: Perform OCR
-    const ocrText = await performOCR(file);
-    safeProgress(70);
-
-    // Step 2: Parse OCR text into structured data
-    const invoiceData = await parseInvoiceText(ocrText);
-    safeProgress(90);
-
-    // Validate that we got at least one product
-    if (!invoiceData.products || invoiceData.products.length === 0) {
-      logger.warn('No products found in parsed invoice', {
+    // Call FastAPI /extract endpoint
+    let response: Response;
+    try {
+      response = await fetch(extractUrl, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+    } catch (error) {
+      logger.error('Network error during invoice extraction', {
+        url: extractUrl,
         fileName: file.name,
-        hasOcrText: !!ocrText,
-        ocrTextLength: ocrText.length,
+        errorMessage: error instanceof Error ? error.message : String(error),
       });
       return {
         success: false,
-        error: 'No products found in the invoice. Please ensure the invoice is clear and contains product line items.',
-        ocrText,
+        error: 'Network error while processing invoice. Please check your internet connection and try again.',
       };
     }
+
+    safeProgress(70);
+
+    // Handle authentication errors
+    if (response.status === 401) {
+      logger.error('Authentication failed', {
+        url: extractUrl,
+        fileName: file.name,
+      });
+      return {
+        success: false,
+        error: 'Invalid or missing API key. Please check your API configuration.',
+      };
+    }
+
+    // Handle client errors (400, 422)
+    if (response.status === 400 || response.status === 422) {
+      logger.error('Invalid PDF or request error', {
+        url: extractUrl,
+        fileName: file.name,
+        status: response.status,
+      });
+      return {
+        success: false,
+        error: 'Invalid PDF file. Please ensure the file is a valid PDF document.',
+      };
+    }
+
+    // Handle other HTTP errors
+    if (!response.ok) {
+      logger.error('HTTP error from FastAPI', {
+        url: extractUrl,
+        fileName: file.name,
+        status: response.status,
+        statusText: response.statusText,
+      });
+      return {
+        success: false,
+        error: `Error processing invoice: ${response.status} ${response.statusText}`,
+      };
+    }
+
+    // Parse response
+    let responseData: FastAPIExtractResponse;
+    try {
+      responseData = await response.json();
+    } catch (error) {
+      logger.error('Failed to parse FastAPI response', {
+        url: extractUrl,
+        fileName: file.name,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
+      return {
+        success: false,
+        error: 'Invalid response from invoice service. Please try again.',
+      };
+    }
+
+    // Validate response structure
+    if (!responseData || typeof responseData !== 'object') {
+      logger.error('Invalid response structure from FastAPI', {
+        fileName: file.name,
+        receivedData: responseData,
+      });
+      return {
+        success: false,
+        error: 'Invalid response from invoice service. Please ensure you are using the latest app version.',
+      };
+    }
+
+    if (!Array.isArray(responseData.products)) {
+      logger.error('Missing or invalid products field in response', {
+        fileName: file.name,
+        dataKeys: Object.keys(responseData),
+        productsType: typeof responseData.products,
+      });
+      return {
+        success: false,
+        error: 'Invalid product data from invoice service',
+      };
+    }
+
+    // Require total_amount from server
+    if (responseData.total_amount === undefined || responseData.total_amount === null) {
+      logger.error('Missing total_amount in response', {
+        fileName: file.name,
+        dataKeys: Object.keys(responseData),
+      });
+      return {
+        success: false,
+        error: 'Invoice total amount not found in response. Please ensure the invoice contains a total.',
+      };
+    }
+
+    // Validate that we got at least one product
+    if (responseData.products.length === 0) {
+      logger.warn('No products found in response', {
+        fileName: file.name,
+      });
+      return {
+        success: false,
+        error: 'No products found in the invoice. Please ensure the invoice contains product line items.',
+      };
+    }
+
+    safeProgress(90);
+
+    // Map FastAPI response to InvoiceData
+    const invoiceData: InvoiceData = {
+      products: responseData.products.map((product) => ({
+        name: product.name,
+        quantity: product.quantity,
+        unitPrice: product.unit_price,
+        totalPrice: product.total_price,
+        barcode: product.raw_code,
+      })),
+      supplier: responseData.supplier,
+      invoiceNumber: responseData.invoice_number,
+      invoiceDate: responseData.date,
+      totalAmount: responseData.total_amount,
+    };
+
+    // Ignore currency and confidence_score as per plan
 
     safeProgress(100);
 
     logger.info('Invoice extraction completed successfully', {
       fileName: file.name,
       productCount: invoiceData.products.length,
+      hasSupplier: !!invoiceData.supplier,
+      hasInvoiceNumber: !!invoiceData.invoiceNumber,
+      totalAmount: invoiceData.totalAmount,
     });
 
     return {
       success: true,
       data: invoiceData,
-      ocrText,
     };
   } catch (error) {
     logger.error('Invoice extraction failed', {
@@ -371,47 +324,4 @@ export async function extractInvoiceData(
       error: error instanceof Error ? error.message : 'Failed to extract invoice data',
     };
   }
-}
-
-/**
- * Helper: Convert file to base64 string with enhanced error handling
- */
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      logger.debug('File converted to base64 successfully', {
-        fileName: file.name,
-        fileSize: file.size,
-      });
-      resolve(reader.result as string);
-    };
-
-    reader.onerror = () => {
-      const error = reader.error;
-      logger.error('FileReader failed to read file', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        errorName: error?.name,
-        errorMessage: error?.message,
-        errorCode: error && 'code' in error ? (error as { code?: number }).code : undefined, // Some browsers include error codes
-        errorFull: error, // Log the full error object
-      });
-
-      // Provide user-friendly error messages based on error type
-      if (error?.name === 'NotFoundError') {
-        reject(new Error('File not found. Please try selecting the file again.'));
-      } else if (error?.name === 'NotReadableError') {
-        reject(new Error('File cannot be read. The file may be corrupted or inaccessible.'));
-      } else if (error?.name === 'SecurityError') {
-        reject(new Error('Security error: Browser blocked file access.'));
-      } else {
-        reject(new Error('Failed to read file. Please try again.'));
-      }
-    };
-
-    reader.readAsDataURL(file);
-  });
 }

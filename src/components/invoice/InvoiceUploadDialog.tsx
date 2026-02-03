@@ -75,7 +75,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
 
     if (!validExtensions.includes(fileExt)) {
-      setError(t('invoiceUpload.errors.invalidFile', 'Please select a JPG or PNG file.'));
+      setError(t('invoiceUpload.errors.invalidFile', 'Please select a PDF file.'));
       return;
     }
 
@@ -285,7 +285,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                   {t('invoiceUpload.dropzone.subtitle', 'or click to browse files')}
                 </p>
                 <p className="text-xs text-stone-400 mb-4">
-                  {t('invoiceUpload.dropzone.fileTypes', 'Supports JPG, PNG (max 10MB)')}
+                  {t('invoiceUpload.dropzone.fileTypes', 'Supports PDF (max 10MB)')}
                 </p>
                 <input
                   type="file"
@@ -316,9 +316,8 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                       <p className="font-medium text-blue-900">{fileName}</p>
                       <p className="text-sm text-blue-600">
                         {(() => {
-                          if (ocrProgress < 40) return t('invoiceUpload.progress.preparing', 'Preparing invoice...');
-                          if (ocrProgress < 70) return t('invoiceUpload.progress.extracting', 'Extracting text with AI...');
-                          if (ocrProgress < 90) return t('invoiceUpload.progress.analyzing', 'Analyzing products...');
+                          if (ocrProgress < 50) return t('invoiceUpload.progress.preparing', 'Preparing invoice...');
+                          if (ocrProgress < 80) return t('invoiceUpload.progress.extracting', 'Extracting data...');
                           return t('invoiceUpload.progress.finalizing', 'Finalizing...');
                         })()}
                       </p>
@@ -342,7 +341,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                 </p>
                 <ul className="text-xs text-stone-600 space-y-1.5">
                   <li>
-                    • {t('invoiceUpload.howItWorks.step1', 'Step 1: AI reads text from your invoice (Google Cloud Vision)')}
+                    • {t('invoiceUpload.howItWorks.step1', 'Step 1: Upload your PDF invoice')}
                   </li>
                   <li>
                     • {t('invoiceUpload.howItWorks.step2', 'Step 2: Extracts product names, quantities, and prices')}
@@ -351,7 +350,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                     • {t('invoiceUpload.howItWorks.step3', 'Step 3: You review and confirm before importing')}
                   </li>
                   <li className="pt-1 text-[var(--color-forest)] font-medium">
-                    ✓ {t('invoiceUpload.howItWorks.free', 'Essentially free: 1,000 pages/month included')}
+                    ✓ {t('invoiceUpload.howItWorks.fast', 'Fast and accurate PDF processing')}
                   </li>
                 </ul>
               </div>
