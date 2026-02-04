@@ -1,4 +1,11 @@
 import { useState, useCallback } from 'react';
+
+/**
+ * Check if value is a valid number
+ */
+function isValidNumber(value: unknown): value is number {
+  return typeof value === 'number' && !isNaN(value) && Number.isFinite(value);
+}
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -178,9 +185,24 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
   }, []);
 
   const handleProductFieldChange = useCallback((index: number, field: keyof InvoiceProduct, value: string | number) => {
+    // Validate number fields before updating state
+    if (typeof value === 'number') {
+      // Validate existing number values
+      if (!isValidNumber(value)) {
+        return; // Don't update with invalid number (NaN, Infinity)
+      }
+    } else {
+      // Convert string to number and validate
+      const numValue = Number(value);
+      if (!isValidNumber(numValue)) {
+        return; // Don't update with invalid conversion (NaN from "abc")
+      }
+    }
+
+    // Value is valid, update state
     setEditableProducts(prev => prev.map((product, i) => {
       if (i !== index) return product;
-      return { ...product, [field]: value };
+      return { ...product, [field]: typeof value === 'number' ? value : Number(value) };
     }));
   }, []);
 

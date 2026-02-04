@@ -46,8 +46,90 @@ interface FastAPIExtractResponse {
   invoice_number?: string;
   date?: string;
   total_amount?: number;
-  currency?: string;
-  confidence_score?: number;
+}
+
+/**
+ * Validate product fields from FastAPI response
+ */
+function isValidProduct(product: FastAPIExtractResponse['products'][0]): boolean {
+  return (
+    typeof product.name === 'string' &&
+    product.name.trim().length > 0 &&
+    product.name.length <= 500 &&
+    typeof product.quantity === 'number' &&
+    !isNaN(product.quantity) &&
+    Number.isFinite(product.quantity) &&
+    product.quantity > 0 &&
+    product.quantity <= 10000 &&
+    typeof product.unit_price === 'number' &&
+    !isNaN(product.unit_price) &&
+    Number.isFinite(product.unit_price) &&
+    product.unit_price >= 0 &&
+    product.unit_price <= 1000000 &&
+    typeof product.total_price === 'number' &&
+    !isNaN(product.total_price) &&
+    Number.isFinite(product.total_price) &&
+    product.total_price >= 0 &&
+    (product.raw_code === undefined ||
+      (typeof product.raw_code === 'string' && product.raw_code.length <= 50))
+  );
+}
+
+/**
+ * Check if value is a valid number
+ */
+function isValidNumber(value: unknown): value is number {
+  return typeof value === 'number' && !isNaN(value) && Number.isFinite(value);
+}
+
+/**
+ * Upload file with progress tracking using XMLHttpRequest
+ */
+async function uploadWithProgress(
+  url: string,
+  file: File,
+  headers: Record<string, string>,
+  onProgress?: (progress: number) => void
+): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    // Track actual upload progress (40% → 70%)
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const uploadProgress = 40 + (e.loaded / e.total) * 30;
+        onProgress?.(Math.round(uploadProgress));
+      }
+    });
+
+    xhr.onload = () => {
+      // Upload complete, server processing: 70% → 90%
+      onProgress?.(90);
+      resolve(new Response(xhr.responseText, { status: xhr.status }));
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Upload failed'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error('Upload timed out'));
+    };
+
+    // 2 minute timeout (size-adaptive)
+    const timeoutMs = Math.max(60000, (file.size / (1024 * 1024)) * 1000);
+    xhr.timeout = timeoutMs;
+
+    xhr.open('POST', url);
+
+    Object.entries(headers).forEach(([key, value]) => {
+      xhr.setRequestHeader(key, value);
+    });
+
+    xhr.send(formData);
+  });
 }
 
 /**
@@ -83,7 +165,7 @@ export async function extractInvoiceData(
     safeProgress(10);
 
     // Validate file type (PDF only)
-    if (!VALID_INVOICE_TYPES.includes(file.type)) {
+    if (!(VALID_INVOICE_TYPES as readonly string[]).includes(file.type)) {
       logger.warn('Invalid file type rejected', {
         fileName: file.name,
         fileType: file.type,
@@ -132,10 +214,6 @@ export async function extractInvoiceData(
     const apiUrl = import.meta.env.VITE_INVOICE_API_URL || 'http://localhost:8000';
     const extractUrl = `${apiUrl}/extract`;
 
-    // Prepare FormData with the file
-    const formData = new FormData();
-    formData.append('file', file);
-
     // Prepare headers with optional API key
     const headers: Record<string, string> = {};
     const apiKey = import.meta.env.VITE_INVOICE_API_KEY;
@@ -154,15 +232,30 @@ export async function extractInvoiceData(
 
     safeProgress(40);
 
-    // Call FastAPI /extract endpoint
+    // Call FastAPI /extract endpoint with real upload progress
     let response: Response;
     try {
-      response = await fetch(extractUrl, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
+      response = await uploadWithProgress(extractUrl, file, headers, onProgress);
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        logger.error('Upload timed out', {
+          fileName: file.name,
+          fileSize: file.size,
+          timeoutMs: Math.max(60000, (file.size / (1024 * 1024)) * 1000),
+        });
+        return {
+          success: false,
+          error: 'Upload timed out. Please try again with a smaller file or faster internet connection.',
+        };
+      }
+
+      if (error instanceof Error && error.message === 'Upload timed out') {
+        return {
+          success: false,
+          error: 'Upload timed out. Please try again with a smaller file or faster internet connection.',
+        };
+      }
+
       logger.error('Network error during invoice extraction', {
         url: extractUrl,
         fileName: file.name,
@@ -174,7 +267,7 @@ export async function extractInvoiceData(
       };
     }
 
-    safeProgress(70);
+    safeProgress(90);
 
     // Handle authentication errors
     if (response.status === 401) {
@@ -280,7 +373,38 @@ export async function extractInvoiceData(
 
     safeProgress(90);
 
-    // Map FastAPI response to InvoiceData
+    // Validate total_amount type and value
+    if (
+      typeof responseData.total_amount !== 'number' ||
+      !isValidNumber(responseData.total_amount) ||
+      responseData.total_amount < 0
+    ) {
+      logger.error('Invalid total_amount type in response', {
+        fileName: file.name,
+        receivedType: typeof responseData.total_amount,
+        receivedValue: responseData.total_amount,
+      });
+      return {
+        success: false,
+        error: 'Invalid invoice total amount received from service',
+      };
+    }
+
+    // Validate all products before mapping
+    const invalidProduct = responseData.products.find((p) => !isValidProduct(p));
+    if (invalidProduct) {
+      logger.error('Invalid product data in response', {
+        fileName: file.name,
+        invalidProduct: JSON.stringify(invalidProduct),
+        productIndex: responseData.products.indexOf(invalidProduct),
+      });
+      return {
+        success: false,
+        error: 'Invalid product data received from invoice service. Please ensure that invoice contains valid product information.',
+      };
+    }
+
+    // Map FastAPI response to InvoiceData (now validated)
     const invoiceData: InvoiceData = {
       products: responseData.products.map((product) => ({
         name: product.name,
