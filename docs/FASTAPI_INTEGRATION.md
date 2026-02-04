@@ -224,9 +224,9 @@ In your production hosting platform:
 
 3. Set `VITE_INVOICE_API_REQUIRE_AUTH` to `true`
 
-### Step 3: Update .env.example
+### Step 3: Confirm .env.example Placeholders
 
-Update `.env.example` with production values (don't include real keys):
+Ensure `.env.example` contains placeholder values only. Do **not** put production secrets in this file.
 
 ```bash
 VITE_INVOICE_API_URL=https://api.yourdomain.com

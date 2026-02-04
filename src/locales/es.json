@@ -512,24 +512,25 @@
     "dropzone": {
       "title": "Arrastra y suelta tu factura aquí",
       "subtitle": "o haz clic para buscar archivos",
-      "fileTypes": "Admite JPG, PNG (máx. 10MB)",
+      "fileTypes": "Admite PDF (máx. 10MB)",
       "selectFile": "Seleccionar archivo de factura"
     },
     "progress": {
       "preparing": "Preparando factura...",
-      "extracting": "Extrayendo texto con IA...",
+      "extracting": "Extrayendo datos...",
       "analyzing": "Analizando productos...",
       "finalizing": "Finalizando..."
     },
     "howItWorks": {
       "title": "Cómo funciona",
-      "step1": "Paso 1: La IA lee el texto de tu factura (Google Cloud Vision)",
+      "step1": "Paso 1: Sube tu factura PDF",
       "step2": "Paso 2: Extrae nombres de productos, cantidades y precios",
       "step3": "Paso 3: Revisas y confirmas antes de importar",
+      "fast": "Procesamiento de PDF rápido y preciso",
       "free": "Prácticamente gratis: 1.000 páginas/mes incluidas"
     },
     "errors": {
-      "invalidFile": "Selecciona un archivo JPG o PNG.",
+      "invalidFile": "Selecciona un archivo PDF.",
       "processFailed": "No se pudo procesar la factura. ",
       "apiKey": "Revisa la configuración de la API.",
       "network": "Revisa tu conexión a internet e inténtalo de nuevo.",
