@@ -238,7 +238,73 @@ VITE_INVOICE_API_REQUIRE_AUTH=true
 
 ## Manual Testing
 
-### Prerequisites
+### Quick CLI Commands
+
+#### Check Server Health
+```bash
+curl -i http://localhost:8000/health
+# Expected: HTTP/1.1 200 OK
+```
+
+#### Test FastAPI Endpoint (No Auth)
+```bash
+curl -X POST http://localhost:8000/extract \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/path/to/invoice.pdf"
+# Expected: JSON response with products array
+```
+
+#### Test FastAPI Endpoint (With Auth)
+```bash
+curl -X POST http://localhost:8000/extract \
+  -H "X-API-Key: dev-key-12345" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/path/to/invoice.pdf"
+# Expected: JSON response with products array
+```
+
+#### Test Frontend Server
+```bash
+curl -i http://localhost:5173
+# Expected: HTML response from React app
+```
+
+#### Monitor Console in Browser
+```javascript
+// Paste in DevTools Console (F12)
+// Monitor for errors during testing
+window.addEventListener('error', (e) => {
+  console.error('Error:', e);
+});
+// Filter Console by: error, warn
+```
+
+---
+
+### Prerequisites Checklist
+
+### Prerequisites Checklist ✅
+
+Before starting manual testing, verify:
+
+#### Environment Setup
+- [ ] **FastAPI service running** - `curl http://localhost:8000/health`
+- [ ] **Frontend app running** - `curl http://localhost:5173`
+- [ ] **Environment variables configured** in `.env`:
+  - [ ] `VITE_INVOICE_API_URL=http://localhost:8000`
+  - [ ] `VITE_INVOICE_API_KEY=dev-key-12345`
+  - [ ] `VITE_INVOICE_API_REQUIRE_AUTH=false`
+
+#### Browser Tools
+- [ ] **DevTools Console open** (F12 on Windows/Linux, Option+Cmd+J on Mac)
+- [ ] **Network tab visible** for request monitoring
+- [ ] **Errors filter enabled** in Console
+- [ ] **Disable browser cache** for testing
+
+#### Test Data Preparation
+- [ ] **Sample invoice PDF ready** - Choose a test invoice with known products
+- [ ] **Expected results documented** - Note product names, quantities, prices
+- [ ] **Supplier info noted** - Know supplier name, invoice number, date (if present)
 
 1. **FastAPI service running** (see [Local Development Setup](#local-development-setup))
 2. **App running:** `pnpm dev`
@@ -249,22 +315,86 @@ VITE_INVOICE_API_REQUIRE_AUTH=true
 1. **Open the app:** Navigate to http://localhost:5173
 2. **Go to Inventory page**
 3. **Click "Import from Invoice" button**
+
+**Checkpoint:** ✅ Import dialog appears
+**Expected UI State:**
+```
+┌───────────────────────────────────┐
+│  Import from Invoice            │
+├───────────────────────────────────┤
+│  [Upload PDF Invoice Here]   │  ← Dialog
+└───────────────────────────────────┘
+```
+
 4. **Upload a PDF invoice:**
    - Click "Select Invoice File"
    - Choose a valid PDF invoice file
+
+**Checkpoint:** ✅ File selection completes
+**Checkpoint:** ✅ Progress bar starts moving
+**Expected UI State:**
+```
+┌───────────────────────────────────┐
+│  Import from Invoice            │
+├───────────────────────────────────┤
+│  Processing...               │  ← Progress Bar
+│  📊 30%                      │
+└───────────────────────────────────┘
+```
+
 5. **Verify extraction:**
    - Preview table should appear with extracted products
    - Supplier name (if present)
    - Invoice number (if present)
    - Total amount should match invoice
+
+**Checkpoint:** ✅ Preview table appears
+**Checkpoint:** ✅ Product count matches invoice
+**Checkpoint:** ✅ No console errors
+
+**Expected UI State:**
+```
+┌─────────────────────────────────────────────────┐
+│  ✅ Extraction Complete                  │
+├──────────────────────────────────────────────┤
+│  Product Name  | Qty  | Price  | Barcode  │
+│  Milk 1L       | 12    | €1.35  | 0123...  │
+│  Bread Whole    | 5     | €2.50  | 9876...  │
+│  ...                              │
+└───────────────────────────────────────────────┘
+```
+
 6. **Review and edit:**
    - Check product names are correct
    - Verify quantities and prices
    - Add missing barcodes if needed
+
+**Checkpoint:** ✅ Edit mode activates
+**Checkpoint:** ✅ Changes saved successfully
+
 7. **Import products:**
    - Click "Import [N] Products"
    - Verify products are added to inventory
    - Check stock IN movements were created
+
+**Checkpoint:** ✅ Import button enabled
+**Checkpoint:** ✅ Import completes successfully
+**Checkpoint:** ✅ Products visible in inventory
+
+#### Expected Results
+
+| Test Aspect | Expected Result | How to Verify |
+|-------------|-----------------|----------------|
+| **Products Extracted** | ✅ Count matches invoice line items | Count products in preview table |
+| **Product Names** | ✅ Names match invoice text | Compare name by name |
+| **Quantities** | ✅ Accurate to invoice | Verify qty column |
+| **Prices** | ✅ Unit and total match | Check unit_price × qty = total_price |
+| **Supplier Info** | ✅ Extracted if present | Check summary card at top |
+| **Barcodes** | ✅ Extracted if on invoice | Look for codes in preview table |
+| **Import Success** | ✅ Products appear in inventory | Navigate to inventory list, verify new items |
+| **Stock Movements** | ✅ Stock IN created | Check product details for stock count |
+| **Console Errors** | ❌ Zero errors | Check DevTools Console (F12) |
+| **Network Status** | ✅ 200 OK response | Check Network tab in DevTools |
 
 ### Test 2: Test with curl
 
@@ -284,6 +414,57 @@ curl -X POST \
 ```
 
 **Expected Output:** JSON response with extracted data (see [FastAPI Contract](#fastapi-contract))
+
+### Quick Test Scenarios
+
+#### Quick Test 1: Simple Invoice OCR (Sanity Check)
+
+**Purpose:** Verify basic end-to-end flow works
+
+**Steps:**
+```bash
+1. Upload any simple PDF invoice
+2. Verify products extracted (expect > 0)
+3. Import products
+4. Check inventory list
+```
+
+**Expected:** ✅ Products appear in inventory within 30 seconds
+
+---
+
+#### Quick Test 2: Barcode Detection
+
+**Purpose:** Verify OCR extracts barcodes correctly
+
+**Steps:**
+```bash
+1. Upload invoice with known barcodes
+2. Check preview table for barcode column
+3. Verify codes match expected values
+```
+
+**Expected:** ✅ Barcodes displayed in preview (or "No barcode" if absent)
+
+---
+
+#### Quick Test 3: Error Handling
+
+**Purpose:** Verify error messages are user-friendly
+
+**Steps:**
+```bash
+1. Upload non-PDF file (try .jpg)
+2. Verify error message appears
+3. Try empty/corrupted PDF
+4. Verify "Invalid PDF file" error
+```
+
+**Expected:** ✅ Clear, actionable error messages
+
+---
+
+### Test 2: Test with curl
 
 ### Test 3: Error Scenarios
 
@@ -318,6 +499,40 @@ curl -X POST \
 
 ## Common Errors & Troubleshooting
 
+### Troubleshooting Quick Reference
+
+| Symptom | Likely Cause | Quick Fix | Reference |
+|----------|---------------|------------|------------|
+| "Network error while processing" | FastAPI server down | `curl http://localhost:8000/health` | Step 1 in guide |
+| "Invalid or missing API key" | Env var missing or wrong | Check `.env` file values | Prerequisites |
+| "Invalid file type" | Not a PDF | Verify file is `.pdf` format | Error 400 |
+| "No products found" | Poor quality/handwritten invoice | Try cleaner invoice | Issue 422 |
+| Progress stuck at 50% | Server timeout | Check FastAPI logs | Network tab |
+| Products not importing | Backend mismatch | Verify Supabase connection | API docs |
+
+### Error Resolution Flowchart
+
+```text
+┌─────────────────────────┐
+│  Error Occurred?     │
+└──────────┬────────────┘
+           │
+           ├─ Network Error?
+           │  └─→ Check FastAPI server status
+           │     └─→ Verify VITE_INVOICE_API_URL
+           │
+           ├─ Auth Error (401)?
+           │  └─→ Check API key in .env
+           │     └─→ Set VITE_INVOICE_API_REQUIRE_AUTH=false
+           │
+           ├─ Validation Error (400/422)?
+           │  └─→ Check file is valid PDF
+           │     └─→ Try different invoice
+           │
+           └─ Empty Products?
+               └─→ Verify invoice has line items
+```
+
 ### Error: "Network error while processing invoice"
 
 **Cause:** FastAPI service not running or unreachable
@@ -346,7 +561,7 @@ curl -X POST \
 **Solution:**
 1. Verify file extension is `.pdf`
 2. Check file MIME type is `application/pdf`
-3. Use a different PDF file if the current one is corrupted
+3. Use a different PDF file if current one is corrupted
 
 ### Error: "No products found in invoice"
 
@@ -426,3 +641,52 @@ For issues with:
 - **FastAPI service:** Contact FastAPI service administrator
 - **API contract:** Review [FastAPI Contract](#fastapi-contract) section
 - **Testing:** See [Manual Testing](#manual-testing) section
+
+## Success Criteria Checklist
+
+### Environment Setup
+- [ ] FastAPI server responding to health checks
+- [ ] Frontend app loads without errors
+- [ ] Environment variables loaded correctly
+- [ ] No TypeScript or build errors in console
+
+### Invoice Extraction
+- [ ] PDF upload completes (no errors)
+- [ ] Progress bar reaches 100%
+- [ ] Preview table appears
+- [ ] Product count matches expectation
+- [ ] Supplier info extracted (if present)
+- [ ] Invoice number extracted (if present)
+- [ ] Total amount matches invoice
+
+### Data Quality
+- [ ] Product names accurate (95%+ match rate)
+- [ ] Quantities correct (±0 tolerance)
+- [ ] Unit prices correct (±€0.01 tolerance)
+- [ ] Total prices calculated correctly (unit × qty)
+- [ ] Barcodes extracted where present
+
+### Import Process
+- [ ] Products imported to inventory successfully
+- [ ] Stock IN movements created
+- [ ] Stock counts update correctly
+- [ ] No duplicate products created
+
+### Error Handling
+- [ ] Invalid file types rejected gracefully
+- [ ] Large files (>10MB) rejected
+- [ ] Network errors show user-friendly messages
+- [ ] Auth errors provide clear guidance
+- [ ] Empty products handled correctly
+
+### Console & Network
+- [ ] Zero unhandled exceptions
+- [ ] Zero console errors
+- [ ] Zero console warnings (except dev-mode warnings)
+- [ ] HTTP responses all 2xx (except expected 401/400/422)
+- [ ] Response times < 5 seconds
+
+### Overall
+- [ ] All critical tests pass ✅
+- [ ] Documentation completed and reviewed
+- [ ] Ready to merge to main
