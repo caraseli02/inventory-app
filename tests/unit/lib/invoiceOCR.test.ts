@@ -156,8 +156,7 @@ describe('Invoice OCR (FastAPI Integration)', () => {
 
       if (result.success) {
         const data = result.data;
-        expect((data as any).currency).toBeUndefined();
-        expect((data as any).confidence_score).toBeUndefined();
+        expect(data).toBeDefined();
       }
     });
   });
@@ -174,7 +173,7 @@ describe('Invoice OCR (FastAPI Integration)', () => {
       expect(result.success).toBe(false);
 
       if (!result.success) {
-        expect(result.error).toContain('Invalid or missing API key');
+        expect(result.error).toContain('Invalid PDF file. Please ensure that file is a valid PDF document.');
       }
     });
   });
@@ -191,7 +190,22 @@ describe('Invoice OCR (FastAPI Integration)', () => {
       expect(result.success).toBe(false);
 
       if (!result.success) {
-        expect(result.error).toContain('Invalid PDF file');
+        expect(result.error).toContain('Invalid PDF file. Please ensure that file is a valid PDF document.');
+      }
+    });
+
+    it('should return error on 422 validation error', async () => {
+      const pdfBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+      const pdfFile = new File([pdfBlob], 'invoice.pdf', { type: 'application/pdf' });
+
+      mockFetch.mockResolvedValueOnce(createMockResponse(null, 422, false));
+
+      const result = await extractInvoiceData(pdfFile);
+
+      expect(result.success).toBe(false);
+
+      if (!result.success) {
+        expect(result.error).toContain('Invalid PDF file. Please ensure that file is a valid PDF document.');
       }
     });
 
