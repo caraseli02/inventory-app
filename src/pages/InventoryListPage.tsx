@@ -13,6 +13,7 @@ import { ProductDetailDialog } from '../components/inventory/ProductDetailDialog
 import { LowStockAlertsPanel } from '../components/inventory/LowStockAlertsPanel';
 import EditProductDialog from '../components/product/EditProductDialog';
 import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
+import BatchDeleteConfirmDialog from '../components/product/BatchDeleteConfirmDialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ImportDialog } from '../components/xlsx/ImportDialog';
 import { InvoiceUploadDialog } from '../components/invoice/InvoiceUploadDialog';
@@ -36,6 +37,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [loadingProducts, setLoadingProducts] = useState<Set<string>>(new Set());
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
@@ -65,6 +68,21 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       }
     };
   }, []);
+
+  // Keep selection in sync with current products
+  useEffect(() => {
+    setSelectedProductIds((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set<string>();
+      const productIds = new Set(products.map((product) => product.id));
+      prev.forEach((id) => {
+        if (productIds.has(id)) {
+          next.add(id);
+        }
+      });
+      return next;
+    });
+  }, [products]);
 
   const handleViewDetails = useCallback((product: Product) => {
     setSelectedProduct(product);
@@ -186,6 +204,35 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
   const handleDeleteSuccess = useCallback(() => {
     // Refresh the list after deletion
+    refetch();
+  }, [refetch]);
+
+  const handleToggleSelect = useCallback((productId: string, selected: boolean) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(productId);
+      } else {
+        next.delete(productId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectAll = useCallback((selected: boolean) => {
+    setSelectedProductIds(() => {
+      if (!selected) return new Set();
+      return new Set(products.map((product) => product.id));
+    });
+  }, [products]);
+
+  const handleBatchDeleteSuccess = useCallback((deletedIds: string[], failedIds: string[]) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      deletedIds.forEach((id) => next.delete(id));
+      failedIds.forEach((id) => next.add(id));
+      return next;
+    });
     refetch();
   }, [refetch]);
 
@@ -456,6 +503,10 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                   onQuickAdjust={handleQuickAdjust}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  selectedProductIds={selectedProductIds}
+                  onToggleSelect={handleToggleSelect}
+                  onToggleSelectAll={handleToggleSelectAll}
+                  onDeleteSelected={() => setBatchDeleteOpen(true)}
                   loadingProductIds={loadingProducts}
                 />
               </div>
@@ -492,6 +543,14 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           onDeleteSuccess={handleDeleteSuccess}
         />
       )}
+
+      {/* Batch Delete Dialog */}
+      <BatchDeleteConfirmDialog
+        products={products.filter((product) => selectedProductIds.has(product.id))}
+        open={batchDeleteOpen}
+        onOpenChange={setBatchDeleteOpen}
+        onDeleteSuccess={handleBatchDeleteSuccess}
+      />
 
       {/* Import Dialog */}
       <ImportDialog

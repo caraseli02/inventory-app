@@ -12,6 +12,7 @@ import {
 } from '../ui/table';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
+import { Checkbox } from '../ui/checkbox';
 import { getProductDisplayPrice } from '@/hooks/useMarkupSetting';
 import type { Product } from '../../types';
 
@@ -103,6 +104,10 @@ interface InventoryTableProps {
   onQuickAdjust?: (productId: string, delta: number) => void;
   onEdit?: (product: Product) => void;
   onDelete?: (product: Product) => void;
+  selectedProductIds?: Set<string>;
+  onToggleSelect?: (productId: string, selected: boolean) => void;
+  onToggleSelectAll?: (selected: boolean) => void;
+  onDeleteSelected?: () => void;
   loadingProductIds?: Set<string>;
 }
 
@@ -112,9 +117,23 @@ const InventoryTableComponent = ({
   onQuickAdjust,
   onEdit,
   onDelete,
+  selectedProductIds,
+  onToggleSelect,
+  onToggleSelectAll,
+  onDeleteSelected,
   loadingProductIds = EMPTY_LOADING_SET,
 }: InventoryTableProps) => {
   const { t } = useTranslation();
+  const selectedCount = selectedProductIds?.size ?? 0;
+  const allSelected = Boolean(
+    selectedProductIds &&
+    products.length > 0 &&
+    products.every((product) => selectedProductIds.has(product.id))
+  );
+  const someSelected = Boolean(
+    selectedProductIds &&
+    products.some((product) => selectedProductIds.has(product.id))
+  );
 
   if (products.length === 0) {
     return (
@@ -133,10 +152,42 @@ const InventoryTableComponent = ({
 
   return (
     <div className="rounded-2xl border-2 border-stone-200 bg-white overflow-hidden">
+      {selectedCount > 0 && onDeleteSelected && (
+        <div className="flex items-center justify-between border-b-2 border-stone-200 bg-stone-50/80 px-4 py-2">
+          <span className="text-sm font-semibold text-stone-700">
+            {t('inventory.table.selectedCount', '{{count}} selected', { count: selectedCount })}
+          </span>
+          <Button
+            size="sm"
+            onClick={onDeleteSelected}
+            className="h-9 font-semibold text-white"
+            style={{
+              background: 'linear-gradient(to bottom right, var(--color-terracotta), var(--color-terracotta-dark))',
+            }}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t('inventory.table.deleteSelected', 'Delete Selected')}
+          </Button>
+        </div>
+      )}
       <div className="max-h-[calc(100dvh-290px)] overflow-y-auto">
         <Table stickyHeader>
           <TableHeader className="sticky top-0 z-10 bg-gradient-to-br from-stone-50 to-stone-100">
             <TableRow className="border-b-2 border-stone-200">
+              <TableHead className={`w-[48px] ${HEADER_CELL_CLASS}`}>
+                {onToggleSelectAll && selectedProductIds && (
+                  <div
+                    className="flex items-center justify-center"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                      onCheckedChange={(checked) => onToggleSelectAll(checked === true)}
+                      aria-label={t('inventory.table.selectAll', 'Select all')}
+                    />
+                  </div>
+                )}
+              </TableHead>
               <TableHead className={`w-[64px] ${HEADER_CELL_CLASS}`}>{t('inventory.table.image')}</TableHead>
               <TableHead className={`min-w-[200px] ${HEADER_CELL_CLASS}`}>{t('inventory.table.product')}</TableHead>
               <TableHead className={HEADER_CELL_CLASS}>{t('inventory.table.category')}</TableHead>
@@ -167,6 +218,7 @@ const InventoryTableComponent = ({
                     group cursor-pointer transition-colors duration-100
                     ${index % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}
                     ${isLowStock ? 'bg-orange-50/50 hover:bg-orange-100/50' : 'hover:bg-stone-100/80'}
+                    ${selectedProductIds?.has(product.id) ? 'ring-1 ring-[var(--color-forest)]/20' : ''}
                     focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-lavender)]
                   `}
                   onClick={() => onViewDetails(product)}
@@ -180,6 +232,21 @@ const InventoryTableComponent = ({
                   role="button"
                   aria-label={t('inventory.table.viewDetails', { name: product.fields.Name })}
                 >
+                  {/* Selection */}
+                  <TableCell className="py-2">
+                    {onToggleSelect && selectedProductIds && (
+                      <div
+                        className="flex items-center justify-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={selectedProductIds.has(product.id)}
+                          onCheckedChange={(checked) => onToggleSelect(product.id, checked === true)}
+                          aria-label={t('inventory.table.selectProduct', { name: product.fields.Name })}
+                        />
+                      </div>
+                    )}
+                  </TableCell>
                   {/* Image - Fixed 48px square */}
                   <TableCell className="py-2">
                     <div className="w-12 h-12 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 flex-shrink-0">

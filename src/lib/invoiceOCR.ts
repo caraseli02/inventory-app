@@ -118,8 +118,8 @@ async function uploadWithProgress(
       reject(new Error('Upload timed out'));
     };
 
-    // 2 minute timeout (size-adaptive)
-    const timeoutMs = Math.max(60000, (file.size / (1024 * 1024)) * 1000);
+    // 2 minute timeout (size-adaptive) with 60s cold start buffer for Render
+    const timeoutMs = Math.max(120000, (file.size / (1024 * 1024)) * 1000 + 60000);
     xhr.timeout = timeoutMs;
 
     xhr.open('POST', url);
@@ -241,18 +241,18 @@ export async function extractInvoiceData(
         logger.error('Upload timed out', {
           fileName: file.name,
           fileSize: file.size,
-          timeoutMs: Math.max(60000, (file.size / (1024 * 1024)) * 1000),
+          timeoutMs: Math.max(120000, (file.size / (1024 * 1024)) * 1000 + 60000),
         });
         return {
           success: false,
-          error: 'Upload timed out. Please try again with a smaller file or faster internet connection.',
+          error: 'Service is warming up (first upload may take 30-60 seconds). Please wait and try again.',
         };
       }
 
       if (error instanceof Error && error.message === 'Upload timed out') {
         return {
           success: false,
-          error: 'Upload timed out. Please try again with a smaller file or faster internet connection.',
+          error: 'Service is warming up (first upload may take 30-60 seconds). Please wait and try again.',
         };
       }
 
