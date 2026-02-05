@@ -512,24 +512,25 @@
     "dropzone": {
       "title": "Drag and drop your invoice here",
       "subtitle": "or click to browse files",
-      "fileTypes": "Supports JPG, PNG (max 10MB)",
+      "fileTypes": "Supports PDF (max 10MB)",
       "selectFile": "Select Invoice File"
     },
     "progress": {
       "preparing": "Preparing invoice...",
-      "extracting": "Extracting text with AI...",
+      "extracting": "Extracting data...",
       "analyzing": "Analyzing products...",
       "finalizing": "Finalizing..."
     },
     "howItWorks": {
       "title": "How it works",
-      "step1": "Step 1: AI reads text from your invoice (Google Cloud Vision)",
+      "step1": "Step 1: Upload your PDF invoice",
       "step2": "Step 2: Extracts product names, quantities, and prices",
       "step3": "Step 3: You review and confirm before importing",
+      "fast": "Fast and accurate PDF processing",
       "free": "Essentially free: 1,000 pages/month included"
     },
     "errors": {
-      "invalidFile": "Please select a JPG or PNG file.",
+      "invalidFile": "Please select a PDF file.",
       "processFailed": "Failed to process invoice. ",
       "apiKey": "Please check your API configuration.",
       "network": "Please check your internet connection and try again.",

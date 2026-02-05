@@ -1,5 +1,5 @@
 
-import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import path from 'path';
 import fs from 'fs';
 import { validateFile } from '../../../scripts/validate-docs.js';
@@ -28,15 +28,19 @@ describe('validate-docs', () => {
 
   it('should pass for valid file', async () => {
     const content = `---
-title: Valid Doc
-category: frontend
-severity: LOW
+module: TestComponent
+problem_type: ui_bug
+component: react_component
+root_cause: logic_error
+resolution_type: code_fix
+symptoms:
+  - "Component not rendering"
 date: 2026-02-01
-status: resolved
+severity: high
 ---
 Content
 `;
-    const filePath = createTestFile('frontend', 'valid-doc.md', content);
+    const filePath = createTestFile('ui-bugs', 'valid-doc.md', content);
     const result = await validateFile(filePath, TEST_DIR);
     expect(result.valid).toBe(true);
   });
@@ -62,30 +66,38 @@ title: Missing fields
 
   it('should fail for invalid category', async () => {
     const content = `---
-title: Invalid Cat
-category: invalid
-severity: LOW
+module: TestComponent
+problem_type: invalid_type
+component: react_component
+root_cause: logic_error
+resolution_type: code_fix
+symptoms:
+  - "Test"
 date: 2026-02-01
-status: resolved
+severity: high
 ---
 `;
-    const filePath = createTestFile('frontend', 'invalid-cat.md', content);
+    const filePath = createTestFile('ui-bugs', 'invalid-cat.md', content);
     const result = await validateFile(filePath, TEST_DIR);
     expect(result.valid).toBe(false);
-    expect(result.error).toContain('Invalid category');
+    expect(result.error).toContain('Invalid problem_type');
   });
 
   it('should fail for path mismatch', async () => {
     const content = `---
-title: Wrong Dir
-category: backend
-severity: LOW
+module: TestComponent
+problem_type: api_error
+component: react_component
+root_cause: logic_error
+resolution_type: code_fix
+symptoms:
+  - "Test"
 date: 2026-02-01
-status: resolved
+severity: high
 ---
 `;
-    // Saved in frontend, but category is backend
-    const filePath = createTestFile('frontend', 'wrong-dir.md', content);
+    // Saved in ui-bugs, but problem_type is api_error (should be in api-errors dir)
+    const filePath = createTestFile('ui-bugs', 'wrong-dir.md', content);
     const result = await validateFile(filePath, TEST_DIR);
     if (!result.valid) console.log('Error found:', result.error);
     expect(result.valid).toBe(false);

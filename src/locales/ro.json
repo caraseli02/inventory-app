@@ -512,24 +512,25 @@
     "dropzone": {
       "title": "Trage și plasează factura aici",
       "subtitle": "sau apasă pentru a alege fișiere",
-      "fileTypes": "Acceptă JPG, PNG (maxim 10MB)",
+      "fileTypes": "Acceptă PDF (maxim 10MB)",
       "selectFile": "Selectează fișierul facturii"
     },
     "progress": {
       "preparing": "Se pregătește factura...",
-      "extracting": "Se extrage text cu IA...",
+      "extracting": "Se extrag datele...",
       "analyzing": "Se analizează produsele...",
       "finalizing": "Se finalizează..."
     },
     "howItWorks": {
       "title": "Cum funcționează",
-      "step1": "Pasul 1: IA citește textul din factură (Google Cloud Vision)",
+      "step1": "Pasul 1: Încarcă factura PDF",
       "step2": "Pasul 2: Extrage nume de produse, cantități și prețuri",
       "step3": "Pasul 3: Revizuiești și confirmi înainte de import",
+      "fast": "Procesare PDF rapidă și precisă",
       "free": "Practic gratuit: 1.000 pagini/lună incluse"
     },
     "errors": {
-      "invalidFile": "Selectează un fișier JPG sau PNG.",
+      "invalidFile": "Selectează un fișier PDF.",
       "processFailed": "Procesarea facturii a eșuat. ",
       "apiKey": "Verifică configurarea cheii API.",
       "network": "Verifică conexiunea la internet și încearcă din nou.",
