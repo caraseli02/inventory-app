@@ -230,37 +230,46 @@ return {
 ### Step 1: Verify FastAPI Service Status
 
 **Prerequisites**:
-- [ ] Contact FastAPI service owner
-- [ ] Obtain production service URL (e.g., `https://invoice-ocr-api.onrender.com`)
+- [x] Contact FastAPI service owner
+- [x] Obtain production service URL (e.g., `https://invoiceprocessing-g4ol.onrender.com`)
 - [ ] Obtain production API key
 
 **Verification Tasks**:
 1. **Test FastAPI `/health` endpoint**:
    ```bash
-   curl https://invoice-ocr-api.onrender.com/health
+   curl https://invoiceprocessing-g4ol.onrender.com/health
    ```
-   Expected: `{"status": "healthy", "service": "invoice-ocr-api", "timestamp": "..."}`
+   Expected: `{"status": "healthy", "service": "invoice-processing", "timestamp": "..."}`
+   Status: ✅ PASS - Service is healthy
 
 2. **Test FastAPI `/extract` endpoint**:
    ```bash
-   curl -X POST https://invoice-ocr-api.onrender.com/extract \
+   curl -X POST https://invoiceprocessing-g4ol.onrender.com/extract \
      -H "X-API-Key: <production-key>" \
      -H "Content-Type: multipart/form-data" \
      -F "file=@public/test-invoices/invoice-test.pdf"
    ```
    Expected: JSON response with `products` array
+   Status: ⚠️ ISSUE - Returns `{"detail": "Processing failed"}`
+   Notes: API key authentication works, but PDF processing fails
 
 3. **Test CORS configuration**:
    ```bash
-   curl -I -X OPTIONS https://invoice-ocr-api.onrender.com/extract \
+   curl -I -X OPTIONS https://invoiceprocessing-g4ol.onrender.com/extract \
      -H "Origin: https://inventory-app.vercel.app"
    ```
    Expected: `Access-Control-Allow-Origin: https://inventory-app.vercel.app`
+   Status: ⚠️ BLOCKER - Returns 405 Method Not Allowed
+   Issue: CORS middleware not configured (OPTIONS requests rejected)
 
 **If Any Step Fails**:
 - Contact FastAPI service owner
 - Wait for FastAPI deployment to complete
 - Do not proceed with frontend configuration until FastAPI is ready
+
+**⚠️ CRITICAL ISSUES FOUND**:
+1. **CORS Not Configured**: Browser will block requests from production frontend
+2. **PDF Processing Fails**: Service accepts requests but fails to process PDFs
 
 ### Step 2: Update Environment Variables in Vercel
 
