@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { extractInvoiceData, type InvoiceData, type InvoiceProduct } from '@/lib/invoiceOCR';
+import { extractInvoiceData, type InvoiceProduct } from '@/lib/invoiceOCR';
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -22,7 +22,7 @@ vi.mock('import.meta', () => ({
 }));
 
 // Helper to create mock Response
-function createMockResponse(data: any, status: number = 200, ok: boolean = true) {
+function createMockResponse(data: Record<string, unknown>, status: number = 200, ok: boolean = true) {
   return {
     ok,
     status,
