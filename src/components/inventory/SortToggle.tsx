@@ -31,7 +31,7 @@ export const SortToggle = ({ sortField, sortDirection, onChange, className }: So
   return (
     <Select value={currentValue} onValueChange={handleChange}>
       <SelectTrigger className={`h-10 border-2 border-stone-300 ${className || 'w-[140px]'}`}>
-        <SelectValue />
+        <SelectValue placeholder={t('inventory.filters.sortBy', 'Sort by')} />
       </SelectTrigger>
       <SelectContent>
         {sortOptions.map(({ field, label }) => (

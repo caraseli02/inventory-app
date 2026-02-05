@@ -376,19 +376,21 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           </ErrorBoundary>
 
           {/* Filters */}
-          <InventoryFiltersBar
-            filters={filters}
-            categories={categories}
-            totalProducts={totalProducts}
-            filteredCount={filteredCount}
-            onFilterChange={updateFilter}
-            onReset={resetFilters}
-            onRefresh={handleRefresh}
-            isRefreshing={isLoading}
-            onImport={() => setImportDialogOpen(true)}
-            onImportInvoice={() => setInvoiceDialogOpen(true)}
-            onExport={handleExport}
-          />
+          <div className="sticky top-0 z-20 -mx-6 px-6 pt-4 pb-3 bg-gradient-to-br from-stone-100/95 to-stone-200/95 backdrop-blur border-b-2 border-stone-200">
+            <InventoryFiltersBar
+              filters={filters}
+              categories={categories}
+              totalProducts={totalProducts}
+              filteredCount={filteredCount}
+              onFilterChange={updateFilter}
+              onReset={resetFilters}
+              onRefresh={handleRefresh}
+              isRefreshing={isLoading}
+              onImport={() => setImportDialogOpen(true)}
+              onImportInvoice={() => setInvoiceDialogOpen(true)}
+              onExport={handleExport}
+            />
+          </div>
 
           {/* Loading State */}
           {isLoading && (

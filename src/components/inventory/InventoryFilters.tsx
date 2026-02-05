@@ -55,73 +55,81 @@ export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
       </div>
 
       {/* Mobile View (<768px) */}
-      <div className="md:hidden space-y-2">
-        {/* Row 1: Search + Filter Button + Refresh */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-stone-400" />
-            <Input
-              type="text"
-              value={filters.searchQuery}
-              onChange={(e) => onFilterChange('searchQuery', e.target.value)}
-              placeholder={t('inventory.searchPlaceholder', 'Search by name or barcode...')}
-              className="h-11 pl-10 pr-10 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
-            />
-            {filters.searchQuery && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7"
-                onClick={() => onFilterChange('searchQuery', '')}
-                aria-label={t('inventory.clearSearch', 'Clear search')}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setSheetOpen(true)}
-            className="h-11 w-11 border-2 border-stone-300 relative"
-            aria-label={t('inventory.openFilters', 'Open filters')}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {activeFilters && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[var(--color-terracotta)] text-white text-[10px] font-bold flex items-center justify-center">
-                {[
-                  filters.category,
-                  filters.lowStockOnly,
-                  filters.sortField !== 'name',
-                  filters.sortDirection !== 'asc',
-                ].filter(Boolean).length}
-              </span>
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="h-11 w-11 border-2 border-stone-300"
-            aria-label={t('inventory.refresh', 'Refresh')}
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-
-        {/* Row 2: Active filter chips + count (only show if filters active) */}
-        {activeFilters && (
-          <div className="flex items-center gap-2">
-            <FilterChips
-              filters={filters}
-              onClearFilter={clearFilterHandler}
-            />
-            <span className="ml-auto text-sm text-stone-600 font-medium whitespace-nowrap">
+      <div className="md:hidden">
+        <div className="rounded-2xl border-2 border-stone-200 bg-white/90 shadow-sm p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+              {t('inventory.filters.title', 'Filters')}
+            </span>
+            <span className="text-sm text-stone-600 font-medium whitespace-nowrap">
               {productCountText}
             </span>
           </div>
-        )}
+
+          {/* Row 1: Search + Filter Button + Refresh */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-stone-400" />
+              <Input
+                type="text"
+                value={filters.searchQuery}
+                onChange={(e) => onFilterChange('searchQuery', e.target.value)}
+                placeholder={t('inventory.searchPlaceholder', 'Search by name or barcode...')}
+                className="h-11 pl-10 pr-10 border-2 border-stone-300 focus-visible:ring-[var(--color-lavender)]"
+              />
+              {filters.searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7"
+                  onClick={() => onFilterChange('searchQuery', '')}
+                  aria-label={t('inventory.clearSearch', 'Clear search')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSheetOpen(true)}
+              className="h-11 w-11 border-2 border-stone-300 relative"
+              aria-label={t('inventory.openFilters', 'Open filters')}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {activeFilters && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[var(--color-terracotta)] text-white text-[10px] font-bold flex items-center justify-center">
+                  {[
+                    filters.category,
+                    filters.lowStockOnly,
+                    filters.sortField !== 'name',
+                    filters.sortDirection !== 'asc',
+                  ].filter(Boolean).length}
+                </span>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="h-11 w-11 border-2 border-stone-300"
+              aria-label={t('inventory.refresh', 'Refresh')}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+
+          {/* Row 2: Active filter chips (only show if filters active) */}
+          {activeFilters && (
+            <div className="flex items-center gap-2">
+              <FilterChips
+                filters={filters}
+                onClearFilter={clearFilterHandler}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Mobile Filter Sheet */}
         <MobileFilterSheet
