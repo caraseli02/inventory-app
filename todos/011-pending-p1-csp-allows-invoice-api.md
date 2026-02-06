@@ -16,7 +16,7 @@ Invoice upload fails in production because the browser blocks the POST to the in
 
 ## Findings
 
-- Browser console shows CSP violation: `connect-src` blocks `https://invoiceprocessing-gl4ol.onrender.com/extract`.
+- Browser console shows CSP violation: `connect-src` blocks `https://invoiceprocessing-g4ol.onrender.com/extract`.
 - CSP is defined in `/Users/vladislavcaraseli/Documents/inventory-app/vercel.json` and does not include the invoice OCR service domain.
 - The invoice uploader calls `/extract` on `VITE_INVOICE_API_URL` (defaulting to `http://localhost:8000`), so production requires an allowlisted HTTPS domain.
 
@@ -24,7 +24,7 @@ Invoice upload fails in production because the browser blocks the POST to the in
 
 ### Option 1: Add specific OCR domain to CSP (recommended)
 
-**Approach:** Update `vercel.json` CSP `connect-src` to include `https://invoiceprocessing-gl4ol.onrender.com` (or the exact production API domain).
+**Approach:** Update `vercel.json` CSP `connect-src` to include `https://invoiceprocessing-g4ol.onrender.com` (or the exact production API domain).
 
 **Pros:**
 - Minimal change
@@ -89,7 +89,7 @@ Invoice upload fails in production because the browser blocks the POST to the in
 
 ## Resources
 
-- Console error: CSP blocked `https://invoiceprocessing-gl4ol.onrender.com/extract`
+- Console error: CSP blocked `https://invoiceprocessing-g4ol.onrender.com/extract`
 - Screenshot provided by user
 
 ## Acceptance Criteria
