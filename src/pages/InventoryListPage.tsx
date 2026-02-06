@@ -24,6 +24,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../hooks/useToast';
 import type { Product } from '../types';
 import { logger } from '../lib/logger';
+import { AuthorizationError, NetworkError } from '../lib/errors';
 
 interface InventoryListPageProps {
   onBack: () => void;
@@ -330,10 +331,33 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
         successCount++;
       } catch (err) {
-        // Log error with proper context
+        // Check for fatal errors that should stop the import
+        if (err instanceof AuthorizationError ||
+            (err instanceof NetworkError && successCount === 0)) {
+          logger.error('Fatal error during import - stopping', {
+            productName: imported.Name,
+            errorType: err.constructor.name,
+            errorMessage: err.message,
+            errorStack: err.stack,
+            successCount,
+            errorCount,
+            remainingCount: importedProducts.length - successCount - errorCount,
+          });
+
+          showToast(
+            'error',
+            t('import.failed'),
+            `Import stopped: ${err.message}. ${successCount} products were imported successfully.`,
+            10000
+          );
+          return; // Stop the import
+        }
+
+        // Log validation and non-fatal errors
         logger.error('Product import failed', {
           productName: imported.Name,
           barcode: imported.Barcode,
+          errorType: err instanceof Error ? err.constructor.name : typeof err,
           errorMessage: err instanceof Error ? err.message : String(err),
           errorStack: err instanceof Error ? err.stack : undefined,
           timestamp: new Date().toISOString(),
