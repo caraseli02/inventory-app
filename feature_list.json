@@ -1,11 +1,11 @@
 {
   "metadata": {
-    "version": "1.4.1",
-    "last_updated": "2026-02-01",
+    "version": "1.4.2",
+    "last_updated": "2026-02-06",
     "project": "Inventory App - Grocery Management",
     "solutions_directory": "docs/solutions/",
-    "total_features": 28,
-    "implemented": 23,
+    "total_features": 29,
+    "implemented": 24,
     "tested": 21,
     "warning": "⚠️ STRICTLY DO NOT REMOVE OR MODIFY ANYTHING IN THIS FILE BEYOND MARKING FEATURES AS IMPLEMENTED"
   },
@@ -1284,7 +1284,7 @@
     },
     {
       "id": "F028",
-      "name": "Invoice Upload with AI-Powered OCR",
+      "name": "Invoice Upload with FastAPI OCR",
       "category": "Data Integration",
       "priority": "Phase-1",
       "spec": "docs/specs/invoice_automation_research.md",
@@ -1293,22 +1293,22 @@
       "steps": [
         {
           "step": 1,
-          "description": "Create invoiceOCR.ts with Google Cloud Vision integration",
+          "description": "Create invoiceOCR.ts with FastAPI /extract endpoint integration",
           "completed": true
         },
         {
           "step": 2,
-          "description": "Implement GPT-4o mini invoice parsing",
+          "description": "Migrate from Supabase Edge Functions to FastAPI",
           "completed": true
         },
         {
           "step": 3,
-          "description": "Build InvoiceUploadDialog component with drag-and-drop",
+          "description": "Build InvoiceUploadDialog component with drag-and-drop for PDF",
           "completed": true
         },
         {
           "step": 4,
-          "description": "Add progress tracking for OCR processing",
+          "description": "Add progress tracking with XMLHttpRequest (upload + processing)",
           "completed": true
         },
         {
@@ -1328,18 +1328,23 @@
         },
         {
           "step": 8,
-          "description": "Add responsive modal sizing (fullscreen mobile, 90% desktop)",
+          "description": "Add 120s timeout with 60s cold start buffer for Render",
+          "completed": true
+        },
+        {
+          "step": 9,
+          "description": "Configure environment variables (VITE_INVOICE_API_URL, API_KEY, REQUIRE_AUTH)",
           "completed": true
         }
       ],
       "test_scenarios": [
         {
-          "scenario": "Upload invoice image and extract products via OCR",
+          "scenario": "Upload invoice PDF and extract products via FastAPI",
           "tested": false,
           "test_file": null
         },
         {
-          "scenario": "AI correctly parses product names, quantities, and prices",
+          "scenario": "FastAPI correctly parses product names, quantities, and prices",
           "tested": false,
           "test_file": null
         },
@@ -1364,22 +1369,100 @@
           "test_file": null
         },
         {
-          "scenario": "Handle OCR API errors gracefully",
+          "scenario": "Handle FastAPI errors gracefully (401, 400, 422, 500)",
           "tested": false,
           "test_file": null
         },
         {
-          "scenario": "Handle parsing API errors gracefully",
+          "scenario": "Validate file type and size (PDF only, max 10MB)",
           "tested": false,
           "test_file": null
         },
         {
-          "scenario": "Validate file type and size (JPG/PNG, max 10MB)",
+          "scenario": "Display progress bar during processing (0-40% upload, 40-100% processing)",
           "tested": false,
           "test_file": null
         },
         {
-          "scenario": "Display progress bar during processing",
+          "scenario": "Handle cold start timeout (30-60s delay on first upload)",
+          "tested": false,
+          "test_file": null
+        }
+      ]
+    },
+    {
+      "id": "F029",
+      "name": "Batch Product Selection & Delete",
+      "category": "Inventory Management",
+      "priority": "Phase-1",
+      "spec": "docs/specs/inventory_management.md",
+      "implemented": true,
+      "tested": false,
+      "steps": [
+        {
+          "step": 1,
+          "description": "Add checkboxes to inventory table rows",
+          "completed": true
+        },
+        {
+          "step": 2,
+          "description": "Add select all checkbox in table header",
+          "completed": true
+        },
+        {
+          "step": 3,
+          "description": "Track selected products in parent state",
+          "completed": true
+        },
+        {
+          "step": 4,
+          "description": "Create BatchDeleteConfirmDialog component",
+          "completed": true
+        },
+        {
+          "step": 5,
+          "description": "Show selected count and delete button bar above table",
+          "completed": true
+        },
+        {
+          "step": 6,
+          "description": "Implement parallel deletion with error handling",
+          "completed": true
+        },
+        {
+          "step": 7,
+          "description": "Show failed deletions with error messages",
+          "completed": true
+        }
+      ],
+      "test_scenarios": [
+        {
+          "scenario": "Select multiple products via checkboxes",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Select all products via header checkbox",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Delete selected products in batch",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Handle partial failures (some succeed, some fail)",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Display error messages for failed deletions",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Confirm deletion before batch delete",
           "tested": false,
           "test_file": null
         }

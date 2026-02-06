@@ -70,7 +70,7 @@ VITE_INVOICE_API_REQUIRE_AUTH=false
 
 **Production (to be set in Vercel)**:
 ```bash
-VITE_INVOICE_API_URL=https://invoice-ocr-api.onrender.com
+VITE_INVOICE_API_URL=https://invoiceprocessing-g4ol.onrender.com
 VITE_INVOICE_API_KEY=<production-api-key-from-fastapi-service>
 VITE_INVOICE_API_REQUIRE_AUTH=true
 ```
@@ -286,7 +286,7 @@ return {
 
 2. **Update/Add Environment Variables** (Production only):
    - **VITE_INVOICE_API_URL**:
-     - Value: `https://invoice-ocr-api.onrender.com`
+     - Value: `https://invoiceprocessing-g4ol.onrender.com`
      - Environment: Production
      - Click Save
 
@@ -559,7 +559,7 @@ git push origin <branch-name>
 # VITE_INVOICE_API_REQUIRE_AUTH=false
 #
 # Production (Render.com):
-# VITE_INVOICE_API_URL=https://invoice-ocr-api.onrender.com
+# VITE_INVOICE_API_URL=https://invoiceprocessing-g4ol.onrender.com
 # VITE_INVOICE_API_KEY=<production-api-key-from-fastapi-service>
 # VITE_INVOICE_API_REQUIRE_AUTH=true
 #
@@ -583,9 +583,9 @@ git push origin <branch-name>
 
 The FastAPI invoice OCR service is deployed to Render.com free tier as a separate web service.
 
-**Service URL**: https://invoice-ocr-api.onrender.com (provided by FastAPI service owner)
+**Service URL**: https://invoiceprocessing-g4ol.onrender.com (provided by FastAPI service owner)
 
-**Health Check**: https://invoice-ocr-api.onrender.com/health
+**Health Check**: https://invoiceprocessing-g4ol.onrender.com/health
 
 **Environment Variables** (Set in Render dashboard, not in frontend):
 - `OPENAI_API_KEY`: OpenAI API key (for GPT-4o mini parsing)
@@ -599,7 +599,7 @@ The FastAPI invoice OCR service is deployed to Render.com free tier as a separat
 Update environment variables in Vercel dashboard:
 
 ```bash
-VITE_INVOICE_API_URL=https://invoice-ocr-api.onrender.com
+VITE_INVOICE_API_URL=https://invoiceprocessing-g4ol.onrender.com
 VITE_INVOICE_API_KEY=<production-api-key-from-fastapi-service>
 VITE_INVOICE_API_REQUIRE_AUTH=true
 ```
@@ -639,7 +639,7 @@ VITE_INVOICE_API_REQUIRE_AUTH=true
 2. Verify CORS `allow_origins` includes production URL (`https://lavio.vercel.app`)
 3. Test CORS with curl:
    ```bash
-   curl -I -X OPTIONS https://invoice-ocr-api.onrender.com/extract \
+   curl -I -X OPTIONS https://invoiceprocessing-g4ol.onrender.com/extract \
      -H "Origin: https://lavio.vercel.app"
    ```
 4. Redeploy FastAPI service if needed
@@ -655,7 +655,7 @@ VITE_INVOICE_API_REQUIRE_AUTH=true
 2. Verify `VITE_INVOICE_API_REQUIRE_AUTH=true` in Vercel
 3. Test API key with curl:
    ```bash
-   curl -X POST https://invoice-ocr-api.onrender.com/extract \
+   curl -X POST https://invoiceprocessing-g4ol.onrender.com/extract \
      -H "X-API-Key: <your-key>" \
      -H "Content-Type: multipart/form-data" \
      -F "file=@/path/to/test-invoice.pdf"
@@ -672,7 +672,7 @@ VITE_INVOICE_API_REQUIRE_AUTH=true
 1. Wait 30-60 seconds and retry upload
 2. Verify error message mentions "Service is warming up"
 3. If timeout persists, contact FastAPI service owner (service may be down)
-4. Check Render service logs: https://dashboard.render.com → invoice-ocr-api → Logs
+4. Check Render service logs: https://dashboard.render.com → invoiceprocessing-g4ol → Logs
 
 ### Network Errors
 
@@ -719,7 +719,7 @@ VITE_INVOICE_API_REQUIRE_AUTH=true
 If using invoice OCR feature with FastAPI service deployed to Render:
 
 - [ ] FastAPI service deployed to Render (contact FastAPI owner for URL)
-- [ ] `VITE_INVOICE_API_URL` set in Vercel (e.g., https://invoice-ocr-api.onrender.com)
+- [ ] `VITE_INVOICE_API_URL` set in Vercel (e.g., https://invoiceprocessing-g4ol.onrender.com)
 - [ ] `VITE_INVOICE_API_KEY` set in Vercel (provided by FastAPI owner)
 - [ ] `VITE_INVOICE_API_REQUIRE_AUTH=true` in Vercel
 - [ ] Frontend redeployed with new environment variables
