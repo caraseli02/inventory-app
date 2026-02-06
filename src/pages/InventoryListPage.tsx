@@ -18,7 +18,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ImportDialog } from '../components/xlsx/ImportDialog';
 import { InvoiceUploadDialog } from '../components/invoice/InvoiceUploadDialog';
 import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
-import { addStockMovement, createProduct, getProductByBarcode } from '../lib/api-provider';
+import { addStockMovement, createProduct, getProductByBarcode, updateProduct } from '../lib/api-provider';
 import type { ImportedProduct } from '../lib/xlsx';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../hooks/useToast';
@@ -47,6 +47,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
   const {
     products,
+    allProducts,
     isLoading,
     error,
     refetch,
@@ -301,11 +302,37 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
     for (const imported of importedProducts) {
       try {
+        const importAction = imported.importAction ?? 'create';
+
+        if (importAction === 'skip') {
+          skipCount++;
+          continue;
+        }
+
+        if (importAction === 'update' && imported.existingProductId) {
+          await updateProduct(imported.existingProductId, {
+            Name: imported.Name,
+            Category: imported.Category,
+            Price: imported.Price,
+            'Price 70%': imported.price70,
+            Markup: 70,
+            Supplier: imported.Supplier,
+            Image: imported.imageUrl,
+          });
+
+          if (imported.currentStock && imported.currentStock > 0) {
+            await addStockMovement(imported.existingProductId, imported.currentStock, 'IN');
+          }
+
+          successCount++;
+          continue;
+        }
+
         // Check if product with this barcode already exists (only if barcode is provided)
         if (imported.Barcode) {
           const existing = await getProductByBarcode(imported.Barcode);
           if (existing) {
-            // Skip duplicates for now (could add update logic later)
+            // Skip duplicates for create-only imports
             skipCount++;
             continue;
           }
@@ -322,6 +349,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           'Price 100%': imported.price100,
           Markup: 70, // Default markup percentage
           'Expiry Date': imported.expiryDate,
+          Image: imported.imageUrl,
         });
 
         // Add initial stock if provided (use returned product ID directly)
@@ -589,6 +617,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           open={invoiceDialogOpen}
           onOpenChange={setInvoiceDialogOpen}
           onImport={handleImport}
+          products={allProducts}
         />
       </ErrorBoundary>
     </div>
