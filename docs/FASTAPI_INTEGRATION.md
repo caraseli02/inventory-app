@@ -236,6 +236,54 @@ VITE_INVOICE_API_REQUIRE_AUTH=true
 
 ---
 
+## Render Deployment
+
+### Production Setup
+
+#### FastAPI Service (Separate Repository)
+
+The FastAPI invoice OCR service is deployed to Render.com free tier as a separate web service.
+
+**Service URL**: https://invoiceprocessing-g4ol.onrender.com
+
+**Health Check**: https://invoiceprocessing-g4ol.onrender.com/health
+
+**Environment Variables** (Set in Render dashboard, not in frontend):
+- `OPENAI_API_KEY`: OpenAI API key (for GPT-4o mini parsing)
+- `GOOGLE_CLOUD_API_KEY`: Google Cloud Vision API key (for OCR)
+- `API_KEYS`: Production API key for frontend authentication
+- `RATE_LIMIT_PER_MINUTE`: Request rate limit (default: 60)
+- `MAX_FILE_SIZE`: Maximum file size in bytes (default: 10485760 = 10MB)
+
+#### Frontend Configuration (This Repository)
+
+Update environment variables in Vercel dashboard:
+
+```bash
+VITE_INVOICE_API_URL=https://invoiceprocessing-g4ol.onrender.com
+VITE_INVOICE_API_KEY=<production-api-key-from-fastapi-service>
+VITE_INVOICE_API_REQUIRE_AUTH=true
+```
+
+### Cold Start Behavior
+
+**Render Free Tier Limitation**:
+- Service spins down after 15 minutes of inactivity
+- Cold start takes 30-60 seconds
+- First upload after idle period: 38-72s total (30-60s cold start + 8-12s processing)
+
+**User Experience**:
+- Progress indicator stalls at 40% (upload complete) during cold start
+- XMLHttpRequest timeout: 120s minimum (size-adaptive, includes 60s cold start buffer)
+- Timeout error message: "Service is warming up (first upload may take 30-60 seconds). Please wait and try again."
+
+**Best Practices**:
+- Wait and retry on first upload timeout (service is warming up)
+- Subsequent uploads are faster (8-12s, service warm)
+- Monitor Render logs for error patterns
+
+---
+
 ## Manual Testing
 
 ### Quick CLI Commands
@@ -590,6 +638,91 @@ curl -X POST \
 1. Test FastAPI service with curl to verify it returns valid JSON
 2. Check FastAPI service logs for errors
 3. Verify FastAPI service version compatibility
+
+---
+
+## Render-Specific Troubleshooting
+
+### CORS Errors
+
+**Symptom**: Browser console shows "Access-Control-Allow-Origin" error
+
+**Cause**: FastAPI CORS middleware not configured for production frontend URL
+
+**Solution**:
+1. Contact FastAPI service owner
+2. Verify CORS `allow_origins` includes production URL (`https://lavio.vercel.app`)
+3. Test CORS with curl:
+   ```bash
+   curl -I -X OPTIONS https://invoiceprocessing-g4ol.onrender.com/extract \
+     -H "Origin: https://lavio.vercel.app"
+   ```
+4. Redeploy FastAPI service if needed
+
+### 401 Unauthorized Errors
+
+**Symptom**: All upload requests return 401 error
+
+**Cause**: API key mismatch or missing authentication
+
+**Solution**:
+1. Verify `VITE_INVOICE_API_KEY` in Vercel matches FastAPI `API_KEYS`
+2. Verify `VITE_INVOICE_API_REQUIRE_AUTH=true` in Vercel
+3. Test API key with curl:
+   ```bash
+   curl -X POST https://invoiceprocessing-g4ol.onrender.com/extract \
+     -H "X-API-Key: <your-key>" \
+     -H "Content-Type: multipart/form-data" \
+     -F "file=@/path/to/test-invoice.pdf"
+   ```
+4. Contact FastAPI service owner if key is incorrect
+
+### Timeout Errors
+
+**Symptom**: Upload times out after 60+ seconds
+
+**Cause**: Render cold start (service waking up after 15+ minutes idle)
+
+**Solution**:
+1. Wait 30-60 seconds and retry upload
+2. Verify error message mentions "Service is warming up"
+3. If timeout persists, contact FastAPI service owner (service may be down)
+4. Check Render service logs: https://dashboard.render.com → invoice-ocr-api → Logs
+
+### Network Errors
+
+**Symptom**: "Network error while processing invoice"
+
+**Cause**: Actual internet connectivity issue, not cold start
+
+**Solution**:
+1. Check internet connection
+2. Try uploading smaller file
+3. Retry upload after network stabilizes
+4. If issue persists, contact support
+
+### Empty Products or Invalid Data
+
+**Symptom**: Extraction succeeds but returns empty products array or invalid data
+
+**Cause**: OCR failed to extract line items from invoice
+
+**Solution**:
+1. Verify invoice PDF is legible (not scanned image)
+2. Try different invoice (simpler layout)
+3. Contact support if issue persists
+
+### Render Service Unavailable (502/503)
+
+**Symptom**: HTTP error 502 Bad Gateway or 503 Service Unavailable
+
+**Cause**: FastAPI service crashed, restarting, or overloaded
+
+**Solution**:
+1. Wait 1-2 minutes and retry (service may be restarting)
+2. Check Render status page: https://status.render.com
+3. Check Render service logs for errors
+4. Contact FastAPI service owner if issue persists
 
 ---
 

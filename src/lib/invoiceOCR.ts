@@ -118,8 +118,8 @@ async function uploadWithProgress(
       reject(new Error('Upload timed out'));
     };
 
-    // 2 minute timeout (size-adaptive)
-    const timeoutMs = Math.max(60000, (file.size / (1024 * 1024)) * 1000);
+    // 2 minute timeout (size-adaptive) with 60s cold start buffer for Render
+    const timeoutMs = Math.max(120000, (file.size / (1024 * 1024)) * 1000 + 60000);
     xhr.timeout = timeoutMs;
 
     xhr.open('POST', url);
@@ -237,33 +237,43 @@ export async function extractInvoiceData(
     try {
       response = await uploadWithProgress(extractUrl, file, headers, onProgress);
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      // Handle timeout errors (both AbortError and explicit timeout message)
+      if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Upload timed out')) {
         logger.error('Upload timed out', {
           fileName: file.name,
           fileSize: file.size,
-          timeoutMs: Math.max(60000, (file.size / (1024 * 1024)) * 1000),
+          timeoutMs: Math.max(120000, (file.size / (1024 * 1024)) * 1000 + 60000),
         });
         return {
           success: false,
-          error: 'Upload timed out. Please try again with a smaller file or faster internet connection.',
+          error: 'Service is warming up (first upload may take 30-60 seconds). Please wait and try again.',
         };
       }
 
-      if (error instanceof Error && error.message === 'Upload timed out') {
+      // Handle network errors
+      if (error instanceof Error && error.message === 'Upload failed') {
+        logger.error('Network error during invoice extraction', {
+          url: extractUrl,
+          fileName: file.name,
+          errorMessage: error.message,
+        });
         return {
           success: false,
-          error: 'Upload timed out. Please try again with a smaller file or faster internet connection.',
+          error: 'Network error while processing invoice. Please check your internet connection and try again.',
         };
       }
 
-      logger.error('Network error during invoice extraction', {
+      // Handle unexpected errors
+      logger.error('Unexpected error during file upload', {
         url: extractUrl,
         fileName: file.name,
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
         errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
       });
       return {
         success: false,
-        error: 'Network error while processing invoice. Please check your internet connection and try again.',
+        error: 'Unexpected error during upload. Please try again or contact support if the problem persists.',
       };
     }
 

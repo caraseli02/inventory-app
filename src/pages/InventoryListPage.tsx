@@ -13,6 +13,7 @@ import { ProductDetailDialog } from '../components/inventory/ProductDetailDialog
 import { LowStockAlertsPanel } from '../components/inventory/LowStockAlertsPanel';
 import EditProductDialog from '../components/product/EditProductDialog';
 import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
+import BatchDeleteConfirmDialog from '../components/product/BatchDeleteConfirmDialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ImportDialog } from '../components/xlsx/ImportDialog';
 import { InvoiceUploadDialog } from '../components/invoice/InvoiceUploadDialog';
@@ -23,6 +24,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../hooks/useToast';
 import type { Product } from '../types';
 import { logger } from '../lib/logger';
+import { AuthorizationError, NetworkError } from '../lib/errors';
 
 interface InventoryListPageProps {
   onBack: () => void;
@@ -36,6 +38,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [deleteProduct, setDeleteProduct] = useState<Product | null>(null);
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [loadingProducts, setLoadingProducts] = useState<Set<string>>(new Set());
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
@@ -65,6 +69,21 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       }
     };
   }, []);
+
+  // Keep selection in sync with current products
+  useEffect(() => {
+    setSelectedProductIds((prev) => {
+      if (prev.size === 0) return prev;
+      const next = new Set<string>();
+      const productIds = new Set(products.map((product) => product.id));
+      prev.forEach((id) => {
+        if (productIds.has(id)) {
+          next.add(id);
+        }
+      });
+      return next;
+    });
+  }, [products]);
 
   const handleViewDetails = useCallback((product: Product) => {
     setSelectedProduct(product);
@@ -189,6 +208,35 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     refetch();
   }, [refetch]);
 
+  const handleToggleSelect = useCallback((productId: string, selected: boolean) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(productId);
+      } else {
+        next.delete(productId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleToggleSelectAll = useCallback((selected: boolean) => {
+    setSelectedProductIds(() => {
+      if (!selected) return new Set();
+      return new Set(products.map((product) => product.id));
+    });
+  }, [products]);
+
+  const handleBatchDeleteSuccess = useCallback((deletedIds: string[], failedIds: string[]) => {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      deletedIds.forEach((id) => next.delete(id));
+      failedIds.forEach((id) => next.add(id));
+      return next;
+    });
+    refetch();
+  }, [refetch]);
+
   // Show toast when low stock alerts are first displayed
   const handleAlertShown = useCallback(() => {
     showToast(
@@ -283,10 +331,33 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
         successCount++;
       } catch (err) {
-        // Log error with proper context
+        // Check for fatal errors that should stop the import
+        if (err instanceof AuthorizationError ||
+            (err instanceof NetworkError && successCount === 0)) {
+          logger.error('Fatal error during import - stopping', {
+            productName: imported.Name,
+            errorType: err.constructor.name,
+            errorMessage: err.message,
+            errorStack: err.stack,
+            successCount,
+            errorCount,
+            remainingCount: importedProducts.length - successCount - errorCount,
+          });
+
+          showToast(
+            'error',
+            t('import.failed'),
+            `Import stopped: ${err.message}. ${successCount} products were imported successfully.`,
+            10000
+          );
+          return; // Stop the import
+        }
+
+        // Log validation and non-fatal errors
         logger.error('Product import failed', {
           productName: imported.Name,
           barcode: imported.Barcode,
+          errorType: err instanceof Error ? err.constructor.name : typeof err,
           errorMessage: err instanceof Error ? err.message : String(err),
           errorStack: err instanceof Error ? err.stack : undefined,
           timestamp: new Date().toISOString(),
@@ -456,6 +527,10 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
                   onQuickAdjust={handleQuickAdjust}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  selectedProductIds={selectedProductIds}
+                  onToggleSelect={handleToggleSelect}
+                  onToggleSelectAll={handleToggleSelectAll}
+                  onDeleteSelected={() => setBatchDeleteOpen(true)}
                   loadingProductIds={loadingProducts}
                 />
               </div>
@@ -492,6 +567,14 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           onDeleteSuccess={handleDeleteSuccess}
         />
       )}
+
+      {/* Batch Delete Dialog */}
+      <BatchDeleteConfirmDialog
+        products={products.filter((product) => selectedProductIds.has(product.id))}
+        open={batchDeleteOpen}
+        onOpenChange={setBatchDeleteOpen}
+        onDeleteSuccess={handleBatchDeleteSuccess}
+      />
 
       {/* Import Dialog */}
       <ImportDialog

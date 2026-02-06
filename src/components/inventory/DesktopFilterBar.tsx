@@ -146,21 +146,16 @@ export const DesktopFilterBar = ({
         </div>
 
         {/* Refresh Button */}
-        <div className="space-y-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
-            {t('inventory.refresh', 'Refresh')}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            className="h-10 w-10 border-2 border-stone-300"
-            aria-label={t('inventory.refresh', 'Refresh')}
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          className="h-10 w-10 border-2 border-stone-300"
+          aria-label={t('inventory.refresh', 'Refresh')}
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
 
       {/* Import/Export Actions Row */}
