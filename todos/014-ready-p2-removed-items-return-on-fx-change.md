@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "014"
 tags: [code-review, invoice-ocr, ui, pricing]
@@ -48,6 +48,7 @@ When a user removes a product row in the invoice preview and then adjusts the FX
 
 ## Recommended Action
 
+Implement Option 1 alongside stable row IDs: track removed IDs and filter before FX rebuild so deletions persist across rate changes.
 
 ## Technical Details
 
@@ -75,3 +76,10 @@ When a user removes a product row in the invoice preview and then adjusts the FX
 **Learnings:**
 - Full list replacement breaks user deletions
 
+### 2026-02-06 - Triage
+
+**By:** Codex
+
+**Actions:**
+- Approved Option 1 (removed-id filter)
+- Marked todo as ready

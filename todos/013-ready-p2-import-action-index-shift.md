@@ -1,5 +1,5 @@
 ---
-status: pending
+status: ready
 priority: p2
 issue_id: "013"
 tags: [code-review, invoice-ocr, ui, state]
@@ -48,6 +48,7 @@ Invoice import preview stores per-row update/skip choices by array index. Removi
 
 ## Recommended Action
 
+Implement Option 1: add a stable `id` to each preview row (UUID), store `importActions` by id, and keep actions stable across remove/reorder. Update lookup when mapping to `ImportedProduct`.
 
 ## Technical Details
 
@@ -76,3 +77,10 @@ Invoice import preview stores per-row update/skip choices by array index. Removi
 **Learnings:**
 - Index-based state is fragile when list is mutable
 
+### 2026-02-06 - Triage
+
+**By:** Codex
+
+**Actions:**
+- Approved Option 1 (stable id per row)
+- Marked todo as ready
