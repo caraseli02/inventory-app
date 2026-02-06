@@ -1,11 +1,4 @@
-import { useState, useCallback } from 'react';
-
-/**
- * Check if value is a valid number
- */
-function isValidNumber(value: unknown): value is number {
-  return typeof value === 'number' && !isNaN(value) && Number.isFinite(value);
-}
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Dialog,
@@ -34,21 +27,125 @@ import type { ImportedProduct } from '@/lib/xlsx';
 import { logger } from '@/lib/logger';
 import type { InvoiceProduct } from '@/lib/invoiceOCR';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { suggestProductDetails } from '@/lib/ai';
+import { getBnmEurRate } from '@/lib/exchangeRates';
+import type { Product } from '@/types';
 
 interface InvoiceUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (products: ImportedProduct[]) => Promise<void>;
+  products: Product[];
 }
 
 type InvoiceStep = 'upload' | 'preview' | 'importing' | 'complete';
 
-export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUploadDialogProps) {
+type ImportAction = 'create' | 'update' | 'skip';
+type MatchType = 'barcode' | 'name';
+
+interface InvoiceMatchResult {
+  product: Product;
+  type: MatchType;
+}
+
+interface InvoicePreviewProduct extends InvoiceProduct {
+  category?: string;
+  imageUrl?: string;
+}
+
+const ACTIVE_MARKUP = 70;
+const CATEGORIES = [
+  'General',
+  'Produce',
+  'Dairy',
+  'Meat',
+  'Pantry',
+  'Snacks',
+  'Beverages',
+  'Household',
+  'Conserve',
+  'Cereale',
+] as const;
+
+/**
+ * Check if value is a valid number
+ */
+function isValidNumber(value: unknown): value is number {
+  return typeof value === 'number' && !isNaN(value) && Number.isFinite(value);
+}
+
+const roundCurrency = (value: number): number => {
+  if (!Number.isFinite(value)) return 0;
+  return Math.round(value * 100) / 100;
+};
+
+const parseInvoiceDate = (dateValue?: string): Date | null => {
+  if (!dateValue) return null;
+  const trimmed = dateValue.trim();
+  if (!trimmed) return null;
+
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const year = isoMatch[1];
+    const month = isoMatch[2];
+    const day = isoMatch[3];
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
+  const dmyMatch = trimmed.match(/^(\d{2})[./-](\d{2})[./-](\d{4})$/);
+  if (dmyMatch) {
+    const day = dmyMatch[1];
+    const month = dmyMatch[2];
+    const year = dmyMatch[3];
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
+  const parsed = new Date(trimmed);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const normalizeForMatch = (value: string): string => {
+  return value
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+};
+
+const inferCategoryFromName = (name: string): string => {
+  const normalized = name.toLowerCase();
+  const rules: Array<{ category: string; keywords: string[] }> = [
+    { category: 'Dairy', keywords: ['milk', 'cheese', 'yogurt', 'butter', 'smantana'] },
+    { category: 'Meat', keywords: ['beef', 'pork', 'chicken', 'meat', 'carne'] },
+    { category: 'Produce', keywords: ['apple', 'banana', 'tomato', 'potato', 'fruit', 'vegetable', 'legume'] },
+    { category: 'Beverages', keywords: ['water', 'juice', 'soda', 'cola', 'beer', 'wine', 'drink', 'baut'] },
+    { category: 'Snacks', keywords: ['chips', 'snack', 'cracker', 'biscuit', 'cookie'] },
+    { category: 'Pantry', keywords: ['rice', 'pasta', 'flour', 'sugar', 'salt', 'oil'] },
+    { category: 'Household', keywords: ['soap', 'detergent', 'clean', 'paper', 'towel'] },
+    { category: 'Conserve', keywords: ['canned', 'conserve'] },
+    { category: 'Cereale', keywords: ['cereal', 'oat', 'granola'] },
+  ];
+
+  for (const rule of rules) {
+    if (rule.keywords.some((keyword) => normalized.includes(keyword))) {
+      return rule.category;
+    }
+  }
+
+  return 'General';
+};
+
+export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: InvoiceUploadDialogProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<InvoiceStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
-  const [editableProducts, setEditableProducts] = useState<InvoiceProduct[]>([]);
+  const [rawProducts, setRawProducts] = useState<InvoiceProduct[]>([]);
+  const [editableProducts, setEditableProducts] = useState<InvoicePreviewProduct[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [ocrProgress, setOcrProgress] = useState(0);
@@ -56,10 +153,20 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
   const [error, setError] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importErrors, setImportErrors] = useState<string[]>([]);
+  const [fxRate, setFxRate] = useState<number | null>(null);
+  const [autoFxRate, setAutoFxRate] = useState<number | null>(null);
+  const [fxRateDate, setFxRateDate] = useState<string | null>(null);
+  const [fxRateStatus, setFxRateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [fxRateError, setFxRateError] = useState<string | null>(null);
+  const [fxRateIsFallback, setFxRateIsFallback] = useState(false);
+  const [fxRateSource, setFxRateSource] = useState<'bnm' | 'manual' | null>(null);
+  const [importActions, setImportActions] = useState<Record<number, ImportAction>>({});
+  const autoCategoryRef = useRef(new Set<string>());
 
   const resetState = useCallback(() => {
     setStep('upload');
     setInvoiceData(null);
+    setRawProducts([]);
     setEditableProducts([]);
     setEditingIndex(null);
     setFileName('');
@@ -68,6 +175,15 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     setError(null);
     setImportProgress({ current: 0, total: 0 });
     setImportErrors([]);
+    setFxRate(null);
+    setAutoFxRate(null);
+    setFxRateDate(null);
+    setFxRateStatus('idle');
+    setFxRateError(null);
+    setFxRateIsFallback(false);
+    setFxRateSource(null);
+    setImportActions({});
+    autoCategoryRef.current = new Set<string>();
   }, []);
 
   const handleClose = useCallback(() => {
@@ -98,7 +214,12 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
 
       if (result.success) {
         setInvoiceData(result.data);
-        setEditableProducts(result.data.products);
+        setRawProducts(result.data.products);
+        setEditableProducts(result.data.products.map((product) => ({
+          ...product,
+          category: inferCategoryFromName(product.name),
+        })));
+        setImportActions({});
         setStep('preview');
       } else {
         setError(result.error);
@@ -134,6 +255,193 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     }
   }, [t]);
 
+  useEffect(() => {
+    if (!invoiceData) return;
+
+    const invoiceDate = parseInvoiceDate(invoiceData.invoiceDate);
+    let cancelled = false;
+
+    setFxRateStatus('loading');
+    setFxRateError(null);
+    setFxRateIsFallback(false);
+    setFxRateSource(null);
+
+    getBnmEurRate(invoiceDate)
+      .then((result) => {
+        if (cancelled) return;
+        setAutoFxRate(result.rate);
+        setFxRate(result.rate);
+        setFxRateDate(result.date);
+        setFxRateIsFallback(result.isFallback);
+        setFxRateStatus('success');
+        setFxRateSource('bnm');
+      })
+      .catch((fetchError) => {
+        if (cancelled) return;
+        logger.warn('Failed to fetch BNM exchange rate', {
+          invoiceDate: invoiceData.invoiceDate,
+          errorMessage: fetchError instanceof Error ? fetchError.message : String(fetchError),
+        });
+        setAutoFxRate(null);
+        setFxRate(null);
+        setFxRateDate(null);
+        setFxRateStatus('error');
+        setFxRateError(
+          t('invoiceUpload.fx.fetchFailed', 'Unable to fetch BNM rate. Enter rate manually to continue.')
+        );
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [invoiceData, t]);
+
+  useEffect(() => {
+    if (!rawProducts.length) return;
+    if (!fxRate || !Number.isFinite(fxRate) || fxRate <= 0) return;
+
+    setEditableProducts((prev) => {
+      return rawProducts.map((product, index) => {
+        const previous = prev[index];
+        const quantity = previous?.quantity ?? product.quantity;
+        const unitPrice = roundCurrency(product.unitPrice / fxRate);
+        const totalPrice = roundCurrency(quantity * unitPrice);
+
+        return {
+          ...product,
+          name: previous?.name ?? product.name,
+          barcode: previous?.barcode ?? product.barcode,
+          quantity,
+          unitPrice,
+          totalPrice,
+          category: previous?.category ?? inferCategoryFromName(product.name),
+          imageUrl: previous?.imageUrl,
+        };
+      });
+    });
+  }, [rawProducts, fxRate]);
+
+  useEffect(() => {
+    if (!editableProducts.length) return;
+
+    const pending = editableProducts
+      .map((product, index) => ({ product, index }))
+      .filter(({ product }) => {
+        if (!product.barcode) return false;
+        if (autoCategoryRef.current.has(product.barcode)) return false;
+        return !product.category || product.category === 'General';
+      });
+
+    if (!pending.length) return;
+
+    pending.forEach(({ product }) => {
+      if (product.barcode) {
+        autoCategoryRef.current.add(product.barcode);
+      }
+    });
+
+    const run = async () => {
+      const results = await Promise.allSettled(
+        pending.map(({ product }) => suggestProductDetails(product.barcode || ''))
+      );
+
+      setEditableProducts((prev) =>
+        prev.map((product, index) => {
+          const matchIndex = pending.findIndex((item) => item.index === index);
+          if (matchIndex === -1) return product;
+
+          const result = results[matchIndex];
+          if (result.status !== 'fulfilled' || !result.value) return product;
+
+          const suggestion = result.value;
+          return {
+            ...product,
+            category: suggestion.category || product.category,
+            imageUrl: suggestion.imageUrl || product.imageUrl,
+          };
+        })
+      );
+    };
+
+    run();
+  }, [editableProducts]);
+
+  const barcodeIndex = useMemo(() => {
+    const map = new Map<string, Product>();
+    products.forEach((product) => {
+      const barcode = product.fields.Barcode?.trim();
+      if (barcode) {
+        map.set(barcode, product);
+      }
+    });
+    return map;
+  }, [products]);
+
+  const nameIndex = useMemo(() => {
+    const map = new Map<string, Product | null>();
+    products.forEach((product) => {
+      const name = normalizeForMatch(product.fields.Name);
+      if (!name) return;
+      if (map.has(name)) {
+        map.set(name, null);
+        return;
+      }
+      map.set(name, product);
+    });
+    return map;
+  }, [products]);
+
+  const matchResults = useMemo(() => {
+    return editableProducts.map((product) => {
+      const barcode = product.barcode?.trim();
+      if (barcode) {
+        const match = barcodeIndex.get(barcode);
+        if (match) return { product: match, type: 'barcode' } satisfies InvoiceMatchResult;
+      }
+
+      if (!barcode) {
+        const normalizedName = normalizeForMatch(product.name);
+        const match = nameIndex.get(normalizedName);
+        if (match) return { product: match, type: 'name' } satisfies InvoiceMatchResult;
+      }
+
+      return null;
+    });
+  }, [editableProducts, barcodeIndex, nameIndex]);
+
+  useEffect(() => {
+    setImportActions((prev) => {
+      const next: Record<number, ImportAction> = {};
+
+      editableProducts.forEach((_, index) => {
+        const match = matchResults[index];
+        const previous = prev[index];
+
+        if (!match) {
+          next[index] = 'create';
+          return;
+        }
+
+        if (previous === 'skip' || previous === 'update') {
+          next[index] = previous;
+          return;
+        }
+
+        next[index] = 'update';
+      });
+
+      return next;
+    });
+  }, [editableProducts, matchResults]);
+
+  const previewTotalAmount = useMemo(() => {
+    if (!editableProducts.length) return null;
+    const total = editableProducts.reduce((sum, product) => sum + (product.totalPrice || 0), 0);
+    return roundCurrency(total);
+  }, [editableProducts]);
+
+  const isFxReady = fxRate != null && Number.isFinite(fxRate) && fxRate > 0;
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
@@ -167,6 +475,30 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     [handleFileSelect]
   );
 
+  const handleFxRateChange = useCallback((value: string) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setFxRate(null);
+      setFxRateSource('manual');
+      setFxRateStatus('error');
+      setFxRateError(t('invoiceUpload.fx.invalidRate', 'Enter a valid positive rate.'));
+      return;
+    }
+
+    setFxRate(parsed);
+    setFxRateSource('manual');
+    setFxRateStatus('success');
+    setFxRateError(null);
+  }, [t]);
+
+  const handleUseAutoRate = useCallback(() => {
+    if (!autoFxRate || !Number.isFinite(autoFxRate)) return;
+    setFxRate(autoFxRate);
+    setFxRateSource('bnm');
+    setFxRateStatus('success');
+    setFxRateError(null);
+  }, [autoFxRate]);
+
   const handleRemoveProduct = useCallback((index: number) => {
     setEditableProducts(prev => prev.filter((_, i) => i !== index));
     setEditingIndex(null);
@@ -184,47 +516,66 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
     setEditingIndex(null);
   }, []);
 
-  const handleProductFieldChange = useCallback((index: number, field: keyof InvoiceProduct, value: string | number) => {
-    // Validate number fields before updating state
-    if (typeof value === 'number') {
-      // Validate existing number values
-      if (!isValidNumber(value)) {
-        return; // Don't update with invalid number (NaN, Infinity)
-      }
-    } else {
-      // Convert string to number and validate
-      const numValue = Number(value);
-      if (!isValidNumber(numValue)) {
-        return; // Don't update with invalid conversion (NaN from "abc")
-      }
-    }
+  const handleProductFieldChange = useCallback(
+    (index: number, field: keyof InvoicePreviewProduct, value: string | number) => {
+      setEditableProducts((prev) =>
+        prev.map((product, i) => {
+          if (i !== index) return product;
 
-    // Value is valid, update state
-    setEditableProducts(prev => prev.map((product, i) => {
-      if (i !== index) return product;
-      return { ...product, [field]: typeof value === 'number' ? value : Number(value) };
-    }));
-  }, []);
+          if (field === 'quantity' || field === 'unitPrice' || field === 'totalPrice') {
+            const numericValue = typeof value === 'number' ? value : Number(value);
+            if (!isValidNumber(numericValue)) {
+              return product;
+            }
+
+            const next = { ...product, [field]: numericValue } as InvoicePreviewProduct;
+            if (field === 'quantity' || field === 'unitPrice') {
+              next.totalPrice = roundCurrency(next.quantity * next.unitPrice);
+            }
+            return next;
+          }
+
+          return {
+            ...product,
+            [field]: typeof value === 'string' ? value : String(value),
+          };
+        })
+      );
+    },
+    []
+  );
 
   const handleConfirmImport = useCallback(async () => {
-    if (!editableProducts.length || !invoiceData) return;
+    if (!editableProducts.length || !invoiceData || !isFxReady) return;
 
     setStep('importing');
     setImportProgress({ current: 0, total: editableProducts.length });
     setImportErrors([]);
 
     try {
-      // Convert invoice products to ImportedProduct format
-      const importedProducts: ImportedProduct[] = editableProducts.map((product) => ({
-        Name: product.name,
-        Barcode: product.barcode || '', // Can be empty, user can add later
-        Category: undefined, // Will be assigned based on existing logic or user input
-        Price: product.unitPrice,
-        currentStock: product.quantity,
-        'Min Stock Level': undefined,
-        Supplier: invoiceData?.supplier || undefined,
-        'Expiry Date': undefined,
-      }));
+      const importedProducts: ImportedProduct[] = editableProducts.map((product, index) => {
+        const match = matchResults[index];
+        const importAction = importActions[index] ?? (match ? 'update' : 'create');
+        const price70 = Number.isFinite(product.unitPrice)
+          ? roundCurrency(product.unitPrice * (1 + ACTIVE_MARKUP / 100))
+          : undefined;
+
+        return {
+          Name: product.name,
+          Barcode: product.barcode || '',
+          Category: product.category || 'General',
+          Price: product.unitPrice,
+          price70,
+          price50: undefined,
+          price100: undefined,
+          currentStock: product.quantity,
+          Supplier: invoiceData?.supplier || undefined,
+          expiryDate: undefined,
+          importAction,
+          existingProductId: importAction === 'update' ? match?.product.id : undefined,
+          imageUrl: product.imageUrl,
+        };
+      });
 
       await onImport(importedProducts);
 
@@ -260,7 +611,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
       setImportErrors([errorMessage]);
       setStep('preview');
     }
-  }, [editableProducts, invoiceData, onImport, t]);
+  }, [editableProducts, invoiceData, importActions, isFxReady, matchResults, onImport, t]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -429,16 +780,68 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                         </span>
                       </>
                     )}
-                    {invoiceData.totalAmount && (
+                    {previewTotalAmount != null && (
                       <>
                         <span className="text-stone-600">{t('invoiceUpload.preview.total', 'Total:')}</span>
                         <span className="font-semibold text-stone-900">
-                          €{invoiceData.totalAmount.toFixed(2)}
+                          €{previewTotalAmount.toFixed(2)}
                         </span>
                       </>
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* FX Rate */}
+              <div className="p-4 bg-white rounded-lg border-2 border-stone-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-stone-800">
+                    {t('invoiceUpload.fx.title', 'FX Rate (MDL per EUR)')}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {fxRateSource === 'bnm' && fxRateDate && (
+                      <Badge variant="outline" className="text-xs">
+                        {t('invoiceUpload.fx.bnm', { defaultValue: 'BNM {{date}}', date: fxRateDate })}
+                      </Badge>
+                    )}
+                    {fxRateSource === 'manual' && (
+                      <Badge variant="outline" className="text-xs">
+                        {t('invoiceUpload.fx.manual', 'Manual')}
+                      </Badge>
+                    )}
+                    {fxRateSource === 'bnm' && fxRateIsFallback && (
+                      <Badge variant="outline" className="text-xs">
+                        {t('invoiceUpload.fx.fallback', 'Fallback')}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <Input
+                    type="number"
+                    value={fxRate ?? ''}
+                    onChange={(e) => handleFxRateChange(e.target.value)}
+                    step="0.0001"
+                    min="0"
+                    placeholder={t('invoiceUpload.fx.placeholder', 'Enter rate')}
+                    className="max-w-[220px]"
+                  />
+                  {fxRateSource === 'manual' && autoFxRate && (
+                    <Button variant="outline" onClick={handleUseAutoRate}>
+                      {t('invoiceUpload.fx.useBnm', 'Use BNM rate')}
+                    </Button>
+                  )}
+                  {fxRateStatus === 'loading' && (
+                    <span className="text-xs text-stone-500">
+                      {t('invoiceUpload.fx.loading', 'Fetching BNM rate...')}
+                    </span>
+                  )}
+                </div>
+
+                {fxRateError && (
+                  <p className="text-xs text-red-600">{fxRateError}</p>
+                )}
               </div>
 
               {/* Warning about barcodes */}
@@ -459,22 +862,28 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                   <Table>
                     <TableHeader className="bg-stone-100 sticky top-0 z-10">
                       <TableRow>
-                        <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[35%]">
+                        <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[28%]">
                           {t('invoiceUpload.table.productName', 'Product Name')}
                         </TableHead>
-                        <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[20%]">
+                        <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[12%]">
+                          {t('invoiceUpload.table.category', 'Category')}
+                        </TableHead>
+                        <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[16%]">
                           {t('invoiceUpload.table.barcode', 'Barcode')}
                         </TableHead>
-                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[10%]">
+                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[8%]">
                           {t('invoiceUpload.table.quantity', 'Qty')}
                         </TableHead>
-                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[12%]">
+                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[10%]">
                           {t('invoiceUpload.table.unitPrice', 'Unit Price')}
                         </TableHead>
-                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[12%]">
+                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[10%]">
                           {t('invoiceUpload.table.total', 'Total')}
                         </TableHead>
-                        <TableHead className="px-4 py-3 text-center font-semibold text-stone-700 w-[11%]">
+                        <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[10%]">
+                          {t('invoiceUpload.table.match', 'Match')}
+                        </TableHead>
+                        <TableHead className="px-4 py-3 text-center font-semibold text-stone-700 w-[6%]">
                           {t('invoiceUpload.table.actions', 'Actions')}
                         </TableHead>
                       </TableRow>
@@ -482,8 +891,14 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                     <TableBody className="divide-y divide-stone-200">
                       {editableProducts.map((product, i) => {
                         const isEditing = editingIndex === i;
+                        const match = matchResults[i];
+                        const importAction = importActions[i] ?? (match ? 'update' : 'create');
+                        const isSkipped = importAction === 'skip';
                         return (
-                          <TableRow key={i} className={isEditing ? "bg-blue-50" : "hover:bg-stone-50"}>
+                          <TableRow
+                            key={i}
+                            className={`${isEditing ? 'bg-blue-50' : 'hover:bg-stone-50'} ${isSkipped ? 'opacity-60' : ''}`}
+                          >
                             <TableCell className="px-4 py-3">
                               {isEditing ? (
                                 <Input
@@ -494,6 +909,27 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                 />
                               ) : (
                                 product.name
+                              )}
+                            </TableCell>
+                            <TableCell className="px-4 py-3">
+                              {isEditing ? (
+                                <Select
+                                  value={product.category || 'General'}
+                                  onValueChange={(value) => handleProductFieldChange(i, 'category', value)}
+                                >
+                                  <SelectTrigger className="h-9 text-xs w-full">
+                                    <SelectValue placeholder={t('invoiceUpload.table.category', 'Category')} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {CATEGORIES.map((cat) => (
+                                      <SelectItem key={cat} value={cat}>
+                                        {cat}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span className="text-sm text-stone-700">{product.category || 'General'}</span>
                               )}
                             </TableCell>
                             <TableCell className="px-4 py-3">
@@ -553,6 +989,44 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                                 />
                               ) : (
                                 <span className="font-semibold">€{product.totalPrice.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-4 py-3">
+                              {match ? (
+                                <div className="space-y-2">
+                                  <div className="text-xs text-stone-700 truncate">
+                                    {match.product.fields.Name}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                                      {match.type === 'barcode'
+                                        ? t('invoiceUpload.table.matchBarcode', 'Barcode match')
+                                        : t('invoiceUpload.table.matchName', 'Name match')}
+                                    </Badge>
+                                  </div>
+                                  <Select
+                                    value={importAction}
+                                    onValueChange={(value) =>
+                                      setImportActions((prev) => ({ ...prev, [i]: value as ImportAction }))
+                                    }
+                                  >
+                                    <SelectTrigger className="h-8 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="update">
+                                        {t('invoiceUpload.table.update', 'Update')}
+                                      </SelectItem>
+                                      <SelectItem value="skip">
+                                        {t('invoiceUpload.table.skip', 'Skip')}
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-stone-500">
+                                  {t('invoiceUpload.table.newProduct', 'New product')}
+                                </span>
                               )}
                             </TableCell>
                             <TableCell className="px-4 py-3">
@@ -632,6 +1106,17 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
                 </ul>
               </div>
 
+              {!isFxReady && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-amber-800">
+                    {t('invoiceUpload.fx.required', 'FX rate required to continue import.')}
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    {t('invoiceUpload.fx.requiredHelp', 'Enter a valid MDL per EUR rate above.')}
+                  </p>
+                </div>
+              )}
+
               {/* Import Errors */}
               {importErrors.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -695,7 +1180,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport }: InvoiceUpl
               <Button
                 onClick={handleConfirmImport}
                 className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
-                disabled={!editableProducts.length}
+                disabled={!editableProducts.length || !isFxReady}
               >
                 {t('invoiceUpload.actions.importCount', {
                   count: editableProducts.length,

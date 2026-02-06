@@ -25,6 +25,9 @@ export interface ImportedProduct {
   minStock?: number;
   Supplier?: string;
   expiryDate?: string;
+  importAction?: 'create' | 'update' | 'skip';
+  existingProductId?: string;
+  imageUrl?: string;
 }
 
 export interface ImportResult {
@@ -332,4 +335,3 @@ export function exportToXlsx(products: ExportProduct[], filename?: string): void
     throw new Error(`Export failed: ${message}`);
   }
 }
-

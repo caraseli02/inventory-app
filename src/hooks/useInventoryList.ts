@@ -164,6 +164,7 @@ export const useInventoryList = () => {
   return {
     // Query state
     products: filteredAndSortedProducts,
+    allProducts: query.data ?? [],
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
