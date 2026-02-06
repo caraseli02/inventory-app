@@ -124,7 +124,7 @@ return {
 
 **FastAPI Service Responsibility** (separate repo):
 - Configure CORS middleware for production frontend URL
-- Allow origins: `https://inventory-app.vercel.app` (production), `http://localhost:5173` (development)
+- Allow origins: `https://lavio.vercel.app` (production), `http://localhost:5173` (development)
 - Allow methods: `POST`, `OPTIONS`
 - Allow headers: `X-API-Key`, `Content-Type`
 
@@ -256,9 +256,9 @@ return {
 3. **Test CORS configuration**:
    ```bash
    curl -I -X OPTIONS https://invoiceprocessing-g4ol.onrender.com/extract \
-     -H "Origin: https://inventory-app.vercel.app"
+     -H "Origin: https://lavio.vercel.app"
    ```
-   Expected: `Access-Control-Allow-Origin: https://inventory-app.vercel.app`
+   Expected: `Access-Control-Allow-Origin: https://lavio.vercel.app`
    Status: ⚠️ BLOCKER - Returns 405 Method Not Allowed
    Issue: CORS middleware not configured (OPTIONS requests rejected)
 
@@ -325,7 +325,7 @@ return {
    - No errors in deployment logs
 
 4. **Test Production URL**:
-   - Visit production frontend URL (e.g., `https://inventory-app.vercel.app`)
+   - Visit production frontend URL (e.g., `https://lavio.vercel.app`)
    - App loads without errors
    - Invoice upload button visible
 
@@ -461,7 +461,7 @@ git push origin <branch-name>
    - Verify status is "Ready"
 
 3. **Verify Production URL**:
-   - Visit `https://inventory-app.vercel.app`
+   - Visit `https://lavio.vercel.app`
    - App loads without errors
 
 **Task 5.2: Test End-to-End Flow**
@@ -519,7 +519,7 @@ git push origin <branch-name>
    - Open DevTools → Network tab
    - Check OPTIONS request before POST /extract
    - Verify response headers include:
-     - `Access-Control-Allow-Origin: https://inventory-app.vercel.app`
+     - `Access-Control-Allow-Origin: https://lavio.vercel.app`
      - `Access-Control-Allow-Methods: POST, OPTIONS`
      - `Access-Control-Allow-Headers: X-API-Key, Content-Type`
    - If missing, contact FastAPI service owner
@@ -636,11 +636,11 @@ VITE_INVOICE_API_REQUIRE_AUTH=true
 
 **Solution**:
 1. Contact FastAPI service owner
-2. Verify CORS `allow_origins` includes production URL (`https://inventory-app.vercel.app`)
+2. Verify CORS `allow_origins` includes production URL (`https://lavio.vercel.app`)
 3. Test CORS with curl:
    ```bash
    curl -I -X OPTIONS https://invoice-ocr-api.onrender.com/extract \
-     -H "Origin: https://inventory-app.vercel.app"
+     -H "Origin: https://lavio.vercel.app"
    ```
 4. Redeploy FastAPI service if needed
 
@@ -779,7 +779,7 @@ If using invoice OCR feature with FastAPI service deployed to Render:
 
 ### Post-Deployment Testing (Production)
 
-- [ ] Production frontend accessible (https://inventory-app.vercel.app)
+- [ ] Production frontend accessible (https://lavio.vercel.app)
 - [ ] Invoice upload dialog opens
 - [ ] Environment variables verified in Vercel dashboard
 - [ ] First upload (cold start) completes (38-72s)

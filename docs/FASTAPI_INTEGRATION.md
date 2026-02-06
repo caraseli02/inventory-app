@@ -651,11 +651,11 @@ curl -X POST \
 
 **Solution**:
 1. Contact FastAPI service owner
-2. Verify CORS `allow_origins` includes production URL (`https://inventory-app.vercel.app`)
+2. Verify CORS `allow_origins` includes production URL (`https://lavio.vercel.app`)
 3. Test CORS with curl:
    ```bash
    curl -I -X OPTIONS https://invoiceprocessing-g4ol.onrender.com/extract \
-     -H "Origin: https://inventory-app.vercel.app"
+     -H "Origin: https://lavio.vercel.app"
    ```
 4. Redeploy FastAPI service if needed
 
