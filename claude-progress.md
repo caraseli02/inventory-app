@@ -1,7 +1,7 @@
 # Inventory App - Project Progress Tracker
 
-**Last Updated**: 2025-12-20
-**Project Status**: 🚀 MVP Complete - Post-MVP Phase
+**Last Updated**: 2026-02-06
+**Project Status**: 🚀 MVP Complete - Post-MVP Phase + Enhancements
 **Overall Completion**: 82% (23/28 features implemented)
 
 ---
@@ -74,12 +74,12 @@ This document tracks the implementation and testing status of all features in th
 ## Testing Status
 
 ### Test Scenarios Overview
-- **Total Scenarios**: 53
-- **Tested Scenarios**: 42 (79%)
-- **Untested Scenarios**: 11 (21%)
+- **Total Scenarios**: 65 (+12 new pricing conversion scenarios)
+- **Tested Scenarios**: 49 (75%)
+- **Untested Scenarios**: 16 (25%)
 
 ### Features Requiring Testing Priority
-1. **F028**: Invoice Upload with AI-Powered OCR (10 scenarios untested)
+1. **F028**: Invoice Upload with AI-Powered OCR (15 scenarios untested, 7 code-reviewed)
 2. **F012**: Camera Permission Errors (2 scenarios untested)
 
 ---
@@ -139,6 +139,24 @@ This document tracks the implementation and testing status of all features in th
 ---
 
 ## Recent Activity Log
+
+### 2026-02-06
+- **Invoice Import Pricing Conversion Enhancement** (Commit: `dcebbe8`)
+  - Implemented MDL→EUR currency conversion via BNM exchange rates
+  - Added FX rate auto-fetch with 7-day fallback for weekends/holidays
+  - Created `src/lib/exchangeRates.ts` module for BNM integration
+  - Extended invoice preview with manual FX override capability
+  - Implemented category auto-assignment for missing categories
+  - Added product matching (barcode + name) with update/skip actions
+  - Only 70% markup tier computed (other tiers left empty)
+  - Enhanced validation to prevent NaN values
+- **Testing & Documentation**
+  - Added 12 new test scenarios to F028 (7 code-reviewed, 5 pending E2E)
+  - Created comprehensive test report: `docs/tests/invoice-pricing-conversion-test-report.md`
+  - Updated `feature_list.json` v1.5.0 with new scenarios
+  - Updated `claude-progress.md` with recent work
+- **Files Changed**: 8 files, +900 lines
+- **Status**: Code complete, E2E testing with real PDF required
 
 ### 2025-12-20
 - Created claude-progress.md for project tracking
@@ -246,7 +264,7 @@ This document tracks the implementation and testing status of all features in th
 - **Components**: 45+ React components
 - **API Functions**: 25+ backend integration functions
 - **Test Files**: 30+ test files
-- **Test Scenarios**: 53 documented scenarios
+- **Test Scenarios**: 65 documented scenarios (+12 pricing conversion)
 - **Documentation Files**: 25+ markdown files
 - **Specifications**: 18 feature specs
 

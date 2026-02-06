@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "version": "1.4.1",
-    "last_updated": "2026-02-01",
+    "version": "1.5.0",
+    "last_updated": "2026-02-06",
     "project": "Inventory App - Grocery Management",
     "solutions_directory": "docs/solutions/",
     "total_features": 28,
@@ -1382,6 +1382,66 @@
           "scenario": "Display progress bar during processing",
           "tested": false,
           "test_file": null
+        },
+        {
+          "scenario": "Fetch BNM exchange rate for invoice date (MDL→EUR conversion)",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
+        },
+        {
+          "scenario": "Fallback to previous date when rate unavailable (weekends/holidays)",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
+        },
+        {
+          "scenario": "Manual FX override when BNM fetch fails",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Convert MDL unit prices to EUR accurately",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
+        },
+        {
+          "scenario": "Recompute totals as quantity × converted unit price",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
+        },
+        {
+          "scenario": "Compute only 70% markup tier (active tier)",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
+        },
+        {
+          "scenario": "Auto-assign missing categories via AI/heuristics",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
+        },
+        {
+          "scenario": "Detect existing products by barcode match",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
+        },
+        {
+          "scenario": "Detect existing products by name match (no barcode)",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
+        },
+        {
+          "scenario": "Update existing product when user chooses update action",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "Skip existing product when user chooses skip action",
+          "tested": false,
+          "test_file": null
+        },
+        {
+          "scenario": "No NaN values displayed in preview or imported",
+          "tested": true,
+          "test_file": "docs/tests/invoice-pricing-conversion-test-report.md"
         }
       ]
     }
