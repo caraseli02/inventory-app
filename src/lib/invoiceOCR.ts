@@ -1,4 +1,5 @@
 import { logger } from './logger';
+import { supabase } from './supabase';
 
 export interface InvoiceProduct {
   name: string;
@@ -210,23 +211,32 @@ export async function extractInvoiceData(
 
     safeProgress(30);
 
-    // Prepare request to FastAPI /extract endpoint
-    const apiUrl = import.meta.env.VITE_INVOICE_API_URL || 'http://localhost:8000';
-    const extractUrl = `${apiUrl}/extract`;
+    // Use server-side proxy in production to avoid exposing API keys in client bundle.
+    const proxyUrl = import.meta.env.VITE_INVOICE_PROXY_URL;
+    const directDevApiUrl = import.meta.env.DEV ? import.meta.env.VITE_INVOICE_API_URL : undefined;
+    const extractUrl = proxyUrl
+      ? proxyUrl
+      : directDevApiUrl
+        ? `${directDevApiUrl.replace(/\/$/, '')}/extract`
+        : '/api/extract-invoice';
 
-    // Prepare headers with optional API key
+    // Forward user session when available so proxy can validate auth server-side.
     const headers: Record<string, string> = {};
-    const apiKey = import.meta.env.VITE_INVOICE_API_KEY;
-    const requireAuth = import.meta.env.VITE_INVOICE_API_REQUIRE_AUTH === 'true';
-
-    if (requireAuth || apiKey) {
-      headers['X-API-Key'] = apiKey || '';
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      logger.warn('Unable to read Supabase session for invoice proxy request', {
+        errorMessage: error instanceof Error ? error.message : String(error),
+      });
     }
 
     logger.debug('Sending request to FastAPI /extract endpoint', {
       url: extractUrl,
-      hasApiKey: !!apiKey,
-      requireAuth,
+      mode: extractUrl === '/api/extract-invoice' || extractUrl === proxyUrl ? 'proxy' : 'direct-dev',
       fileName: file.name,
     });
 
@@ -287,7 +297,7 @@ export async function extractInvoiceData(
       });
       return {
         success: false,
-        error: 'Invalid or missing API key. Please check your API configuration.',
+        error: 'Unauthorized request. Please check your server-side invoice API configuration.',
       };
     }
 
