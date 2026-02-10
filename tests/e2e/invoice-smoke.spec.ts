@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Invoice Upload Smoke', () => {
-  test('uploads invoice through proxy without CSP violations', async ({ page }) => {
+  test('uploads invoice through proxy path without CSP console errors', async ({ page }) => {
     const cspViolations: string[] = [];
     const invoiceRequestUrls: string[] = [];
 
