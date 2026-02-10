@@ -30,7 +30,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { suggestProductDetails } from '@/lib/ai';
-import { getBnmEurRate } from '@/lib/exchangeRates';
 import type { Product } from '@/types';
 
 interface InvoiceUploadDialogProps {
@@ -81,31 +80,6 @@ const roundCurrency = (value: number): number => {
   return Math.round(value * 100) / 100;
 };
 
-const parseInvoiceDate = (dateValue?: string): Date | null => {
-  if (!dateValue) return null;
-  const trimmed = dateValue.trim();
-  if (!trimmed) return null;
-
-  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) {
-    const year = isoMatch[1];
-    const month = isoMatch[2];
-    const day = isoMatch[3];
-    return new Date(Number(year), Number(month) - 1, Number(day));
-  }
-
-  const dmyMatch = trimmed.match(/^(\d{2})[./-](\d{2})[./-](\d{4})$/);
-  if (dmyMatch) {
-    const day = dmyMatch[1];
-    const month = dmyMatch[2];
-    const year = dmyMatch[3];
-    return new Date(Number(year), Number(month) - 1, Number(day));
-  }
-
-  const parsed = new Date(trimmed);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
 const normalizeForMatch = (value: string): string => {
   return value
     .normalize('NFD')
@@ -154,12 +128,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fxRate, setFxRate] = useState<number | null>(null);
-  const [autoFxRate, setAutoFxRate] = useState<number | null>(null);
-  const [fxRateDate, setFxRateDate] = useState<string | null>(null);
-  const [fxRateStatus, setFxRateStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [fxRateError, setFxRateError] = useState<string | null>(null);
-  const [fxRateIsFallback, setFxRateIsFallback] = useState(false);
-  const [fxRateSource, setFxRateSource] = useState<'bnm' | 'manual' | null>(null);
   const [importActions, setImportActions] = useState<Record<number, ImportAction>>({});
   const autoCategoryRef = useRef(new Set<string>());
 
@@ -176,12 +145,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     setImportProgress({ current: 0, total: 0 });
     setImportErrors([]);
     setFxRate(null);
-    setAutoFxRate(null);
-    setFxRateDate(null);
-    setFxRateStatus('idle');
     setFxRateError(null);
-    setFxRateIsFallback(false);
-    setFxRateSource(null);
     setImportActions({});
     autoCategoryRef.current = new Set<string>();
   }, []);
@@ -257,44 +221,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
 
   useEffect(() => {
     if (!invoiceData) return;
-
-    const invoiceDate = parseInvoiceDate(invoiceData.invoiceDate);
-    let cancelled = false;
-
-    setFxRateStatus('loading');
+    // Manual-only FX mode: do not call BNM endpoint from browser (CORS).
     setFxRateError(null);
-    setFxRateIsFallback(false);
-    setFxRateSource(null);
-
-    getBnmEurRate(invoiceDate)
-      .then((result) => {
-        if (cancelled) return;
-        setAutoFxRate(result.rate);
-        setFxRate(result.rate);
-        setFxRateDate(result.date);
-        setFxRateIsFallback(result.isFallback);
-        setFxRateStatus('success');
-        setFxRateSource('bnm');
-      })
-      .catch((fetchError) => {
-        if (cancelled) return;
-        logger.warn('Failed to fetch BNM exchange rate', {
-          invoiceDate: invoiceData.invoiceDate,
-          errorMessage: fetchError instanceof Error ? fetchError.message : String(fetchError),
-        });
-        setAutoFxRate(null);
-        setFxRate(null);
-        setFxRateDate(null);
-        setFxRateStatus('error');
-        setFxRateError(
-          t('invoiceUpload.fx.fetchFailed', 'Unable to fetch BNM rate. Enter rate manually to continue.')
-        );
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [invoiceData, t]);
+  }, [invoiceData]);
 
   useEffect(() => {
     if (!rawProducts.length) return;
@@ -479,25 +408,13 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     const parsed = Number(value);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       setFxRate(null);
-      setFxRateSource('manual');
-      setFxRateStatus('error');
       setFxRateError(t('invoiceUpload.fx.invalidRate', 'Enter a valid positive rate.'));
       return;
     }
 
     setFxRate(parsed);
-    setFxRateSource('manual');
-    setFxRateStatus('success');
     setFxRateError(null);
   }, [t]);
-
-  const handleUseAutoRate = useCallback(() => {
-    if (!autoFxRate || !Number.isFinite(autoFxRate)) return;
-    setFxRate(autoFxRate);
-    setFxRateSource('bnm');
-    setFxRateStatus('success');
-    setFxRateError(null);
-  }, [autoFxRate]);
 
   const handleRemoveProduct = useCallback((index: number) => {
     setEditableProducts(prev => prev.filter((_, i) => i !== index));
@@ -799,21 +716,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                     {t('invoiceUpload.fx.title', 'FX Rate (MDL per EUR)')}
                   </p>
                   <div className="flex items-center gap-2">
-                    {fxRateSource === 'bnm' && fxRateDate && (
-                      <Badge variant="outline" className="text-xs">
-                        {t('invoiceUpload.fx.bnm', { defaultValue: 'BNM {{date}}', date: fxRateDate })}
-                      </Badge>
-                    )}
-                    {fxRateSource === 'manual' && (
-                      <Badge variant="outline" className="text-xs">
-                        {t('invoiceUpload.fx.manual', 'Manual')}
-                      </Badge>
-                    )}
-                    {fxRateSource === 'bnm' && fxRateIsFallback && (
-                      <Badge variant="outline" className="text-xs">
-                        {t('invoiceUpload.fx.fallback', 'Fallback')}
-                      </Badge>
-                    )}
+                    <Badge variant="outline" className="text-xs">
+                      {t('invoiceUpload.fx.manual', 'Manual')}
+                    </Badge>
                   </div>
                 </div>
 
@@ -827,16 +732,6 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                     placeholder={t('invoiceUpload.fx.placeholder', 'Enter rate')}
                     className="max-w-[220px]"
                   />
-                  {fxRateSource === 'manual' && autoFxRate && (
-                    <Button variant="outline" onClick={handleUseAutoRate}>
-                      {t('invoiceUpload.fx.useBnm', 'Use BNM rate')}
-                    </Button>
-                  )}
-                  {fxRateStatus === 'loading' && (
-                    <span className="text-xs text-stone-500">
-                      {t('invoiceUpload.fx.loading', 'Fetching BNM rate...')}
-                    </span>
-                  )}
                 </div>
 
                 {fxRateError && (

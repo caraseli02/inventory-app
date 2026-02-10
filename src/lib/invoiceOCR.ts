@@ -33,6 +33,13 @@ export type InvoiceOCRResult = InvoiceOCRSuccess | InvoiceOCRFailure;
 // Valid file types for invoice upload (PDF only)
 export const VALID_INVOICE_TYPES = ['application/pdf'] as const;
 export const VALID_INVOICE_EXTENSIONS = ['.pdf'] as const;
+const MIN_UPLOAD_TIMEOUT_MS = 210000;
+const COLD_START_BUFFER_MS = 60000;
+
+function getUploadTimeoutMs(fileSizeBytes: number): number {
+  const sizeAdaptiveMs = (fileSizeBytes / (1024 * 1024)) * 1000 + COLD_START_BUFFER_MS;
+  return Math.max(MIN_UPLOAD_TIMEOUT_MS, sizeAdaptiveMs);
+}
 
 // FastAPI response interface
 interface FastAPIExtractResponse {
@@ -119,8 +126,8 @@ async function uploadWithProgress(
       reject(new Error('Upload timed out'));
     };
 
-    // 2 minute timeout (size-adaptive) with 60s cold start buffer for Render
-    const timeoutMs = Math.max(120000, (file.size / (1024 * 1024)) * 1000 + 60000);
+    // Keep frontend timeout above backend timeout to avoid premature client aborts.
+    const timeoutMs = getUploadTimeoutMs(file.size);
     xhr.timeout = timeoutMs;
 
     xhr.open('POST', url);
@@ -252,11 +259,11 @@ export async function extractInvoiceData(
         logger.error('Upload timed out', {
           fileName: file.name,
           fileSize: file.size,
-          timeoutMs: Math.max(120000, (file.size / (1024 * 1024)) * 1000 + 60000),
+          timeoutMs: getUploadTimeoutMs(file.size),
         });
         return {
           success: false,
-          error: 'Service is warming up (first upload may take 30-60 seconds). Please wait and try again.',
+          error: 'Invoice processing is taking longer than expected (up to ~3.5 minutes). Please wait and try again.',
         };
       }
 
