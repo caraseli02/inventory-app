@@ -183,6 +183,8 @@
     "label": "Nivel adaos",
     "explanation": "Prețul din magazin se calculează adăugând procentul de adaos la costul de bază",
     "formula": "adaos {{markup}}%: €{{base}} → €{{store}}",
+    "transportIncludedHint": "Cu transport: bază aterizată €{{landed}} -> preț magazin €{{store}} (nivel {{markup}}%)",
+    "transportMissingHint": "Transportul nu este inclus în baza salvată curentă. Completează transportul mai jos pentru a compara prețul aterizat.",
     "selectTier": "Selectați nivelul de adaos pentru a seta prețul din magazin",
     "tier50": "Adaos 50%",
     "tier70": "Adaos 70%",

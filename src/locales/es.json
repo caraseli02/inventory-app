@@ -183,6 +183,8 @@
     "label": "Margen",
     "explanation": "El precio de tienda se calcula agregando el % de margen al costo base",
     "formula": "{{markup}}% de margen: €{{base}} → €{{store}}",
+    "transportIncludedHint": "Con transporte: base aterrizada €{{landed}} -> precio tienda €{{store}} (nivel {{markup}}%)",
+    "transportMissingHint": "El transporte no está incluido en la base guardada actual. Completa transporte abajo para comparar el precio aterrizado.",
     "selectTier": "Selecciona el nivel de margen para establecer el precio de tienda",
     "tier50": "Margen 50%",
     "tier70": "Margen 70%",
