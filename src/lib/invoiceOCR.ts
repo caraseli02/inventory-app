@@ -2,11 +2,13 @@ import { logger } from './logger';
 import { supabase } from './supabase';
 
 export interface InvoiceProduct {
+  rowId?: string;
   name: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
   barcode?: string;
+  weightKgCandidate?: number;
 }
 
 export interface InvoiceData {
@@ -37,11 +39,13 @@ export const VALID_INVOICE_EXTENSIONS = ['.pdf'] as const;
 // FastAPI response interface
 interface FastAPIExtractResponse {
   products: Array<{
+    row_id?: string;
     name: string;
     quantity: number;
     unit_price: number;
     total_price: number;
     raw_code?: string;
+    weight_kg_candidate?: number | null;
   }>;
   supplier?: string;
   invoice_number?: string;
@@ -54,6 +58,7 @@ interface FastAPIExtractResponse {
  */
 function isValidProduct(product: FastAPIExtractResponse['products'][0]): boolean {
   return (
+    (product.row_id === undefined || typeof product.row_id === 'string') &&
     typeof product.name === 'string' &&
     product.name.trim().length > 0 &&
     product.name.length <= 500 &&
@@ -71,6 +76,12 @@ function isValidProduct(product: FastAPIExtractResponse['products'][0]): boolean
     !isNaN(product.total_price) &&
     Number.isFinite(product.total_price) &&
     product.total_price >= 0 &&
+    (product.weight_kg_candidate === undefined ||
+      product.weight_kg_candidate === null ||
+      (typeof product.weight_kg_candidate === 'number' &&
+        !isNaN(product.weight_kg_candidate) &&
+        Number.isFinite(product.weight_kg_candidate) &&
+        product.weight_kg_candidate > 0)) &&
     (product.raw_code === undefined ||
       (typeof product.raw_code === 'string' && product.raw_code.length <= 50))
   );
@@ -222,6 +233,10 @@ export async function extractInvoiceData(
 
     // Forward user session when available so proxy can validate auth server-side.
     const headers: Record<string, string> = {};
+    const apiKey = import.meta.env.VITE_INVOICE_API_KEY;
+    if (apiKey) {
+      headers['X-API-Key'] = apiKey;
+    }
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -427,11 +442,13 @@ export async function extractInvoiceData(
     // Map FastAPI response to InvoiceData (now validated)
     const invoiceData: InvoiceData = {
       products: responseData.products.map((product) => ({
+        rowId: product.row_id,
         name: product.name,
         quantity: product.quantity,
         unitPrice: product.unit_price,
         totalPrice: product.total_price,
         barcode: product.raw_code,
+        weightKgCandidate: product.weight_kg_candidate ?? undefined,
       })),
       supplier: responseData.supplier,
       invoiceNumber: responseData.invoice_number,

@@ -32,6 +32,8 @@ import { Badge } from '@/components/ui/badge';
 import { suggestProductDetails } from '@/lib/ai';
 import { getBnmEurRate } from '@/lib/exchangeRates';
 import type { Product } from '@/types';
+import { parseWeightKgFromProductName } from '@/lib/invoicePricing';
+import { previewInvoicePricing } from '@/lib/invoiceImportApi';
 
 interface InvoiceUploadDialogProps {
   open: boolean;
@@ -42,6 +44,13 @@ interface InvoiceUploadDialogProps {
 
 type InvoiceStep = 'upload' | 'preview' | 'importing' | 'complete';
 
+const NUMERIC_EDITABLE_FIELDS: ReadonlySet<string> = new Set([
+  'quantity',
+  'unitPrice',
+  'totalPrice',
+  'weightKg',
+]);
+
 type ImportAction = 'create' | 'update' | 'skip';
 type MatchType = 'barcode' | 'name';
 
@@ -51,11 +60,11 @@ interface InvoiceMatchResult {
 }
 
 interface InvoicePreviewProduct extends InvoiceProduct {
+  weightKg?: number;
   category?: string;
   imageUrl?: string;
 }
 
-const ACTIVE_MARKUP = 70;
 const CATEGORIES = [
   'General',
   'Produce',
@@ -217,6 +226,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
         setRawProducts(result.data.products);
         setEditableProducts(result.data.products.map((product) => ({
           ...product,
+          weightKg: product.weightKgCandidate ?? parseWeightKgFromProductName(product.name),
           category: inferCategoryFromName(product.name),
         })));
         setImportActions({});
@@ -522,7 +532,10 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
         prev.map((product, i) => {
           if (i !== index) return product;
 
-          if (field === 'quantity' || field === 'unitPrice' || field === 'totalPrice') {
+          if (NUMERIC_EDITABLE_FIELDS.has(field)) {
+            if (typeof value === 'string' && value.trim() === '') {
+              return product;
+            }
             const numericValue = typeof value === 'number' ? value : Number(value);
             if (!isValidNumber(numericValue)) {
               return product;
@@ -547,33 +560,87 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
 
   const handleConfirmImport = useCallback(async () => {
     if (!editableProducts.length || !invoiceData || !isFxReady) return;
+    const missingWeightCount = editableProducts.filter((product) => !isValidNumber(product.weightKg)).length;
+    if (missingWeightCount > 0) {
+      setImportErrors([
+        t('invoiceUpload.errors.missingWeight', {
+          count: missingWeightCount,
+          defaultValue: '{{count}} products are missing weight. Please set weight before importing.',
+        }),
+      ]);
+      return;
+    }
 
     setStep('importing');
     setImportProgress({ current: 0, total: editableProducts.length });
     setImportErrors([]);
 
     try {
+      const preview = await previewInvoicePricing({
+        invoice_meta: {
+          supplier: invoiceData?.supplier,
+          invoice_number: invoiceData?.invoiceNumber,
+          date: invoiceData?.invoiceDate,
+        },
+        rows: editableProducts.map((product, index) => ({
+          row_id: product.rowId || `row-${index + 1}`,
+          name: product.name,
+          barcode: product.barcode || null,
+          quantity: product.quantity,
+          line_total_lei: roundCurrency(product.totalPrice * fxRate),
+          weight_kg: product.weightKg ?? null,
+        })),
+      });
+
+      const blockedRows = preview.rows.filter((row) => row.status !== 'ok');
+      if (blockedRows.length > 0) {
+        setImportErrors([
+          t('invoiceUpload.errors.previewBlocked', {
+            count: blockedRows.length,
+            defaultValue: '{{count}} rows need more input before import.',
+          }),
+        ]);
+        setStep('preview');
+        return;
+      }
+
+      const computedByRowId = new Map(
+        preview.rows.map((row) => [row.row_id, row.computed ?? null])
+      );
+
+      // Convert invoice products to ImportedProduct format
       const importedProducts: ImportedProduct[] = editableProducts.map((product, index) => {
         const match = matchResults[index];
         const importAction = importActions[index] ?? (match ? 'update' : 'create');
-        const price70 = Number.isFinite(product.unitPrice)
-          ? roundCurrency(product.unitPrice * (1 + ACTIVE_MARKUP / 100))
-          : undefined;
+        const rowId = product.rowId || `row-${index + 1}`;
+        const computed = computedByRowId.get(rowId);
+
+        if (!computed) {
+          throw new Error(
+            t('invoiceUpload.errors.previewMissingComputed', {
+              defaultValue: 'Preview pricing returned incomplete data. Please try again.',
+            })
+          );
+        }
 
         return {
           Name: product.name,
-          Barcode: product.barcode || '',
+          Barcode: product.barcode || undefined, // Can be empty, user can add later
           Category: product.category || 'General',
-          Price: product.unitPrice,
-          price70,
-          price50: undefined,
-          price100: undefined,
+          Price: computed.base_price_eur,
+          price50: computed.price_50,
+          price70: computed.price_70,
+          price100: computed.price_100,
           currentStock: product.quantity,
           Supplier: invoiceData?.supplier || undefined,
           expiryDate: undefined,
           importAction,
           existingProductId: importAction === 'update' ? match?.product.id : undefined,
           imageUrl: product.imageUrl,
+          importSource: 'invoice',
+          invoiceRowId: rowId,
+          weightKg: product.weightKg,
+          invoiceLineTotal: product.totalPrice,
         };
       });
 
@@ -611,7 +678,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
       setImportErrors([errorMessage]);
       setStep('preview');
     }
-  }, [editableProducts, invoiceData, importActions, isFxReady, matchResults, onImport, t]);
+  }, [editableProducts, fxRate, invoiceData, importActions, isFxReady, matchResults, onImport, t]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -856,6 +923,17 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                 </div>
               )}
 
+              {editableProducts.some((p) => !isValidNumber(p.weightKg)) && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-sm font-medium text-red-800 mb-1">
+                    {t('invoiceUpload.preview.missingWeightTitle', 'Weight required for transport cost')}
+                  </p>
+                  <p className="text-xs text-red-700">
+                    {t('invoiceUpload.preview.missingWeightDescription', 'Set missing product weights (kg) before importing.')}
+                  </p>
+                </div>
+              )}
+
               {/* Product Preview Table - Using shadcn Table components */}
               <div className="border-2 border-stone-200 rounded-lg overflow-hidden">
                 <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 500px)', minHeight: '300px' }}>
@@ -883,7 +961,10 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                         <TableHead className="px-4 py-3 text-left font-semibold text-stone-700 w-[10%]">
                           {t('invoiceUpload.table.match', 'Match')}
                         </TableHead>
-                        <TableHead className="px-4 py-3 text-center font-semibold text-stone-700 w-[6%]">
+                        <TableHead className="px-4 py-3 text-right font-semibold text-stone-700 w-[9%]">
+                          {t('invoiceUpload.table.weightKg', 'Weight (kg)')}
+                        </TableHead>
+                        <TableHead className="px-4 py-3 text-center font-semibold text-stone-700 w-[10%]">
                           {t('invoiceUpload.table.actions', 'Actions')}
                         </TableHead>
                       </TableRow>
@@ -955,7 +1036,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                                 <Input
                                   type="number"
                                   value={product.quantity}
-                                  onChange={(e) => handleProductFieldChange(i, 'quantity', Number(e.target.value))}
+                                  onChange={(e) => handleProductFieldChange(i, 'quantity', e.target.value)}
                                   className="h-9 text-sm text-right w-full"
                                   min="1"
                                 />
@@ -968,7 +1049,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                                 <Input
                                   type="number"
                                   value={product.unitPrice}
-                                  onChange={(e) => handleProductFieldChange(i, 'unitPrice', Number(e.target.value))}
+                                  onChange={(e) => handleProductFieldChange(i, 'unitPrice', e.target.value)}
                                   className="h-9 text-sm text-right w-full"
                                   step="0.01"
                                   min="0"
@@ -982,13 +1063,31 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                                 <Input
                                   type="number"
                                   value={product.totalPrice}
-                                  onChange={(e) => handleProductFieldChange(i, 'totalPrice', Number(e.target.value))}
+                                  onChange={(e) => handleProductFieldChange(i, 'totalPrice', e.target.value)}
                                   className="h-9 text-sm text-right w-full"
                                   step="0.01"
                                   min="0"
                                 />
                               ) : (
                                 <span className="font-semibold">€{product.totalPrice.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="px-4 py-3 text-right">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={product.weightKg ?? ''}
+                                  onChange={(e) => handleProductFieldChange(i, 'weightKg', e.target.value)}
+                                  className="h-9 text-sm text-right w-full"
+                                  step="0.001"
+                                  min="0"
+                                />
+                              ) : isValidNumber(product.weightKg) ? (
+                                <span className="font-medium">{product.weightKg.toFixed(3)}</span>
+                              ) : (
+                                <span className="text-xs text-red-600 font-medium">
+                                  {t('invoiceUpload.table.missingWeight', 'Missing')}
+                                </span>
                               )}
                             </TableCell>
                             <TableCell className="px-4 py-3">
@@ -1180,7 +1279,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
               <Button
                 onClick={handleConfirmImport}
                 className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
-                disabled={!editableProducts.length || !isFxReady}
+                disabled={!editableProducts.length || !isFxReady || editableProducts.some((product) => !isValidNumber(product.weightKg))}
               >
                 {t('invoiceUpload.actions.importCount', {
                   count: editableProducts.length,
