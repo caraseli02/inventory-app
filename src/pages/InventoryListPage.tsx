@@ -299,6 +299,160 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     let skipCount = 0;
     let errorCount = 0;
     const failedProducts: Array<{ name: string; error: string }> = [];
+    const partialProducts: Array<{ name: string; error: string }> = [];
+
+    const importSources = new Set(importedProducts.map((product) => product.importSource ?? 'xlsx'));
+    if (importSources.size > 1) {
+      logger.error('Mixed import sources in single batch', {
+        importSources: Array.from(importSources),
+        rowCount: importedProducts.length,
+      });
+      showToast(
+        'error',
+        t('import.failed'),
+        t('import.mixedSourcesNotSupported', 'Import batch contains mixed sources. Please import invoice and XLSX files separately.'),
+        8000
+      );
+      return;
+    }
+
+    const isInvoiceImport = importSources.has('invoice');
+    if (isInvoiceImport) {
+      const normalizedNameMap = new Map<string, Product>();
+      const normalizeName = (value: string): string => value.toLowerCase().replace(/\s+/g, ' ').trim();
+      products.forEach((product) => {
+        const normalized = normalizeName(product.fields.Name);
+        if (!normalizedNameMap.has(normalized)) {
+          normalizedNameMap.set(normalized, product);
+        }
+      });
+
+      for (const imported of importedProducts) {
+        try {
+          let existing: Product | null = null;
+          if (imported.Barcode) {
+            existing = await getProductByBarcode(imported.Barcode);
+          }
+          if (!existing) {
+            existing = normalizedNameMap.get(normalizeName(imported.Name)) ?? null;
+          }
+          if (existing) {
+            normalizedNameMap.set(normalizeName(imported.Name), existing);
+          }
+
+          if (existing) {
+            await updateProduct(existing.id, {
+              Price: imported.Price,
+              'Price 50%': imported.price50,
+              'Price 70%': imported.price70,
+              'Price 100%': imported.price100,
+              Supplier: imported.Supplier,
+            });
+
+            if (imported.currentStock && imported.currentStock > 0) {
+              try {
+                await addStockMovement(existing.id, imported.currentStock, 'IN');
+              } catch (stockErr) {
+                const stockErrorMessage = stockErr instanceof Error ? stockErr.message : t('errors.unknownError');
+                partialProducts.push({
+                  name: imported.Name,
+                  error: t('import.partialStockFailed', {
+                    defaultValue: 'Product updated, but stock movement failed: {{message}}',
+                    message: stockErrorMessage,
+                  }),
+                });
+                logger.error('Invoice import stock movement failed after product update', {
+                  productId: existing.id,
+                  productName: imported.Name,
+                  quantity: imported.currentStock,
+                  errorMessage: stockErrorMessage,
+                  errorStack: stockErr instanceof Error ? stockErr.stack : undefined,
+                  timestamp: new Date().toISOString(),
+                });
+                continue;
+              }
+            }
+          } else {
+            const newProduct = await createProduct({
+              Name: imported.Name,
+              Barcode: imported.Barcode,
+              Category: imported.Category,
+              Price: imported.Price,
+              'Price 50%': imported.price50,
+              'Price 70%': imported.price70,
+              'Price 100%': imported.price100,
+              Markup: 70,
+              'Expiry Date': imported.expiryDate,
+              Supplier: imported.Supplier,
+            });
+            normalizedNameMap.set(normalizeName(imported.Name), newProduct);
+
+            if (imported.currentStock && imported.currentStock > 0 && newProduct) {
+              try {
+                await addStockMovement(newProduct.id, imported.currentStock, 'IN');
+              } catch (stockErr) {
+                const stockErrorMessage = stockErr instanceof Error ? stockErr.message : t('errors.unknownError');
+                partialProducts.push({
+                  name: imported.Name,
+                  error: t('import.partialStockFailed', {
+                    defaultValue: 'Product created, but stock movement failed: {{message}}',
+                    message: stockErrorMessage,
+                  }),
+                });
+                logger.error('Invoice import stock movement failed after product creation', {
+                  productId: newProduct.id,
+                  productName: imported.Name,
+                  quantity: imported.currentStock,
+                  errorMessage: stockErrorMessage,
+                  errorStack: stockErr instanceof Error ? stockErr.stack : undefined,
+                  timestamp: new Date().toISOString(),
+                });
+                continue;
+              }
+            }
+          }
+
+          successCount += 1;
+        } catch (err) {
+          logger.error('Invoice import row failed', {
+            productName: imported.Name,
+            barcode: imported.Barcode,
+            errorType: err instanceof Error ? err.constructor.name : typeof err,
+            errorMessage: err instanceof Error ? err.message : String(err),
+            errorStack: err instanceof Error ? err.stack : undefined,
+            timestamp: new Date().toISOString(),
+          });
+          errorCount += 1;
+          failedProducts.push({
+            name: imported.Name,
+            error: err instanceof Error ? err.message : t('errors.unknownError'),
+          });
+        }
+      }
+
+      await refetch();
+
+      if (successCount > 0 || partialProducts.length > 0) {
+        let message = t('import.successMessage', { count: successCount, skipped: 0, errors: errorCount });
+        if (partialProducts.length > 0) {
+          const partialList = partialProducts.slice(0, 3).map(f => `• ${f.name}: ${f.error}`).join('\n');
+          const remainingPartial = partialProducts.length > 3 ? `\n... and ${partialProducts.length - 3} more` : '';
+          message += `\n\n${t('import.partialProducts', 'Partially imported products')}:\n${partialList}${remainingPartial}`;
+        }
+        if (failedProducts.length > 0) {
+          const failedList = failedProducts.slice(0, 3).map(f => `• ${f.name}: ${f.error}`).join('\n');
+          const remaining = failedProducts.length > 3 ? `\n... and ${failedProducts.length - 3} more` : '';
+          message += `\n\n${t('import.failedProducts', 'Failed products')}:\n${failedList}${remaining}`;
+        }
+        showToast(errorCount > 0 || partialProducts.length > 0 ? 'warning' : 'success', t('import.success'), message, 8000);
+      } else {
+        const message = failedProducts.length > 0
+          ? failedProducts.slice(0, 3).map(f => `• ${f.name}: ${f.error}`).join('\n')
+          : t('import.failedMessage', { count: errorCount });
+        showToast('error', t('import.failed'), message, 8000);
+      }
+      return;
+    }
 
     for (const imported of importedProducts) {
       try {
@@ -444,7 +598,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         8000
       );
     }
-  }, [refetch, showToast, t]);
+  }, [products, refetch, showToast, t]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">

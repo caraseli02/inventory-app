@@ -28,6 +28,10 @@ export interface ImportedProduct {
   importAction?: 'create' | 'update' | 'skip';
   existingProductId?: string;
   imageUrl?: string;
+  importSource?: 'xlsx' | 'invoice';
+  invoiceRowId?: string;
+  weightKg?: number;
+  invoiceLineTotal?: number;
 }
 
 export interface ImportResult {
