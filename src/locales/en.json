@@ -183,6 +183,8 @@
     "label": "Markup Tier",
     "explanation": "Store price is calculated by adding markup % to the base cost",
     "formula": "{{markup}}% markup: €{{base}} → €{{store}}",
+    "transportIncludedHint": "With transport: landed base €{{landed}} -> store €{{store}} ({{markup}}% tier)",
+    "transportMissingHint": "Transport is not included in current saved base. Fill transport below to compare landed pricing.",
     "selectTier": "Select markup tier to set the store price",
     "tier50": "50% Markup",
     "tier70": "70% Markup",

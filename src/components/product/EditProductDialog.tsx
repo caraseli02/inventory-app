@@ -53,6 +53,9 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
   const [basicOpen, setBasicOpen] = useState(true);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [stockOpen, setStockOpen] = useState(false);
+  const [sourcePriceLei, setSourcePriceLei] = useState('');
+  const [transportFeeEur, setTransportFeeEur] = useState('');
+  const [exchangeRate, setExchangeRate] = useState('4.97');
 
   // Reset form when product changes
   if (product.id !== trackedProductId) {
@@ -83,6 +86,40 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
 
   const basePrice = product.fields.Price;
   const storePrice = getStorePrice(formData.markup);
+  const parsedSourcePriceLei = Number.parseFloat(sourcePriceLei);
+  const parsedTransportFeeEur = Number.parseFloat(transportFeeEur);
+  const parsedExchangeRate = Number.parseFloat(exchangeRate);
+
+  const hasValidLeiInputs =
+    Number.isFinite(parsedSourcePriceLei) &&
+    parsedSourcePriceLei >= 0 &&
+    Number.isFinite(parsedTransportFeeEur) &&
+    parsedTransportFeeEur >= 0 &&
+    Number.isFinite(parsedExchangeRate) &&
+    parsedExchangeRate > 0;
+
+  const sourceCostEur = hasValidLeiInputs ? parsedSourcePriceLei / parsedExchangeRate : undefined;
+  const calculatedBasePriceEur = hasValidLeiInputs && sourceCostEur !== undefined
+    ? sourceCostEur + parsedTransportFeeEur
+    : undefined;
+  const calculatedStorePriceEur = calculatedBasePriceEur != null
+    ? calculatedBasePriceEur * (1 + formData.markup / 100)
+    : undefined;
+  const basePriceDifference = basePrice != null && calculatedBasePriceEur != null
+    ? calculatedBasePriceEur - basePrice
+    : undefined;
+  const impliedTransportFromSaved = basePrice != null && storePrice != null
+    ? (storePrice / (1 + formData.markup / 100)) - basePrice
+    : undefined;
+  const displayBaseForFormula = hasValidLeiInputs && sourceCostEur != null
+    ? sourceCostEur
+    : basePrice;
+  const displayTransportForFormula = hasValidLeiInputs
+    ? parsedTransportFeeEur
+    : impliedTransportFromSaved;
+  const displayStoreForFormula = hasValidLeiInputs && calculatedStorePriceEur != null
+    ? calculatedStorePriceEur
+    : storePrice;
 
   // Check if form has changes
   const initialData = useMemo(() => getInitialFormData(product), [product]);
@@ -433,7 +470,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                       <span className="font-semibold text-stone-900">{t('dialogs.editProduct.sectionPricing', 'Pricing')}</span>
                       {basePrice != null && (
                         <Badge variant="secondary" className="bg-stone-100 text-stone-600 text-xs ml-2">
-                          €{basePrice.toFixed(2)} {t('product.base', 'base')} • {formData.markup}% {t('markup.label', 'markup')}
+                          €{basePrice.toFixed(2)} {t('product.currentBase', 'current base')} • {formData.markup}% {t('markup.label', 'markup')}
                         </Badge>
                       )}
                     </div>
@@ -444,11 +481,11 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                     <div className="px-4 sm:px-5 pb-5 space-y-4 border-t border-stone-100 pt-4">
                       <div className="grid sm:grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-stone-700 font-semibold text-sm">{t('product.basePrice')}</Label>
+                          <Label className="text-stone-700 font-semibold text-sm">{t('product.currentBasePrice', 'Current base price')}</Label>
                           <div className="mt-2 h-11 px-3 flex items-center bg-stone-50 border-2 border-stone-200 rounded-lg text-stone-600">
                             {basePrice != null ? `€${basePrice.toFixed(2)}` : '—'}
                           </div>
-                          <p className="text-xs text-stone-500 mt-1.5">{t('product.basePriceHelp', 'Import price from Excel spreadsheet')}</p>
+                          <p className="text-xs text-stone-500 mt-1.5">{t('product.currentBasePriceHelp', 'Saved product base price (without transport allocation)')}</p>
                         </div>
 
                         <div>
@@ -482,14 +519,142 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
                             <span className="text-2xl font-bold text-[var(--color-forest)]">€{storePrice.toFixed(2)}</span>
                           </div>
                           <p className="text-xs text-[var(--color-forest)] mt-1">
-                            {t('markup.formula', {
-                              markup: formData.markup,
-                              base: basePrice.toFixed(2),
-                              store: storePrice.toFixed(2)
-                            })}
+                            {displayBaseForFormula != null && displayTransportForFormula != null && displayStoreForFormula != null
+                              ? t('markup.tierWithTransportFormula', {
+                                defaultValue: '{{markup}}% tier: (€{{base}} + €{{transport}} = €{{landed}}) → €{{store}}',
+                                markup: formData.markup,
+                                base: displayBaseForFormula.toFixed(2),
+                                transport: displayTransportForFormula.toFixed(2),
+                                landed: (displayBaseForFormula + displayTransportForFormula).toFixed(2),
+                                store: displayStoreForFormula.toFixed(2),
+                              })
+                              : t('markup.formula', {
+                                markup: formData.markup,
+                                base: basePrice.toFixed(2),
+                                store: storePrice.toFixed(2)
+                              })}
+                          </p>
+                          <p className="text-xs text-stone-600 mt-1">
+                            {displayBaseForFormula != null && displayTransportForFormula != null && displayStoreForFormula != null
+                              ? t(
+                                'markup.transportIncludedHint',
+                                'With transport: landed base €{{landed}} -> store €{{store}} ({{markup}}% tier)',
+                                {
+                                  landed: (displayBaseForFormula + displayTransportForFormula).toFixed(2),
+                                  store: displayStoreForFormula.toFixed(2),
+                                  markup: formData.markup,
+                                }
+                              )
+                              : t(
+                                'markup.transportMissingHint',
+                                'Transport is not included in current saved base. Fill transport below to compare landed pricing.'
+                              )}
                           </p>
                         </div>
                       )}
+
+                      {/* Cost Breakdown Calculator */}
+                      <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-xl space-y-4">
+                        <div>
+                          <p className="text-sm font-semibold text-stone-900">
+                            {t('pricing.breakdown.title', 'Invoice Cost Breakdown (LEI -> EUR)')}
+                          </p>
+                          <p className="text-xs text-stone-600 mt-1">
+                            {t(
+                              'pricing.breakdown.help',
+                              'Enter invoice values to verify landed cost (including transport) and resulting store price.'
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="grid sm:grid-cols-3 gap-3">
+                          <div>
+                            <Label htmlFor="sourcePriceLei" className="text-stone-700 font-semibold text-sm">
+                              {t('pricing.breakdown.sourceLei', 'Invoice unit price (LEI)')}
+                            </Label>
+                            <Input
+                              id="sourcePriceLei"
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={sourcePriceLei}
+                              onChange={(e) => setSourcePriceLei(e.target.value)}
+                              placeholder="0.00"
+                              className="mt-2 h-11 border-2 border-blue-200 focus-visible:ring-blue-400 focus-visible:border-blue-400 bg-white"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="transportFeeEur" className="text-stone-700 font-semibold text-sm">
+                              {t('pricing.breakdown.transportEur', 'Transport allocation (EUR)')}
+                            </Label>
+                            <Input
+                              id="transportFeeEur"
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={transportFeeEur}
+                              onChange={(e) => setTransportFeeEur(e.target.value)}
+                              placeholder="0.00"
+                              className="mt-2 h-11 border-2 border-blue-200 focus-visible:ring-blue-400 focus-visible:border-blue-400 bg-white"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor="exchangeRate" className="text-stone-700 font-semibold text-sm">
+                              {t('pricing.breakdown.fxRate', 'Exchange rate (LEI / EUR)')}
+                            </Label>
+                            <Input
+                              id="exchangeRate"
+                              type="number"
+                              min={0.0001}
+                              step="0.0001"
+                              value={exchangeRate}
+                              onChange={(e) => setExchangeRate(e.target.value)}
+                              placeholder="4.97"
+                              className="mt-2 h-11 border-2 border-blue-200 focus-visible:ring-blue-400 focus-visible:border-blue-400 bg-white"
+                            />
+                          </div>
+                        </div>
+
+                        {hasValidLeiInputs && calculatedBasePriceEur != null ? (
+                          <div className="p-3 rounded-lg bg-white border border-blue-200 space-y-2">
+                            <p className="text-sm text-stone-700">
+                              {t('pricing.breakdown.formula', 'Formula')}:
+                              {' '}
+                              ({parsedSourcePriceLei.toFixed(2)} / {parsedExchangeRate.toFixed(4)}) + {parsedTransportFeeEur.toFixed(2)}
+                            </p>
+                            <p className="text-sm text-stone-700">
+                              {t('pricing.breakdown.resultLei', 'Source cost converted to EUR')}: <span className="font-semibold">€{sourceCostEur?.toFixed(2)}</span>
+                            </p>
+                            <p className="text-sm text-stone-700">
+                              {t('pricing.breakdown.transportApplied', 'Transport allocation applied')}: <span className="font-semibold">+€{parsedTransportFeeEur.toFixed(2)}</span>
+                            </p>
+                            <p className="text-sm text-stone-900">
+                              {t('pricing.breakdown.resultEur', 'Calculated landed base in EUR')}: <span className="font-bold">€{calculatedBasePriceEur.toFixed(2)}</span>
+                            </p>
+                            <p className="text-sm text-stone-900">
+                              {t('pricing.breakdown.projectedStore', 'Projected store price at {{markup}}%', { markup: formData.markup })}: <span className="font-bold">€{calculatedStorePriceEur?.toFixed(2)}</span>
+                            </p>
+                            {basePrice != null && basePriceDifference != null && (
+                              <p className={`text-sm font-medium ${Math.abs(basePriceDifference) <= 0.01 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                {t('pricing.breakdown.compare', 'Current saved base (without transport)')}: €{basePrice.toFixed(2)}
+                                {' '}
+                                (
+                                {basePriceDifference >= 0 ? '+' : ''}
+                                {basePriceDifference.toFixed(2)})
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-stone-600">
+                            {t(
+                              'pricing.breakdown.placeholder',
+                              'Fill all three fields with valid numbers to see the calculation.'
+                            )}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </CollapsibleContent>
                 </div>
