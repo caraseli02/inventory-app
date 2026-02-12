@@ -30,7 +30,10 @@ export const SortToggle = ({ sortField, sortDirection, onChange, className }: So
 
   return (
     <Select value={currentValue} onValueChange={handleChange}>
-      <SelectTrigger className={`h-10 border-2 border-stone-300 ${className || 'w-[140px]'}`}>
+      <SelectTrigger
+        data-testid="sort-toggle"
+        className={`h-10 border-2 border-stone-300 ${className || 'w-[140px]'}`}
+      >
         <SelectValue placeholder={t('inventory.filters.sortBy', 'Sort by')} />
       </SelectTrigger>
       <SelectContent>

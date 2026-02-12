@@ -55,6 +55,7 @@ export const Cart = ({
         className="flex-1 overflow-y-auto p-6 space-y-4"
         role="region"
         aria-label={t('cart.itemsList', 'Shopping cart items')}
+        data-testid="cart-items"
       >
         {cart.length === 0 ? (
           <div

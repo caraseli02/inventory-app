@@ -85,6 +85,14 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // SPA navigation fallback for deep links (e.g. /checkout) and offline refresh.
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /^\/assets\//,
+          /\/favicon\.ico$/,
+          /\/manifest\.webmanifest$/,
+        ],
         // Force new service worker to activate immediately
         skipWaiting: true,
         // Take control of all pages immediately

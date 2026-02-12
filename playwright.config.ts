@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const PORT = 5176;
+
 export default defineConfig({
   testDir: './tests/e2e',
   timeout: 60000,
@@ -12,7 +14,7 @@ export default defineConfig({
     ['list']
   ],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -25,9 +27,11 @@ export default defineConfig({
   ],
   webServer: {
     // Use preview (production build) in CI, dev server locally
-    command: process.env.CI ? 'pnpm preview --port 5173' : 'pnpm dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
+    command: process.env.CI
+      ? `pnpm preview --port ${PORT} --strictPort`
+      : `pnpm dev --port ${PORT} --strictPort`,
+    url: `http://localhost:${PORT}`,
+    reuseExistingServer: false,
     timeout: 120000,
   },
 });

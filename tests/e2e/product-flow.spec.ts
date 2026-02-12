@@ -8,27 +8,12 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Product Search', () => {
   test('should accept input via search field', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('/manage')
+    await expect(page).toHaveURL(/\/manage$/)
 
-    // Navigate to Scanner page
-    const scannerCard = page.getByRole('button', { name: /manage stock|scanner/i })
-    await scannerCard.click()
-    await page.waitForLoadState('domcontentloaded')
-
-    // Ensure we're in Search mode
-    const searchInput = page.getByRole('combobox', { name: /search for products/i })
-    try {
-      await searchInput.waitFor({ state: 'visible', timeout: 2000 })
-    } catch {
-      const allSearchToggles = await page.getByText('Search').all()
-      for (const toggle of allSearchToggles) {
-        if (await toggle.isVisible()) {
-          await toggle.click()
-          break
-        }
-      }
-      await searchInput.waitFor({ state: 'visible', timeout: 5000 })
-    }
+    // ScanPage renders mobile + desktop DOM; pick a visible combobox input.
+    const searchInput = page.locator('input[role="combobox"]:visible').first()
+    await expect(searchInput).toBeVisible({ timeout: 15000 })
 
     await searchInput.fill('1234567890123')
     await expect(searchInput).toHaveValue('1234567890123')

@@ -113,6 +113,7 @@ export const DesktopFilterBar = ({
             {t('inventory.filters.availability', 'Availability')}
           </span>
           <Button
+            data-testid="low-stock-filter"
             variant={filters.lowStockOnly ? 'default' : 'outline'}
             size="sm"
             onClick={() => onFilterChange('lowStockOnly', !filters.lowStockOnly)}
