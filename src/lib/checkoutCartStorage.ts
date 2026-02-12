@@ -90,12 +90,16 @@ export function loadPersistedCheckoutCart(): Array<{ product: Product; quantity:
 
 export function persistCheckoutCart(cart: CartItem[]) {
   try {
-    if (!cart || cart.length === 0) {
+    // Never persist items already marked success; after refresh those statuses are lost
+    // and could allow re-processing (double stock decrement).
+    const toPersist = (cart || []).filter((item) => item?.status !== 'success');
+
+    if (toPersist.length === 0) {
       localStorage.removeItem(CHECKOUT_CART_STORAGE_KEY);
       return;
     }
 
-    const items = cart
+    const items = toPersist
       .map((item) => ({ product: item.product, quantity: item.quantity }))
       .slice(0, MAX_ITEMS);
 

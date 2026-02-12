@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { isRouteErrorResponse, useNavigate, useRouteError } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -20,10 +20,12 @@ export default function RootRouteError() {
     return String(error);
   }, [error]);
 
-  logger.error('Route error boundary triggered', {
-    message,
-    error: error instanceof Error ? { name: error.name, stack: error.stack } : String(error),
-  });
+  useEffect(() => {
+    logger.error('Route error boundary triggered', {
+      message,
+      error: error instanceof Error ? { name: error.name, stack: error.stack } : String(error),
+    });
+  }, [error, message]);
 
   return (
     <AppShell>

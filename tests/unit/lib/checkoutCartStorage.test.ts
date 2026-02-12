@@ -52,6 +52,26 @@ describe('checkoutCartStorage', () => {
     expect(localStorage.getItem(CHECKOUT_CART_STORAGE_KEY)).toBeNull()
   })
 
+  it('does not persist items marked as success', () => {
+    const cart: CartItem[] = [
+      { product: makeProduct('p1', 'Apple'), quantity: 2, status: 'success' },
+      { product: makeProduct('p2', 'Banana'), quantity: 1, status: 'failed' },
+    ]
+
+    persistCheckoutCart(cart)
+    const loaded = loadPersistedCheckoutCart()
+
+    expect(loaded).not.toBeNull()
+    expect(loaded!.map((i) => [i.product.id, i.quantity])).toEqual([['p2', 1]])
+  })
+
+  it('clears storage when all items are success', () => {
+    const cart: CartItem[] = [{ product: makeProduct('p1', 'Apple'), quantity: 2, status: 'success' }]
+    persistCheckoutCart(cart)
+    expect(localStorage.getItem(CHECKOUT_CART_STORAGE_KEY)).toBeNull()
+    expect(loadPersistedCheckoutCart()).toBeNull()
+  })
+
   it('ignores and clears expired cart payloads', () => {
     const payload = {
       version: 1,
@@ -96,4 +116,3 @@ describe('checkoutCartStorage', () => {
     expect(localStorage.getItem(CHECKOUT_CART_STORAGE_KEY)).toBeNull()
   })
 })
-
