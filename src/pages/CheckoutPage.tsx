@@ -34,6 +34,7 @@ import { type InputMode } from '../components/search/InputModeToggle';
 import { ProductBrowsePanel } from '../components/search/ProductBrowsePanel';
 import { MobileCartBar } from '../components/cart/MobileCartBar';
 import { useRecentProducts } from '../hooks/useRecentProducts';
+import { getProductDisplayPrice } from '../hooks/useMarkupSetting';
 
 interface CheckoutPageProps {
   onBack: () => void;
@@ -596,21 +597,37 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
   const pendingItems = state.cart.filter((item) => item.status !== 'success');
 
   /**
-   * Calculates cart totals by summing prices of all items with valid pricing
-   * @returns Object containing total price and count of items missing price data
+   * Calculates cart totals by summing store display prices of all items.
+   * If the active markup tier price is missing, we fall back to base price but count it as "missing price data"
+   * so the UI warns the operator about inconsistent pricing setup.
    */
   const calculateTotals = () => {
     return pendingItems.reduce(
       (result, item) => {
-        const price = item.product.fields.Price;
-        if (price != null) {
-          result.total += price * item.quantity;
-        } else {
-          result.missingPrices += 1;
-        }
+        const displayPrice = getProductDisplayPrice(item.product.fields);
+
+        const activeMarkup = (item.product.fields.Markup ?? 70) as number;
+        const tierPrice =
+          activeMarkup === 50
+            ? item.product.fields['Price 50%']
+            : activeMarkup === 70
+              ? item.product.fields['Price 70%']
+              : activeMarkup === 100
+                ? item.product.fields['Price 100%']
+                : undefined;
+
+        const usedBaseFallback =
+          displayPrice != null && tierPrice == null && item.product.fields.Price != null;
+
+        const price = displayPrice;
+        if (price != null) result.total += price * item.quantity;
+
+        if (price == null) result.missingPrices += 1;
+        if (usedBaseFallback) result.fallbackPrices += 1;
+
         return result;
       },
-      { total: 0, missingPrices: 0 }
+      { total: 0, missingPrices: 0, fallbackPrices: 0 }
     );
   };
 
@@ -755,7 +772,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
     }
   };
 
-  const { total, missingPrices } = calculateTotals();
+  const { total, missingPrices, fallbackPrices } = calculateTotals();
 
   if (state.checkoutComplete) {
     return (
@@ -1254,7 +1271,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
               <div className="max-w-2xl mx-auto space-y-3">
                 {pendingItems.map((item, index) => {
                   const imageUrl = item.product.fields.Image?.[0]?.url;
-                  const price = item.product.fields.Price;
+                  const price = getProductDisplayPrice(item.product.fields);
                   return (
                     <div key={`${item.product.id}-${index}`} className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border-2 border-stone-200">
                       {/* Product Image */}
@@ -1294,6 +1311,15 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                 {missingPrices > 0 && (
                   <div className="p-3 bg-amber-50 border-2 border-amber-200 rounded-xl text-amber-700 text-sm font-medium">
                     ⚠️ {t('checkout.missingPrices', { count: missingPrices })} - {t('checkout.confirmMessageWithMissing', { count: pendingItems.length, total: `€${total.toFixed(2)}`, missing: missingPrices }).split('.').slice(-1)[0].trim()}
+                  </div>
+                )}
+                {missingPrices === 0 && fallbackPrices > 0 && (
+                  <div className="p-3 bg-amber-50 border-2 border-amber-200 rounded-xl text-amber-700 text-sm font-medium">
+                    ⚠️ {t('checkout.storePriceFallbackWarning', {
+                      count: fallbackPrices,
+                      defaultValue:
+                        '{{count}} item(s) are missing store tier prices; totals are using base cost.',
+                    })}
                   </div>
                 )}
                 <div className="flex justify-between items-center">

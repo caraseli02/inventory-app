@@ -5,6 +5,7 @@ import { Button } from '../ui/button';
 import { BoxIcon, CheckCircleIcon, TrashIcon } from '../ui/Icons';
 import { Spinner } from '../ui/spinner';
 import { Minus, Plus } from 'lucide-react';
+import { getProductDisplayPrice } from '@/hooks/useMarkupSetting';
 
 interface CartItemProps {
   item: CartItemType;
@@ -34,7 +35,7 @@ function getStatusStyles(status: CartItemType['status']): string {
 export const CartItem = ({ item, index, onUpdateQuantity }: CartItemProps) => {
   const { t } = useTranslation();
   const imageUrl = item.product.fields.Image?.[0]?.url;
-  const price = item.product.fields.Price;
+  const price = getProductDisplayPrice(item.product.fields);
   const category = item.product.fields.Category ? t(`categories.${item.product.fields.Category}`, item.product.fields.Category) : t('categories.General');
   const { status, statusMessage } = item;
   const isProcessing = status === 'processing';

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Package, Clock, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Product } from '@/types';
+import { getProductDisplayPrice } from '@/hooks/useMarkupSetting';
 
 interface QuickAddGridProps {
   /** Products to display in the grid */
@@ -68,7 +69,7 @@ export const QuickAddGrid = ({
       <div className="grid grid-cols-4 gap-2">
         {displayProducts.map((product) => {
           const imageUrl = product.fields.Image?.[0]?.url;
-          const price = product.fields.Price;
+          const price = getProductDisplayPrice(product.fields);
           const stock = product.fields['Current Stock Level'] ?? 0;
           const isOutOfStock = stock <= 0;
 
