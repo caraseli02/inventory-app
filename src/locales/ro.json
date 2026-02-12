@@ -573,7 +573,7 @@
     },
     "status": {
       "importing": "Se importă produsele...",
-      "importingProgress": "{{current}} din {{total}} produse create",
+      "importingProgress": "{{current}} din {{total}} produse procesate",
       "completeTitle": "Import finalizat!",
       "completeSubtitle": "S-au importat {{count}} produse din factură"
     },

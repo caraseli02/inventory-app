@@ -573,7 +573,7 @@
     },
     "status": {
       "importing": "Идет импорт товаров...",
-      "importingProgress": "{{current}} из {{total}} товаров создано",
+      "importingProgress": "{{current}} из {{total}} товаров обработано",
       "completeTitle": "Импорт завершен!",
       "completeSubtitle": "Успешно импортировано {{count}} товаров из счета"
     },

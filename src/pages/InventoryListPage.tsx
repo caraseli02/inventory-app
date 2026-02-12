@@ -294,12 +294,23 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   }, [products, showToast, t]);
 
   // Handle import from xlsx
-  const handleImport = useCallback(async (importedProducts: ImportedProduct[]) => {
+  const handleImport = useCallback(async (
+    importedProducts: ImportedProduct[],
+    onProgress?: (current: number, total: number) => void
+  ) => {
     let successCount = 0;
     let skipCount = 0;
     let errorCount = 0;
     const failedProducts: Array<{ name: string; error: string }> = [];
     const partialProducts: Array<{ name: string; error: string }> = [];
+    let processedCount = 0;
+    const totalCount = importedProducts.length;
+
+    const normalizeName = (value: string): string => value.toLowerCase().replace(/\s+/g, ' ').trim();
+    const normalizeBarcode = (value: string | undefined): string | undefined => {
+      const trimmed = value?.trim();
+      return trimmed ? trimmed : undefined;
+    };
 
     const importSources = new Set(importedProducts.map((product) => product.importSource ?? 'xlsx'));
     if (importSources.size > 1) {
@@ -319,8 +330,9 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     const isInvoiceImport = importSources.has('invoice');
     if (isInvoiceImport) {
       const normalizedNameMap = new Map<string, Product>();
-      const normalizeName = (value: string): string => value.toLowerCase().replace(/\s+/g, ' ').trim();
-      products.forEach((product) => {
+      // IMPORTANT: build indices from the full inventory (not the filtered list),
+      // otherwise invoice imports can create duplicates when filters are active.
+      allProducts.forEach((product) => {
         const normalized = normalizeName(product.fields.Name);
         if (!normalizedNameMap.has(normalized)) {
           normalizedNameMap.set(normalized, product);
@@ -329,9 +341,62 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
       for (const imported of importedProducts) {
         try {
+          const importAction = imported.importAction ?? 'create';
+          if (importAction === 'skip') {
+            skipCount += 1;
+            continue;
+          }
+
+          const importedBarcode = normalizeBarcode(imported.Barcode);
           let existing: Product | null = null;
-          if (imported.Barcode) {
-            existing = await getProductByBarcode(imported.Barcode);
+
+          // If the UI found a match and the user chose "Update", treat the ID as authoritative.
+          // Do not depend on whether the product is currently visible in filtered lists.
+          if (importAction === 'update' && imported.existingProductId) {
+            const updatePayload: Parameters<typeof updateProduct>[1] = {
+              Price: imported.Price,
+              'Price 50%': imported.price50,
+              'Price 70%': imported.price70,
+              'Price 100%': imported.price100,
+              Supplier: imported.Supplier,
+            };
+
+            if (imported.Category && imported.Category !== 'General') {
+              updatePayload.Category = imported.Category;
+            }
+
+            await updateProduct(imported.existingProductId, updatePayload);
+
+            if (imported.currentStock && imported.currentStock > 0) {
+              try {
+                await addStockMovement(imported.existingProductId, imported.currentStock, 'IN');
+              } catch (stockErr) {
+                const stockErrorMessage = stockErr instanceof Error ? stockErr.message : t('errors.unknownError');
+                partialProducts.push({
+                  name: imported.Name,
+                  error: t('import.partialStockFailed', {
+                    defaultValue: 'Product updated, but stock movement failed: {{message}}',
+                    message: stockErrorMessage,
+                  }),
+                });
+                logger.error('Invoice import stock movement failed after product update', {
+                  productId: imported.existingProductId,
+                  productName: imported.Name,
+                  quantity: imported.currentStock,
+                  errorMessage: stockErrorMessage,
+                  errorStack: stockErr instanceof Error ? stockErr.stack : undefined,
+                  timestamp: new Date().toISOString(),
+                });
+                continue;
+              }
+            }
+
+            successCount += 1;
+            continue;
+          }
+
+          if (importedBarcode) {
+            existing = await getProductByBarcode(importedBarcode);
           }
           if (!existing) {
             existing = normalizedNameMap.get(normalizeName(imported.Name)) ?? null;
@@ -341,13 +406,21 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           }
 
           if (existing) {
-            await updateProduct(existing.id, {
+            const updatePayload: Parameters<typeof updateProduct>[1] = {
               Price: imported.Price,
               'Price 50%': imported.price50,
               'Price 70%': imported.price70,
               'Price 100%': imported.price100,
               Supplier: imported.Supplier,
-            });
+            };
+
+            // Only push category updates when we have a non-default suggestion.
+            // This avoids overwriting an existing curated category with "General".
+            if (imported.Category && imported.Category !== 'General') {
+              updatePayload.Category = imported.Category;
+            }
+
+            await updateProduct(existing.id, updatePayload);
 
             if (imported.currentStock && imported.currentStock > 0) {
               try {
@@ -375,7 +448,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           } else {
             const newProduct = await createProduct({
               Name: imported.Name,
-              Barcode: imported.Barcode,
+              Barcode: importedBarcode,
               Category: imported.Category,
               Price: imported.Price,
               'Price 50%': imported.price50,
@@ -427,13 +500,16 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
             name: imported.Name,
             error: err instanceof Error ? err.message : t('errors.unknownError'),
           });
+        } finally {
+          processedCount += 1;
+          onProgress?.(processedCount, totalCount);
         }
       }
 
       await refetch();
 
       if (successCount > 0 || partialProducts.length > 0) {
-        let message = t('import.successMessage', { count: successCount, skipped: 0, errors: errorCount });
+        let message = t('import.successMessage', { count: successCount, skipped: skipCount, errors: errorCount });
         if (partialProducts.length > 0) {
           const partialList = partialProducts.slice(0, 3).map(f => `• ${f.name}: ${f.error}`).join('\n');
           const remainingPartial = partialProducts.length > 3 ? `\n... and ${partialProducts.length - 3} more` : '';
@@ -482,9 +558,10 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           continue;
         }
 
+        const importedBarcode = normalizeBarcode(imported.Barcode);
         // Check if product with this barcode already exists (only if barcode is provided)
-        if (imported.Barcode) {
-          const existing = await getProductByBarcode(imported.Barcode);
+        if (importedBarcode) {
+          const existing = await getProductByBarcode(importedBarcode);
           if (existing) {
             // Skip duplicates for create-only imports
             skipCount++;
@@ -495,7 +572,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         // Create new product with base price and all markup tiers
         const newProduct = await createProduct({
           Name: imported.Name,
-          Barcode: imported.Barcode, // May be undefined
+          Barcode: importedBarcode, // May be undefined
           Category: imported.Category,
           Price: imported.Price, // Base price (Pret euro)
           'Price 50%': imported.price50,
@@ -551,6 +628,9 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           error: err instanceof Error ? err.message : t('errors.unknownError'),
         });
         errorCount++;
+      } finally {
+        processedCount += 1;
+        onProgress?.(processedCount, totalCount);
       }
     }
 

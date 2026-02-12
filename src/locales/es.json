@@ -573,7 +573,7 @@
     },
     "status": {
       "importing": "Importando productos...",
-      "importingProgress": "{{current}} de {{total}} productos creados",
+      "importingProgress": "{{current}} de {{total}} productos procesados",
       "completeTitle": "¡Importación completada!",
       "completeSubtitle": "Se importaron {{count}} productos desde la factura"
     },

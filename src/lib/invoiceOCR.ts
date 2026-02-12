@@ -9,6 +9,10 @@ export interface InvoiceProduct {
   totalPrice: number;
   barcode?: string;
   weightKgCandidate?: number;
+  // Optional backend suggestions (FastAPI /extract additive fields)
+  categorySuggestion?: string;
+  categoryConfidence?: number;
+  categorySource?: 'llm';
 }
 
 export interface InvoiceData {
@@ -46,11 +50,44 @@ interface FastAPIExtractResponse {
     total_price: number;
     raw_code?: string;
     weight_kg_candidate?: number | null;
+    category_suggestion?: string | null;
+    category_confidence?: number | null;
+    category_source?: 'llm' | null;
   }>;
   supplier?: string;
   invoice_number?: string;
   date?: string;
   total_amount?: number;
+}
+
+const ALLOWED_CATEGORY_SUGGESTIONS: ReadonlySet<string> = new Set([
+  'General',
+  'Produce',
+  'Dairy',
+  'Meat',
+  'Pantry',
+  'Snacks',
+  'Beverages',
+  'Household',
+  'Conserve',
+  'Cereale',
+]);
+
+function normalizeCategorySuggestion(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return ALLOWED_CATEGORY_SUGGESTIONS.has(trimmed) ? trimmed : undefined;
+}
+
+function normalizeCategoryConfidence(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  // Clamp to protect UI from out-of-range values.
+  return Math.max(0, Math.min(1, value));
+}
+
+function normalizeCategorySource(value: unknown): 'llm' | undefined {
+  return value === 'llm' ? 'llm' : undefined;
 }
 
 /**
@@ -83,7 +120,19 @@ function isValidProduct(product: FastAPIExtractResponse['products'][0]): boolean
         Number.isFinite(product.weight_kg_candidate) &&
         product.weight_kg_candidate > 0)) &&
     (product.raw_code === undefined ||
-      (typeof product.raw_code === 'string' && product.raw_code.length <= 50))
+      (typeof product.raw_code === 'string' && product.raw_code.length <= 50)) &&
+    // Additive-only fields: validate type/shape but don't reject unknown category values.
+    (product.category_suggestion === undefined ||
+      product.category_suggestion === null ||
+      (typeof product.category_suggestion === 'string' && product.category_suggestion.length <= 50)) &&
+    (product.category_confidence === undefined ||
+      product.category_confidence === null ||
+      (typeof product.category_confidence === 'number' &&
+        !isNaN(product.category_confidence) &&
+        Number.isFinite(product.category_confidence))) &&
+    (product.category_source === undefined ||
+      product.category_source === null ||
+      product.category_source === 'llm')
   );
 }
 
@@ -449,6 +498,9 @@ export async function extractInvoiceData(
         totalPrice: product.total_price,
         barcode: product.raw_code,
         weightKgCandidate: product.weight_kg_candidate ?? undefined,
+        categorySuggestion: normalizeCategorySuggestion(product.category_suggestion),
+        categoryConfidence: normalizeCategoryConfidence(product.category_confidence),
+        categorySource: normalizeCategorySource(product.category_source),
       })),
       supplier: responseData.supplier,
       invoiceNumber: responseData.invoice_number,

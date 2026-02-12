@@ -38,7 +38,7 @@ import { previewInvoicePricing } from '@/lib/invoiceImportApi';
 interface InvoiceUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (products: ImportedProduct[]) => Promise<void>;
+  onImport: (products: ImportedProduct[], onProgress?: (current: number, total: number) => void) => Promise<void>;
   products: Product[];
 }
 
@@ -221,13 +221,13 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
         setOcrProgress(progress);
       });
 
-      if (result.success) {
-        setInvoiceData(result.data);
-        setRawProducts(result.data.products);
-        setEditableProducts(result.data.products.map((product) => ({
+        if (result.success) {
+          setInvoiceData(result.data);
+          setRawProducts(result.data.products);
+          setEditableProducts(result.data.products.map((product) => ({
           ...product,
           weightKg: product.weightKgCandidate ?? parseWeightKgFromProductName(product.name),
-          category: inferCategoryFromName(product.name),
+          category: product.categorySuggestion ?? inferCategoryFromName(product.name),
         })));
         setImportActions({});
         setStep('preview');
@@ -316,6 +316,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
         const quantity = previous?.quantity ?? product.quantity;
         const unitPrice = roundCurrency(product.unitPrice / fxRate);
         const totalPrice = roundCurrency(quantity * unitPrice);
+        const weightKg = previous?.weightKg ?? product.weightKgCandidate ?? parseWeightKgFromProductName(product.name);
 
         return {
           ...product,
@@ -324,7 +325,8 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
           quantity,
           unitPrice,
           totalPrice,
-          category: previous?.category ?? inferCategoryFromName(product.name),
+          weightKg,
+          category: previous?.category ?? product.categorySuggestion ?? inferCategoryFromName(product.name),
           imageUrl: previous?.imageUrl,
         };
       });
@@ -625,7 +627,8 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
 
         return {
           Name: product.name,
-          Barcode: product.barcode || undefined, // Can be empty, user can add later
+          // Normalize barcode for matching (backend lookups are exact).
+          Barcode: product.barcode?.trim() || undefined, // Can be empty, user can add later
           Category: product.category || 'General',
           Price: computed.base_price_eur,
           price50: computed.price_50,
@@ -644,7 +647,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
         };
       });
 
-      await onImport(importedProducts);
+      await onImport(importedProducts, (current, total) => {
+        setImportProgress({ current, total });
+      });
 
       logger.info('Invoice import completed successfully', {
         productCount: importedProducts.length,
@@ -1242,7 +1247,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                 {t('invoiceUpload.status.importingProgress', {
                   current: importProgress.current,
                   total: importProgress.total,
-                  defaultValue: '{{current}} of {{total}} products created',
+                  defaultValue: '{{current}} of {{total}} products processed',
                 })}
               </p>
             </div>
