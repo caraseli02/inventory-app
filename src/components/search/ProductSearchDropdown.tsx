@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useProductSearch } from '@/hooks/useProductSearch';
 import type { Product } from '@/types';
 import { logger } from '@/lib/logger';
+import { getProductDisplayPrice } from '@/hooks/useMarkupSetting';
 
 interface ProductSearchDropdownProps {
   /** Called when a product is selected from the dropdown */
@@ -238,7 +239,7 @@ const SearchResultItem = ({ product, index, isSelected, onSelect, onMouseEnter }
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
   const imageUrl = product.fields.Image?.[0]?.url;
-  const price = product.fields.Price;
+  const price = getProductDisplayPrice(product.fields);
   const stock = product.fields['Current Stock Level'] ?? 0;
   const isLowStock = stock < (product.fields['Min Stock Level'] ?? 5);
 
