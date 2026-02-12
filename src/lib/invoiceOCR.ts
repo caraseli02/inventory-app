@@ -45,19 +45,53 @@ interface FastAPIExtractResponse {
   products: Array<{
     row_id?: string;
     name: string;
-    quantity: number;
-    unit_price: number;
-    total_price: number;
-    raw_code?: string;
+    quantity: number | string;
+    unit_price: number | string;
+    total_price: number | string;
+    raw_code?: string | number | null;
     weight_kg_candidate?: number | null;
     category_suggestion?: string | null;
     category_confidence?: number | null;
     category_source?: 'llm' | null;
+    weight_kg?: number | null;
   }>;
   supplier?: string;
   invoice_number?: string;
   date?: string;
   total_amount?: number;
+}
+
+interface FastAPIErrorResponse {
+  detail?: unknown;
+  message?: string;
+  error?: string;
+}
+
+/**
+ * Normalize FastAPI/Proxy error payloads into a readable one-line message.
+ */
+function getApiErrorMessage(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const p = payload as FastAPIErrorResponse;
+
+  if (typeof p.message === 'string' && p.message.trim()) return p.message.trim();
+  if (typeof p.error === 'string' && p.error.trim()) return p.error.trim();
+
+  const detail = p.detail;
+  if (typeof detail === 'string' && detail.trim()) return detail.trim();
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0];
+    if (typeof first === 'string' && first.trim()) return first.trim();
+    if (first && typeof first === 'object') {
+      const detailObj = first as Record<string, unknown>;
+      if (typeof detailObj.msg === 'string' && detailObj.msg.trim()) {
+        return detailObj.msg.trim();
+      }
+    }
+  }
+
+  return null;
 }
 
 const ALLOWED_CATEGORY_SUGGESTIONS: ReadonlySet<string> = new Set([
@@ -82,7 +116,6 @@ function normalizeCategorySuggestion(value: unknown): string | undefined {
 
 function normalizeCategoryConfidence(value: unknown): number | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
-  // Clamp to protect UI from out-of-range values.
   return Math.max(0, Math.min(1, value));
 }
 
@@ -94,33 +127,42 @@ function normalizeCategorySource(value: unknown): 'llm' | undefined {
  * Validate product fields from FastAPI response
  */
 function isValidProduct(product: FastAPIExtractResponse['products'][0]): boolean {
+  const quantity = typeof product.quantity === 'number' ? product.quantity : Number(product.quantity);
+  const unitPrice = typeof product.unit_price === 'number' ? product.unit_price : Number(product.unit_price);
+  const totalPrice = typeof product.total_price === 'number' ? product.total_price : Number(product.total_price);
+
   return (
     (product.row_id === undefined || typeof product.row_id === 'string') &&
     typeof product.name === 'string' &&
     product.name.trim().length > 0 &&
     product.name.length <= 500 &&
-    typeof product.quantity === 'number' &&
-    !isNaN(product.quantity) &&
-    Number.isFinite(product.quantity) &&
-    product.quantity > 0 &&
-    product.quantity <= 10000 &&
-    typeof product.unit_price === 'number' &&
-    !isNaN(product.unit_price) &&
-    Number.isFinite(product.unit_price) &&
-    product.unit_price >= 0 &&
-    product.unit_price <= 1000000 &&
-    typeof product.total_price === 'number' &&
-    !isNaN(product.total_price) &&
-    Number.isFinite(product.total_price) &&
-    product.total_price >= 0 &&
+    !isNaN(quantity) &&
+    Number.isFinite(quantity) &&
+    quantity > 0 &&
+    quantity <= 10000 &&
+    !isNaN(unitPrice) &&
+    Number.isFinite(unitPrice) &&
+    unitPrice >= 0 &&
+    unitPrice <= 1000000 &&
+    !isNaN(totalPrice) &&
+    Number.isFinite(totalPrice) &&
+    totalPrice >= 0 &&
     (product.weight_kg_candidate === undefined ||
       product.weight_kg_candidate === null ||
       (typeof product.weight_kg_candidate === 'number' &&
         !isNaN(product.weight_kg_candidate) &&
         Number.isFinite(product.weight_kg_candidate) &&
-        product.weight_kg_candidate > 0)) &&
+        product.weight_kg_candidate >= 0)) &&
+    (product.weight_kg === undefined ||
+      product.weight_kg === null ||
+      (typeof product.weight_kg === 'number' &&
+        !isNaN(product.weight_kg) &&
+        Number.isFinite(product.weight_kg) &&
+        product.weight_kg >= 0)) &&
     (product.raw_code === undefined ||
-      (typeof product.raw_code === 'string' && product.raw_code.length <= 50)) &&
+      product.raw_code === null ||
+      (typeof product.raw_code === 'string' && product.raw_code.length <= 50) ||
+      typeof product.raw_code === 'number') &&
     // Additive-only fields: validate type/shape but don't reject unknown category values.
     (product.category_suggestion === undefined ||
       product.category_suggestion === null ||
@@ -155,7 +197,12 @@ async function uploadWithProgress(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
+
+    // Backward/forward compatibility for backend field naming.
+    // FastAPI may expect one of these names depending on version.
     formData.append('file', file);
+    formData.append('invoice', file);
+    formData.append('invoice_file', file);
 
     // Track actual upload progress (40% → 70%)
     xhr.upload.addEventListener('progress', (e) => {
@@ -279,7 +326,6 @@ export async function extractInvoiceData(
       : directDevApiUrl
         ? `${directDevApiUrl.replace(/\/$/, '')}/extract`
         : '/api/extract-invoice';
-
     // Forward user session when available so proxy can validate auth server-side.
     const headers: Record<string, string> = {};
     const apiKey = import.meta.env.VITE_INVOICE_API_KEY;
@@ -365,16 +411,28 @@ export async function extractInvoiceData(
       };
     }
 
-    // Handle client errors (400, 422)
+    // Handle client errors (400, 422) with detailed backend message when available
     if (response.status === 400 || response.status === 422) {
+      const responseText = await response.text();
+      let backendMessage: string | null = null;
+
+      try {
+        const errorPayload = responseText ? JSON.parse(responseText) : null;
+        backendMessage = getApiErrorMessage(errorPayload);
+      } catch {
+        backendMessage = responseText?.trim() || null;
+      }
+
       logger.error('Invalid PDF or request error', {
         url: extractUrl,
         fileName: file.name,
         status: response.status,
+        backendMessage,
       });
+
       return {
         success: false,
-        error: 'Invalid PDF file. Please ensure the file is a valid PDF document.',
+        error: backendMessage || 'Invalid PDF file. Please ensure the file is a valid PDF document.',
       };
     }
 
@@ -493,11 +551,11 @@ export async function extractInvoiceData(
       products: responseData.products.map((product) => ({
         rowId: product.row_id,
         name: product.name,
-        quantity: product.quantity,
-        unitPrice: product.unit_price,
-        totalPrice: product.total_price,
-        barcode: product.raw_code,
-        weightKgCandidate: product.weight_kg_candidate ?? undefined,
+        quantity: typeof product.quantity === 'number' ? product.quantity : Number(product.quantity),
+        unitPrice: typeof product.unit_price === 'number' ? product.unit_price : Number(product.unit_price),
+        totalPrice: typeof product.total_price === 'number' ? product.total_price : Number(product.total_price),
+        barcode: product.raw_code != null ? String(product.raw_code) : undefined,
+        weightKgCandidate: product.weight_kg_candidate ?? product.weight_kg ?? undefined,
         categorySuggestion: normalizeCategorySuggestion(product.category_suggestion),
         categoryConfidence: normalizeCategoryConfidence(product.category_confidence),
         categorySource: normalizeCategorySource(product.category_source),
