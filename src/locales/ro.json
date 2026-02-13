@@ -343,6 +343,7 @@
     "proceedToCheckout": "Continuă cu plata",
     "editCart": "Editează coșul",
     "missingPrices": "{{count}} articol(e) fără preț",
+    "storePriceFallbackWarning": "{{count}} articol(e) nu au prețuri de vânzare pe tier; totalurile folosesc costul de bază.",
     "transactionSummary": "Rezumat tranzacție",
     "itemsLabel": "Articole:",
     "products": "produse",

@@ -343,6 +343,7 @@
     "proceedToCheckout": "Перейти к оплате",
     "editCart": "Редактировать корзину",
     "missingPrices": "{{count}} товар(ов) без цены",
+    "storePriceFallbackWarning": "{{count}} товар(ов) без цены магазина по уровню; итог рассчитан по базовой цене.",
     "transactionSummary": "Сводка операции",
     "itemsLabel": "Товары:",
     "products": "товары",

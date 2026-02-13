@@ -343,6 +343,7 @@
     "proceedToCheckout": "Proceed to Checkout",
     "editCart": "Edit Cart",
     "missingPrices": "{{count}} item(s) missing price",
+    "storePriceFallbackWarning": "{{count}} item(s) are missing store tier prices; totals are using base cost.",
     "transactionSummary": "Transaction Summary",
     "itemsLabel": "Items:",
     "products": "products",

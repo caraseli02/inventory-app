@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "021"
 tags: [code-review, i18n, ui, checkout]
@@ -75,9 +75,9 @@ Affected files:
 
 ## Acceptance Criteria
 
-- [ ] `checkout.storePriceFallbackWarning` exists in all locale JSONs
-- [ ] No UI copy relies solely on `defaultValue` for this warning
-- [ ] (Optional) When both missing and fallback cases occur, operator receives clear messaging
+- [x] `checkout.storePriceFallbackWarning` exists in all locale JSONs
+- [x] No UI copy relies solely on `defaultValue` for this warning
+- [x] When both missing and fallback cases occur, operator receives clear messaging
 
 ## Work Log
 
@@ -89,3 +89,10 @@ Affected files:
 - Noted new warning uses `defaultValue` without locale keys
 - Identified combined-warning visibility gap (optional improvement)
 
+### 2026-02-13 - Completed
+
+**By:** Codex
+
+**Actions:**
+- Added `checkout.storePriceFallbackWarning` to all locale JSONs
+- Updated checkout review warnings to show fallback warning even when missing-price warning is also shown

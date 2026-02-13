@@ -1327,12 +1327,11 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
                     ⚠️ {t('checkout.missingPrices', { count: missingPrices })} - {t('checkout.confirmMessageWithMissing', { count: pendingItems.length, total: `€${total.toFixed(2)}`, missing: missingPrices }).split('.').slice(-1)[0].trim()}
                   </div>
                 )}
-                {missingPrices === 0 && fallbackPrices > 0 && (
+                {fallbackPrices > 0 && (
                   <div className="p-3 bg-amber-50 border-2 border-amber-200 rounded-xl text-amber-700 text-sm font-medium">
                     ⚠️ {t('checkout.storePriceFallbackWarning', {
                       count: fallbackPrices,
-                      defaultValue:
-                        '{{count}} item(s) are missing store tier prices; totals are using base cost.',
+                      defaultValue: '{{count}} item(s) are missing store tier prices; totals are using base cost.',
                     })}
                   </div>
                 )}

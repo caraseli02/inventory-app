@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "008"
 tags: [react, state-management, ux]
@@ -122,6 +122,15 @@ const handleOpenChange = (newOpen: boolean) => {
 5. Verify clean state
 
 **Expected:** No behavior change in normal flows, just cleaner state management
+
+## Work Log
+
+### 2026-02-13 - Completed
+
+**By:** Codex
+
+**Actions:**
+- Added `mutation.reset()` when the dialog closes to prevent stale state on reopen
 
 ## References
 
