@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "022"
 tags: [code-review, repo-hygiene, tooling]
@@ -10,20 +10,20 @@ dependencies: []
 
 ## Problem Statement
 
-Running `pnpm install` triggers `simple-git-hooks` which may generate a `.git-hooks/` directory in the repo root. This is currently untracked and shows up in `git status`, creating noise and increasing the chance of accidentally committing generated hook scripts.
+This finding is now superseded: the repo has been standardized on `simple-git-hooks` and `.git-hooks/pre-commit` is treated as the authoritative hook script (tracked in git). Ignoring `.git-hooks/` would be incorrect under the current strategy.
 
 ## Findings
 
-- After `pnpm install`, `.git-hooks/pre-commit` was generated in the repo root.
-- The repo already contains `.githooks/` (tracked) with its own pre-commit script.
-- The `package.json` config for `simple-git-hooks` indicates it will manage hooks and point `core.hooksPath` to `.git-hooks` for some setups.
+- Previously observed:
+  - `pnpm install` generated/updated `.git-hooks/pre-commit`.
+  - The repo also had `.githooks/` (tracked) with its own `pre-commit` script.
 
 Potential confusion:
 - Two hook systems appear present (`.githooks/` and `simple-git-hooks`).
 
 ## Proposed Solutions
 
-### Option 1: Add `.git-hooks/` to `.gitignore` (recommended)
+### Option 1: Add `.git-hooks/` to `.gitignore`
 
 **Approach:** Ignore generated hooks directory so it never shows up as untracked.
 
@@ -33,6 +33,7 @@ Potential confusion:
 
 **Cons:**
 - Doesn’t resolve dual-hook-system ambiguity
+- Conflicts with treating `.git-hooks/` as the source of truth
 
 **Effort:** 5 minutes
 
@@ -70,8 +71,8 @@ Relevant files:
 
 ## Acceptance Criteria
 
-- [ ] `.git-hooks/` does not show up in `git status` after a fresh install
-- [ ] Hook behavior is documented (which system is authoritative)
+- [x] Hook behavior is documented (which system is authoritative)
+- [x] Only one hook system is used
 
 ## Work Log
 
@@ -83,3 +84,11 @@ Relevant files:
 - Observed `.git-hooks/` created during local install and appearing as untracked
 - Noted presence of `.githooks/` and potential duplication
 
+### 2026-02-13 - Completed
+
+**By:** Codex
+
+**Actions:**
+- Standardized on `simple-git-hooks` only
+- Removed legacy `.githooks/pre-commit`
+- Updated `setup-hooks.sh` to match the `simple-git-hooks` workflow
