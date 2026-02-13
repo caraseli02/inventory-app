@@ -678,7 +678,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         8000
       );
     }
-  }, [products, refetch, showToast, t]);
+  }, [allProducts, refetch, showToast, t]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">

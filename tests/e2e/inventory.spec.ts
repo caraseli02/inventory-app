@@ -9,25 +9,22 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Inventory List', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to inventory page
-    await page.goto('/')
+    await page.goto('/inventory')
+    await expect(page).toHaveURL(/\/inventory$/)
 
-    // Click on "View Inventory" or "Browse" card button
-    const inventoryCard = page.getByRole('button', { name: /view inventory|browse/i })
-    await expect(inventoryCard).toBeVisible({ timeout: 5000 })
-    await inventoryCard.click()
-
-    // Wait for page to render
-    await page.waitForLoadState('domcontentloaded')
+    // Wait for inventory UI chrome (doesn't depend on backend data)
+    await page.locator('button[title="Import from Excel file"]').first().waitFor({ state: 'visible', timeout: 15000 })
   })
 
   test('should display inventory page elements', async ({ page }) => {
-    await expect(page.locator('main, [role="main"]').first()).toBeVisible()
+    // Inventory page uses fixed-position layout; `main` may have 0 height.
+    // Assert for stable UI chrome instead.
+    await expect(page.locator('button[title="Import from Excel file"]').first()).toBeVisible()
   })
 
   test('should show search functionality', async ({ page }) => {
     // Look for search input - use first() since there might be multiple search inputs on the page
-    const searchInput = page.getByPlaceholder(/search/i).first()
+    const searchInput = page.locator('input[placeholder*="Search"]').first()
     await expect(searchInput).toBeVisible({ timeout: 5000 })
 
     // Type in search
@@ -65,12 +62,9 @@ test.describe('Inventory List', () => {
 
 test.describe('Inventory Filtering', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    // Click on "View Inventory" or "Browse" card button
-    const inventoryCard = page.getByRole('button', { name: /view inventory|browse/i })
-    await expect(inventoryCard).toBeVisible({ timeout: 5000 })
-    await inventoryCard.click()
-    await page.waitForLoadState('domcontentloaded')
+    await page.goto('/inventory')
+    await expect(page).toHaveURL(/\/inventory$/)
+    await page.locator('button[title="Import from Excel file"]').first().waitFor({ state: 'visible', timeout: 15000 })
   })
 
   test('should have category filter', async ({ page }) => {
@@ -83,9 +77,7 @@ test.describe('Inventory Filtering', () => {
 
   test('should toggle low stock filter', async ({ page }) => {
     // Look for low stock toggle - fail if not found
-    const lowStockToggle = page.locator(
-      '[data-testid="low-stock-filter"], input[type="checkbox"]:near(:text("Low Stock")), button:has-text("Low Stock"), [aria-label*="low stock" i]'
-    )
+    const lowStockToggle = page.locator('[data-testid="low-stock-filter"]')
     await expect(lowStockToggle.first()).toBeVisible({ timeout: 5000 })
 
     // Click the toggle
@@ -95,19 +87,14 @@ test.describe('Inventory Filtering', () => {
 
 test.describe('Inventory Sorting', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    // Click on "View Inventory" or "Browse" card button
-    const inventoryCard = page.getByRole('button', { name: /view inventory|browse/i })
-    await expect(inventoryCard).toBeVisible({ timeout: 5000 })
-    await inventoryCard.click()
-    await page.waitForLoadState('domcontentloaded')
+    await page.goto('/inventory')
+    await expect(page).toHaveURL(/\/inventory$/)
+    await page.locator('button[title="Import from Excel file"]').first().waitFor({ state: 'visible', timeout: 15000 })
   })
 
   test('should have sort options', async ({ page }) => {
     // Look for sort controls - may be dropdown, buttons, or in filter section
-    const sortControl = page.locator(
-      '[data-testid="sort-toggle"], [aria-label*="sort" i], button:has-text("Sort"), button:has-text("Name"), button:has-text("Stock"), select'
-    )
+    const sortControl = page.locator('[data-testid="sort-toggle"]')
     await expect(sortControl.first()).toBeVisible({ timeout: 5000 })
   })
 })

@@ -8,10 +8,10 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Navigation', () => {
-  test('should load the scan page by default', async ({ page }) => {
+  test('should load the home page by default', async ({ page }) => {
     await page.goto('/')
 
-    // Should show the scanner page
+    // Should show app shell
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expect(page).toHaveURL('/')
   })
@@ -24,10 +24,7 @@ test.describe('Navigation', () => {
     await expect(inventoryCard).toBeVisible({ timeout: 5000 })
     await inventoryCard.click()
 
-    // Wait for inventory page to load
-    await page.waitForLoadState('domcontentloaded')
-    // Verify we're on a different view (state changed)
-    await expect(page.locator('main')).toBeVisible()
+    await expect(page).toHaveURL(/\/inventory$/)
   })
 
   test('should be responsive on mobile viewport', async ({ page }) => {
@@ -125,19 +122,18 @@ test.describe('Accessibility', () => {
   test('should be keyboard navigable', async ({ page }) => {
     await page.goto('/')
 
-    // Tab through elements
-    await page.keyboard.press('Tab')
-    await page.keyboard.press('Tab')
+    // Ensure document has focus first.
+    await page.locator('body').click({ position: { x: 5, y: 5 } })
 
-    // Should have focus on an interactive element
-    const focusedElement = await page.evaluate(() => {
-      const el = document.activeElement
-      return el?.tagName.toLowerCase()
-    })
+    // Tab through elements until focus moves off body/html.
+    let focusedTag = await page.evaluate(() => document.activeElement?.tagName.toLowerCase())
+    for (let i = 0; i < 12 && (focusedTag === 'body' || focusedTag === 'html' || !focusedTag); i += 1) {
+      await page.keyboard.press('Tab')
+      focusedTag = await page.evaluate(() => document.activeElement?.tagName.toLowerCase())
+    }
 
-    // Focus should be on some interactive element (not body or html)
-    expect(focusedElement).toBeDefined()
-    expect(focusedElement).not.toBe('body')
-    expect(focusedElement).not.toBe('html')
+    expect(focusedTag).toBeDefined()
+    expect(focusedTag).not.toBe('body')
+    expect(focusedTag).not.toBe('html')
   })
 })

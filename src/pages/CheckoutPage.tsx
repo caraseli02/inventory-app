@@ -34,6 +34,7 @@ import { type InputMode } from '../components/search/InputModeToggle';
 import { ProductBrowsePanel } from '../components/search/ProductBrowsePanel';
 import { MobileCartBar } from '../components/cart/MobileCartBar';
 import { useRecentProducts } from '../hooks/useRecentProducts';
+import { clearPersistedCheckoutCart, loadPersistedCheckoutCart, persistCheckoutCart } from '../lib/checkoutCartStorage';
 import { getProductDisplayPrice } from '../hooks/useMarkupSetting';
 
 interface CheckoutPageProps {
@@ -388,7 +389,14 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
 function CheckoutPage({ onBack }: CheckoutPageProps) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [state, dispatch] = useReducer(checkoutReducer, initialState);
+  const [state, dispatch] = useReducer(checkoutReducer, initialState, (base: CheckoutState): CheckoutState => {
+    const persisted = loadPersistedCheckoutCart();
+    if (!persisted) return base;
+    return {
+      ...base,
+      cart: persisted.map(({ product, quantity }): CartItem => ({ product, quantity })),
+    };
+  });
   const [inputMode, setInputMode] = useState<InputMode>('search');
   const { addRecentProduct } = useRecentProducts();
 
@@ -593,6 +601,11 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
     dispatch({ type: 'UPDATE_CART_ITEM_QUANTITY', index, delta });
   };
 
+  // Persist cart to survive hard refresh on /checkout.
+  useEffect(() => {
+    persistCheckoutCart(state.cart);
+  }, [state.cart]);
+
 
   const pendingItems = state.cart.filter((item) => item.status !== 'success');
 
@@ -751,6 +764,7 @@ function CheckoutPage({ onBack }: CheckoutPageProps) {
       const referenceNumber = `#INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
 
       dispatch({ type: 'COMPLETE_CHECKOUT', itemsCount, totalQuantity, referenceNumber });
+      clearPersistedCheckoutCart();
       playSound('success');
 
       // Invalidate all related caches to ensure fresh data after checkout

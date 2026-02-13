@@ -8,18 +8,28 @@ import { ShoppingCartIcon } from '../ui/Icons';
 import { Button } from '../ui/button';
 import { ScanBarcode } from 'lucide-react';
 
-interface CartProps {
+type DefinedReactNode = Exclude<ReactNode, undefined>;
+
+type CartPropsBase = {
   cart: CartItemType[];
   total: number;
   isCheckingOut?: boolean;
   checkoutComplete?: boolean;
   onUpdateQuantity: (index: number, delta: number) => void;
-  onCheckout?: () => void;
-  /** Optional custom footer content. If provided, replaces the default CartFooter */
-  customFooter?: ReactNode;
   /** Optional callback for empty cart CTA (e.g., navigate to scanner) */
   onStartScanning?: () => void;
-}
+};
+
+type CartProps =
+  | (CartPropsBase & {
+      /** Optional custom footer content. If provided, replaces the default CartFooter */
+      customFooter?: undefined;
+      onCheckout: () => void;
+    })
+  | (CartPropsBase & {
+      customFooter: DefinedReactNode;
+      onCheckout?: never;
+    });
 
 /**
  * Comprehensive cart component that displays cart header, items list, and checkout footer.
@@ -55,6 +65,7 @@ export const Cart = ({
         className="flex-1 overflow-y-auto p-6 space-y-4"
         role="region"
         aria-label={t('cart.itemsList', 'Shopping cart items')}
+        data-testid="cart-items"
       >
         {cart.length === 0 ? (
           <div
@@ -102,13 +113,15 @@ export const Cart = ({
       </div>
 
       {/* Cart Footer */}
-      {customFooter || (
+      {customFooter !== undefined ? (
+        customFooter
+      ) : (
         <CartFooter
           itemCount={itemCount}
           total={total}
           isCheckingOut={isCheckingOut}
           checkoutComplete={checkoutComplete}
-          onCheckout={onCheckout!}
+          onCheckout={onCheckout}
         />
       )}
     </>

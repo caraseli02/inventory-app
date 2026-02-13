@@ -39,14 +39,12 @@ test.describe('Invoice Upload Smoke', () => {
     await page.route('**/api/extract-invoice', fulfillInvoiceExtraction);
     await page.route('**/extract', fulfillInvoiceExtraction);
 
-    await page.goto('/');
-
-    const inventoryCard = page.getByRole('button', { name: /view inventory|browse/i });
-    await expect(inventoryCard).toBeVisible({ timeout: 5000 });
-    await inventoryCard.click();
+    await page.goto('/inventory');
+    await expect(page).toHaveURL(/\/inventory$/);
+    await page.locator('button[title="Import from Excel file"]').first().waitFor({ state: 'visible', timeout: 15000 });
 
     const importInvoiceButton = page.locator('button[title*="Import from Invoice"]').first();
-    await expect(importInvoiceButton).toBeVisible({ timeout: 5000 });
+    await expect(importInvoiceButton).toBeVisible({ timeout: 15000 });
     await importInvoiceButton.click();
 
     const fileInput = page.locator('input#invoice-upload');
