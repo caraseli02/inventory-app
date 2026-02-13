@@ -3,6 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
+function isTruthy(value: string | undefined): boolean {
+  return !!value && ['1', 'true', 'yes', 'on'].includes(value.trim().toLowerCase());
+}
+
 function resolveExtractUrl(): string | null {
   const configuredBaseUrl = process.env.INVOICE_API_URL || process.env.VITE_INVOICE_API_URL;
   if (!configuredBaseUrl) {
@@ -116,6 +120,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(upstreamResponse.status);
     res.setHeader('Content-Type', upstreamContentType);
+
+    // Forward a small set of debugging headers (useful for cache hit/miss verification).
+    // Keep this allowlist tight to avoid leaking unexpected upstream headers.
+    const passthroughHeaders: string[] = [
+      'x-extract-cache',
+      'x-instance-id',
+      'x-process-id',
+      'x-cache',
+      'x-request-id',
+      'x-upstream-request-id',
+      'x-render-service',
+      'x-render-instance',
+    ];
+
+    // Debug-only: file hash can act as a stable invoice identifier. Do not expose by default.
+    if (isTruthy(process.env.INVOICE_PROXY_DEBUG_HEADERS)) {
+      passthroughHeaders.push('x-extract-file-hash');
+    }
+
+    passthroughHeaders.forEach((header) => {
+      const value = upstreamResponse.headers.get(header);
+      if (value) {
+        res.setHeader(header, value);
+      }
+    });
+
+    // If this endpoint is ever called cross-origin (uncommon), allow browser JS to read debug headers.
+    // Same-origin calls can read headers without this.
+    res.setHeader(
+      'Access-Control-Expose-Headers',
+      passthroughHeaders.join(', ')
+    );
+
     return res.send(responseText);
   } catch (error) {
     console.error('Invoice proxy error:', error);

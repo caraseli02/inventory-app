@@ -191,6 +191,7 @@ function isValidNumber(value: unknown): value is number {
 async function uploadWithProgress(
   url: string,
   file: File,
+  fileFieldName: string,
   headers: Record<string, string>,
   onProgress?: (progress: number) => void
 ): Promise<Response> {
@@ -198,11 +199,9 @@ async function uploadWithProgress(
     const xhr = new XMLHttpRequest();
     const formData = new FormData();
 
-    // Backward/forward compatibility for backend field naming.
-    // FastAPI may expect one of these names depending on version.
-    formData.append('file', file);
-    formData.append('invoice', file);
-    formData.append('invoice_file', file);
+    // IMPORTANT: only append the file once. Appending under multiple keys
+    // duplicates bytes in the multipart payload (3x upload time/size).
+    formData.append(fileFieldName, file);
 
     // Track actual upload progress (40% → 70%)
     xhr.upload.addEventListener('progress', (e) => {
@@ -215,7 +214,29 @@ async function uploadWithProgress(
     xhr.onload = () => {
       // Upload complete, server processing: 70% → 90%
       onProgress?.(90);
-      resolve(new Response(xhr.responseText, { status: xhr.status }));
+      const responseHeaders = new Headers();
+      const rawHeaders = xhr.getAllResponseHeaders();
+      if (rawHeaders) {
+        rawHeaders
+          .trim()
+          .split(/[\r\n]+/)
+          .forEach((line) => {
+            const idx = line.indexOf(':');
+            if (idx === -1) return;
+            const key = line.slice(0, idx).trim();
+            const value = line.slice(idx + 1).trim();
+            if (!key) return;
+            responseHeaders.append(key, value);
+          });
+      }
+
+      resolve(
+        new Response(xhr.responseText, {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          headers: responseHeaders,
+        })
+      );
     };
 
     xhr.onerror = () => {
@@ -355,7 +376,10 @@ export async function extractInvoiceData(
     // Call FastAPI /extract endpoint with real upload progress
     let response: Response;
     try {
-      response = await uploadWithProgress(extractUrl, file, headers, onProgress);
+      const configuredFieldName = (import.meta.env.VITE_INVOICE_UPLOAD_FIELD_NAME as string | undefined)?.trim();
+      const fileFieldName = configuredFieldName || 'file';
+      // Use guarded callback in the XHR event handlers too.
+      response = await uploadWithProgress(extractUrl, file, fileFieldName, headers, safeProgress);
     } catch (error) {
       // Handle timeout errors (both AbortError and explicit timeout message)
       if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Upload timed out')) {
@@ -409,6 +433,34 @@ export async function extractInvoiceData(
         success: false,
         error: 'Unauthorized request. Please check your server-side invoice API configuration.',
       };
+    }
+
+    // Cache/debug observability headers (if backend supports them).
+    // Useful to diagnose "no speedup" reports (cache disabled, misses, or multi-worker).
+    try {
+      const extractCache = response.headers.get('x-extract-cache') || undefined;
+      const instanceId = response.headers.get('x-instance-id') || undefined;
+      const processId = response.headers.get('x-process-id') || undefined;
+      // Treat file hash as sensitive debug-only metadata. Do not log by default.
+      const debugHeadersEnabled =
+        import.meta.env.DEV ||
+        String(import.meta.env.VITE_INVOICE_DEBUG_HEADERS || '')
+          .trim()
+          .toLowerCase() === 'true';
+      const fileHash = debugHeadersEnabled ? response.headers.get('x-extract-file-hash') || undefined : undefined;
+
+      if (extractCache || instanceId || processId || fileHash) {
+        logger.info('Invoice extract observability', {
+          url: extractUrl,
+          status: response.status,
+          extractCache,
+          instanceId,
+          processId,
+          ...(fileHash ? { fileHash } : {}),
+        });
+      }
+    } catch {
+      // If CORS blocks header access in direct-dev mode, ignore.
     }
 
     // Handle client errors (400, 422) with detailed backend message when available
