@@ -54,5 +54,5 @@ No crashes or obvious UI errors encountered during the tested flows.
 
 Follow-ups tracked:
 - `todos/020-pending-p2-confirm-price-mode-in-scan-page-search.md`
-- `todos/021-pending-p3-add-locale-key-for-checkout-fallback-warning.md`
+- `todos/021-complete-p3-add-locale-key-for-checkout-fallback-warning.md`
 - `todos/022-pending-p3-ignore-generated-git-hooks-directory.md`

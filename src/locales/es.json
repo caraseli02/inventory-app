@@ -343,6 +343,7 @@
     "proceedToCheckout": "Proceder al Pago",
     "editCart": "Editar Carrito",
     "missingPrices": "{{count}} artículo(s) sin precio",
+    "storePriceFallbackWarning": "{{count}} artículo(s) no tienen precios de tienda por nivel; los totales usan el costo base.",
     "transactionSummary": "Resumen de transacción",
     "itemsLabel": "Artículos:",
     "products": "productos",

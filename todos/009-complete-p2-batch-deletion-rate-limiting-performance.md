@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "009"
 tags: [performance, api, rate-limiting, ux]
@@ -97,6 +97,8 @@ const handleDelete = async () => {
 **Cons:**
 - Doesn't solve underlying issue
 - Extra click for users
+
+**Note:** For MVP we implemented warning-only (no throttling/batching) without adding an extra confirmation click.
 
 ### Option 2: Process in Sequential Batches (Recommended)
 
@@ -198,6 +200,17 @@ async function batchDelete(productIds: string[]) {
 - Slightly slower completion
 
 **Test Case 3: Large Batch (20-50 products)**
+ - Warning is shown before deletion
+ - Behavior remains otherwise unchanged (still uses parallel deletes)
+
+## Work Log
+
+### 2026-02-13 - Completed
+
+**By:** Codex
+
+**Actions:**
+- Added an in-dialog warning when deleting 20+ products (warning-only, no throttling)
 - Should show warning dialog
 - Should complete successfully
 - Progress indicator updates

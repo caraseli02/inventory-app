@@ -35,6 +35,7 @@ const BatchDeleteConfirmDialog = ({
   const [failedDeletions, setFailedDeletions] = useState<FailedDeletion[]>([]);
 
   const productCount = products.length;
+  const isLargeBatch = productCount >= 20;
   const previewProducts = useMemo(() => products.slice(0, 5), [products]);
 
   const mutation = useMutation({
@@ -55,6 +56,16 @@ const BatchDeleteConfirmDialog = ({
           deletedIds.push(result.value);
         } else {
           const errorMessage = result.reason instanceof Error ? result.reason.message : String(result.reason);
+          logger.error('Product deletion failed in batch operation', {
+            productId: product.id,
+            productName: product.fields.Name,
+            productBarcode: product.fields.Barcode,
+            errorMessage,
+            errorStack: result.reason instanceof Error ? result.reason.stack : undefined,
+            batchSize: products.length,
+            batchIndex: index,
+            timestamp: new Date().toISOString(),
+          });
           failed.push({ product, error: errorMessage });
         }
       });
@@ -110,6 +121,7 @@ const BatchDeleteConfirmDialog = ({
     if (!newOpen) {
       setConfirmed(false);
       setFailedDeletions([]);
+      mutation.reset();
     }
     onOpenChange(newOpen);
   };
@@ -148,6 +160,24 @@ const BatchDeleteConfirmDialog = ({
               })}
             </p>
 
+            {isLargeBatch && (
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-3 space-y-1">
+                <p className="text-sm text-amber-800 font-semibold flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  {t(
+                    'dialogs.deleteConfirm.largeBatchWarningTitle',
+                    'Large batch deletion'
+                  )}
+                </p>
+                <p className="text-xs text-amber-700">
+                  {t(
+                    'dialogs.deleteConfirm.largeBatchWarningBody',
+                    'Deleting many products at once may take longer and some deletions may fail due to backend limits. If this happens, try deleting in smaller batches.'
+                  )}
+                </p>
+              </div>
+            )}
+
             <div className="bg-white border-2 border-red-200 rounded-lg p-4 space-y-2">
               <p className="text-xs uppercase tracking-wide text-stone-500 font-semibold">
                 {t('dialogs.deleteConfirm.preview', 'Selected items')}
@@ -182,7 +212,7 @@ const BatchDeleteConfirmDialog = ({
               <Checkbox
                 id="confirm-delete-multiple"
                 checked={confirmed}
-                onCheckedChange={(checked: boolean) => setConfirmed(checked)}
+                onCheckedChange={(checked) => setConfirmed(checked === true)}
                 className="mt-0.5"
               />
               <Label

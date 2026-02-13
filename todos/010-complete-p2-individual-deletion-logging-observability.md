@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "010"
 tags: [observability, logging, debugging]
@@ -198,6 +198,15 @@ ERROR: Batch deletion partially failed
 
 **Expected Log Pattern:**
 ```
+
+## Work Log
+
+### 2026-02-13 - Completed
+
+**By:** Codex
+
+**Actions:**
+- Added per-item `logger.error(...)` when a product deletion fails inside the `allSettled` result loop (includes product id/name/barcode + error)
 [ERROR] Product deletion failed... (product A)
 [ERROR] Product deletion failed... (product B)
 [ERROR] Batch deletion partially failed (aggregate)
