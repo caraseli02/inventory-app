@@ -7,6 +7,7 @@ import { getAllProducts } from '@/lib/api-provider';
 import { useRecentProducts } from '@/hooks/useRecentProducts';
 import type { Product, CartItem } from '@/types';
 import { logger } from '@/lib/logger';
+import { getProductDisplayPrice } from '@/hooks/useMarkupSetting';
 
 // Category definitions with icons and subtle indicator dots
 const CATEGORIES = [
@@ -310,7 +311,7 @@ const ProductCard = ({ product, onSelect, quantityInCart, isJustAdded }: Product
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
   const imageUrl = product.fields.Image?.[0]?.url;
-  const price = product.fields.Price;
+  const price = getProductDisplayPrice(product.fields);
   const stock = product.fields['Current Stock Level'] ?? 0;
   const isOutOfStock = stock <= 0;
   const isInCart = quantityInCart > 0;
