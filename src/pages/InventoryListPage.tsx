@@ -44,6 +44,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const quickAdjustLocksRef = useRef<Set<string>>(new Set());
 
   const {
     products,
@@ -105,9 +106,6 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     const product = products.find((p) => p.id === productId);
     if (!product) return;
 
-    // Prevent multiple simultaneous operations on the same product
-    if (loadingProducts.has(productId)) return;
-
     // Data integrity check: ensure stock value is a valid number
     const stockValue = product.fields['Current Stock Level'];
     const currentStock = typeof stockValue === 'number' && Number.isFinite(stockValue)
@@ -126,6 +124,13 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       );
       return;
     }
+
+    // Atomic check-and-lock to prevent fast double-taps from running concurrently.
+    if (quickAdjustLocksRef.current.has(productId)) {
+      logger.debug('Prevented concurrent quick adjust', { productId });
+      return;
+    }
+    quickAdjustLocksRef.current.add(productId);
 
     // Add to loading set
     setLoadingProducts((prev) => new Set(prev).add(productId));
@@ -188,8 +193,9 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         next.delete(productId);
         return next;
       });
+      quickAdjustLocksRef.current.delete(productId);
     }
-  }, [products, loadingProducts, queryClient, showToast, t]);
+  }, [products, queryClient, showToast, t]);
 
   const handleRefresh = useCallback(() => {
     refetch();
