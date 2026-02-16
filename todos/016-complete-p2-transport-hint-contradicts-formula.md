@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "016"
 tags: [code-review, ui, pricing, clarity]
@@ -59,9 +59,9 @@ In the pricing card, the formula now displays transport-inclusive math (for exam
 
 ## Acceptance Criteria
 
-- [ ] When manual inputs are empty, formula and hint text are consistent
-- [ ] No message claims transport is missing if transport is shown in formula
-- [ ] Existing pricing display behavior remains unchanged
+- [x] When manual inputs are empty, formula and hint text are consistent
+- [x] No message claims transport is missing if transport is shown in formula
+- [x] Existing pricing display behavior remains unchanged
 
 ## Work Log
 
@@ -75,3 +75,14 @@ In the pricing card, the formula now displays transport-inclusive math (for exam
 
 **Learnings:**
 - Explanatory copy must follow the same decision path as computed display values.
+
+### 2026-02-16 - Verified and closed
+
+**By:** Codex
+
+**Actions:**
+- Re-reviewed `EditProductDialog` transport formula/hint conditions.
+- Confirmed formula and hint now share the same condition (`displayBaseForFormula`/`displayTransportForFormula`/`displayStoreForFormula`), so contradictory copy path is no longer reachable.
+
+**Outcome:**
+- No code change required; issue validated as fixed and closed.

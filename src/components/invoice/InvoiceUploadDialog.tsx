@@ -59,10 +59,17 @@ interface InvoiceMatchResult {
 }
 
 interface InvoicePreviewProduct extends InvoiceProduct {
+  previewId: string;
   weightKg?: number;
   category?: string;
   imageUrl?: string;
 }
+
+const getPreviewId = (product: InvoiceProduct, index: number): string => {
+  const rowId = product.rowId?.trim();
+  if (rowId) return `row:${rowId}`;
+  return `idx:${index}`;
+};
 
 const CATEGORIES = [
   'General',
@@ -138,7 +145,8 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
   const [importErrors, setImportErrors] = useState<string[]>([]);
   const [fxRate, setFxRate] = useState<number | null>(null);
   const [fxRateError, setFxRateError] = useState<string | null>(null);
-  const [importActions, setImportActions] = useState<Record<number, ImportAction>>({});
+  const [importActions, setImportActions] = useState<Record<string, ImportAction>>({});
+  const [removedPreviewIds, setRemovedPreviewIds] = useState<Set<string>>(new Set());
   const autoCategoryRef = useRef(new Set<string>());
 
   const resetState = useCallback(() => {
@@ -156,6 +164,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     setFxRate(null);
     setFxRateError(null);
     setImportActions({});
+    setRemovedPreviewIds(new Set());
     autoCategoryRef.current = new Set<string>();
   }, []);
 
@@ -188,11 +197,13 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
         if (result.success) {
           setInvoiceData(result.data);
           setRawProducts(result.data.products);
-          setEditableProducts(result.data.products.map((product) => ({
-          ...product,
-          weightKg: product.weightKgCandidate ?? parseWeightKgFromProductName(product.name),
-          category: product.categorySuggestion ?? inferCategoryFromName(product.name),
-        })));
+          setRemovedPreviewIds(new Set());
+          setEditableProducts(result.data.products.map((product, index) => ({
+            ...product,
+            previewId: getPreviewId(product, index),
+            weightKg: product.weightKgCandidate ?? parseWeightKgFromProductName(product.name),
+            category: product.categorySuggestion ?? inferCategoryFromName(product.name),
+          })));
         setImportActions({});
         setStep('preview');
       } else {
@@ -234,8 +245,13 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     if (!fxRate || !Number.isFinite(fxRate) || fxRate <= 0) return;
 
     setEditableProducts((prev) => {
-      return rawProducts.map((product, index) => {
-        const previous = prev[index];
+      const prevById = new Map(prev.map((product) => [product.previewId, product]));
+
+      return rawProducts.flatMap((product, index) => {
+        const previewId = getPreviewId(product, index);
+        if (removedPreviewIds.has(previewId)) return [];
+
+        const previous = prevById.get(previewId);
         const quantity = previous?.quantity ?? product.quantity;
         // IMPORTANT: derive EUR from invoice line total (LEI) to preserve VAT/discount-adjusted line value.
         // Using unit LEI here can understate totals for invoices where line_total includes VAT/other adjustments.
@@ -245,6 +261,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
 
         return {
           ...product,
+          previewId,
           name: previous?.name ?? product.name,
           barcode: previous?.barcode ?? product.barcode,
           quantity,
@@ -256,7 +273,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
         };
       });
     });
-  }, [rawProducts, fxRate]);
+  }, [rawProducts, fxRate, removedPreviewIds]);
 
   useEffect(() => {
     if (!editableProducts.length) return;
@@ -348,34 +365,28 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
 
   useEffect(() => {
     setImportActions((prev) => {
-      const next: Record<number, ImportAction> = {};
+      const next: Record<string, ImportAction> = {};
 
-      editableProducts.forEach((_, index) => {
+      editableProducts.forEach((product, index) => {
         const match = matchResults[index];
-        const previous = prev[index];
+        const previous = prev[product.previewId];
 
         if (!match) {
-          next[index] = 'create';
+          next[product.previewId] = 'create';
           return;
         }
 
         if (previous === 'skip' || previous === 'update') {
-          next[index] = previous;
+          next[product.previewId] = previous;
           return;
         }
 
-        next[index] = 'update';
+        next[product.previewId] = 'update';
       });
 
       return next;
     });
   }, [editableProducts, matchResults]);
-
-  const previewTotalAmount = useMemo(() => {
-    if (!editableProducts.length) return null;
-    const total = editableProducts.reduce((sum, product) => sum + (product.totalPrice || 0), 0);
-    return roundCurrency(total);
-  }, [editableProducts]);
 
   const isFxReady = fxRate != null && Number.isFinite(fxRate) && fxRate > 0;
 
@@ -425,9 +436,18 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
   }, [t]);
 
   const handleRemoveProduct = useCallback((index: number) => {
-    setEditableProducts(prev => prev.filter((_, i) => i !== index));
+    const productToRemove = editableProducts[index];
+    if (!productToRemove) return;
+
+    setRemovedPreviewIds((removed) => new Set(removed).add(productToRemove.previewId));
+    setImportActions((actions) => {
+      const next = { ...actions };
+      delete next[productToRemove.previewId];
+      return next;
+    });
+    setEditableProducts((prev) => prev.filter((_, i) => i !== index));
     setEditingIndex(null);
-  }, []);
+  }, [editableProducts]);
 
   const handleEditProduct = useCallback((index: number) => {
     setEditingIndex(index);
@@ -526,7 +546,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
       // Convert invoice products to ImportedProduct format
       const importedProducts: ImportedProduct[] = editableProducts.map((product, index) => {
         const match = matchResults[index];
-        const importAction = importActions[index] ?? (match ? 'update' : 'create');
+        const importAction = importActions[product.previewId] ?? (match ? 'update' : 'create');
         const rowId = product.rowId || `row-${index + 1}`;
         const computed = computedByRowId.get(rowId);
 
@@ -765,14 +785,6 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                         </span>
                       </>
                     )}
-                    {previewTotalAmount != null && (
-                      <>
-                        <span className="text-stone-600">{t('invoiceUpload.preview.total', 'Total:')}</span>
-                        <span className="font-semibold text-stone-900">
-                          {isFxReady ? `€${previewTotalAmount.toFixed(2)}` : `${previewTotalAmount.toFixed(2)} LEI`}
-                        </span>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
@@ -867,11 +879,11 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                       {editableProducts.map((product, i) => {
                         const isEditing = editingIndex === i;
                         const match = matchResults[i];
-                        const importAction = importActions[i] ?? (match ? 'update' : 'create');
+                        const importAction = importActions[product.previewId] ?? (match ? 'update' : 'create');
                         const isSkipped = importAction === 'skip';
                         return (
                           <TableRow
-                            key={i}
+                            key={product.previewId}
                             className={`${isEditing ? 'bg-blue-50' : 'hover:bg-stone-50'} ${isSkipped ? 'opacity-60' : ''}`}
                           >
                             <TableCell className="px-4 py-3">
@@ -1004,7 +1016,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                                   <Select
                                     value={importAction}
                                     onValueChange={(value) =>
-                                      setImportActions((prev) => ({ ...prev, [i]: value as ImportAction }))
+                                      setImportActions((prev) => ({ ...prev, [product.previewId]: value as ImportAction }))
                                     }
                                   >
                                     <SelectTrigger className="h-8 text-xs">

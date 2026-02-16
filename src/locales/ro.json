@@ -550,7 +550,6 @@
       "supplier": "Furnizor:",
       "invoiceNumber": "Factura #:",
       "date": "Data:",
-      "total": "Total:",
       "noBarcodeTitle": "Notă: Unele produse nu au coduri de bare",
       "noBarcodeDescription": "Poți scana codurile mai târziu folosind butonul de editare pentru fiecare produs."
     },

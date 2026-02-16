@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "018"
 tags: [code-review, i18n, cleanup]
@@ -63,8 +63,8 @@ Locale keys `markup.effective` and `markup.effectiveFormula` were added but are 
 
 ## Acceptance Criteria
 
-- [ ] No unused locale keys in `markup` namespace for this feature
-- [ ] Locale validation/tests remain green
+- [x] No unused locale keys in `markup` namespace for this feature
+- [x] Locale validation/tests remain green
 
 ## Work Log
 
@@ -78,3 +78,15 @@ Locale keys `markup.effective` and `markup.effectiveFormula` were added but are 
 
 **Learnings:**
 - Rapid copy iteration can leave i18n drift; quick key pruning prevents long-term bloat.
+
+
+### 2026-02-16 - Implemented
+
+**By:** Codex
+
+**Actions:**
+- Verified no runtime usage of `markup.effective` / `markup.effectiveFormula`.
+- Confirmed keys were already absent from locale files and kept locale bundles clean.
+
+**Outcome:**
+- Marked cleanup complete with validation checks passing.
