@@ -550,7 +550,6 @@
       "supplier": "Supplier:",
       "invoiceNumber": "Invoice #:",
       "date": "Date:",
-      "total": "Total:",
       "noBarcodeTitle": "Note: Some products don't have barcodes",
       "noBarcodeDescription": "You can scan barcodes later using the edit button for each product."
     },

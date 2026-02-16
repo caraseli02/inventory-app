@@ -550,7 +550,6 @@
       "supplier": "Proveedor:",
       "invoiceNumber": "Factura #:",
       "date": "Fecha:",
-      "total": "Total:",
       "noBarcodeTitle": "Nota: Algunos productos no tienen códigos de barras",
       "noBarcodeDescription": "Puedes escanear códigos más tarde usando el botón de edición de cada producto."
     },

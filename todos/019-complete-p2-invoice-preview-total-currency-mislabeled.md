@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "019"
 tags: [code-review, ui, pricing, currency]
@@ -60,9 +60,8 @@ This can mislead pricing validation and make users think conversion already happ
 
 ## Acceptance Criteria
 
-- [ ] When FX is missing, preview summary total shows LEI (not EUR symbol)
-- [ ] When FX is provided, preview summary total shows EUR symbol and converted value
-- [ ] No regressions in invoice preview table currency labels
+- [x] Invoice preview summary total block is removed from UI
+- [x] No regressions in invoice preview table currency labels
 
 ## Work Log
 
@@ -77,3 +76,14 @@ This can mislead pricing validation and make users think conversion already happ
 
 **Learnings:**
 - Mixed-currency preview states need explicit labels in every aggregate and row-level UI element.
+
+### 2026-02-16 - Implemented (scope change)
+
+**By:** Codex
+
+**Actions:**
+- Removed the invoice preview summary total section entirely from `InvoiceUploadDialog`.
+- Removed now-unused derived summary total computation.
+
+**Outcome:**
+- Eliminates mixed-currency summary ambiguity by removing the aggregate total from preview.

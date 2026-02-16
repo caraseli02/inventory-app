@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "013"
 tags: [code-review, invoice-ocr, ui, state]
@@ -84,3 +84,14 @@ Implement Option 1: add a stable `id` to each preview row (UUID), store `importA
 **Actions:**
 - Approved Option 1 (stable id per row)
 - Marked todo as ready
+
+### 2026-02-16 - Implemented
+
+**By:** Codex
+
+**Actions:**
+- Added stable `previewId` per invoice row and keyed `importActions` by `previewId` instead of table index.
+- Updated match/import mapping to resolve action state by stable row identity.
+
+**Outcome:**
+- Row action selections now persist correctly after row removal/reordering.

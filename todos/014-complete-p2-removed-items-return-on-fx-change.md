@@ -1,5 +1,5 @@
 ---
-status: ready
+status: complete
 priority: p2
 issue_id: "014"
 tags: [code-review, invoice-ocr, ui, pricing]
@@ -83,3 +83,14 @@ Implement Option 1 alongside stable row IDs: track removed IDs and filter before
 **Actions:**
 - Approved Option 1 (removed-id filter)
 - Marked todo as ready
+
+### 2026-02-16 - Implemented
+
+**By:** Codex
+
+**Actions:**
+- Added `removedPreviewIds` state and filter gate during FX-driven remap from `rawProducts`.
+- Updated remove-row handler to persist removals by stable row identity.
+
+**Outcome:**
+- Removed rows no longer reappear when FX rate changes.
