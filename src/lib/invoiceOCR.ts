@@ -1,5 +1,5 @@
 import { logger } from './logger';
-import { supabase } from './supabase';
+import { resolveSupabaseAccessToken } from './invoiceAuth';
 
 export interface InvoiceProduct {
   rowId?: string;
@@ -21,6 +21,36 @@ export interface InvoiceData {
   invoiceDate?: string;
   invoiceNumber?: string;
   totalAmount?: number;
+}
+
+function isLocalhostApiUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
+
+async function getInvoiceRequestHeaders(): Promise<Record<string, string> | null> {
+  // Do not set Content-Type for FormData uploads.
+  // The browser/XHR must set it with the multipart boundary.
+  const headers: Record<string, string> = {};
+
+  const authRequired = String(import.meta.env.VITE_INVOICE_API_REQUIRE_AUTH ?? 'true')
+    .trim()
+    .toLowerCase() !== 'false';
+
+  if (!authRequired) return headers;
+
+  const accessToken = await resolveSupabaseAccessToken();
+  if (!accessToken) {
+    logger.warn('Missing Supabase access token for invoice request');
+    return null;
+  }
+
+  headers.Authorization = `Bearer ${accessToken}`;
+  return headers;
 }
 
 // Discriminated union for type-safe results
@@ -339,35 +369,23 @@ export async function extractInvoiceData(
 
     safeProgress(30);
 
-    // Use server-side proxy in production to avoid exposing API keys in client bundle.
-    const proxyUrl = import.meta.env.VITE_INVOICE_PROXY_URL;
-    const directDevApiUrl = import.meta.env.DEV ? import.meta.env.VITE_INVOICE_API_URL : undefined;
-    const extractUrl = proxyUrl
-      ? proxyUrl
-      : directDevApiUrl
-        ? `${directDevApiUrl.replace(/\/$/, '')}/extract`
-        : '/api/extract-invoice';
-    // Forward user session when available so proxy can validate auth server-side.
-    const headers: Record<string, string> = {};
-    const apiKey = import.meta.env.VITE_INVOICE_API_KEY;
-    if (apiKey) {
-      headers['X-API-Key'] = apiKey;
-    }
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-    } catch (error) {
-      logger.warn('Unable to read Supabase session for invoice proxy request', {
-        errorMessage: error instanceof Error ? error.message : String(error),
-      });
+    // Call FastAPI directly (no auth required - anonymous access)
+    const apiUrl = import.meta.env.VITE_INVOICE_API_URL as string | undefined;
+    const normalizedApiUrl = apiUrl?.replace(/\/$/, '');
+    const useDevProxy = import.meta.env.DEV && (!normalizedApiUrl || isLocalhostApiUrl(normalizedApiUrl));
+    const extractUrl = useDevProxy ? '/extract' : normalizedApiUrl ? `${normalizedApiUrl}/extract` : '/api/extract-invoice';
+
+    const headers = await getInvoiceRequestHeaders();
+    if (!headers) {
+      return {
+        success: false,
+        error: 'Authentication required. Please sign in again and retry invoice upload.',
+      };
     }
 
     logger.debug('Sending request to FastAPI /extract endpoint', {
       url: extractUrl,
-      mode: extractUrl === '/api/extract-invoice' || extractUrl === proxyUrl ? 'proxy' : 'direct-dev',
+      mode: useDevProxy ? 'vite-dev-proxy' : extractUrl.startsWith('/api') ? 'proxy-fallback' : 'direct',
       fileName: file.name,
     });
 

@@ -5,8 +5,23 @@ import path from 'path'
 
 import { VitePWA } from 'vite-plugin-pwa'
 
+const invoiceApiTarget = (process.env.VITE_INVOICE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      // Dev-only proxy for invoice FastAPI endpoints to avoid browser CORS in local setup.
+      '/extract': {
+        target: invoiceApiTarget,
+        changeOrigin: true,
+      },
+      '/invoice': {
+        target: invoiceApiTarget,
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
