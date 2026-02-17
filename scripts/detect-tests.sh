@@ -6,7 +6,30 @@ set -e
 
 # Get changed files (comparing against base branch)
 BASE_BRANCH="${1:-main}"
-CHANGED_FILES=$(git diff --name-only "origin/$BASE_BRANCH"...HEAD 2>/dev/null || git diff --name-only HEAD~1...HEAD)
+BEFORE_SHA="${2:-}"
+AFTER_SHA="${3:-}"
+
+get_changed_files() {
+  # Push event range is the most reliable source when available.
+  if [ -n "$BEFORE_SHA" ] && [ -n "$AFTER_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+    git diff --name-only "$BEFORE_SHA" "$AFTER_SHA" 2>/dev/null && return
+  fi
+
+  # PR/default path against base branch.
+  if git diff --name-only "origin/$BASE_BRANCH"...HEAD 2>/dev/null; then
+    return
+  fi
+
+  # Last-resort local fallback.
+  git diff --name-only HEAD~1...HEAD 2>/dev/null || true
+}
+
+CHANGED_FILES="$(get_changed_files)"
+
+# Safety fallback for empty diff outputs.
+if [ -z "$CHANGED_FILES" ]; then
+  CHANGED_FILES="$(git diff --name-only HEAD~1...HEAD 2>/dev/null || true)"
+fi
 
 echo "🔍 Detecting changed files..."
 echo "$CHANGED_FILES" | head -10

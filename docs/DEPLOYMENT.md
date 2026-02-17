@@ -8,6 +8,29 @@ Complete guide for deploying the Grocery Inventory App to production.
 - Airtable account with configured base
 - Node.js 18+ and pnpm installed locally
 
+## Risk-Tiered Deploy Guardrails
+
+This repository uses CI risk tiers to scale checks for features, deploys, and refactors.
+
+- `low`: docs/non-critical edits, selective tests.
+- `medium`: broader unit/integration/e2e checks.
+- `high`: full tests + coverage + PR checklist requirements.
+
+High-risk changes include deploy/config/workflow updates and critical runtime domains (auth/invoice/api-core).
+
+For high-risk PRs, complete the PR template sections:
+- High-Risk Deploy Checklist Completed
+- Rollback Plan Included
+- Refactor Regression Proof Added
+
+Policy mode:
+- `enforce` (current default): missing checklist items fail CI.
+- `advisory`: missing checklist items emit warnings.
+
+To toggle mode without code changes, set repository variable `RISK_POLICY_MODE`:
+- `enforce` (or unset): strict mode
+- `advisory`: warn-only mode
+
 ---
 
 ## Environment Variables
