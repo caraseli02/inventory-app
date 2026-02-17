@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { logger } from './logger';
+import { resolveSupabaseAccessToken } from './invoiceAuth';
 
 export interface InvoiceImportRowInput {
   row_id: string;
@@ -42,43 +43,69 @@ export interface PreviewPricingResponse {
   };
 }
 
-function getInvoiceApiBaseUrl(): string {
-  const proxyBaseUrl = import.meta.env.VITE_INVOICE_PROXY_BASE_URL as string | undefined;
-  if (proxyBaseUrl) return proxyBaseUrl.replace(/\/$/, '');
-
-  const directApiUrl = import.meta.env.VITE_INVOICE_API_URL as string | undefined;
-  if (directApiUrl) return directApiUrl.replace(/\/$/, '');
-
-  return '/api';
+function isLocalhostApiUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+  } catch {
+    return false;
+  }
 }
 
-async function getAuthHeaders(extra: Record<string, string> = {}): Promise<Record<string, string>> {
+function getInvoiceApiBaseUrl(): string {
+  const apiUrl = import.meta.env.VITE_INVOICE_API_URL as string | undefined;
+  const normalizedApiUrl = apiUrl?.replace(/\/$/, '');
+  const useDevProxy = import.meta.env.DEV && (!normalizedApiUrl || isLocalhostApiUrl(normalizedApiUrl));
+
+  if (useDevProxy) {
+    return '';
+  }
+
+  if (!normalizedApiUrl) {
+    logger.error('VITE_INVOICE_API_URL not configured in production');
+    throw new Error('Invoice service not configured. Please contact support.');
+  }
+
+  return normalizedApiUrl;
+}
+
+function getInvoiceApiHeaders(extra: Record<string, string> = {}): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...extra,
   };
 
-  const apiKey = import.meta.env.VITE_INVOICE_API_KEY as string | undefined;
-  if (apiKey) {
-    headers['X-API-Key'] = apiKey;
-  }
-
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
   return headers;
+}
+
+async function getInvoiceAuthHeader(): Promise<Record<string, string> | null> {
+  const authRequired = String(import.meta.env.VITE_INVOICE_API_REQUIRE_AUTH ?? 'true')
+    .trim()
+    .toLowerCase() !== 'false';
+
+  if (!authRequired) return {};
+
+  const accessToken = await resolveSupabaseAccessToken();
+  if (!accessToken) {
+    logger.warn('Missing Supabase access token for invoice pricing request');
+    return null;
+  }
+
+  return { Authorization: `Bearer ${accessToken}` };
 }
 
 export async function previewInvoicePricing(
   payload: PreviewPricingRequest
 ): Promise<PreviewPricingResponse> {
   const baseUrl = getInvoiceApiBaseUrl();
+  const authHeader = await getInvoiceAuthHeader();
+  if (authHeader === null) {
+    throw new Error('Authentication required. Please sign in again.');
+  }
+
   const response = await fetch(`${baseUrl}/invoice/preview-pricing`, {
     method: 'POST',
-    headers: await getAuthHeaders(),
+    headers: getInvoiceApiHeaders(authHeader),
     body: JSON.stringify(payload),
   });
 

@@ -39,6 +39,7 @@ export default defineConfig({
     env: {
       ...process.env,
       VITE_INVOICE_API_URL: '',
+      VITE_INVOICE_API_REQUIRE_AUTH: 'false',
     },
   },
 });
