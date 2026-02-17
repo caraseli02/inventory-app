@@ -88,24 +88,68 @@ jobs:
 
       - name: Detect which tests to run
         id: detect
+        env:
+          BEFORE_SHA: ${{ github.event_name == 'push' && github.event.before || '' }}
+          AFTER_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
         run: |
           chmod +x scripts/detect-tests.sh
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             ./scripts/detect-tests.sh ${{ github.base_ref }}
           else
-            ./scripts/detect-tests.sh main
+            ./scripts/detect-tests.sh main "$BEFORE_SHA" "$AFTER_SHA"
+          fi
+
+  detect-risk:
+    name: Detect Risk Tier
+    runs-on: ubuntu-latest
+    outputs:
+      risk_tier: ${{ steps.detect.outputs.risk_tier }}
+      requires_deploy_checklist: ${{ steps.detect.outputs.requires_deploy_checklist }}
+      requires_full_tests: ${{ steps.detect.outputs.requires_full_tests }}
+      advisory_mode: ${{ steps.detect.outputs.advisory_mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+          else
+            git fetch origin main || git fetch origin master
+          fi
+
+      - name: Detect risk tier
+        id: detect
+        env:
+          RISK_POLICY_MODE: ${{ vars.RISK_POLICY_MODE }}
+          PR_LABELS: ${{ github.event_name == 'pull_request' && join(github.event.pull_request.labels.*.name, ',') || '' }}
+          BEFORE_SHA: ${{ github.event_name == 'push' && github.event.before || '' }}
+          AFTER_SHA: ${{ github.event_name == 'push' && github.sha || '' }}
+        run: |
+          chmod +x scripts/detect-risk-tier.sh
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            ./scripts/detect-risk-tier.sh ${{ github.base_ref }} "$PR_LABELS"
+          else
+            ./scripts/detect-risk-tier.sh main "$PR_LABELS" "$BEFORE_SHA" "$AFTER_SHA"
           fi
 
   unit-tests:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
-    needs: [validate, detect-tests]
+    needs: [validate, detect-tests, detect-risk]
     if: |
       always() &&
       (needs.validate.result == 'success') &&
-      (needs.detect-tests.outputs.run_all_tests == 'true' || 
-       needs.detect-tests.outputs.run_unit_tests == 'true' || 
-       needs.detect-tests.outputs.run_integration_tests == 'true')
+      (
+        needs.detect-risk.outputs.risk_tier == 'medium' ||
+        needs.detect-risk.outputs.risk_tier == 'high' ||
+        needs.detect-risk.outputs.requires_full_tests == 'true' ||
+        needs.detect-tests.outputs.run_all_tests == 'true' || 
+        needs.detect-tests.outputs.run_unit_tests == 'true' || 
+        needs.detect-tests.outputs.run_integration_tests == 'true'
+      )
     steps:
       - uses: actions/checkout@v4
 
@@ -123,19 +167,29 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run unit tests
-        if: needs.detect-tests.outputs.run_all_tests == 'true' || needs.detect-tests.outputs.run_unit_tests == 'true'
+        if: |
+          needs.detect-risk.outputs.risk_tier == 'medium' ||
+          needs.detect-risk.outputs.risk_tier == 'high' ||
+          needs.detect-risk.outputs.requires_full_tests == 'true' ||
+          needs.detect-tests.outputs.run_all_tests == 'true' ||
+          needs.detect-tests.outputs.run_unit_tests == 'true'
         run: pnpm test:unit
 
       - name: Run integration tests
-        if: needs.detect-tests.outputs.run_all_tests == 'true' || needs.detect-tests.outputs.run_integration_tests == 'true'
+        if: |
+          needs.detect-risk.outputs.risk_tier == 'medium' ||
+          needs.detect-risk.outputs.risk_tier == 'high' ||
+          needs.detect-risk.outputs.requires_full_tests == 'true' ||
+          needs.detect-tests.outputs.run_all_tests == 'true' ||
+          needs.detect-tests.outputs.run_integration_tests == 'true'
         run: pnpm test:integration
 
       - name: Run tests with coverage
-        if: needs.detect-tests.outputs.run_all_tests == 'true'
+        if: needs.detect-risk.outputs.requires_full_tests == 'true' || needs.detect-risk.outputs.risk_tier == 'high' || needs.detect-tests.outputs.run_all_tests == 'true'
         run: pnpm test:coverage
 
       - name: Upload coverage report
-        if: needs.detect-tests.outputs.run_all_tests == 'true'
+        if: needs.detect-risk.outputs.requires_full_tests == 'true' || needs.detect-risk.outputs.risk_tier == 'high' || needs.detect-tests.outputs.run_all_tests == 'true'
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage/lcov.info
@@ -145,12 +199,18 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
-    needs: [build, detect-tests, unit-tests]
+    needs: [build, detect-tests, detect-risk, unit-tests]
     if: |
       always() &&
       (needs.build.result == 'success') &&
       (needs.unit-tests.result == 'success' || needs.unit-tests.result == 'skipped') &&
-      (needs.detect-tests.outputs.run_all_tests == 'true' || needs.detect-tests.outputs.run_e2e_tests == 'true')
+      (
+        needs.detect-risk.outputs.risk_tier == 'medium' ||
+        needs.detect-risk.outputs.risk_tier == 'high' ||
+        needs.detect-risk.outputs.requires_full_tests == 'true' ||
+        needs.detect-tests.outputs.run_all_tests == 'true' ||
+        needs.detect-tests.outputs.run_e2e_tests == 'true'
+      )
     steps:
       - uses: actions/checkout@v4
 
@@ -190,3 +250,44 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  high-risk-pr-checklist:
+    name: High-Risk PR Checklist
+    runs-on: ubuntu-latest
+    needs: [detect-risk]
+    if: |
+      github.event_name == 'pull_request' &&
+      needs.detect-risk.outputs.requires_deploy_checklist == 'true'
+    steps:
+      - name: Validate required PR checklist items
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request?.number;
+            if (!prNumber) {
+              core.setFailed('Missing pull request number in event payload.');
+              return;
+            }
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            const body = pr.body || '';
+            const requiredChecks = [
+              /\[[xX]\]\s*High-Risk Deploy Checklist Completed/,
+              /\[[xX]\]\s*Rollback Plan Included/,
+              /\[[xX]\]\s*Refactor Regression Proof Added/
+            ];
+            const missing = requiredChecks.filter((re) => !re.test(body));
+            if (missing.length === 0) {
+              core.info('All required high-risk checklist items are present.');
+              return;
+            }
+            const advisory = '${{ needs.detect-risk.outputs.advisory_mode }}' === 'true';
+            const message = `Missing required high-risk checklist items in PR body (${missing.length}).`;
+            if (advisory) {
+              core.warning(`${message} Advisory mode enabled; not failing build.`);
+            } else {
+              core.setFailed(`${message} Enable checklist entries in pull_request_template.`);
+            }
