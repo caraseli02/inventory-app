@@ -21,9 +21,10 @@ Apply throughout all interactions: plans, explanations, code reviews, feedback. 
 ### Development
 ```bash
 pnpm dev              # Start dev server
+pnpm typecheck        # Run TypeScript project check (tsc -b --noEmit)
 pnpm build            # Build for production (runs tsc -b && vite build)
 pnpm preview          # Preview production build locally
-pnpm lint             # Run ESLint
+pnpm lint             # Run ESLint (warnings fail: --max-warnings=0)
 ```
 
 ### Environment Setup
@@ -817,6 +818,34 @@ After each testing session, ensure:
 
 **This workflow is MANDATORY** - do not skip testing or leave changes uncommitted.
 
+### CI Risk-Tiered Policy (IMPORTANT)
+
+The repository uses risk-tiered CI checks in `.github/workflows/ci.yml`.
+
+**Detection scripts**:
+- `scripts/detect-tests.sh` - test strategy detection
+- `scripts/detect-risk-tier.sh` - risk tier + checklist/full-test requirement
+
+**Risk tiers**:
+- `low`: docs/non-critical changes (selective tests)
+- `medium`: feature/refactor app logic (broader unit/integration/e2e)
+- `high`: deploy/config/workflow or critical runtime domains (full tests + checklist validation)
+
+**High-risk PR body requirements** (must be checked):
+- `[x] High-Risk Deploy Checklist Completed`
+- `[x] Rollback Plan Included`
+- `[x] Refactor Regression Proof Added`
+
+These fields are validated by the `High-Risk PR Checklist` CI job and are defined in `.github/pull_request_template.md`.
+
+**Push-event diff safety**:
+- Detection scripts accept push SHA ranges (`before`, `after`) from CI to avoid empty-diff misclassification.
+- Scripts include fallback chains for robustness (`origin/<base>...HEAD`, then `HEAD~1...HEAD`).
+
+**Policy mode**:
+- Default mode is `enforce`.
+- Temporary relax mode: set repository variable `RISK_POLICY_MODE=advisory`.
+
 ## Common Pitfalls
 
 1. **Using raw HTML elements**: Never use `<button>`, `<input>`, `<select>`, etc. - ALWAYS use shadcn components from `@/components/ui/`
@@ -831,3 +860,5 @@ After each testing session, ensure:
 10. **Skipping testing**: ALWAYS test features with Playwright MCP after implementation - do not skip this step
 11. **Uncommitted changes**: ALWAYS commit changes after testing - leaving uncommitted work is not acceptable
 12. **Not updating progress**: ALWAYS update both `feature_list.json` and `claude-progress.md` after testing
+13. **Missing high-risk PR checklist items**: High-risk PRs fail CI unless all 3 required checkbox lines are checked in PR body
+14. **Assuming push and PR diff behavior is identical**: Use SHA-aware detection logic for push events to avoid empty-diff test/risk skips
