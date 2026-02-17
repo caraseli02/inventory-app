@@ -617,5 +617,20 @@
     "noCategoryProducts": "No hay productos en esta categoría",
     "loadMore": "Cargar Más",
     "remaining": "restantes"
+  },
+  "pwa": {
+    "updateTitle": "Actualización disponible",
+    "updateDescription": "Hay una versión nueva de la app lista. Actualiza ahora para usar los cambios más recientes.",
+    "updateNow": "Actualizar ahora",
+    "updateLater": "Más tarde",
+    "updating": "Actualizando...",
+    "updateFailedTitle": "Falló la actualización",
+    "updateFailedDescription": "No se pudo aplicar la actualización. Inténtalo de nuevo.",
+    "resetAction": "Restablecer caché",
+    "resetting": "Restableciendo...",
+    "resetSuccessTitle": "Caché restablecida",
+    "resetSuccessDescription": "Recargando la última versión...",
+    "resetFailedTitle": "Falló el restablecimiento",
+    "resetFailedDescription": "No se pudo limpiar la caché de la app. Inténtalo de nuevo."
   }
 }

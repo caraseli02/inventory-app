@@ -618,6 +618,21 @@
     "loadMore": "Load More",
     "remaining": "remaining"
   },
+  "pwa": {
+    "updateTitle": "Update available",
+    "updateDescription": "A newer version of the app is ready. Update now to use the latest changes.",
+    "updateNow": "Update now",
+    "updateLater": "Later",
+    "updating": "Updating...",
+    "updateFailedTitle": "Update failed",
+    "updateFailedDescription": "Could not apply the update. Try again in a moment.",
+    "resetAction": "Reset cache",
+    "resetting": "Resetting...",
+    "resetSuccessTitle": "Cache reset complete",
+    "resetSuccessDescription": "Reloading the latest version...",
+    "resetFailedTitle": "Cache reset failed",
+    "resetFailedDescription": "Could not clear app cache. Please try again."
+  },
   "productHistory": {
     "title": "Audit Log (Source of Truth)",
     "loading": "Loading history...",
