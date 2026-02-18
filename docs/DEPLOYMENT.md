@@ -197,9 +197,20 @@ After deploying, verify:
 
 **Symptoms:** Console shows "Loading chunk X failed"
 
-**Fix:** Clear browser cache and service worker, reload page.
+**Fix:** Use in-app recovery first, then manual clear:
+1. If shown, tap the app's **Update available** modal -> **Update now**
+2. If app still looks stale, tap header action **Reset cache**
+3. Reopen the app and verify latest build
 
 **See:** [TROUBLESHOOTING.md - PWA Issues](./TROUBLESHOOTING.md#pwa--service-worker-issues)
+
+### iOS Latest-Build Verification (Safari + Installed PWA)
+
+After each production deploy:
+1. Open app in Safari on iPad and wait for update modal.
+2. Tap **Update now** and confirm UI changes from current release.
+3. Open the installed home-screen app and repeat.
+4. If either instance stays stale, use **Reset cache** once and retest.
 
 ### Scanner Not Working
 

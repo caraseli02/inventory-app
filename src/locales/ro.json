@@ -617,5 +617,20 @@
     "noCategoryProducts": "Nu există produse în această categorie",
     "loadMore": "Încarcă Mai Mult",
     "remaining": "rămase"
+  },
+  "pwa": {
+    "updateTitle": "Actualizare disponibilă",
+    "updateDescription": "O versiune nouă a aplicației este gata. Actualizează acum pentru ultimele schimbări.",
+    "updateNow": "Actualizează acum",
+    "updateLater": "Mai târziu",
+    "updating": "Se actualizează...",
+    "updateFailedTitle": "Actualizarea a eșuat",
+    "updateFailedDescription": "Nu am putut aplica actualizarea. Încearcă din nou.",
+    "resetAction": "Resetează cache",
+    "resetting": "Se resetează...",
+    "resetSuccessTitle": "Cache resetat",
+    "resetSuccessDescription": "Se reîncarcă ultima versiune...",
+    "resetFailedTitle": "Resetarea cache a eșuat",
+    "resetFailedDescription": "Nu am putut șterge cache-ul aplicației. Încearcă din nou."
   }
 }

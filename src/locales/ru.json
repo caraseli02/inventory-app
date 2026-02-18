@@ -617,5 +617,20 @@
     "noCategoryProducts": "Нет товаров в этой категории",
     "loadMore": "Загрузить Ещё",
     "remaining": "осталось"
+  },
+  "pwa": {
+    "updateTitle": "Доступно обновление",
+    "updateDescription": "Готова новая версия приложения. Обновите сейчас, чтобы получить последние изменения.",
+    "updateNow": "Обновить сейчас",
+    "updateLater": "Позже",
+    "updating": "Обновление...",
+    "updateFailedTitle": "Ошибка обновления",
+    "updateFailedDescription": "Не удалось применить обновление. Попробуйте снова.",
+    "resetAction": "Сбросить кэш",
+    "resetting": "Сброс...",
+    "resetSuccessTitle": "Кэш очищен",
+    "resetSuccessDescription": "Перезагрузка последней версии...",
+    "resetFailedTitle": "Сброс кэша не удался",
+    "resetFailedDescription": "Не удалось очистить кэш приложения. Попробуйте снова."
   }
 }
