@@ -18,6 +18,7 @@ import CameraCaptureDialog from '../camera/CameraCaptureDialog';
 import { Camera, Package, AlertTriangle } from 'lucide-react';
 
 type MarkupPercentage = 50 | 70 | 100;
+type AiStatus = 'idle' | 'loading' | 'found' | 'not_found' | 'error';
 
 interface CreateProductFormProps {
   barcode: string;
@@ -41,13 +42,21 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
   });
   const [nameError, setNameError] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [aiStatus, setAiStatus] = useState<AiStatus>('idle');
 
   useEffect(() => {
+    if (!barcode.trim()) {
+      return;
+    }
+
+    let isCancelled = false;
+
     const autoFill = async () => {
-      setAiLoading(true);
+      setAiStatus('loading');
       try {
         const suggestion = await suggestProductDetails(barcode);
+        if (isCancelled) return;
+
         if (suggestion) {
           setFormData(prev => ({
             ...prev,
@@ -55,19 +64,27 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
             category: suggestion.category || prev.category,
             imageUrl: suggestion.imageUrl || prev.imageUrl,
           }));
+          setAiStatus('found');
+        } else {
+          setAiStatus('not_found');
         }
       } catch (err) {
+        if (isCancelled) return;
         logger.warn('AI auto-fill failed during product creation', {
           barcode,
           errorMessage: err instanceof Error ? err.message : String(err),
           errorType: err instanceof Error ? err.constructor.name : typeof err,
           timestamp: new Date().toISOString(),
         });
-      } finally {
-        setAiLoading(false);
+        setAiStatus('error');
       }
     };
-    autoFill();
+
+    void autoFill();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [barcode]);
 
   // Calculate store price based on markup
@@ -179,6 +196,7 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
 
   // Check if form is valid for submission
   const isFormValid = formData.name.trim().length > 0;
+  const displayAiStatus: AiStatus = barcode.trim() ? aiStatus : 'idle';
 
   return (
     <Card className="w-full max-w-lg mx-auto animate-in slide-in-from-bottom-5 duration-300 shadow-lg border-2 border-stone-200 relative">
@@ -216,10 +234,25 @@ function CreateProductForm({ barcode, onSuccess, onCancel }: CreateProductFormPr
           <CardTitle className="text-lg sm:text-2xl font-bold text-stone-900">
             {t('product.createProduct')}
           </CardTitle>
-          {aiLoading && (
+          {displayAiStatus === 'loading' && (
             <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-2 border-amber-200 shadow-sm text-xs">
               <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mr-1.5"></span>
               {t('product.searching')}
+            </Badge>
+          )}
+          {displayAiStatus === 'found' && (
+            <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-2 border-emerald-200 shadow-sm text-xs">
+              {t('product.aiStatusFound', 'AI details found')}
+            </Badge>
+          )}
+          {displayAiStatus === 'not_found' && (
+            <Badge variant="secondary" className="bg-zinc-100 text-zinc-700 border-2 border-zinc-200 shadow-sm text-xs">
+              {t('product.aiStatusNotFound', 'No AI match, fill manually')}
+            </Badge>
+          )}
+          {displayAiStatus === 'error' && (
+            <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-2 border-amber-200 shadow-sm text-xs">
+              {t('product.aiStatusError', 'AI unavailable, fill manually')}
             </Badge>
           )}
         </div>
