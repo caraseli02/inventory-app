@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Barcode, Tag, Euro, Calendar, AlertTriangle, ArrowDownToLine, ArrowUpFromLine, Package as PackageIcon, Pencil, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -26,26 +27,46 @@ export const ProductDetailDialog = ({
   onEdit,
 }: ProductDetailDialogProps) => {
   const { t } = useTranslation();
+  const lastLoggedMovementsErrorRef = useRef<string | null>(null);
 
-  // Use React Query for stock movements - handles loading state automatically
-  const { data: movements = [], isLoading: loadingMovements } = useQuery({
+  const {
+    data: movements = [],
+    isLoading: loadingMovements,
+    isError: movementsHasError,
+    error: movementsError,
+    refetch: refetchMovements,
+    isFetching: isRefetchingMovements,
+  } = useQuery({
     queryKey: ['stockMovements', product?.id],
     queryFn: async () => {
       if (!product) return [];
-      try {
-        return await getStockMovements(product.id);
-      } catch (error) {
-        logger.error('Failed to fetch stock movements', {
-          productId: product.id,
-          errorMessage: error instanceof Error ? error.message : String(error),
-          errorStack: error instanceof Error ? error.stack : undefined,
-        });
-        return [];
-      }
+      return getStockMovements(product.id);
     },
     enabled: open && !!product,
     staleTime: 1000 * 60, // 1 minute
+    retry: false,
   });
+
+  const movementsErrorMessage = movementsError instanceof Error
+    ? movementsError.message
+    : t('dialogs.productDetail.movementsLoadFailed', 'Failed to load stock movements.');
+
+  useEffect(() => {
+    if (!movementsHasError || !product) {
+      lastLoggedMovementsErrorRef.current = null;
+      return;
+    }
+
+    const errorMessage = movementsError instanceof Error ? movementsError.message : String(movementsError);
+    if (lastLoggedMovementsErrorRef.current === errorMessage) return;
+
+    logger.error('Failed to fetch stock movements', {
+      productId: product.id,
+      errorMessage,
+      errorStack: movementsError instanceof Error ? movementsError.stack : undefined,
+    });
+    lastLoggedMovementsErrorRef.current = errorMessage;
+  }, [movementsHasError, movementsError, product]);
 
   if (!product) return null;
 
@@ -270,6 +291,47 @@ export const ProductDetailDialog = ({
                 <div className="flex justify-center py-8">
                   <Spinner size="md" label={t('dialogs.productDetail.loadingMovements')} />
                 </div>
+              ) : movementsHasError ? (
+                <Card className="border-red-200 bg-red-50/40">
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-red-800">
+                          {t('dialogs.productDetail.movementsLoadErrorTitle', 'Failed to load movement history')}
+                        </p>
+                        <p className="text-sm text-red-700 mt-1">
+                          {movementsErrorMessage}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        logger.warn('Retrying stock movement fetch after error', {
+                          productId: product.id,
+                          previousErrorMessage: movementsErrorMessage,
+                        });
+                        try {
+                          await refetchMovements();
+                        } catch (error) {
+                          logger.error('Stock movement retry failed', {
+                            productId: product.id,
+                            errorMessage: error instanceof Error ? error.message : String(error),
+                            errorStack: error instanceof Error ? error.stack : undefined,
+                          });
+                        }
+                      }}
+                      disabled={isRefetchingMovements}
+                      className="border-red-300 text-red-800 hover:bg-red-100"
+                    >
+                      {isRefetchingMovements
+                        ? t('common.loading', 'Loading...')
+                        : t('common.tryAgain', 'Try again')}
+                    </Button>
+                  </CardContent>
+                </Card>
               ) : movements.length > 0 ? (
                 <div className="space-y-2">
                   {movements.slice(0, 10).map((movement) => (
