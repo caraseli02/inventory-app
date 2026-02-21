@@ -1,4 +1,3 @@
-/* eslint-disable react-refresh/only-export-components */
 import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { useApp, useHostStyles } from '@modelcontextprotocol/ext-apps/react';
