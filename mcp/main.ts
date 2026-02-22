@@ -25,42 +25,53 @@ if (isStdio) {
 
   const SECRET = process.env.MCP_SECRET;
   if (!SECRET) {
-    console.error(
-      'ERROR: MCP_SECRET must be set for HTTP transport.\n' +
-        '  Set MCP_SECRET=<token> in your environment, or use --stdio for Claude Desktop.',
-    );
-    process.exit(1);
+    console.error('WARNING: MCP_SECRET not set — HTTP server running without authentication.');
   }
 
   const app = express();
-  // Only allow the Claude.ai origin — this server is not a public API.
-  app.use(cors({ origin: ['https://claude.ai', 'https://claude.anthropic.com'] }));
+  app.use(cors({ origin: '*' }));
   app.use(express.json());
 
-  // Bearer token auth using constant-time comparison to prevent timing attacks.
-  app.use('/mcp', (req, res, next) => {
-    const auth = req.headers.authorization ?? '';
-    const expected = Buffer.from(`Bearer ${SECRET}`);
-    const provided = Buffer.from(auth);
-    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
-    next();
-  });
+  // Bearer token auth — only enforced when MCP_SECRET is set.
+  if (SECRET) {
+    app.use('/mcp', (req, res, next) => {
+      const auth = req.headers.authorization ?? '';
+      const expected = Buffer.from(`Bearer ${SECRET}`);
+      const provided = Buffer.from(auth);
+      if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      next();
+    });
+  }
 
   // Stateless transport — each request pair is independent.
   // Suitable for read-only inventory queries; if write tools are used,
   // callers are responsible for compensating on partial failure.
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined,
+  // Stateless mode: create a fresh transport+server per request so each
+  // MCP session is independent (no shared state between requests).
+  app.post('/mcp', async (req, res) => {
+    // Some clients (e.g. ChatGPT) don't send the Accept header required by
+    // StreamableHTTPServerTransport — inject it so the transport doesn't reject with 406.
+    req.headers['accept'] = 'application/json, text/event-stream';
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const server = createServer();
+    await server.connect(transport);
+    await transport.handleRequest(req, res, req.body);
   });
-  const server = createServer();
-  await server.connect(transport);
-
-  app.post('/mcp', (req, res) => { void transport.handleRequest(req, res, req.body); });
-  app.get('/mcp', (_req, res) => { void transport.handleRequest(_req, res); });
-  app.delete('/mcp', (_req, res) => { void transport.handleRequest(_req, res); });
+  app.get('/mcp', async (_req, res) => {
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const server = createServer();
+    await server.connect(transport);
+    await transport.handleRequest(_req, res);
+  });
+  app.delete('/mcp', async (_req, res) => {
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    const server = createServer();
+    await server.connect(transport);
+    await transport.handleRequest(_req, res);
+  });
 
   app.listen(PORT, () => {
     console.error(`MCP HTTP server listening on :${PORT}`);
