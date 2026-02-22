@@ -42,11 +42,9 @@ async function getHtml(): Promise<string> {
   return htmlCache;
 }
 
-// Columns fetched from the product_stock view (aggregates stock_movements server-side).
-const PRODUCT_SELECT =
-  'id, name, barcode, category, price, supplier, min_stock_level, current_stock_level';
+const PRODUCT_SELECT = 'id, name, barcode, category, price, supplier, min_stock_level';
 
-interface ProductStockRow {
+interface ProductRow {
   id: string;
   name: string;
   barcode: string | null;
@@ -54,6 +52,23 @@ interface ProductStockRow {
   price: number | null;
   supplier: string | null;
   min_stock_level: number | null;
+}
+
+interface MovementRow {
+  product_id: string;
+  quantity: number;
+}
+
+// Calculate current stock for each product from movements — matches supabase-api.ts pattern.
+function calcStock(products: ProductRow[], movements: MovementRow[]): ProductStockRow[] {
+  const totals = new Map<string, number>();
+  for (const m of movements) {
+    totals.set(m.product_id, (totals.get(m.product_id) ?? 0) + m.quantity);
+  }
+  return products.map((p) => ({ ...p, current_stock_level: totals.get(p.id) ?? 0 }));
+}
+
+interface ProductStockRow extends ProductRow {
   current_stock_level: number;
 }
 
@@ -118,11 +133,19 @@ export function createServer(): McpServer {
       _meta: { ui: { resourceUri: PRODUCTS_URI } },
     },
     async ({ category, low_stock_only }) => {
-      const base = supabase.from('product_stock').select(PRODUCT_SELECT).limit(200);
+      const base = supabase.from('products').select(PRODUCT_SELECT).order('name').limit(200);
       const { data, error } = await (category ? base.eq('category', category) : base);
       if (error) throw new Error(`Products fetch failed: ${error.message}`);
 
-      let products = ((data ?? []) as ProductStockRow[]).map(mapRow);
+      const rows = (data ?? []) as ProductRow[];
+      const ids = rows.map((r) => r.id);
+      const { data: mvData, error: mvError } = await supabase
+        .from('stock_movements')
+        .select('product_id, quantity')
+        .in('product_id', ids);
+      if (mvError) throw new Error(`Stock fetch failed: ${mvError.message}`);
+
+      let products = calcStock(rows, (mvData ?? []) as MovementRow[]).map(mapRow);
       if (low_stock_only) {
         products = products.filter((p) => p.minStock != null && p.currentStock <= p.minStock);
       }
@@ -149,15 +172,24 @@ export function createServer(): McpServer {
     },
     async ({ name }) => {
       const { data, error } = await supabase
-        .from('product_stock')
+        .from('products')
         .select(PRODUCT_SELECT)
         .ilike('name', `%${name}%`)
         .limit(50);
       if (error) throw new Error(`Name search failed: ${error.message}`);
+
+      const rows = (data ?? []) as ProductRow[];
+      const ids = rows.map((r) => r.id);
+      const { data: mvData, error: mvError } = await supabase
+        .from('stock_movements')
+        .select('product_id, quantity')
+        .in('product_id', ids);
+      if (mvError) throw new Error(`Stock fetch failed: ${mvError.message}`);
+
       return jsonContent({
         tool: 'find_product_by_name',
         query: name,
-        products: ((data ?? []) as ProductStockRow[]).map(mapRow),
+        products: calcStock(rows, (mvData ?? []) as MovementRow[]).map(mapRow),
       });
     },
   );
@@ -177,15 +209,25 @@ export function createServer(): McpServer {
     },
     async ({ barcode }) => {
       const { data, error } = await supabase
-        .from('product_stock')
+        .from('products')
         .select(PRODUCT_SELECT)
         .eq('barcode', barcode)
         .maybeSingle();
       if (error) throw new Error(`Barcode lookup failed: ${error.message}`);
+
+      if (!data) return jsonContent({ tool: 'find_product_by_barcode', query: barcode, products: [] });
+
+      const row = data as ProductRow;
+      const { data: mvData, error: mvError } = await supabase
+        .from('stock_movements')
+        .select('product_id, quantity')
+        .eq('product_id', row.id);
+      if (mvError) throw new Error(`Stock fetch failed: ${mvError.message}`);
+
       return jsonContent({
         tool: 'find_product_by_barcode',
         query: barcode,
-        products: data ? [mapRow(data as ProductStockRow)] : [],
+        products: calcStock([row], (mvData ?? []) as MovementRow[]).map(mapRow),
       });
     },
   );
