@@ -23,4 +23,12 @@ export default defineConfig([
       },
     },
   },
+  // mcp/ is a Node.js server entry point, not a Vite HMR module.
+  // react-refresh rules don't apply here.
+  {
+    files: ['mcp/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])

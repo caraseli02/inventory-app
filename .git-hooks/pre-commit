@@ -9,4 +9,4 @@ if [ -f "$SIMPLE_GIT_HOOKS_RC" ]; then
     . "$SIMPLE_GIT_HOOKS_RC"
 fi
 
-pnpm validate-docs && CI=true pnpm test:e2e
+pnpm validate-docs && pnpm typecheck && pnpm lint && CI=true pnpm test:e2e
