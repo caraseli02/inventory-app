@@ -8,10 +8,10 @@ import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DIST_DIR = path.join(__dirname, 'dist');
+// Use process.cwd() so the path works both locally (inventory-app/) and in
+// Vercel functions (/var/task/) where __dirname-based resolution breaks.
+const DIST_DIR = path.join(process.cwd(), 'mcp', 'dist');
 
 const PRODUCTS_URI = 'ui://inventory/products-table.html';
 const PRODUCT_CARD_URI = 'ui://inventory/product-card.html';
