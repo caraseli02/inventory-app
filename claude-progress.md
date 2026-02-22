@@ -24,11 +24,11 @@ This document tracks the implementation and testing status of all features in th
 - ✅ Orders API + types
 - ✅ OrdersPage (owner UI)
 - ✅ WhatsApp webhook + Claude AI loop (`api/whatsapp.ts`)
-- ⏳ #120 Apply Supabase migration (blocker)
-- ⏳ #121 Meta setup + Vercel env vars (blocker)
-- ⏳ #122 Real-time order updates (Supabase Realtime)
-- ⏳ #123 WhatsApp reply on confirm/cancel
-- ⏳ #124 Store info config (name, address, hours)
+- ⏳ #123 Apply Supabase migration (blocker)
+- ⏳ #124 Meta setup + Vercel env vars (blocker)
+- ⏳ #120 Real-time order updates (Supabase Realtime)
+- ⏳ #121 WhatsApp reply on confirm/cancel
+- ⏳ #122 Store info config (name, address, hours)
 
 ---
 

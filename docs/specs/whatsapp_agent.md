@@ -318,11 +318,11 @@ Rules:
 - `api/whatsapp.ts` — Vercel webhook: Meta verification + Claude Haiku AI loop + order creation
 
 ### Remaining (GitHub Issues)
-- [ ] **#120** Apply Supabase migration (P0 blocker — 5min setup)
-- [ ] **#121** Configure Meta WhatsApp Cloud API + Vercel env vars (P0 blocker — 30min setup)
-- [ ] **#122** OrdersPage real-time updates via Supabase Realtime (P1 — 30min)
-- [ ] **#123** WhatsApp reply to customer on owner confirm/cancel (P1 — 1h)
-- [ ] **#124** Store info config (name, address, hours) in env vars (P1 — 30min)
+- [ ] **#123** Apply Supabase migration (P0 blocker — 5min setup)
+- [ ] **#124** Configure Meta WhatsApp Cloud API + Vercel env vars (P0 blocker — 30min setup)
+- [ ] **#120** OrdersPage real-time updates via Supabase Realtime (P1 — 30min)
+- [ ] **#121** WhatsApp reply to customer on owner confirm/cancel (P1 — 1h)
+- [ ] **#122** Store info config (name, address, hours) in env vars (P1 — 30min)
 
 ---
 
