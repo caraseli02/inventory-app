@@ -1,9 +1,9 @@
 # Feature: WhatsApp AI Agent for Customer Q&A & Pickup Orders
 
-**Version**: 0.1.1 (draft)
-**Status**: NOT_STARTED
+**Version**: 0.2.0
+**Status**: IN_PROGRESS
 **Owner**: TBD
-**Last Updated**: 2026-02-20
+**Last Updated**: 2026-02-22
 **Dependencies**: [stock_management.md], [product_management.md], [checkout_flow.md]
 
 ---
@@ -308,7 +308,30 @@ Rules:
 
 ---
 
+## Implementation Status
+
+### Done ✅
+- `supabase/migrations/20260220000000_create_orders_tables.sql` — orders + conversation_history tables
+- `src/types/orders.ts` — Order, OrderItem, CreateOrderInput types
+- `src/lib/orders-api.ts` — CRUD: createOrder, confirmOrder (deducts stock), cancelOrder, getOrders
+- `src/pages/OrdersPage.tsx` — owner view: list orders, confirm/cancel actions
+- `api/whatsapp.ts` — Vercel webhook: Meta verification + Claude Haiku AI loop + order creation
+
+### Remaining (GitHub Issues)
+- [ ] **#120** Apply Supabase migration (P0 blocker — 5min setup)
+- [ ] **#121** Configure Meta WhatsApp Cloud API + Vercel env vars (P0 blocker — 30min setup)
+- [ ] **#122** OrdersPage real-time updates via Supabase Realtime (P1 — 30min)
+- [ ] **#123** WhatsApp reply to customer on owner confirm/cancel (P1 — 1h)
+- [ ] **#124** Store info config (name, address, hours) in env vars (P1 — 30min)
+
+---
+
 ## Changelog
+
+### 0.2.0 (2026-02-22)
+- Status → IN_PROGRESS
+- Implemented: DB migration, types, orders API, OrdersPage, WhatsApp webhook with Claude AI loop
+- Documented remaining work as GitHub issues #120–#124
 
 ### 0.1.1 (2026-02-20)
 - Resolved open question: stock deducts on owner confirmation only (R06b)

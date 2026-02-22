@@ -1,23 +1,34 @@
 # Inventory App - Project Progress Tracker
 
-**Last Updated**: 2026-02-06
-**Project Status**: 🚀 MVP Complete - Post-MVP Phase + Enhancements
-**Overall Completion**: 82% (23/28 features implemented)
+**Last Updated**: 2026-02-22
+**Project Status**: 🚀 MVP Complete - Post-MVP Phase + WhatsApp AI Agent in progress
+**Overall Completion**: 75% (23/30 features implemented — 7 remaining incl. F030 partial)
 
 ---
 
 ## Executive Summary
 
-This document tracks the implementation and testing status of all features in the Inventory App project. The project has successfully completed its MVP phase with all 15 MVP-critical features implemented and 21 features tested.
+This document tracks the implementation and testing status of all features in the Inventory App project. The project has successfully completed its MVP phase with all 15 MVP-critical features implemented. Active work is now on the WhatsApp AI Agent (F030).
 
 ### Key Metrics
 
-- **Total Features**: 28
-- **Implemented**: 23 (82%)
-- **Tested**: 21 (75%)
+- **Total Features**: 30
+- **Implemented**: 23 (77%)
+- **Tested**: 21 (70%)
 - **MVP-Critical Features**: 15/15 (100% complete ✅)
 - **Phase-1 Features**: 8/8 (100% complete ✅)
-- **Post-MVP Features**: 0/5 (0% complete)
+- **Post-MVP Features**: F030 IN_PROGRESS (4/9 steps done)
+
+### WhatsApp Agent (F030) — Active Branch: feat/whatsapp-agent
+- ✅ DB migration (orders + conversation_history tables)
+- ✅ Orders API + types
+- ✅ OrdersPage (owner UI)
+- ✅ WhatsApp webhook + Claude AI loop (`api/whatsapp.ts`)
+- ⏳ #120 Apply Supabase migration (blocker)
+- ⏳ #121 Meta setup + Vercel env vars (blocker)
+- ⏳ #122 Real-time order updates (Supabase Realtime)
+- ⏳ #123 WhatsApp reply on confirm/cancel
+- ⏳ #124 Store info config (name, address, hours)
 
 ---
 
