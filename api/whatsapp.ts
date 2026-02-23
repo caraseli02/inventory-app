@@ -47,6 +47,17 @@ interface ProductRow {
   id: string;
   name: string;
   price: number | null;
+  price_50: number | null;
+  price_70: number | null;
+  price_100: number | null;
+  markup: number | null;
+}
+
+function getStorePrice(p: ProductRow): number | null {
+  const tier = (p.markup as 50 | 70 | 100) || 70;
+  if (tier === 50) return p.price_50 ?? p.price;
+  if (tier === 100) return p.price_100 ?? p.price;
+  return p.price_70 ?? p.price; // default 70%
 }
 
 interface MovementRow {
@@ -171,7 +182,7 @@ REGULI:
 
 async function getInventorySummary(sb: ReturnType<typeof createClient>): Promise<string> {
   const [{ data: products }, { data: movements }] = await Promise.all([
-    sb.from('products').select('id, name, price').limit(200),
+    sb.from('products').select('id, name, price, price_50, price_70, price_100, markup').limit(200),
     sb.from('stock_movements').select('product_id, quantity'),
   ]);
 
@@ -185,7 +196,8 @@ async function getInventorySummary(sb: ReturnType<typeof createClient>): Promise
   return (products as ProductRow[])
     .map(p => {
       const stock = stockMap[p.id] ?? 0;
-      const price = p.price != null ? `€${p.price.toFixed(2)}` : 'preț nedefinit';
+      const storePrice = getStorePrice(p);
+      const price = storePrice != null ? `€${storePrice.toFixed(2)}` : 'preț nedefinit';
       const availability = stock > 0 ? `stoc: ${stock}` : 'indisponibil';
       return `• ${p.name} — ${price}, ${availability} [id:${p.id}]`;
     })
