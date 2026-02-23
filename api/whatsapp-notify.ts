@@ -11,12 +11,17 @@
  *   TWILIO_ACCOUNT_SID  — from Twilio Console (Account Info)
  *   TWILIO_AUTH_TOKEN   — from Twilio Console
  *   TWILIO_FROM_NUMBER  — with or without leading +, no "whatsapp:" prefix, e.g. "+14155238886"
- *   VITE_SUPABASE_URL
- *   VITE_SUPABASE_ANON_KEY
+ *   VITE_NOTIFY_SECRET  — shared secret checked against x-notify-secret header
+ *   SUPABASE_URL        — Supabase project URL (prefer non-VITE_ for serverless)
+ *   SUPABASE_ANON_KEY   — Supabase anon key (prefer non-VITE_ for serverless)
+ *   (fallback: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY if non-prefixed not set)
  *
  * Optional:
  *   STORE_NAME          — used in message text
  *   STORE_PHONE         — included in cancellation message
+ *
+ * Note: notification messages are sent in both Romanian and English since
+ * the customer's preferred language is not stored server-side.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -37,6 +42,14 @@ interface OrderRow {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
+  // Auth: verify shared secret sent by the React client
+  const secret = req.headers['x-notify-secret'];
+  const expectedSecret = process.env.VITE_NOTIFY_SECRET;
+  if (!expectedSecret || secret !== expectedSecret) {
+    console.warn('[whatsapp-notify] Unauthorized request — bad or missing x-notify-secret');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const { orderId, action } = req.body as NotifyBody;
   if (!orderId || !action) {
     return res.status(400).json({ error: 'orderId and action are required' });
@@ -52,8 +65,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const sb = createClient(
-    process.env.VITE_SUPABASE_URL ?? '',
-    process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
+    process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
+    process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
   );
 
   // Fetch order
@@ -79,10 +92,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Normalize numbers: env var stores digits only, Twilio needs "whatsapp:+..." format
-  const fromWa = `whatsapp:+${fromNumber.replace(/^\+/, '')}`;
-  const toWa   = `whatsapp:${o.customer_phone.startsWith('+') ? '' : '+'}${o.customer_phone}`;
+    const fromWa = `whatsapp:+${fromNumber.replace(/^\+/, '')}`;
+    const toWa   = `whatsapp:${o.customer_phone.startsWith('+') ? '' : '+'}${o.customer_phone}`;
 
-  await sendWhatsApp(accountSid, authToken, fromWa, toWa, message);
+    await sendWhatsApp(accountSid, authToken, fromWa, toWa, message);
     console.log(`[whatsapp-notify] Sent ${action} notification for ${o.order_number}`);
     return res.status(200).json({ ok: true, order_number: o.order_number });
   } catch (err) {
@@ -92,15 +105,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 // ─── Message templates ────────────────────────────────────────────────────────
+// Bilingual (RO + EN) because customer language preference is not stored server-side.
 
 function buildConfirmMessage(order: OrderRow, storeName: string): string {
   const pickup = order.pickup_time ? ` Te asteptam la ora ${order.pickup_time}.` : '';
-  return `Comanda ${order.order_number} a fost confirmata de ${storeName}!${pickup} Total: EUR${order.total_price.toFixed(2)}. Plata se face la magazin.`;
+  const pickupEn = order.pickup_time ? ` We'll have your order ready at ${order.pickup_time}.` : '';
+  return (
+    `Comanda ${order.order_number} a fost confirmata de ${storeName}!${pickup} Total: EUR${order.total_price.toFixed(2)}. Plata se face la magazin.\n` +
+    `Order ${order.order_number} confirmed by ${storeName}!${pickupEn} Total: EUR${order.total_price.toFixed(2)}. Payment at store.`
+  );
 }
 
 function buildCancelMessage(order: OrderRow, storeName: string, storePhone: string): string {
   const contact = storePhone ? ` Contacteaza-ne la ${storePhone} pentru detalii.` : '';
-  return `Ne pare rau, comanda ${order.order_number} de la ${storeName} nu poate fi procesata.${contact}`;
+  const contactEn = storePhone ? ` Contact us at ${storePhone} for details.` : '';
+  return (
+    `Ne pare rau, comanda ${order.order_number} de la ${storeName} nu poate fi procesata.${contact}\n` +
+    `Sorry, order ${order.order_number} from ${storeName} cannot be processed.${contactEn}`
+  );
 }
 
 // ─── Twilio REST helper ───────────────────────────────────────────────────────

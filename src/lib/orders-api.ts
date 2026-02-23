@@ -94,7 +94,10 @@ export const createOrder = async (input: CreateOrderInput): Promise<Order> => {
 /**
  * Confirm a pending order.
  * This is the ONLY place stock deduction happens (R06b).
- * Each order item triggers an OUT stock movement.
+ *
+ * Safety: status is set to 'confirmed' FIRST (with optimistic lock on status='pending')
+ * to prevent double-deduction on concurrent confirms. If stock deduction fails,
+ * status is reverted to 'pending' so the owner can retry.
  */
 export const confirmOrder = async (id: string): Promise<Order> => {
   // 1. Fetch order to get items
@@ -104,27 +107,43 @@ export const confirmOrder = async (id: string): Promise<Order> => {
     throw new Error(`Order ${order.order_number} is already ${order.status}`);
   }
 
-  // 2. Deduct stock for each item (OUT movement)
+  // 2. Set status = 'confirmed' FIRST (optimistic lock: .eq('status', 'pending'))
+  //    Prevents double-deduction if two concurrent confirms race.
+  const { data, error } = await db
+    .from('orders')
+    .update({ status: 'confirmed' })
+    .eq('id', id)
+    .eq('status', 'pending')
+    .select()
+    .single();
+
+  if (error || !data) {
+    // Another confirm won the race or a DB error — abort safely (no stock touched)
+    logger.error('Failed to mark order confirmed', { id, error: error?.message });
+    throw new Error(error?.message ?? `Order ${order.order_number} was already confirmed`);
+  }
+
+  // 3. Deduct stock for each item (OUT movement)
+  //    If this fails, revert status to pending so owner can retry.
   logger.info('Confirming order — deducting stock', {
     order_number: order.order_number,
     items: order.items,
   });
 
-  for (const item of order.items) {
-    await addStockMovement(item.product_id, item.qty, 'OUT');
-  }
-
-  // 3. Update order status to confirmed
-  const { data, error } = await db
-    .from('orders')
-    .update({ status: 'confirmed' })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    logger.error('Failed to confirm order', { id, error: error.message });
-    throw new Error(`Failed to confirm order: ${error.message}`);
+  try {
+    for (const item of order.items) {
+      await addStockMovement(item.product_id, item.qty, 'OUT');
+    }
+  } catch (stockErr) {
+    logger.error('Stock deduction failed — reverting order to pending', { id, stockErr });
+    await db
+      .from('orders')
+      .update({ status: 'pending' })
+      .eq('id', id)
+      .catch((revertErr: unknown) => {
+        logger.error('CRITICAL: failed to revert order status after stock error', { id, revertErr });
+      });
+    throw new Error(`Stock deduction failed: ${(stockErr as Error).message}. Order reverted to pending — please retry.`);
   }
 
   logger.info('Order confirmed', { order_number: order.order_number });
@@ -160,23 +179,3 @@ export const cancelOrder = async (id: string): Promise<Order> => {
   return data as Order;
 };
 
-// ─── Complete ─────────────────────────────────────────────────────────────────
-
-/**
- * Mark a confirmed order as completed (customer picked up).
- */
-export const completeOrder = async (id: string): Promise<Order> => {
-  const { data, error } = await db
-    .from('orders')
-    .update({ status: 'completed' })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    logger.error('Failed to complete order', { id, error: error.message });
-    throw new Error(`Failed to complete order: ${error.message}`);
-  }
-
-  return data as Order;
-};

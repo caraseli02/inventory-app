@@ -34,7 +34,10 @@ const FILTER_TABS: { label: string; value: OrderStatus | 'all' }[] = [
 function notifyCustomer(orderId: string, action: 'confirm' | 'cancel'): void {
   fetch('/api/whatsapp-notify', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-notify-secret': import.meta.env.VITE_NOTIFY_SECRET ?? '',
+    },
     body: JSON.stringify({ orderId, action }),
   }).catch(err => console.warn('[notify] failed to send customer notification:', err));
 }
@@ -190,9 +193,17 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
     staleTime: 1000 * 30,
   });
 
+  // Separate query for pending count — independent of active filter so the
+  // badge in the title always shows the real pending count regardless of tab.
+  const { data: pendingOrders } = useQuery({
+    queryKey: ['orders', 'pending'],
+    queryFn: () => getOrders('pending'),
+    staleTime: 1000 * 30,
+  });
+
   const hasError = !!error;
   const orders = rawOrders ?? [];
-  const pendingCount = orders.filter(o => o.status === 'pending').length;
+  const pendingCount = pendingOrders?.length ?? 0;
 
   return (
     <div className="flex flex-col h-full">

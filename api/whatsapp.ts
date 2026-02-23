@@ -7,8 +7,9 @@
  * Env vars required:
  *   TWILIO_AUTH_TOKEN      — from Twilio Console (used for signature validation)
  *   ANTHROPIC_API_KEY      — Claude API key
- *   VITE_SUPABASE_URL      — Supabase project URL
- *   VITE_SUPABASE_ANON_KEY — Supabase anon/publishable key
+ *   SUPABASE_URL           — Supabase project URL (prefer non-VITE_ for serverless)
+ *   SUPABASE_ANON_KEY      — Supabase anon key (prefer non-VITE_ for serverless)
+ *   (fallback: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY if non-prefixed not set)
  *
  * Optional (store info injected into agent system prompt):
  *   STORE_NAME             — e.g. "Magazinul Verde"
@@ -112,8 +113,8 @@ function twiml(message: string): string {
 
 async function buildReply(phone: string, name: string, text: string): Promise<string> {
   const sb = createClient(
-    process.env.VITE_SUPABASE_URL ?? '',
-    process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
+    process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
+    process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
   );
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -265,7 +266,7 @@ async function saveHistory(
   await sb
     .from('conversation_history')
     .upsert(
-      { phone_number: phone, messages: messages.slice(-40) },
+      { phone_number: phone, messages: messages.slice(-20) },
       { onConflict: 'phone_number' }
     );
 }
