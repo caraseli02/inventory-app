@@ -315,18 +315,35 @@ Rules:
 - `src/types/orders.ts` — Order, OrderItem, CreateOrderInput types
 - `src/lib/orders-api.ts` — CRUD: createOrder, confirmOrder (deducts stock), cancelOrder, getOrders
 - `src/pages/OrdersPage.tsx` — owner view: list orders, confirm/cancel actions
-- `api/whatsapp.ts` — Vercel webhook: Meta verification + Claude Haiku AI loop + order creation
+- `api/whatsapp.ts` — Vercel webhook: Twilio + Claude Haiku AI loop + order creation + store price fix
 
 ### Remaining (GitHub Issues)
-- [x] **#123** Apply Supabase migration (P0 blocker — done ✅)
-- [ ] **#124** Configure Meta WhatsApp Cloud API + Vercel env vars (P0 blocker — 30min setup)
-- [ ] **#120** OrdersPage real-time updates via Supabase Realtime (P1 — 30min)
-- [ ] **#121** WhatsApp reply to customer on owner confirm/cancel (P1 — 1h)
-- [ ] **#122** Store info config (name, address, hours) in env vars (P1 — 30min)
+
+#### P0 — Blockers
+- [x] **#123** Apply Supabase migration (done ✅)
+- [x] **#124** Configure Twilio sandbox + Vercel env vars (done ✅)
+
+#### P1 — Next up
+- [ ] **#120** OrdersPage real-time updates via Supabase Realtime (~30min)
+- [ ] **#121** WhatsApp reply to customer on owner confirm/cancel (~1h)
+- [ ] **#122** Store info config (STORE_NAME/ADDRESS/HOURS in Vercel env vars) (~30min)
+
+#### P2 — Quality & robustness
+- [ ] **#125** Validate Twilio request signature (security)
+- [ ] **#126** Avoid sending full inventory in every Claude prompt (performance)
+- [ ] **#127** Conversation history TTL / expiry (quality)
+- [ ] **#128** Suggest alternative products when item out of stock — R11 (UX)
 
 ---
 
 ## Changelog
+
+### 0.3.0 (2026-02-23)
+- Switched from Meta to Twilio (phone validation issues with Meta)
+- Fixed store price: now shows tier price (price_50/70/100) instead of purchase cost
+- End-to-end tested: ORD-001 created + cancelled successfully
+- Closed #123 (migration applied) and #124 (Twilio configured)
+- Added issues #125–#128 for security, performance, quality, UX improvements
 
 ### 0.2.0 (2026-02-22)
 - Status → IN_PROGRESS

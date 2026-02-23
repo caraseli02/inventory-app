@@ -23,12 +23,18 @@ This document tracks the implementation and testing status of all features in th
 - ✅ DB migration (orders + conversation_history tables)
 - ✅ Orders API + types
 - ✅ OrdersPage (owner UI)
-- ✅ WhatsApp webhook + Claude AI loop (`api/whatsapp.ts`)
+- ✅ WhatsApp webhook + Claude Haiku AI loop (`api/whatsapp.ts`)
 - ✅ #123 Apply Supabase migration (done)
-- ⏳ #124 Meta setup + Vercel env vars (blocker)
+- ✅ #124 Twilio sandbox + Vercel env vars configured (done)
+- ✅ End-to-end tested: ORD-001 created via WhatsApp, cancelled via OrdersPage
+- ✅ Store selling price fix (price_50/70/100 instead of purchase cost)
 - ⏳ #120 Real-time order updates (Supabase Realtime)
 - ⏳ #121 WhatsApp reply on confirm/cancel
 - ⏳ #122 Store info config (name, address, hours)
+- ⏳ #125 Twilio signature validation (security)
+- ⏳ #126 Avoid full inventory in every prompt (performance)
+- ⏳ #127 Conversation history TTL (quality)
+- ⏳ #128 Suggest alternatives for out-of-stock items (UX)
 
 ---
 
