@@ -10,7 +10,7 @@
  * Env vars required:
  *   TWILIO_ACCOUNT_SID  — from Twilio Console (Account Info)
  *   TWILIO_AUTH_TOKEN   — from Twilio Console
- *   TWILIO_FROM_NUMBER  — your Twilio WhatsApp number, e.g. "whatsapp:+14155238886"
+ *   TWILIO_FROM_NUMBER  — digits only, no + or whatsapp: prefix, e.g. "14155238886"
  *   VITE_SUPABASE_URL
  *   VITE_SUPABASE_ANON_KEY
  *
@@ -78,7 +78,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     : buildCancelMessage(o, storeName, storePhone);
 
   try {
-    await sendWhatsApp(accountSid, authToken, fromNumber, `whatsapp:${o.customer_phone}`, message);
+    // Normalize numbers: env var stores digits only, Twilio needs "whatsapp:+..." format
+  const fromWa = `whatsapp:+${fromNumber.replace(/^\+/, '')}`;
+  const toWa   = `whatsapp:${o.customer_phone.startsWith('+') ? '' : '+'}${o.customer_phone}`;
+
+  await sendWhatsApp(accountSid, authToken, fromWa, toWa, message);
     console.log(`[whatsapp-notify] Sent ${action} notification for ${o.order_number}`);
     return res.status(200).json({ ok: true, order_number: o.order_number });
   } catch (err) {
