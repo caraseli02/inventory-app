@@ -99,11 +99,14 @@ const FILTER_TABS: { label: string; value: OrderStatus | 'all' }[] = [
 
 /** Fire-and-forget — sends WhatsApp notification via serverless function */
 function notifyCustomer(orderId: string, action: 'confirm' | 'cancel'): void {
+  console.log('[notify] calling /api/whatsapp-notify', { orderId, action });
   fetch('/api/whatsapp-notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderId, action }),
-  }).catch(err => console.warn('[notify] failed to send customer notification:', err));
+  })
+    .then(r => console.log('[notify] response status:', r.status))
+    .catch(err => console.warn('[notify] failed:', err));
 }
 
 function OrderCard({ order }: { order: Order }) {
