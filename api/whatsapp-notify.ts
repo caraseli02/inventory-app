@@ -20,8 +20,9 @@
  *   STORE_NAME          — used in message text
  *   STORE_PHONE         — included in cancellation message
  *
- * Note: notification messages are sent in both Romanian and English since
- * the customer's preferred language is not stored server-side.
+ * Language detection: reads the last customer message from conversation_history.
+ * Cyrillic chars → Russian (RU), otherwise defaults to Spanish (ES).
+ * All messages are sent as bilingual: Romanian + detected second language.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -38,6 +39,8 @@ interface OrderRow {
   total_price: number;
   pickup_time: string | null;
 }
+
+type SecondLang = 'es' | 'ru';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -69,9 +72,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
   );
 
-  // Fetch order
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: order, error } = await (sb as any)
+  const db = sb as any;
+
+  // Fetch order
+  const { data: order, error } = await db
     .from('orders')
     .select('order_number, customer_phone, total_price, pickup_time')
     .eq('id', orderId)
@@ -83,12 +88,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const o = order as OrderRow;
+
+  // Detect customer language from their last message in conversation_history
+  const secondLang = await detectSecondLang(db, o.customer_phone);
+
   const storeName  = process.env.STORE_NAME  ?? 'magazinul nostru';
   const storePhone = process.env.STORE_PHONE ?? '';
 
   const message = action === 'confirm'
-    ? buildConfirmMessage(o, storeName)
-    : buildCancelMessage(o, storeName, storePhone);
+    ? buildConfirmMessage(o, storeName, secondLang)
+    : buildCancelMessage(o, storeName, storePhone, secondLang);
 
   try {
     // Normalize numbers: env var stores digits only, Twilio needs "whatsapp:+..." format
@@ -96,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const toWa   = `whatsapp:${o.customer_phone.startsWith('+') ? '' : '+'}${o.customer_phone}`;
 
     await sendWhatsApp(accountSid, authToken, fromWa, toWa, message);
-    console.log(`[whatsapp-notify] Sent ${action} notification for ${o.order_number}`);
+    console.log(`[whatsapp-notify] Sent ${action} notification for ${o.order_number} (lang: ro+${secondLang})`);
     return res.status(200).json({ ok: true, order_number: o.order_number });
   } catch (err) {
     console.error('[whatsapp-notify] Twilio send failed:', err);
@@ -104,24 +113,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 }
 
-// ─── Message templates ────────────────────────────────────────────────────────
-// Bilingual (RO + EN) because customer language preference is not stored server-side.
+// ─── Language detection ───────────────────────────────────────────────────────
 
-function buildConfirmMessage(order: OrderRow, storeName: string): string {
+/** Checks last customer message in conversation_history for Cyrillic chars.
+ *  Returns 'ru' if found, 'es' otherwise (default second language). */
+async function detectSecondLang(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  phone: string
+): Promise<SecondLang> {
+  const { data } = await db
+    .from('conversation_history')
+    .select('messages')
+    .eq('phone_number', phone)
+    .maybeSingle();
+
+  if (!data?.messages) return 'es';
+
+  const msgs = data.messages as Array<{ role: string; content: string }>;
+  const lastUserMsg = msgs.filter((m) => m.role === 'user').slice(-1)[0]?.content ?? '';
+  return /[\u0400-\u04FF]/.test(lastUserMsg) ? 'ru' : 'es';
+}
+
+// ─── Message templates ────────────────────────────────────────────────────────
+// Bilingual: Romanian + Spanish (default) or Romanian + Russian (detected).
+
+function buildConfirmMessage(order: OrderRow, storeName: string, lang: SecondLang): string {
   const pickup = order.pickup_time ? ` Te asteptam la ora ${order.pickup_time}.` : '';
-  const pickupEn = order.pickup_time ? ` We'll have your order ready at ${order.pickup_time}.` : '';
+  const total = order.total_price.toFixed(2);
+
+  const second = lang === 'ru'
+    ? `Заказ ${order.order_number} подтверждён магазином ${storeName}!${order.pickup_time ? ` Ждём вас в ${order.pickup_time}.` : ''} Итого: EUR${total}. Оплата в магазине.`
+    : `Pedido ${order.order_number} confirmado por ${storeName}!${order.pickup_time ? ` Le esperamos a las ${order.pickup_time}.` : ''} Total: EUR${total}. Pago en tienda.`;
+
   return (
-    `Comanda ${order.order_number} a fost confirmata de ${storeName}!${pickup} Total: EUR${order.total_price.toFixed(2)}. Plata se face la magazin.\n` +
-    `Order ${order.order_number} confirmed by ${storeName}!${pickupEn} Total: EUR${order.total_price.toFixed(2)}. Payment at store.`
+    `Comanda ${order.order_number} a fost confirmata de ${storeName}!${pickup} Total: EUR${total}. Plata se face la magazin.\n` +
+    second
   );
 }
 
-function buildCancelMessage(order: OrderRow, storeName: string, storePhone: string): string {
+function buildCancelMessage(order: OrderRow, storeName: string, storePhone: string, lang: SecondLang): string {
   const contact = storePhone ? ` Contacteaza-ne la ${storePhone} pentru detalii.` : '';
-  const contactEn = storePhone ? ` Contact us at ${storePhone} for details.` : '';
+
+  const second = lang === 'ru'
+    ? `К сожалению, заказ ${order.order_number} от ${storeName} не может быть обработан.${storePhone ? ` Свяжитесь с нами по номеру ${storePhone}.` : ''}`
+    : `Lo sentimos, el pedido ${order.order_number} de ${storeName} no puede procesarse.${storePhone ? ` Contáctenos al ${storePhone}.` : ''}`;
+
   return (
     `Ne pare rau, comanda ${order.order_number} de la ${storeName} nu poate fi procesata.${contact}\n` +
-    `Sorry, order ${order.order_number} from ${storeName} cannot be processed.${contactEn}`
+    second
   );
 }
 
