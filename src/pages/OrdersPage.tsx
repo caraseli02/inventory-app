@@ -15,73 +15,6 @@ interface OrdersPageProps {
   onBack: () => void;
 }
 
-// ─── Mock data for visual testing (remove after migration is applied) ─────────
-const MOCK_ORDERS: Order[] = [
-  {
-    id: 'mock-1',
-    order_number: 'ORD-001',
-    customer_name: 'Ion Popescu',
-    customer_phone: '+40721234567',
-    items: [
-      { product_id: 'p1', name: 'Lapte Zuzu 3.5% 1L', qty: 2, unit_price: 1.20 },
-      { product_id: 'p2', name: 'Pâine albă 500g', qty: 1, unit_price: 0.85 },
-    ],
-    total_price: 3.25,
-    pickup_time: 'mâine pe la 10:00',
-    status: 'pending',
-    notes: null,
-    created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 min ago
-    updated_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-  },
-  {
-    id: 'mock-2',
-    order_number: 'ORD-002',
-    customer_name: 'Maria Constantin',
-    customer_phone: '+40731987654',
-    items: [
-      { product_id: 'p3', name: 'Ouă M 10 buc', qty: 2, unit_price: 2.50 },
-      { product_id: 'p4', name: 'Unt President 200g', qty: 1, unit_price: 3.10 },
-      { product_id: 'p5', name: 'Smântână 20% 400g', qty: 1, unit_price: 1.75 },
-    ],
-    total_price: 9.85,
-    pickup_time: 'azi după 17:00',
-    status: 'pending',
-    notes: 'Vă rog să verificați data de expirare la ouă',
-    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 min ago
-    updated_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-  },
-  {
-    id: 'mock-3',
-    order_number: 'ORD-003',
-    customer_name: 'Gheorghe Ionescu',
-    customer_phone: '+40741555333',
-    items: [
-      { product_id: 'p6', name: 'Apă minerală Borsec 2L', qty: 6, unit_price: 0.90 },
-    ],
-    total_price: 5.40,
-    pickup_time: 'vineri dimineață',
-    status: 'confirmed',
-    notes: null,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3h ago
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-  },
-  {
-    id: 'mock-4',
-    order_number: 'ORD-004',
-    customer_name: 'Ana Dumitrescu',
-    customer_phone: '+40752111222',
-    items: [
-      { product_id: 'p7', name: 'Cafea Jacobs 250g', qty: 1, unit_price: 8.50 },
-      { product_id: 'p8', name: 'Zahăr 1kg', qty: 2, unit_price: 1.30 },
-    ],
-    total_price: 11.10,
-    pickup_time: 'ieri',
-    status: 'completed',
-    notes: null,
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(), // yesterday
-    updated_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-];
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
   pending:   { label: 'Pending',   className: 'bg-amber-100 text-amber-800 border-amber-200' },
@@ -99,14 +32,11 @@ const FILTER_TABS: { label: string; value: OrderStatus | 'all' }[] = [
 
 /** Fire-and-forget — sends WhatsApp notification via serverless function */
 function notifyCustomer(orderId: string, action: 'confirm' | 'cancel'): void {
-  console.log('[notify] calling /api/whatsapp-notify', { orderId, action });
   fetch('/api/whatsapp-notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ orderId, action }),
-  })
-    .then(r => console.log('[notify] response status:', r.status))
-    .catch(err => console.warn('[notify] failed:', err));
+  }).catch(err => console.warn('[notify] failed to send customer notification:', err));
 }
 
 function OrderCard({ order }: { order: Order }) {
@@ -260,18 +190,9 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
     staleTime: 1000 * 30,
   });
 
-  // Fall back to mock data when migration hasn't been applied yet
   const hasError = !!error;
-  const useMock = hasError || (!isLoading && rawOrders?.length === 0 && !hasError);
-  const allOrders = useMock
-    ? MOCK_ORDERS
-    : (rawOrders ?? []);
-
-  const orders = activeFilter === 'all'
-    ? allOrders
-    : allOrders.filter(o => o.status === activeFilter);
-
-  const pendingCount = allOrders.filter(o => o.status === 'pending').length;
+  const orders = rawOrders ?? [];
+  const pendingCount = orders.filter(o => o.status === 'pending').length;
 
   return (
     <div className="flex flex-col h-full">
@@ -279,13 +200,6 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
         title={pendingCount > 0 && activeFilter !== 'pending' ? `Pickup Orders (${pendingCount} pending)` : 'Pickup Orders'}
         onBack={onBack}
       />
-
-      {/* Demo mode banner */}
-      {useMock && (
-        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-700 text-center font-medium">
-          Demo data — apply Supabase migration to connect live orders
-        </div>
-      )}
 
       {/* Filter tabs */}
       <div className="flex gap-1 px-4 py-3 border-b border-stone-200 bg-white overflow-x-auto">
@@ -314,7 +228,7 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
           </div>
         )}
 
-        {hasError && !useMock && (
+        {hasError && (
           <div className="text-center py-12 space-y-3">
             <p className="text-stone-500">Failed to load orders</p>
             <Button variant="outline" size="sm" onClick={() => { void (refetchOrders as () => void)(); }}>Try again</Button>
