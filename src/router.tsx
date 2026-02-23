@@ -13,6 +13,7 @@ const HomePage = lazyWithRetry(() => import('@/pages/HomePage'));
 const ScanPage = lazyWithRetry(() => import('@/pages/ScanPage'));
 const CheckoutPage = lazyWithRetry(() => import('@/pages/CheckoutPage'));
 const InventoryListPage = lazyWithRetry(() => import('@/pages/InventoryListPage'));
+const OrdersPage = lazyWithRetry(() => import('@/pages/OrdersPage'));
 
 const LoadingFallback = ({ label }: { label: string }) => (
   <div className="flex items-center justify-center min-h-[400px]">
@@ -59,6 +60,18 @@ function InventoryRoute() {
   );
 }
 
+function OrdersRoute() {
+  const navigate = useNavigate();
+
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback label="Loading orders..." />}>
+        <OrdersPage onBack={() => navigate('/')} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -78,6 +91,7 @@ export const router = createBrowserRouter([
       { path: 'manage', element: <ManageRoute /> },
       { path: 'checkout', element: <CheckoutRoute /> },
       { path: 'inventory', element: <InventoryRoute /> },
+      { path: 'orders', element: <OrdersRoute /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
