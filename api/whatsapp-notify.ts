@@ -10,7 +10,7 @@
  * Env vars required:
  *   TWILIO_ACCOUNT_SID  — from Twilio Console (Account Info)
  *   TWILIO_AUTH_TOKEN   — from Twilio Console
- *   TWILIO_FROM_NUMBER  — digits only, no + or whatsapp: prefix, e.g. "14155238886"
+ *   TWILIO_FROM_NUMBER  — with or without leading +, no "whatsapp:" prefix, e.g. "+14155238886"
  *   VITE_SUPABASE_URL
  *   VITE_SUPABASE_ANON_KEY
  *
