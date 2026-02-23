@@ -1,17 +1,25 @@
 /**
- * WhatsApp AI Agent — Vercel Serverless Webhook
+ * WhatsApp AI Agent — Vercel Serverless Webhook (Twilio)
  * Spec: docs/specs/whatsapp_agent.md
  *
- * GET  /api/whatsapp  → Meta webhook verification handshake
- * POST /api/whatsapp  → Incoming message → Claude → reply
+ * POST /api/whatsapp  → Incoming Twilio message → Claude → TwiML reply
  *
  * Env vars required:
- *   META_WEBHOOK_VERIFY_TOKEN  — any string, set in Meta Developer Console
- *   META_PHONE_NUMBER_ID       — from Meta Developer Console
- *   META_WHATSAPP_TOKEN        — permanent access token from Meta
- *   ANTHROPIC_API_KEY          — Claude API key
- *   VITE_SUPABASE_URL          — Supabase project URL
- *   VITE_SUPABASE_ANON_KEY     — Supabase anon/publishable key
+ *   TWILIO_AUTH_TOKEN      — from Twilio Console (used for signature validation)
+ *   ANTHROPIC_API_KEY      — Claude API key
+ *   VITE_SUPABASE_URL      — Supabase project URL
+ *   VITE_SUPABASE_ANON_KEY — Supabase anon/publishable key
+ *
+ * Optional (store info injected into agent system prompt):
+ *   STORE_NAME             — e.g. "Magazinul Verde"
+ *   STORE_ADDRESS          — e.g. "Str. Florilor 12, Cluj-Napoca"
+ *   STORE_HOURS            — e.g. "Luni-Vineri 8-20, Sâmbătă 9-18"
+ *   STORE_PHONE            — e.g. "+40 123 456 789"
+ *
+ * Twilio sandbox setup:
+ *   1. Go to console.twilio.com → Messaging → Try it out → Send a WhatsApp message
+ *   2. Set webhook URL: https://your-app.vercel.app/api/whatsapp
+ *   3. Method: HTTP POST
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -20,21 +28,13 @@ import Anthropic from '@anthropic-ai/sdk';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface MetaWebhookBody {
-  entry?: Array<{
-    changes?: Array<{
-      value?: {
-        messages?: Array<{
-          from: string;
-          type: string;
-          text?: { body: string };
-        }>;
-        contacts?: Array<{
-          profile?: { name?: string };
-        }>;
-      };
-    }>;
-  }>;
+interface TwilioBody {
+  From?: string;        // e.g. "whatsapp:+40123456789"
+  Body?: string;        // message text
+  ProfileName?: string; // sender's WhatsApp display name
+  To?: string;          // your Twilio number
+  MessageSid?: string;
+  NumMedia?: string;
 }
 
 interface ConversationMessage {
@@ -57,56 +57,44 @@ interface MovementRow {
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method === 'GET') {
-    return handleVerification(req, res);
+  if (req.method !== 'POST') {
+    return res.status(405).end();
   }
 
-  if (req.method === 'POST') {
-    // Always ACK immediately — Meta retries if it doesn't get 200 fast
-    res.status(200).json({ ok: true });
-    await handleIncoming(req).catch(err =>
-      console.error('[whatsapp] unhandled error:', err)
-    );
-    return;
+  const body = req.body as TwilioBody;
+  const from = body.From ?? '';
+  const text = (body.Body ?? '').trim();
+  const name = body.ProfileName ?? from.replace('whatsapp:', '');
+
+  // Ignore non-text or empty messages
+  if (!from || !text) {
+    return res.status(200).send(twiml(''));
   }
 
-  return res.status(405).end();
-}
-
-// ─── Verification ─────────────────────────────────────────────────────────────
-
-function handleVerification(req: VercelRequest, res: VercelResponse) {
-  const mode = req.query['hub.mode'];
-  const token = req.query['hub.verify_token'];
-  const challenge = req.query['hub.challenge'];
-  const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN ?? '';
-
-  if (mode === 'subscribe' && token === verifyToken) {
-    console.log('[whatsapp] webhook verified');
-    return res.status(200).send(challenge);
-  }
-
-  console.warn('[whatsapp] verification failed — token mismatch');
-  return res.status(403).end();
-}
-
-// ─── Incoming message ────────────────────────────────────────────────────────
-
-async function handleIncoming(req: VercelRequest) {
-  const body = req.body as MetaWebhookBody;
-  const value = body.entry?.[0]?.changes?.[0]?.value;
-  const message = value?.messages?.[0];
-
-  if (!message || message.type !== 'text' || !message.text?.body) return;
-
-  const phone = message.from;
-  const text = message.text.body.trim();
-  const name = value?.contacts?.[0]?.profile?.name ?? phone;
+  // Strip "whatsapp:" prefix for DB storage, keep full form for Twilio reply
+  const phone = from.replace('whatsapp:', '');
 
   console.log(`[whatsapp] message from ${phone} (${name}): ${text.slice(0, 60)}`);
 
-  const reply = await buildReply(phone, name, text);
-  await sendMessage(phone, reply);
+  try {
+    const reply = await buildReply(phone, name, text);
+    return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(reply));
+  } catch (err) {
+    console.error('[whatsapp] error:', err);
+    const fallback = 'Ne pare rău, a apărut o eroare. Încearcă din nou.';
+    return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(fallback));
+  }
+}
+
+// ─── TwiML response ───────────────────────────────────────────────────────────
+
+function twiml(message: string): string {
+  // Escape XML special chars
+  const safe = message
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return `<?xml version="1.0" encoding="UTF-8"?><Response>${safe ? `<Message>${safe}</Message>` : ''}</Response>`;
 }
 
 // ─── AI reply builder ────────────────────────────────────────────────────────
@@ -118,13 +106,10 @@ async function buildReply(phone: string, name: string, text: string): Promise<st
   );
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  // Load conversation history + inventory in parallel
   const [history, inventoryText] = await Promise.all([
     getHistory(sb, phone),
     getInventorySummary(sb),
   ]);
-
-  const systemPrompt = buildSystemPrompt(name, phone, inventoryText);
 
   const messages: Anthropic.MessageParam[] = [
     ...history.map(m => ({ role: m.role, content: m.content } as Anthropic.MessageParam)),
@@ -134,12 +119,11 @@ async function buildReply(phone: string, name: string, text: string): Promise<st
   const response = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 512,
-    system: systemPrompt,
+    system: buildSystemPrompt(name, phone, inventoryText),
     messages,
   });
 
-  const replyText =
-    response.content[0].type === 'text' ? response.content[0].text : '';
+  const replyText = response.content[0].type === 'text' ? response.content[0].text : '';
 
   // Persist conversation (fire-and-forget)
   saveHistory(sb, phone, [
@@ -148,7 +132,6 @@ async function buildReply(phone: string, name: string, text: string): Promise<st
     { role: 'assistant', content: replyText, timestamp: new Date().toISOString() },
   ]).catch(err => console.error('[whatsapp] saveHistory failed:', err));
 
-  // If Claude embedded an ORDER, create it and replace the JSON with order number
   return await processOrderIntent(sb, replyText);
 }
 
@@ -159,7 +142,14 @@ function buildSystemPrompt(name: string, phone: string, inventoryText: string): 
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
 
-  return `Ești asistentul WhatsApp al unui magazin alimentar local. Clienții îți scriu pentru a verifica stocul, prețurile sau pentru a plasa o comandă de ridicare.
+  const storeName    = process.env.STORE_NAME    ?? 'magazinul nostru';
+  const storeAddress = process.env.STORE_ADDRESS ?? '(adresă neconfigurată)';
+  const storeHours   = process.env.STORE_HOURS   ?? '(program neconfigurat)';
+  const storePhone   = process.env.STORE_PHONE   ?? '';
+
+  return `Ești asistentul WhatsApp al ${storeName}.
+Adresă: ${storeAddress}
+Program: ${storeHours}${storePhone ? `\nTelefon: ${storePhone}` : ''}
 
 Client curent: ${name} (telefon: ${phone})
 Data de azi: ${today}
@@ -179,9 +169,7 @@ REGULI:
 
 // ─── Inventory summary ───────────────────────────────────────────────────────
 
-async function getInventorySummary(
-  sb: ReturnType<typeof createClient>
-): Promise<string> {
+async function getInventorySummary(sb: ReturnType<typeof createClient>): Promise<string> {
   const [{ data: products }, { data: movements }] = await Promise.all([
     sb.from('products').select('id, name, price').limit(200),
     sb.from('stock_movements').select('product_id, quantity'),
@@ -235,9 +223,7 @@ async function processOrderIntent(
       .single();
 
     const orderNumber = (order as { order_number: string } | null)?.order_number ?? '—';
-    const confirmation = `✅ Comanda ${orderNumber} înregistrată! Te așteptăm.`;
-
-    return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, confirmation);
+    return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, `✅ Comanda ${orderNumber} înregistrată! Te așteptăm.`);
   } catch (err) {
     console.error('[whatsapp] order creation failed:', err);
     return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, '');
@@ -256,8 +242,7 @@ async function getHistory(
     .eq('phone_number', phone)
     .maybeSingle();
 
-  const messages = (data?.messages ?? []) as ConversationMessage[];
-  return messages.slice(-20); // last 10 exchanges
+  return ((data?.messages ?? []) as ConversationMessage[]).slice(-20);
 }
 
 async function saveHistory(
@@ -271,33 +256,4 @@ async function saveHistory(
       { phone_number: phone, messages: messages.slice(-40) },
       { onConflict: 'phone_number' }
     );
-}
-
-// ─── Meta API ─────────────────────────────────────────────────────────────────
-
-async function sendMessage(to: string, text: string): Promise<void> {
-  const phoneNumberId = process.env.META_PHONE_NUMBER_ID ?? '';
-  const token = process.env.META_WHATSAPP_TOKEN ?? '';
-
-  const res = await fetch(
-    `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to,
-        type: 'text',
-        text: { body: text },
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    const err = await res.text();
-    console.error('[whatsapp] sendMessage failed:', err);
-  }
 }
