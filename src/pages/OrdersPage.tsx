@@ -97,6 +97,15 @@ const FILTER_TABS: { label: string; value: OrderStatus | 'all' }[] = [
   { label: 'Completed', value: 'completed' },
 ];
 
+/** Fire-and-forget — sends WhatsApp notification via serverless function */
+function notifyCustomer(orderId: string, action: 'confirm' | 'cancel'): void {
+  fetch('/api/whatsapp-notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ orderId, action }),
+  }).catch(err => console.warn('[notify] failed to send customer notification:', err));
+}
+
 function OrderCard({ order }: { order: Order }) {
   const [expanded, setExpanded] = useState(false);
   const { showToast } = useToast();
@@ -107,6 +116,7 @@ function OrderCard({ order }: { order: Order }) {
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       showToast('success', `Order ${updated.order_number} confirmed — stock deducted`);
+      notifyCustomer(order.id, 'confirm');
     },
     onError: (err: Error) => {
       showToast('error', err.message);
@@ -118,6 +128,7 @@ function OrderCard({ order }: { order: Order }) {
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       showToast('info', `Order ${updated.order_number} cancelled`);
+      notifyCustomer(order.id, 'cancel');
     },
     onError: (err: Error) => {
       showToast('error', err.message);
