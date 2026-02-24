@@ -72,6 +72,27 @@ Endpoints:
 - `GET /mcp` — SSE stream
 - `DELETE /mcp` — session teardown
 
+## Vercel (Remote MCP)
+
+This repo deploys an MCP endpoint on Vercel via `api/mcp.ts` + a rewrite (`/mcp` → `/api/mcp`).
+
+If `MCP_SECRET` is set in Vercel env vars, clients must send:
+
+```
+Authorization: Bearer <MCP_SECRET>
+```
+
+### Smoke Test
+
+```bash
+# Local server
+MCP_SECRET=your-secret MCP_PORT=3001 pnpm mcp:serve
+MCP_URL=http://localhost:3001/mcp MCP_SECRET=your-secret pnpm mcp:smoke
+
+# Vercel deployment
+MCP_URL=https://<your-app>.vercel.app/mcp MCP_SECRET=your-secret pnpm mcp:smoke
+```
+
 ## Architecture
 
 ```
