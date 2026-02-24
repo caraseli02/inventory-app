@@ -27,7 +27,8 @@
     "prepare": "simple-git-hooks",
     "mcp:build": "vite build --config mcp/vite.config.ts",
     "mcp:serve": "tsx mcp/main.ts",
-    "mcp:stdio": "tsx mcp/main.ts --stdio"
+    "mcp:stdio": "tsx mcp/main.ts --stdio",
+    "mcp:smoke": "tsx scripts/mcp-smoke-test.ts"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm validate-docs && pnpm typecheck && pnpm lint && CI=true pnpm test:e2e"

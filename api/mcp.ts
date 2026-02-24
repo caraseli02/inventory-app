@@ -22,6 +22,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const expected = Buffer.from(`Bearer ${SECRET}`);
     const provided = Buffer.from(auth);
     if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+      // Help MCP clients understand auth requirements.
+      res.setHeader('WWW-Authenticate', 'Bearer');
+      // Add minimal request metadata so Vercel logs can identify who is calling.
+      // Never log the secret or Authorization header value.
+      console.warn('MCP unauthorized request', {
+        method: req.method,
+        path: req.url,
+        ua: req.headers['user-agent'],
+        hasAuthorization: Boolean(req.headers.authorization),
+        ip: req.headers['x-forwarded-for'],
+      });
       res.status(401).json({ error: 'Unauthorized' });
       return;
     }
