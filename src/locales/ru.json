@@ -548,6 +548,15 @@
       "importFailedTitle": "Ошибка импорта",
       "extractionFailed": "Ошибка извлечения"
     },
+    "fx": {
+      "title": "Курс (MDL за EUR)",
+      "default": "По умолчанию ({{rate}})",
+      "manual": "Вручную",
+      "placeholder": "Введите курс",
+      "invalidRate": "Введите корректный положительный курс.",
+      "required": "Курс обязателен для продолжения импорта.",
+      "requiredHelp": "Введите выше корректный курс MDL за EUR."
+    },
     "preview": {
       "extracted": "Успешно извлечено {{count}} товаров",
       "supplier": "Поставщик:",

@@ -143,7 +143,8 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
   const [error, setError] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importErrors, setImportErrors] = useState<string[]>([]);
-  const [fxRate, setFxRate] = useState<number | null>(null);
+  const [fxRate, setFxRate] = useState<number | null>(19.5);
+  const [isFxManual, setIsFxManual] = useState(false);
   const [fxRateError, setFxRateError] = useState<string | null>(null);
   const [importActions, setImportActions] = useState<Record<string, ImportAction>>({});
   const [removedPreviewIds, setRemovedPreviewIds] = useState<Set<string>>(new Set());
@@ -161,7 +162,8 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     setError(null);
     setImportProgress({ current: 0, total: 0 });
     setImportErrors([]);
-    setFxRate(null);
+    setFxRate(19.5);
+    setIsFxManual(false);
     setFxRateError(null);
     setImportActions({});
     setRemovedPreviewIds(new Set());
@@ -198,12 +200,25 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
           setInvoiceData(result.data);
           setRawProducts(result.data.products);
           setRemovedPreviewIds(new Set());
-          setEditableProducts(result.data.products.map((product, index) => ({
-            ...product,
-            previewId: getPreviewId(product, index),
-            weightKg: product.weightKgCandidate ?? parseWeightKgFromProductName(product.name),
-            category: product.categorySuggestion ?? inferCategoryFromName(product.name),
-          })));
+          const resolvedFxRate = fxRate;
+          const isFxReadyNow = resolvedFxRate != null && Number.isFinite(resolvedFxRate) && resolvedFxRate > 0;
+          setEditableProducts(result.data.products.map((product, index) => {
+            const quantity = product.quantity;
+            const totalPrice = isFxReadyNow ? roundCurrency(product.totalPrice / resolvedFxRate) : product.totalPrice;
+            const unitPrice = isFxReadyNow
+              ? (quantity > 0 ? roundCurrency(totalPrice / quantity) : 0)
+              : product.unitPrice;
+
+            return {
+              ...product,
+              previewId: getPreviewId(product, index),
+              quantity,
+              unitPrice,
+              totalPrice,
+              weightKg: product.weightKgCandidate ?? parseWeightKgFromProductName(product.name),
+              category: product.categorySuggestion ?? inferCategoryFromName(product.name),
+            };
+          }));
         setImportActions({});
         setStep('preview');
       } else {
@@ -238,7 +253,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     } finally {
       setIsProcessing(false);
     }
-  }, [t]);
+  }, [fxRate, t]);
 
   useEffect(() => {
     if (!rawProducts.length) return;
@@ -424,6 +439,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
   );
 
   const handleFxRateChange = useCallback((value: string) => {
+    setIsFxManual(true);
     const parsed = Number(value);
     if (!Number.isFinite(parsed) || parsed <= 0) {
       setFxRate(null);
@@ -796,7 +812,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                     {t('invoiceUpload.fx.title', 'FX Rate (MDL per EUR)')}
                   </p>
                   <Badge variant="outline" className="text-xs">
-                    {t('invoiceUpload.fx.manual', 'Manual')}
+                    {isFxManual
+                      ? t('invoiceUpload.fx.manual', 'Manual')
+                      : t('invoiceUpload.fx.default', { rate: '19.5', defaultValue: 'Default ({{rate}})' })}
                   </Badge>
                 </div>
 

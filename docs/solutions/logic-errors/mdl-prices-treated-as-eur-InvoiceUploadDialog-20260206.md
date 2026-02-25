@@ -70,3 +70,7 @@ return {
 - [ ] Add a fixture PDF that OCR reliably parses for preview-level tests
 - [ ] Add a unit test for MDL→EUR conversion and total recompute logic
 - [ ] Add UI test for update/skip choices on matched items
+
+# Related
+
+- `docs/solutions/ui-bugs/fx-default-eur-preview-flicker-InvoiceUploadDialog-20260225.md`
