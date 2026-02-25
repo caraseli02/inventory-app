@@ -24,6 +24,7 @@
     "test:visual:update": "playwright test --config=playwright.visual.config.ts --update-snapshots",
     "test:visual:ui": "playwright test --config=playwright.visual.config.ts --ui",
     "validate-docs": "node scripts/validate-docs.js",
+    "check-root-files": "node scripts/check-root-files.js",
     "prepare": "simple-git-hooks",
     "mcp:build": "vite build --config mcp/vite.config.ts",
     "mcp:serve": "tsx mcp/main.ts",
@@ -31,7 +32,7 @@
     "mcp:smoke": "tsx scripts/mcp-smoke-test.ts"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm validate-docs && pnpm typecheck && pnpm lint && CI=true pnpm test:e2e"
+    "pre-commit": "pnpm check-root-files && pnpm validate-docs && pnpm typecheck && pnpm lint && CI=true pnpm test:e2e"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
