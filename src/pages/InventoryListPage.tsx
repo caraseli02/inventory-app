@@ -404,7 +404,9 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           if (importedBarcode) {
             existing = await getProductByBarcode(importedBarcode);
           }
-          if (!existing) {
+          // Skip name-based lookup when user explicitly chose 'create' — respects intent
+          // for KG vrac items that share a generic name but are distinct products.
+          if (!existing && importAction !== 'create') {
             existing = normalizedNameMap.get(normalizeName(imported.Name)) ?? null;
           }
           if (existing) {
