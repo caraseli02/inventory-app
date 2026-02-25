@@ -548,6 +548,15 @@
       "importFailedTitle": "Import eșuat",
       "extractionFailed": "Extragerea a eșuat"
     },
+    "fx": {
+      "title": "Curs valutar (MDL per EUR)",
+      "default": "Implicit ({{rate}})",
+      "manual": "Manual",
+      "placeholder": "Introdu cursul",
+      "invalidRate": "Introdu un curs pozitiv valid.",
+      "required": "Cursul valutar este necesar pentru a continua importul.",
+      "requiredHelp": "Introdu mai sus un curs valid MDL per EUR."
+    },
     "preview": {
       "extracted": "Au fost extrase cu succes {{count}} produse",
       "supplier": "Furnizor:",

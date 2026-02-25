@@ -548,6 +548,15 @@
       "importFailedTitle": "Importación fallida",
       "extractionFailed": "Extracción fallida"
     },
+    "fx": {
+      "title": "Tipo de cambio (MDL por EUR)",
+      "default": "Predeterminado ({{rate}})",
+      "manual": "Manual",
+      "placeholder": "Introduce el tipo",
+      "invalidRate": "Introduce un tipo válido y positivo.",
+      "required": "Se requiere tipo de cambio para continuar la importación.",
+      "requiredHelp": "Introduce arriba un tipo válido de MDL por EUR."
+    },
     "preview": {
       "extracted": "Se extrajeron correctamente {{count}} productos",
       "supplier": "Proveedor:",

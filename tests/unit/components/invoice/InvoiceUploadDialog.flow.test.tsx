@@ -91,8 +91,12 @@ describe('InvoiceUploadDialog flow', () => {
       expect(screen.getByText(/Successfully extracted 1 products/i)).toBeInTheDocument();
     });
 
+    expect(screen.queryByText(/LEI/i)).not.toBeInTheDocument();
+    expect(screen.getByText('€0.52')).toBeInTheDocument();
+    expect(screen.getByText('€1.03')).toBeInTheDocument();
+
     const fxInput = screen.getByPlaceholderText(/Enter rate/i);
-    fireEvent.change(fxInput, { target: { value: '19.5' } });
+    expect((fxInput as HTMLInputElement).value).toBe('19.5');
 
     const importButton = await screen.findByRole('button', { name: /Import 1 Products/i });
     expect(importButton).toBeEnabled();
@@ -118,6 +122,73 @@ describe('InvoiceUploadDialog flow', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Import Complete!/i)).toBeInTheDocument();
+    });
+  });
+
+  it('keeps removed preview rows removed when FX rate changes', async () => {
+    vi.mocked(extractInvoiceData).mockResolvedValue({
+      success: true,
+      data: {
+        products: [
+          {
+            rowId: 'row-1',
+            name: 'Invoice Test Product A',
+            quantity: 1,
+            unitPrice: 10,
+            totalPrice: 10,
+            barcode: '1234567890123',
+            weightKgCandidate: 0.5,
+          },
+          {
+            rowId: 'row-2',
+            name: 'Invoice Test Product B',
+            quantity: 1,
+            unitPrice: 10,
+            totalPrice: 10,
+            barcode: '1234567890124',
+            weightKgCandidate: 0.5,
+          },
+        ],
+        supplier: 'Test Supplier',
+        invoiceNumber: 'INV-101',
+        invoiceDate: '2026-02-17',
+        totalAmount: 20,
+      },
+    });
+
+    render(
+      <InvoiceUploadDialog
+        open
+        onOpenChange={vi.fn()}
+        onImport={vi.fn()}
+        products={[] as Product[]}
+      />
+    );
+
+    const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
+    const file = new File([new Blob(['%PDF-1.4'])], 'invoice.pdf', { type: 'application/pdf' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Successfully extracted 2 products/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Invoice Test Product A')).toBeInTheDocument();
+    expect(screen.getByText('Invoice Test Product B')).toBeInTheDocument();
+
+    const removeButtons = screen.getAllByTitle(/Remove product/i);
+    fireEvent.click(removeButtons[0]!);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Invoice Test Product A')).not.toBeInTheDocument();
+    });
+
+    const fxInput = screen.getByPlaceholderText(/Enter rate/i);
+    fireEvent.change(fxInput, { target: { value: '20' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Invoice Test Product A')).not.toBeInTheDocument();
+      expect(screen.getByText('Invoice Test Product B')).toBeInTheDocument();
     });
   });
 });

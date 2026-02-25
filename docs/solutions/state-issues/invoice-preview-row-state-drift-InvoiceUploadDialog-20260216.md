@@ -80,6 +80,7 @@ Also updated render/import paths to read and write actions via `product.previewI
 # Related
 
 - `docs/solutions/logic-errors/invoice-import-duplicates-and-missed-field-updates-InvoiceImport-20260212.md`
+- `docs/solutions/ui-bugs/fx-default-eur-preview-flicker-InvoiceUploadDialog-20260225.md`
 - `todos/013-complete-p2-import-action-index-shift.md`
 - `todos/014-complete-p2-removed-items-return-on-fx-change.md`
 - `todos/019-complete-p2-invoice-preview-total-currency-mislabeled.md`

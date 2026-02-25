@@ -548,6 +548,15 @@
       "importFailedTitle": "Import failed",
       "extractionFailed": "Extraction failed"
     },
+    "fx": {
+      "title": "FX Rate (MDL per EUR)",
+      "default": "Default ({{rate}})",
+      "manual": "Manual",
+      "placeholder": "Enter rate",
+      "invalidRate": "Enter a valid positive rate.",
+      "required": "FX rate required to continue import.",
+      "requiredHelp": "Enter a valid MDL per EUR rate above."
+    },
     "preview": {
       "extracted": "Successfully extracted {{count}} products",
       "supplier": "Supplier:",
