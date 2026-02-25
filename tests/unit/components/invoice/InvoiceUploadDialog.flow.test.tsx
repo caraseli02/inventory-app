@@ -103,7 +103,9 @@ describe('InvoiceUploadDialog flow', () => {
     fireEvent.click(importButton);
 
     await waitFor(() => {
-      expect(previewInvoicePricing).toHaveBeenCalledTimes(1);
+      // Preview pricing may run multiple times while preview state settles
+      // (preload + FX/default-action recalculation) and again on confirm import.
+      expect(vi.mocked(previewInvoicePricing).mock.calls.length).toBeGreaterThanOrEqual(2);
       expect(onImport).toHaveBeenCalledTimes(1);
     });
 

@@ -25,11 +25,13 @@ export interface ImportedProduct {
   minStock?: number;
   Supplier?: string;
   expiryDate?: string;
-  importAction?: 'create' | 'update' | 'skip';
+  importAction?: 'create' | 'update' | 'receive_stock' | 'skip';
   existingProductId?: string;
   imageUrl?: string;
   importSource?: 'xlsx' | 'invoice';
   invoiceRowId?: string;
+  invoiceSupplier?: string;
+  invoiceNumber?: string;
   weightKg?: number;
   invoiceLineTotal?: number;
 }

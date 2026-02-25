@@ -88,49 +88,49 @@ Keep component/backend separation (no direct Supabase calls in components):
 ## Implementation Tasks
 
 ### Phase 1: Idempotency helpers (Supabase)
-- [ ] Extend `addStockMovement` signature to accept optional `note`
+- [x] Extend `addStockMovement` signature to accept optional `note`
   - Files: `src/lib/api-provider.ts`, `src/lib/supabase-api.ts`, `src/types/index.ts` (StockMovement note parity)
   - Keep Airtable impl compiling (optional note ignored or threaded if easy).
-- [ ] Add helper: `src/lib/invoiceIdempotency.ts`
+- [x] Add helper: `src/lib/invoiceIdempotency.ts`
   - `buildInvoiceKey({ supplier, invoiceNumber })`
   - `buildInvoiceRowNote({ supplier, invoiceNumber, rowId })`
   - `getAlreadyImportedRowIds({ supplier, invoiceNumber }): Promise<Set<string>>`
     - Implementation: Supabase `stock_movements` query with `ilike('note', pattern)` + parse `row=…`.
 
 ### Phase 2: Preview defaults + “already imported” UI
-- [ ] In `src/components/invoice/InvoiceUploadDialog.tsx`
-  - [ ] Load `alreadyImportedRowIds` once invoice meta is available (supplier + invoice number).
-  - [ ] Compute per-row flags:
+- [x] In `src/components/invoice/InvoiceUploadDialog.tsx`
+  - [x] Load `alreadyImportedRowIds` once invoice meta is available (supplier + invoice number).
+  - [x] Compute per-row flags:
     - `isAlreadyImported`
     - `hasDiffs` (matched rows only)
-  - [ ] Default action logic:
+  - [x] Default action logic:
     - `skip` if already imported
     - `update` if matched + diffs
     - `receive_stock` if matched + no diffs
     - `create` if no match
-  - [ ] Add dropdown option “Receive stock” for matched rows
-  - [ ] Add visual label for already imported rows (badge + muted row style)
-  - [ ] “Import {{count}}” uses importable rows count (exclude `skip` + already imported)
-  - [ ] Ensure imported payload includes `invoiceRowId` + `invoice meta` needed to build notes downstream
+  - [x] Add dropdown option “Receive stock” for matched rows
+  - [x] Add visual label for already imported rows (badge + muted row style)
+  - [x] “Import {{count}}” uses importable rows count (exclude `skip` + already imported)
+  - [x] Ensure imported payload includes `invoiceRowId` + `invoice meta` needed to build notes downstream
 
 ### Phase 3: Import handler changes (write behavior)
-- [ ] In `src/pages/InventoryListPage.tsx` invoice import path:
-  - [ ] Respect `receive_stock` action: only add stock movement
-  - [ ] For `update`: only call `updateProduct` when diffs exist (avoid no-op updates)
-  - [ ] Add stock movement note for all invoice stock-ins (create/update/receive_stock)
-  - [ ] Add safety net: if “already imported” detected at import-time, force-skip row and report in toast summary
+- [x] In `src/pages/InventoryListPage.tsx` invoice import path:
+  - [x] Respect `receive_stock` action: only add stock movement
+  - [x] For `update`: only call `updateProduct` when diffs exist (avoid no-op updates)
+  - [x] Add stock movement note for all invoice stock-ins (create/update/receive_stock)
+  - [x] Add safety net: if “already imported” detected at import-time, force-skip row and report in toast summary
 
 ### Phase 4: i18n + messaging
-- [ ] Add missing `invoiceUpload.table.*` keys for new copy:
+- [x] Add missing `invoiceUpload.table.*` keys for new copy:
   - `receiveStock`, `alreadyImported`, `match` column labels if desired
   - Files: `src/locales/en.json`, `src/locales/ro.json`, `src/locales/ru.json`, `src/locales/es.json`
 
 ### Phase 5: Tests (Vitest)
-- [ ] Unit tests for:
+- [x] Unit tests for:
   - Note build/parse + escaping (`invoiceIdempotency.ts`)
   - Default action selection (match + diffs + alreadyImported matrix)
   - Diff detection tolerance + category guard
-- [ ] Suggested location: `src/lib/__tests__/invoiceIdempotency.test.ts` + `src/lib/__tests__/invoiceImportDiffs.test.ts`
+- [x] Suggested location: `src/lib/__tests__/invoiceIdempotency.test.ts` + `src/lib/__tests__/invoiceImportDiffs.test.ts`
 
 ## Acceptance Criteria
 - [ ] Re-uploading the same invoice (same `supplier + invoice #`) defaults already-imported rows to `Skip`.
@@ -162,4 +162,3 @@ Keep component/backend separation (no direct Supabase calls in components):
 - Current UI: `src/components/invoice/InvoiceUploadDialog.tsx`
 - Current import handler: `src/pages/InventoryListPage.tsx`
 - Supabase schema: `src/lib/database.types.ts` (`stock_movements.note`)
-

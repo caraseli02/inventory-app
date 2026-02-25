@@ -57,7 +57,12 @@ type CreateProduct = (data: CreateProductDTO) => Promise<Product>;
 type UpdateProduct = (productId: string, data: Partial<CreateProductDTO>) => Promise<Product>;
 type DeleteProduct = (productId: string) => Promise<void>;
 type GetAllProducts = () => Promise<Product[]>;
-type AddStockMovement = (productId: string, quantity: number, type: 'IN' | 'OUT') => Promise<StockMovement>;
+type AddStockMovement = (
+  productId: string,
+  quantity: number,
+  type: 'IN' | 'OUT',
+  note?: string
+) => Promise<StockMovement>;
 type GetStockMovements = (productId: string) => Promise<StockMovement[]>;
 
 // Lazy-loaded API functions
@@ -202,12 +207,12 @@ export const getAllProducts: GetAllProducts = async () => {
  * @returns Created stock movement record
  * @throws {Error} If API initialization fails or movement creation fails
  */
-export const addStockMovement: AddStockMovement = async (productId, quantity, type) => {
+export const addStockMovement: AddStockMovement = async (productId, quantity, type, note) => {
   await apiReady;
   if (!_addStockMovement) {
     throw new Error('addStockMovement function not available after initialization. This indicates a critical system error.');
   }
-  return _addStockMovement(productId, quantity, type);
+  return _addStockMovement(productId, quantity, type, note);
 };
 
 /**

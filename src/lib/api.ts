@@ -261,7 +261,13 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
  * // Remove 5 items from stock (stored as -5 internally)
  * await addStockMovement(product.id, 5, 'OUT');
  */
-export const addStockMovement = async (productId: string, quantity: number, type: 'IN' | 'OUT'): Promise<StockMovement> => {
+export const addStockMovement = async (
+  productId: string,
+  quantity: number,
+  type: 'IN' | 'OUT',
+  note?: string
+): Promise<StockMovement> => {
+  void note;
   // Validate inputs
   if (!productId || !productId.trim()) {
     throw new ValidationError('Product ID is required and cannot be empty');

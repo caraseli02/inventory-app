@@ -48,6 +48,7 @@ export interface StockMovement {
     Type: 'IN' | 'OUT';
     Quantity: number;
     Date: string;
+    Note?: string;
   };
 }
 

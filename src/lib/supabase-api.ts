@@ -55,6 +55,7 @@ export const mapSupabaseStockMovement = (row: StockMovementRow): StockMovement =
       Type: row.type,
       Quantity: row.quantity,
       Date: row.date,
+      Note: row.note ?? undefined,
     },
   };
 };
@@ -241,7 +242,8 @@ export const createProduct = async (data: CreateProductDTO): Promise<Product> =>
 export const addStockMovement = async (
   productId: string,
   quantity: number,
-  type: 'IN' | 'OUT'
+  type: 'IN' | 'OUT',
+  note?: string
 ): Promise<StockMovement> => {
   // Validate inputs
   if (!productId || !productId.trim()) {
@@ -269,6 +271,7 @@ export const addStockMovement = async (
         quantity: finalQuantity,
         type,
         date: dateStr,
+        note: note ?? null,
       })
       .select()
       .single();
