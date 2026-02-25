@@ -25,6 +25,8 @@ import { useToast } from '../hooks/useToast';
 import type { Product } from '../types';
 import { logger } from '../lib/logger';
 import { AuthorizationError, NetworkError } from '../lib/errors';
+import { buildInvoiceRowNote, getAlreadyImportedRowIds } from '../lib/invoiceIdempotency';
+import { buildInvoiceProductUpdatePayload } from '../lib/invoiceImportDiffs';
 
 interface InventoryListPageProps {
   onBack: () => void;
@@ -336,6 +338,8 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     const isInvoiceImport = importSources.has('invoice');
     if (isInvoiceImport) {
       const normalizedNameMap = new Map<string, Product>();
+      const productById = new Map<string, Product>();
+      let invoiceDuplicateSkipCount = 0;
       // IMPORTANT: build indices from the full inventory (not the filtered list),
       // otherwise invoice imports can create duplicates when filters are active.
       allProducts.forEach((product) => {
@@ -343,7 +347,25 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         if (!normalizedNameMap.has(normalized)) {
           normalizedNameMap.set(normalized, product);
         }
+        productById.set(product.id, product);
       });
+
+      const firstInvoiceRow = importedProducts[0];
+      let alreadyImportedRowIds = new Set<string>();
+      if (firstInvoiceRow?.invoiceSupplier && firstInvoiceRow?.invoiceNumber) {
+        try {
+          alreadyImportedRowIds = await getAlreadyImportedRowIds({
+            supplier: firstInvoiceRow.invoiceSupplier,
+            invoiceNumber: firstInvoiceRow.invoiceNumber,
+          });
+        } catch (err) {
+          logger.warn('Invoice import idempotency pre-check unavailable', {
+            supplier: firstInvoiceRow.invoiceSupplier,
+            invoiceNumber: firstInvoiceRow.invoiceNumber,
+            errorMessage: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
 
       for (const imported of importedProducts) {
         try {
@@ -353,55 +375,26 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
             continue;
           }
 
+          const importedRowId = imported.invoiceRowId?.trim();
+          const isAlreadyImportedRow = Boolean(importedRowId && alreadyImportedRowIds.has(importedRowId));
+
+          const stockNote = importedRowId
+            ? buildInvoiceRowNote({
+                supplier: imported.invoiceSupplier,
+                invoiceNumber: imported.invoiceNumber,
+                rowId: importedRowId,
+              }) ?? undefined
+            : undefined;
+
           const importedBarcode = normalizeBarcode(imported.Barcode);
           let existing: Product | null = null;
 
-          // If the UI found a match and the user chose "Update", treat the ID as authoritative.
-          // Do not depend on whether the product is currently visible in filtered lists.
-          if (importAction === 'update' && imported.existingProductId) {
-            const updatePayload: Parameters<typeof updateProduct>[1] = {
-              Price: imported.Price,
-              'Price 50%': imported.price50,
-              'Price 70%': imported.price70,
-              'Price 100%': imported.price100,
-              Supplier: imported.Supplier,
-            };
-
-            if (imported.Category && imported.Category !== 'General') {
-              updatePayload.Category = imported.Category;
-            }
-
-            await updateProduct(imported.existingProductId, updatePayload);
-
-            if (imported.currentStock && imported.currentStock > 0) {
-              try {
-                await addStockMovement(imported.existingProductId, imported.currentStock, 'IN');
-              } catch (stockErr) {
-                const stockErrorMessage = stockErr instanceof Error ? stockErr.message : t('errors.unknownError');
-                partialProducts.push({
-                  name: imported.Name,
-                  error: t('import.partialStockFailed', {
-                    defaultValue: 'Product updated, but stock movement failed: {{message}}',
-                    message: stockErrorMessage,
-                  }),
-                });
-                logger.error('Invoice import stock movement failed after product update', {
-                  productId: imported.existingProductId,
-                  productName: imported.Name,
-                  quantity: imported.currentStock,
-                  errorMessage: stockErrorMessage,
-                  errorStack: stockErr instanceof Error ? stockErr.stack : undefined,
-                  timestamp: new Date().toISOString(),
-                });
-                continue;
-              }
-            }
-
-            successCount += 1;
-            continue;
+          // If the UI found a match, treat the ID as authoritative (works for update/receive_stock).
+          if (imported.existingProductId) {
+            existing = productById.get(imported.existingProductId) ?? null;
           }
 
-          if (importedBarcode) {
+          if (!existing && importedBarcode) {
             existing = await getProductByBarcode(importedBarcode);
           }
           // Skip name-based lookup when user explicitly chose 'create' — respects intent
@@ -411,34 +404,41 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
           }
           if (existing) {
             normalizedNameMap.set(normalizeName(imported.Name), existing);
+            productById.set(existing.id, existing);
           }
 
           if (existing) {
-            const updatePayload: Parameters<typeof updateProduct>[1] = {
-              Price: imported.Price,
-              'Price 50%': imported.price50,
-              'Price 70%': imported.price70,
-              'Price 100%': imported.price100,
-              Supplier: imported.Supplier,
-            };
-
-            // Only push category updates when we have a non-default suggestion.
-            // This avoids overwriting an existing curated category with "General".
-            if (imported.Category && imported.Category !== 'General') {
-              updatePayload.Category = imported.Category;
+            if (isAlreadyImportedRow && importAction === 'receive_stock') {
+              skipCount += 1;
+              invoiceDuplicateSkipCount += 1;
+              continue;
             }
 
-            await updateProduct(existing.id, updatePayload);
+            if (importAction === 'receive_stock' && !imported.currentStock) {
+              skipCount += 1;
+              continue;
+            }
 
-            if (imported.currentStock && imported.currentStock > 0) {
+            if (importAction === 'update') {
+              const updatePayload = buildInvoiceProductUpdatePayload(existing, imported);
+              if (Object.keys(updatePayload).length > 0) {
+                const updated = await updateProduct(existing.id, updatePayload);
+                existing = updated;
+                normalizedNameMap.set(normalizeName(updated.fields.Name), updated);
+                productById.set(updated.id, updated);
+              }
+            }
+
+            if (imported.currentStock && imported.currentStock > 0 && !isAlreadyImportedRow) {
               try {
-                await addStockMovement(existing.id, imported.currentStock, 'IN');
+                await addStockMovement(existing.id, imported.currentStock, 'IN', stockNote);
+                if (importedRowId) alreadyImportedRowIds.add(importedRowId);
               } catch (stockErr) {
                 const stockErrorMessage = stockErr instanceof Error ? stockErr.message : t('errors.unknownError');
                 partialProducts.push({
                   name: imported.Name,
                   error: t('import.partialStockFailed', {
-                    defaultValue: 'Product updated, but stock movement failed: {{message}}',
+                    defaultValue: 'Product processed, but stock movement failed: {{message}}',
                     message: stockErrorMessage,
                   }),
                 });
@@ -454,6 +454,20 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
               }
             }
           } else {
+            if (isAlreadyImportedRow) {
+              skipCount += 1;
+              invoiceDuplicateSkipCount += 1;
+              continue;
+            }
+
+            if (importAction === 'receive_stock') {
+              throw new Error(
+                t('import.invoiceReceiveStockMatchMissing', {
+                  defaultValue: 'Matched product no longer exists. Refresh inventory and try again.',
+                })
+              );
+            }
+
             const newProduct = await createProduct({
               Name: imported.Name,
               Barcode: importedBarcode,
@@ -467,10 +481,12 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
               Supplier: imported.Supplier,
             });
             normalizedNameMap.set(normalizeName(imported.Name), newProduct);
+            productById.set(newProduct.id, newProduct);
 
             if (imported.currentStock && imported.currentStock > 0 && newProduct) {
               try {
-                await addStockMovement(newProduct.id, imported.currentStock, 'IN');
+                await addStockMovement(newProduct.id, imported.currentStock, 'IN', stockNote);
+                if (importedRowId) alreadyImportedRowIds.add(importedRowId);
               } catch (stockErr) {
                 const stockErrorMessage = stockErr instanceof Error ? stockErr.message : t('errors.unknownError');
                 partialProducts.push({
@@ -518,6 +534,12 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
       if (successCount > 0 || partialProducts.length > 0) {
         let message = t('import.successMessage', { count: successCount, skipped: skipCount, errors: errorCount });
+        if (invoiceDuplicateSkipCount > 0) {
+          message += `\n\n${t('import.invoiceAlreadyImportedSkipped', {
+            count: invoiceDuplicateSkipCount,
+            defaultValue: '{{count}} rows were skipped because they were already imported from this invoice.',
+          })}`;
+        }
         if (partialProducts.length > 0) {
           const partialList = partialProducts.slice(0, 3).map(f => `• ${f.name}: ${f.error}`).join('\n');
           const remainingPartial = partialProducts.length > 3 ? `\n... and ${partialProducts.length - 3} more` : '';
@@ -533,7 +555,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
         const message = failedProducts.length > 0
           ? failedProducts.slice(0, 3).map(f => `• ${f.name}: ${f.error}`).join('\n')
           : t('import.failedMessage', { count: errorCount });
-        showToast('error', t('import.failed'), message, 8000);
+        showToast(invoiceDuplicateSkipCount > 0 ? 'info' : 'error', t('import.failed'), message, 8000);
       }
       return;
     }

@@ -33,6 +33,12 @@ import { suggestProductDetails } from '@/lib/ai';
 import type { Product } from '@/types';
 import { parseWeightKgFromProductName } from '@/lib/invoicePricing';
 import { previewInvoicePricing } from '@/lib/invoiceImportApi';
+import { getAlreadyImportedRowIds } from '@/lib/invoiceIdempotency';
+import {
+  buildInvoiceProductUpdatePayload,
+  getDefaultInvoiceImportAction,
+  type InvoiceImportAction,
+} from '@/lib/invoiceImportDiffs';
 
 interface InvoiceUploadDialogProps {
   open: boolean;
@@ -50,7 +56,6 @@ const NUMERIC_EDITABLE_FIELDS: ReadonlySet<string> = new Set([
   'weightKg',
 ]);
 
-type ImportAction = 'create' | 'update' | 'skip';
 type MatchType = 'barcode' | 'name';
 
 interface InvoiceMatchResult {
@@ -60,6 +65,7 @@ interface InvoiceMatchResult {
 
 interface InvoicePreviewProduct extends InvoiceProduct {
   previewId: string;
+  lineTotalLei: number;
   weightKg?: number;
   category?: string;
   imageUrl?: string;
@@ -146,8 +152,16 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
   const [fxRate, setFxRate] = useState<number | null>(19.5);
   const [isFxManual, setIsFxManual] = useState(false);
   const [fxRateError, setFxRateError] = useState<string | null>(null);
-  const [importActions, setImportActions] = useState<Record<string, ImportAction>>({});
+  const [importActions, setImportActions] = useState<Record<string, InvoiceImportAction>>({});
+  const [manualActionPreviewIds, setManualActionPreviewIds] = useState<Set<string>>(new Set());
   const [removedPreviewIds, setRemovedPreviewIds] = useState<Set<string>>(new Set());
+  const [alreadyImportedRowIds, setAlreadyImportedRowIds] = useState<Set<string>>(new Set());
+  const [pricingComputedByRowId, setPricingComputedByRowId] = useState<Record<string, {
+    base_price_eur: number;
+    price_50: number;
+    price_70: number;
+    price_100: number;
+  }>>({});
   const autoCategoryRef = useRef(new Set<string>());
 
   const resetState = useCallback(() => {
@@ -166,7 +180,10 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     setIsFxManual(false);
     setFxRateError(null);
     setImportActions({});
+    setManualActionPreviewIds(new Set());
     setRemovedPreviewIds(new Set());
+    setAlreadyImportedRowIds(new Set());
+    setPricingComputedByRowId({});
     autoCategoryRef.current = new Set<string>();
   }, []);
 
@@ -212,6 +229,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
             return {
               ...product,
               previewId: getPreviewId(product, index),
+              lineTotalLei: product.totalPrice,
               quantity,
               unitPrice,
               totalPrice,
@@ -255,6 +273,8 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     }
   }, [fxRate, t]);
 
+  const isFxReady = fxRate != null && Number.isFinite(fxRate) && fxRate > 0;
+
   useEffect(() => {
     if (!rawProducts.length) return;
     if (!fxRate || !Number.isFinite(fxRate) || fxRate <= 0) return;
@@ -268,15 +288,17 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
 
         const previous = prevById.get(previewId);
         const quantity = previous?.quantity ?? product.quantity;
-        // IMPORTANT: derive EUR from invoice line total (LEI) to preserve VAT/discount-adjusted line value.
-        // Using unit LEI here can understate totals for invoices where line_total includes VAT/other adjustments.
-        const totalPrice = roundCurrency(product.totalPrice / fxRate);
-        const unitPrice = quantity > 0 ? roundCurrency(totalPrice / quantity) : 0;
+        // IMPORTANT: derive EUR from canonical LEI line totals to preserve VAT/discount-adjusted values
+        // while avoiding LEI<->EUR round-trip drift when FX changes.
         const weightKg = previous?.weightKg ?? product.weightKgCandidate ?? parseWeightKgFromProductName(product.name);
+        const lineTotalLei = previous?.lineTotalLei ?? product.totalPrice;
+        const totalPrice = roundCurrency(lineTotalLei / fxRate);
+        const unitPrice = quantity > 0 ? roundCurrency(totalPrice / quantity) : 0;
 
         return {
           ...product,
           previewId,
+          lineTotalLei,
           name: previous?.name ?? product.name,
           barcode: previous?.barcode ?? product.barcode,
           quantity,
@@ -378,32 +400,173 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
     });
   }, [editableProducts, barcodeIndex, nameIndex]);
 
+  const invoiceIdentity = useMemo(() => ({
+    supplier: invoiceData?.supplier?.trim(),
+    invoiceNumber: invoiceData?.invoiceNumber?.trim(),
+  }), [invoiceData?.invoiceNumber, invoiceData?.supplier]);
+
   useEffect(() => {
-    setImportActions((prev) => {
-      const next: Record<string, ImportAction> = {};
+    let isCancelled = false;
 
-      editableProducts.forEach((product, index) => {
-        const match = matchResults[index];
-        const previous = prev[product.previewId];
+    const loadAlreadyImported = async () => {
+      if (!invoiceIdentity.supplier || !invoiceIdentity.invoiceNumber) {
+        setAlreadyImportedRowIds(new Set());
+        return;
+      }
 
-        if (!match) {
-          next[product.previewId] = 'create';
-          return;
+      try {
+        const rowIds = await getAlreadyImportedRowIds(invoiceIdentity);
+        if (!isCancelled) {
+          setAlreadyImportedRowIds(rowIds);
+        }
+      } catch (err) {
+        logger.warn('Failed to load already-imported invoice rows', {
+          supplier: invoiceIdentity.supplier,
+          invoiceNumber: invoiceIdentity.invoiceNumber,
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
+        if (!isCancelled) {
+          setAlreadyImportedRowIds(new Set());
+        }
+      }
+    };
+
+    void loadAlreadyImported();
+    return () => {
+      isCancelled = true;
+    };
+  }, [invoiceIdentity]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadPricingPreview = async () => {
+      if (!invoiceData || !isFxReady || editableProducts.length === 0) {
+        setPricingComputedByRowId({});
+        return;
+      }
+
+      try {
+        const preview = await previewInvoicePricing({
+          invoice_meta: {
+            supplier: invoiceData.supplier,
+            invoice_number: invoiceData.invoiceNumber,
+            date: invoiceData.invoiceDate,
+          },
+          rows: editableProducts.map((product, index) => ({
+            row_id: product.rowId || `row-${index + 1}`,
+            name: product.name,
+            barcode: product.barcode || null,
+            quantity: product.quantity,
+            line_total_lei: product.lineTotalLei,
+            weight_kg: product.weightKg ?? null,
+          })),
+        });
+
+        if (isCancelled) return;
+
+        const next: Record<string, {
+          base_price_eur: number;
+          price_50: number;
+          price_70: number;
+          price_100: number;
+        }> = {};
+
+        for (const row of preview.rows) {
+          if (row.status === 'ok' && row.computed) {
+            next[row.row_id] = row.computed;
+          }
         }
 
-        if (previous === 'skip' || previous === 'update') {
+        setPricingComputedByRowId(next);
+      } catch (err) {
+        logger.warn('Invoice pricing preview preload failed', {
+          errorMessage: err instanceof Error ? err.message : String(err),
+        });
+        if (!isCancelled) {
+          setPricingComputedByRowId({});
+        }
+      }
+    };
+
+    void loadPricingPreview();
+    return () => {
+      isCancelled = true;
+    };
+  }, [editableProducts, fxRate, invoiceData, isFxReady]);
+
+  const rowFlags = useMemo(() => {
+    return editableProducts.map((product, index) => {
+      const match = matchResults[index];
+      const rowId = product.rowId || `row-${index + 1}`;
+      const computed = pricingComputedByRowId[rowId];
+      const isAlreadyImported = alreadyImportedRowIds.has(rowId);
+      const updatePayload = match && computed
+        ? buildInvoiceProductUpdatePayload(match.product, {
+            Price: computed.base_price_eur,
+            price50: computed.price_50,
+            price70: computed.price_70,
+            price100: computed.price_100,
+            Category: product.category || 'General',
+            Supplier: invoiceData?.supplier || undefined,
+          })
+        : {};
+      const updateKeys = Object.keys(updatePayload);
+      const hasDiffs = updateKeys.length > 0;
+      const hasPriceDiffs = updateKeys.some((key) =>
+        key === 'Price' || key === 'Price 50%' || key === 'Price 70%' || key === 'Price 100%'
+      );
+
+      return { rowId, isAlreadyImported, hasDiffs, hasPriceDiffs };
+    });
+  }, [alreadyImportedRowIds, editableProducts, invoiceData?.supplier, matchResults, pricingComputedByRowId]);
+
+  const getResolvedDefaultAction = useCallback(
+    (index: number): InvoiceImportAction => {
+      const match = matchResults[index];
+      const flags = rowFlags[index];
+      return getDefaultInvoiceImportAction({
+        hasMatch: Boolean(match),
+        isAlreadyImported: Boolean(flags?.isAlreadyImported),
+        hasDiffs: Boolean(flags?.isAlreadyImported ? flags?.hasPriceDiffs : flags?.hasDiffs),
+      });
+    },
+    [matchResults, rowFlags]
+  );
+
+  useEffect(() => {
+    setImportActions((prev) => {
+      const next: Record<string, InvoiceImportAction> = {};
+
+      editableProducts.forEach((product, index) => {
+        const previous = prev[product.previewId];
+        const isManualOverride = manualActionPreviewIds.has(product.previewId);
+
+        const defaultAction = getResolvedDefaultAction(index);
+
+        if (
+          isManualOverride &&
+          (previous === 'skip' || previous === 'update' || previous === 'create' || previous === 'receive_stock')
+        ) {
+          // Preserve explicit user selection.
+          // Import-time guard still prevents duplicate stock movements.
           next[product.previewId] = previous;
           return;
         }
 
-        next[product.previewId] = 'update';
+        next[product.previewId] = defaultAction;
       });
 
       return next;
     });
-  }, [editableProducts, matchResults]);
+  }, [editableProducts, getResolvedDefaultAction, manualActionPreviewIds, matchResults, rowFlags]);
 
-  const isFxReady = fxRate != null && Number.isFinite(fxRate) && fxRate > 0;
+  const importableRowCount = useMemo(() => {
+    return editableProducts.filter((product, index) => {
+      const action = importActions[product.previewId] ?? getResolvedDefaultAction(index);
+      return action !== 'skip';
+    }).length;
+  }, [editableProducts, getResolvedDefaultAction, importActions]);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -461,6 +624,11 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
       delete next[productToRemove.previewId];
       return next;
     });
+    setManualActionPreviewIds((prev) => {
+      const next = new Set(prev);
+      next.delete(productToRemove.previewId);
+      return next;
+    });
     setEditableProducts((prev) => prev.filter((_, i) => i !== index));
     setEditingIndex(null);
   }, [editableProducts]);
@@ -496,6 +664,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
             if (field === 'quantity' || field === 'unitPrice') {
               next.totalPrice = roundCurrency(next.quantity * next.unitPrice);
             }
+            if ((field === 'quantity' || field === 'unitPrice' || field === 'totalPrice') && isFxReady) {
+              next.lineTotalLei = roundCurrency(next.totalPrice * fxRate!);
+            }
             return next;
           }
 
@@ -506,7 +677,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
         })
       );
     },
-    []
+    [fxRate, isFxReady]
   );
 
   const handleConfirmImport = useCallback(async () => {
@@ -533,14 +704,14 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
           invoice_number: invoiceData?.invoiceNumber,
           date: invoiceData?.invoiceDate,
         },
-        rows: editableProducts.map((product, index) => ({
-          row_id: product.rowId || `row-${index + 1}`,
-          name: product.name,
-          barcode: product.barcode || null,
-          quantity: product.quantity,
-          line_total_lei: roundCurrency(product.totalPrice * fxRate),
-          weight_kg: product.weightKg ?? null,
-        })),
+          rows: editableProducts.map((product, index) => ({
+            row_id: product.rowId || `row-${index + 1}`,
+            name: product.name,
+            barcode: product.barcode || null,
+            quantity: product.quantity,
+            line_total_lei: product.lineTotalLei,
+            weight_kg: product.weightKg ?? null,
+          })),
       });
 
       const blockedRows = preview.rows.filter((row) => row.status !== 'ok');
@@ -562,7 +733,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
       // Convert invoice products to ImportedProduct format
       const importedProducts: ImportedProduct[] = editableProducts.map((product, index) => {
         const match = matchResults[index];
-        const importAction = importActions[product.previewId] ?? (match ? 'update' : 'create');
+        const importAction = importActions[product.previewId] ?? getResolvedDefaultAction(index);
         const rowId = product.rowId || `row-${index + 1}`;
         const computed = computedByRowId.get(rowId);
 
@@ -587,10 +758,14 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
           Supplier: invoiceData?.supplier || undefined,
           expiryDate: undefined,
           importAction,
-          existingProductId: importAction === 'update' ? match?.product.id : undefined,
+          existingProductId: (importAction === 'update' || importAction === 'receive_stock')
+            ? match?.product.id
+            : undefined,
           imageUrl: product.imageUrl,
           importSource: 'invoice',
           invoiceRowId: rowId,
+          invoiceSupplier: invoiceData?.supplier || undefined,
+          invoiceNumber: invoiceData?.invoiceNumber || undefined,
           weightKg: product.weightKg,
           invoiceLineTotal: product.totalPrice,
         };
@@ -632,7 +807,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
       setImportErrors([errorMessage]);
       setStep('preview');
     }
-  }, [editableProducts, fxRate, invoiceData, importActions, isFxReady, matchResults, onImport, t]);
+  }, [editableProducts, getResolvedDefaultAction, invoiceData, importActions, isFxReady, matchResults, onImport, t]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -897,12 +1072,17 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                       {editableProducts.map((product, i) => {
                         const isEditing = editingIndex === i;
                         const match = matchResults[i];
-                        const importAction = importActions[product.previewId] ?? (match ? 'update' : 'create');
+                        const flags = rowFlags[i];
+                        const importAction = importActions[product.previewId] ?? getResolvedDefaultAction(i);
                         const isSkipped = importAction === 'skip';
                         return (
                           <TableRow
                             key={product.previewId}
-                            className={`${isEditing ? 'bg-blue-50' : 'hover:bg-stone-50'} ${isSkipped ? 'opacity-60' : ''}`}
+                            className={[
+                              isEditing ? 'bg-blue-50' : 'hover:bg-stone-50',
+                              isSkipped ? 'opacity-60' : '',
+                              flags?.isAlreadyImported ? 'bg-stone-50/70' : '',
+                            ].join(' ')}
                           >
                             <TableCell className="px-4 py-3">
                               {isEditing ? (
@@ -1030,11 +1210,24 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                                         ? t('invoiceUpload.table.matchBarcode', 'Barcode match')
                                         : t('invoiceUpload.table.matchName', 'Name match')}
                                     </Badge>
+                                    {flags?.isAlreadyImported && (
+                                      <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+                                        {t('invoiceUpload.table.alreadyImported', 'Already imported')}
+                                      </Badge>
+                                    )}
+                                    {!flags?.isAlreadyImported && flags?.hasDiffs && (
+                                      <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                                        {t('invoiceUpload.table.willUpdate', 'Will update')}
+                                      </Badge>
+                                    )}
                                   </div>
                                   <Select
                                     value={importAction}
                                     onValueChange={(value) =>
-                                      setImportActions((prev) => ({ ...prev, [product.previewId]: value as ImportAction }))
+                                      {
+                                        setManualActionPreviewIds((prev) => new Set(prev).add(product.previewId));
+                                        setImportActions((prev) => ({ ...prev, [product.previewId]: value as InvoiceImportAction }));
+                                      }
                                     }
                                   >
                                     <SelectTrigger className="h-8 text-xs">
@@ -1043,6 +1236,9 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                                     <SelectContent>
                                       <SelectItem value="update">
                                         {t('invoiceUpload.table.update', 'Update')}
+                                      </SelectItem>
+                                      <SelectItem value="receive_stock">
+                                        {t('invoiceUpload.table.receiveStock', 'Receive stock')}
                                       </SelectItem>
                                       <SelectItem value="skip">
                                         {t('invoiceUpload.table.skip', 'Skip')}
@@ -1119,8 +1315,8 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
                 <ul className="text-xs text-blue-800 space-y-1">
                   <li>
                     • {t('invoiceUpload.importInfo.addedCount', {
-                      count: editableProducts.length,
-                      defaultValue: '{{count}} products will be added to your inventory',
+                      count: importableRowCount,
+                      defaultValue: '{{count}} rows will be processed',
                     })}
                   </li>
                   <li>
@@ -1207,10 +1403,15 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
               <Button
                 onClick={handleConfirmImport}
                 className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
-                disabled={!editableProducts.length || !isFxReady || editableProducts.some((product) => !isValidNumber(product.weightKg))}
+                disabled={
+                  !editableProducts.length ||
+                  importableRowCount === 0 ||
+                  !isFxReady ||
+                  editableProducts.some((product) => !isValidNumber(product.weightKg))
+                }
               >
                 {t('invoiceUpload.actions.importCount', {
-                  count: editableProducts.length,
+                  count: importableRowCount,
                   defaultValue: 'Import {{count}} Products',
                 })}
               </Button>
