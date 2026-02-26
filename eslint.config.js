@@ -97,8 +97,7 @@ export default defineConfig([
       'src/components/inventory/ProductDetailDialog.tsx',
 
       // ── Hooks (large functions) ──
-      // TECHNICAL-DEBT: 83L function — extract helper utilities
-      'src/hooks/useAgentInbox.ts',
+
       // TECHNICAL-DEBT: 116L arrow function — split into smaller hooks
       'src/hooks/useInventoryList.ts',
       // TECHNICAL-DEBT: 86L arrow function — extract search helpers
