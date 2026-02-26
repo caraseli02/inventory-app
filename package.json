@@ -24,6 +24,7 @@
     "test:visual:update": "playwright test --config=playwright.visual.config.ts --update-snapshots",
     "test:visual:ui": "playwright test --config=playwright.visual.config.ts --ui",
     "validate-docs": "node scripts/validate-docs.js",
+    "check-root-files": "node scripts/check-root-files.js",
     "prepare": "simple-git-hooks",
     "mcp:build": "vite build --config mcp/vite.config.ts",
     "mcp:serve": "tsx mcp/main.ts",
@@ -31,7 +32,7 @@
     "mcp:smoke": "tsx scripts/mcp-smoke-test.ts"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm validate-docs && pnpm typecheck && pnpm lint && CI=true pnpm test:e2e"
+    "pre-commit": "pnpm check-root-files && pnpm validate-docs && pnpm typecheck && pnpm lint && CI=true pnpm test:e2e"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -69,6 +70,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@modelcontextprotocol/ext-apps": "^1.0.1",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
@@ -82,15 +85,14 @@
     "@vercel/node": "^5.5.15",
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.16",
-    "@modelcontextprotocol/ext-apps": "^1.0.1",
-    "@modelcontextprotocol/sdk": "^1.26.0",
     "cors": "^2.8.6",
     "cross-env": "^10.1.0",
     "dotenv": "^17.3.1",
-    "express": "^5.2.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "eslint-plugin-sonarjs": "^1.0.4",
+    "express": "^5.2.1",
     "globals": "^16.5.0",
     "js-yaml": "^4.1.1",
     "jsdom": "^27.3.0",
