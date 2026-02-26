@@ -100,8 +100,7 @@ export default defineConfig([
 
       // TECHNICAL-DEBT: 116L arrow function — split into smaller hooks
       'src/hooks/useInventoryList.ts',
-      // TECHNICAL-DEBT: 86L arrow function — extract search helpers
-      'src/hooks/useProductSearch.ts',
+
 
       // ── Lib: backend + data layer ──
       // TECHNICAL-DEBT: complexity 23/26 — legacy Airtable code, migrate to supabase-api
