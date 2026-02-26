@@ -105,8 +105,6 @@ export default defineConfig([
       'src/hooks/useProductSearch.ts',
 
       // ── Lib: backend + data layer ──
-      // TECHNICAL-DEBT: complexity 33 — extract route helpers
-      'src/lib/api-provider.ts',
       // TECHNICAL-DEBT: complexity 23/26 — legacy Airtable code, migrate to supabase-api
       'src/lib/api.ts',
       // TECHNICAL-DEBT: 99L function, split EDA workflow steps
