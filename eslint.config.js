@@ -113,9 +113,7 @@ export default defineConfig([
       'src/lib/eda/core/workflow.ts',
       // TECHNICAL-DEBT: complexity 25 — extract retry and upload strategies
       'src/lib/imageUpload.ts',
-      // TECHNICAL-DEBT: 491L, 139L function, complexity 53 — extract query builders
-      'src/lib/supabase-api.ts',
-      // TECHNICAL-DEBT: 141L function, complexity 35 — extract column mappers
+// TECHNICAL-DEBT: 141L function, complexity 35 — extract column mappers
       'src/lib/xlsx/index.ts',
 
       // ── Pages (large or complex) ──
