@@ -98,8 +98,7 @@ export default defineConfig([
 
       // ── Hooks (large functions) ──
 
-      // TECHNICAL-DEBT: 116L arrow function — split into smaller hooks
-      'src/hooks/useInventoryList.ts',
+
 
 
       // ── Lib: backend + data layer ──

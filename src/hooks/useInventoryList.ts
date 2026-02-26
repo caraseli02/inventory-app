@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { getAllProducts } from '../lib/api-provider';
+import type { Product } from '../types';
 
 export type SortField = 'name' | 'stock' | 'price' | 'category';
 export type SortDirection = 'asc' | 'desc';
@@ -11,6 +12,62 @@ export interface InventoryFilters {
   lowStockOnly: boolean;
   sortField: SortField;
   sortDirection: SortDirection;
+}
+
+function applyFilters(products: Product[], filters: InventoryFilters): Product[] {
+  let result = products;
+
+  if (filters.searchQuery.trim()) {
+    const searchLower = filters.searchQuery.toLowerCase().trim();
+    result = result.filter(
+      p =>
+        p.fields.Name.toLowerCase().includes(searchLower) ||
+        (p.fields.Barcode?.toLowerCase().includes(searchLower) ?? false)
+    );
+  }
+
+  if (filters.category) {
+    result = result.filter(p => p.fields.Category === filters.category);
+  }
+
+  if (filters.lowStockOnly) {
+    result = result.filter(p => {
+      const stockValue = p.fields['Current Stock Level'];
+      const minValue = p.fields['Min Stock Level'];
+      const currentStock = typeof stockValue === 'number' && Number.isFinite(stockValue) ? stockValue : 0;
+      const minStock = typeof minValue === 'number' && Number.isFinite(minValue) ? minValue : 0;
+      return currentStock < minStock && minStock > 0;
+    });
+  }
+
+  return result;
+}
+
+function getSortKey(product: Product, sortField: SortField): string | number {
+  switch (sortField) {
+    case 'name': return product.fields.Name.toLowerCase();
+    case 'stock': {
+      const stock = product.fields['Current Stock Level'];
+      return typeof stock === 'number' && Number.isFinite(stock) ? stock : 0;
+    }
+    case 'price': {
+      const price = product.fields.Price;
+      return typeof price === 'number' && Number.isFinite(price) ? price : 0;
+    }
+    case 'category': return (product.fields.Category ?? '').toLowerCase();
+    default: return '';
+  }
+}
+
+function sortProducts(products: Product[], sortField: SortField, sortDirection: SortDirection): Product[] {
+  const withKeys = products.map(product => ({ product, sortKey: getSortKey(product, sortField) }));
+  withKeys.sort((a, b) => {
+    let comparison = 0;
+    if (a.sortKey < b.sortKey) comparison = -1;
+    if (a.sortKey > b.sortKey) comparison = 1;
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+  return withKeys.map(({ product }) => product);
 }
 
 /**
@@ -45,90 +102,8 @@ export const useInventoryList = () => {
   // Client-side filtering and sorting
   const filteredAndSortedProducts = useMemo(() => {
     if (!query.data) return [];
-
-    let result = [...query.data];
-
-    // Apply search filter (name or barcode)
-    if (filters.searchQuery.trim()) {
-      const searchLower = filters.searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (product) =>
-          product.fields.Name.toLowerCase().includes(searchLower) ||
-          (product.fields.Barcode?.toLowerCase().includes(searchLower) ?? false)
-      );
-    }
-
-    // Apply category filter
-    if (filters.category) {
-      result = result.filter(
-        (product) => product.fields.Category === filters.category
-      );
-    }
-
-    // Apply low stock filter
-    if (filters.lowStockOnly) {
-      result = result.filter((product) => {
-        // Data integrity checks: ensure values are valid numbers
-        const stockValue = product.fields['Current Stock Level'];
-        const minValue = product.fields['Min Stock Level'];
-
-        const currentStock = typeof stockValue === 'number' && Number.isFinite(stockValue)
-          ? stockValue
-          : 0;
-        const minStock = typeof minValue === 'number' && Number.isFinite(minValue)
-          ? minValue
-          : 0;
-
-        // Only filter products that have a defined minimum stock level
-        return currentStock < minStock && minStock > 0;
-      });
-    }
-
-    // Apply sorting with pre-computed sort keys (Schwartzian Transform pattern)
-    // This avoids calling .toLowerCase() multiple times per product during sorting
-    const withSortKeys = result.map((product) => {
-      let sortKey: string | number;
-
-      switch (filters.sortField) {
-        case 'name':
-          sortKey = product.fields.Name.toLowerCase();
-          break;
-        case 'stock': {
-          const stock = product.fields['Current Stock Level'];
-          sortKey = typeof stock === 'number' && Number.isFinite(stock) ? stock : 0;
-          break;
-        }
-        case 'price': {
-          const price = product.fields.Price;
-          sortKey = typeof price === 'number' && Number.isFinite(price) ? price : 0;
-          break;
-        }
-        case 'category':
-          sortKey = (product.fields.Category ?? '').toLowerCase();
-          break;
-        default:
-          sortKey = '';
-      }
-
-      return { product, sortKey };
-    });
-
-    // Sort by pre-computed keys
-    withSortKeys.sort((a, b) => {
-      const aValue = a.sortKey;
-      const bValue = b.sortKey;
-
-      let comparison = 0;
-      if (aValue < bValue) comparison = -1;
-      if (aValue > bValue) comparison = 1;
-
-      return filters.sortDirection === 'asc' ? comparison : -comparison;
-    });
-
-    // Extract sorted products
-    result = withSortKeys.map(({ product }) => product);
-
-    return result;
+    const filtered = applyFilters([...query.data], filters);
+    return sortProducts(filtered, filters.sortField, filters.sortDirection);
   }, [query.data, filters]);
 
   // Get unique categories for filter dropdown
