@@ -84,6 +84,41 @@ async function uploadToImgbb(imageDataUrl: string): Promise<string> {
   return result.data.url;
 }
 
+async function tryImgbbFallback(imageDataUrl: string, vercelError: unknown): Promise<string> {
+  logger.warn('Vercel Blob upload failed, attempting imgbb fallback', {
+    errorMessage: vercelError instanceof Error ? vercelError.message : String(vercelError),
+    errorStack: vercelError instanceof Error ? vercelError.stack : undefined,
+    timestamp: new Date().toISOString(),
+  });
+  try {
+    const url = await uploadToImgbb(imageDataUrl);
+    logger.info('Image uploaded successfully via imgbb fallback', {
+      url,
+      uploadMethod: 'imgbb',
+      timestamp: new Date().toISOString(),
+    });
+    if (import.meta.env.PROD) {
+      logger.error('Production using imgbb fallback - Vercel Blob should be configured!', {
+        vercelError: vercelError instanceof Error ? vercelError.message : String(vercelError),
+      });
+    }
+    return url;
+  } catch (imgbbError) {
+    logger.error('All image upload methods failed', {
+      vercelError: vercelError instanceof Error ? vercelError.message : String(vercelError),
+      imgbbError: imgbbError instanceof Error ? imgbbError.message : String(imgbbError),
+      vercelStack: vercelError instanceof Error ? vercelError.stack : undefined,
+      imgbbStack: imgbbError instanceof Error ? imgbbError.stack : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    throw new Error(
+      'Image upload failed. ' +
+      'In production, ensure BLOB_READ_WRITE_TOKEN is set. ' +
+      'In development, ensure VITE_IMGBB_API_KEY is set.'
+    );
+  }
+}
+
 /**
  * Upload a base64 image and return the URL
  *
@@ -95,13 +130,8 @@ async function uploadToImgbb(imageDataUrl: string): Promise<string> {
  * @returns Public URL for the image
  */
 export async function uploadImage(imageUrl: string): Promise<string> {
-  // If not a data URL, return as-is (already a URL)
-  if (!isDataUrl(imageUrl)) {
-    return imageUrl;
-  }
-
+  if (!isDataUrl(imageUrl)) return imageUrl;
   try {
-    // Try Vercel Blob first (production)
     const url = await uploadToVercelBlob(imageUrl);
     logger.info('Image uploaded successfully via Vercel Blob', {
       url,
@@ -110,43 +140,6 @@ export async function uploadImage(imageUrl: string): Promise<string> {
     });
     return url;
   } catch (vercelError) {
-    logger.warn('Vercel Blob upload failed, attempting imgbb fallback', {
-      errorMessage: vercelError instanceof Error ? vercelError.message : String(vercelError),
-      errorStack: vercelError instanceof Error ? vercelError.stack : undefined,
-      timestamp: new Date().toISOString(),
-    });
-
-    try {
-      // Fall back to imgbb (development)
-      const url = await uploadToImgbb(imageUrl);
-      logger.info('Image uploaded successfully via imgbb fallback', {
-        url,
-        uploadMethod: 'imgbb',
-        timestamp: new Date().toISOString(),
-      });
-
-      // Warn in production that fallback was used
-      if (import.meta.env.PROD) {
-        logger.error('Production using imgbb fallback - Vercel Blob should be configured!', {
-          vercelError: vercelError instanceof Error ? vercelError.message : String(vercelError),
-        });
-      }
-
-      return url;
-    } catch (imgbbError) {
-      logger.error('All image upload methods failed', {
-        vercelError: vercelError instanceof Error ? vercelError.message : String(vercelError),
-        imgbbError: imgbbError instanceof Error ? imgbbError.message : String(imgbbError),
-        vercelStack: vercelError instanceof Error ? vercelError.stack : undefined,
-        imgbbStack: imgbbError instanceof Error ? imgbbError.stack : undefined,
-        timestamp: new Date().toISOString(),
-      });
-
-      throw new Error(
-        'Image upload failed. ' +
-        'In production, ensure BLOB_READ_WRITE_TOKEN is set. ' +
-        'In development, ensure VITE_IMGBB_API_KEY is set.'
-      );
-    }
+    return tryImgbbFallback(imageUrl, vercelError);
   }
 }

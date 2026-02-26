@@ -106,8 +106,7 @@ export default defineConfig([
       'src/lib/api.ts',
       // TECHNICAL-DEBT: 99L function, split EDA workflow steps
       'src/lib/eda/core/workflow.ts',
-      // TECHNICAL-DEBT: complexity 25 — extract retry and upload strategies
-      'src/lib/imageUpload.ts',
+
 // TECHNICAL-DEBT: 141L function, complexity 35 — extract column mappers
       'src/lib/xlsx/index.ts',
 
