@@ -59,6 +59,7 @@ function toErrInfo(err: unknown) {
 async function createProductWithStock(
   barcode: string,
   data: CreateProductFormData,
+  imageUploadFailedMessage: string,
 ) {
   const parsedPrice = data.price.trim() ? parseFloat(data.price) : undefined;
   const safePrice = Number.isFinite(parsedPrice) ? parsedPrice : undefined;
@@ -72,7 +73,7 @@ async function createProductWithStock(
         ...toErrInfo(uploadError),
         timestamp: new Date().toISOString(),
       });
-      throw new Error('Failed to upload product image. Please try again or proceed without an image.');
+      throw new Error(imageUploadFailedMessage);
     }
   }
   const newProduct = await createProduct({
@@ -161,7 +162,11 @@ export function useCreateProduct(
   const storePrice = basePrice != null && !isNaN(basePrice) ? basePrice * (1 + formData.markup / 100) : null;
 
   const mutation = useMutation({
-    mutationFn: (data: CreateProductFormData) => createProductWithStock(barcode, data),
+    mutationFn: (data: CreateProductFormData) => createProductWithStock(
+      barcode,
+      data,
+      t('errors.imageUploadFailed', 'Failed to upload product image. Please try again or proceed without an image.'),
+    ),
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ['product', barcode] });
       toast.success(t('toast.productCreated'), {
