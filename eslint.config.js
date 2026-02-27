@@ -112,8 +112,6 @@ export default defineConfig([
       // ── Pages (large or complex) ──
       // TECHNICAL-DEBT: 1,146L, complexity 21 — extract CheckoutSummary, CheckoutCart components
       'src/pages/CheckoutPage.tsx',
-      // TECHNICAL-DEBT: complexity 26 — extract navigation and routing logic
-      'src/pages/HomePage.tsx',
       // TECHNICAL-DEBT: complexity 24 — extract scan result handler
       'src/pages/ScanPage.tsx',
     ],
