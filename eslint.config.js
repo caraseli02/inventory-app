@@ -89,8 +89,7 @@ export default defineConfig([
       // ── Components (mixed concerns or large) ──
       // TECHNICAL-DEBT: 1,433L — split into useInvoiceImport.ts + InvoicePreviewTable.tsx
       'src/components/invoice/InvoiceUploadDialog.tsx',
-      // TECHNICAL-DEBT: 407L — extract sub-components
-      'src/components/inventory/ProductDetailDialog.tsx',
+
 
       // ── Hooks (large functions) ──
 
