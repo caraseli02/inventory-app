@@ -89,8 +89,6 @@ export default defineConfig([
       // ── Components (mixed concerns or large) ──
       // TECHNICAL-DEBT: 1,433L — split into useInvoiceImport.ts + InvoicePreviewTable.tsx
       'src/components/invoice/InvoiceUploadDialog.tsx',
-      // TECHNICAL-DEBT: 843L — split into useProductEdit.ts + ProductImageSection.tsx
-      'src/components/product/EditProductDialog.tsx',
       // TECHNICAL-DEBT: 536L — extract useCreateProduct.ts hook
       'src/components/product/CreateProductForm.tsx',
       // TECHNICAL-DEBT: 407L — extract sub-components
@@ -112,10 +110,6 @@ export default defineConfig([
       // ── Pages (large or complex) ──
       // TECHNICAL-DEBT: 1,146L, complexity 21 — extract CheckoutSummary, CheckoutCart components
       'src/pages/CheckoutPage.tsx',
-      // TECHNICAL-DEBT: complexity 26 — extract navigation and routing logic
-      'src/pages/HomePage.tsx',
-      // TECHNICAL-DEBT: complexity 24 — extract scan result handler
-      'src/pages/ScanPage.tsx',
     ],
     rules: {
       'max-lines': 'off',
