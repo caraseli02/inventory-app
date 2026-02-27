@@ -15,6 +15,30 @@ export interface InboxItem {
   payload: ActionProposedPayload;
 }
 
+function buildInboxItems(
+  pendingProposals: EventEnvelope<'ActionProposed', ActionProposedPayload>[],
+  productMap: Map<string, string>
+): InboxItem[] {
+  const inboxItemsMap = new Map<string, InboxItem>();
+  pendingProposals.forEach(p => {
+    const payload = p.payload as ActionProposedPayload;
+    const key = `${payload.productId}-${payload.actionType}`;
+    inboxItemsMap.set(key, {
+      id: payload.actionId,
+      type: payload.actionType,
+      productId: payload.productId,
+      productName: productMap.get(payload.productId) || 'Unknown Product',
+      reason: payload.reason,
+      confidence: payload.confidence,
+      timestamp: p.ts,
+      payload,
+    });
+  });
+  return Array.from(inboxItemsMap.values()).sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+}
+
 export function useAgentInbox() {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,38 +84,8 @@ export function useAgentInbox() {
         return true;
       });
 
-      // 5. Map to Inbox Items AND Deduplicate
-      // We might have spam from before the Idempotency fix. 
-      // We only want the LATEST pending action per product + actionType.
-
-      const inboxItemsMap = new Map<string, InboxItem>();
-
-      pendingProposals.forEach(p => {
-        const payload = p.payload as ActionProposedPayload;
-        const productName = productMap.get(payload.productId) || 'Unknown Product';
-        const key = `${payload.productId}-${payload.actionType}`;
-        const item: InboxItem = {
-          id: payload.actionId,
-          type: payload.actionType,
-          productId: payload.productId,
-          productName,
-          reason: payload.reason,
-          confidence: payload.confidence,
-          timestamp: p.ts,
-          payload
-        };
-
-        // If we already have one, keep the newer one? The loop order depends on `allEvents`.
-        // `allEvents` is usually chronological. So later items replace earlier ones.
-        inboxItemsMap.set(key, item);
-      });
-
-      const uniqueInboxItems = Array.from(inboxItemsMap.values());
-
-      // Sort by newest first
-      setItems(uniqueInboxItems.sort((a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      ));
+      // 5. Map to Inbox Items, deduplicate, sort newest-first
+      setItems(buildInboxItems(pendingProposals, productMap));
 
     } catch (err) {
       console.error('Failed to fetch inbox:', err);

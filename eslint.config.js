@@ -97,20 +97,15 @@ export default defineConfig([
       'src/components/inventory/ProductDetailDialog.tsx',
 
       // ── Hooks (large functions) ──
-      // TECHNICAL-DEBT: 83L function — extract helper utilities
-      'src/hooks/useAgentInbox.ts',
-      // TECHNICAL-DEBT: 116L arrow function — split into smaller hooks
-      'src/hooks/useInventoryList.ts',
-      // TECHNICAL-DEBT: 86L arrow function — extract search helpers
-      'src/hooks/useProductSearch.ts',
+
+
+
 
       // ── Lib: backend + data layer ──
       // TECHNICAL-DEBT: complexity 23/26 — legacy Airtable code, migrate to supabase-api
       'src/lib/api.ts',
-      // TECHNICAL-DEBT: 99L function, split EDA workflow steps
-      'src/lib/eda/core/workflow.ts',
-      // TECHNICAL-DEBT: complexity 25 — extract retry and upload strategies
-      'src/lib/imageUpload.ts',
+
+
 // TECHNICAL-DEBT: 141L function, complexity 35 — extract column mappers
       'src/lib/xlsx/index.ts',
 

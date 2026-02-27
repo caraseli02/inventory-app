@@ -104,6 +104,66 @@ export async function handleStockLevelChanged(input: {
   return { eventId: event.id, proposedActionIds: proposals.map((p) => p.actionId) };
 }
 
+async function emitNeedsHumanReview(
+  ts: string,
+  proposal: ActionProposedPayload,
+  correlationId: string | undefined,
+  causationId: string,
+  reason: string
+): Promise<void> {
+  await appendEvent({
+    id: crypto.randomUUID(),
+    type: "ActionRequiresHumanReview",
+    ts,
+    aggregateType: "Action",
+    aggregateId: proposal.actionId,
+    correlationId,
+    causationId,
+    payload: { actionId: proposal.actionId, reason },
+  });
+  await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "NEEDS_HUMAN_REVIEW", ts);
+}
+
+async function emitActionRejected(
+  ts: string,
+  proposal: ActionProposedPayload,
+  correlationId: string | undefined,
+  causationId: string,
+  reason: string
+): Promise<void> {
+  await appendEvent({
+    id: crypto.randomUUID(),
+    type: "ActionRejected",
+    ts,
+    aggregateType: "Action",
+    aggregateId: proposal.actionId,
+    correlationId,
+    causationId,
+    payload: { actionId: proposal.actionId, reason },
+  });
+  await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "REJECTED", ts);
+}
+
+async function emitActionSuppressed(
+  ts: string,
+  proposal: ActionProposedPayload,
+  correlationId: string | undefined,
+  causationId: string,
+  reason: string
+): Promise<void> {
+  await appendEvent({
+    id: crypto.randomUUID(),
+    type: "ActionSuppressed",
+    ts,
+    aggregateType: "Action",
+    aggregateId: proposal.actionId,
+    correlationId,
+    causationId,
+    payload: { actionId: proposal.actionId, reason },
+  });
+  await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "SUPPRESSED", ts);
+}
+
 async function emitAndProcessActionProposed(ts: string, productId: string, proposal: ActionProposedPayload, causationId: string): Promise<void> {
   const proposedEvent: EventEnvelope<"ActionProposed", ActionProposedPayload> = {
     id: crypto.randomUUID(),
@@ -120,79 +180,28 @@ async function emitAndProcessActionProposed(ts: string, productId: string, propo
   await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "PROPOSED", ts);
 
   if (requiresHumanReview(proposal.confidence)) {
-    await appendEvent({
-      id: crypto.randomUUID(),
-      type: "ActionRequiresHumanReview",
-      ts,
-      aggregateType: "Action",
-      aggregateId: proposal.actionId,
-      correlationId: proposedEvent.correlationId,
-      causationId: proposedEvent.id,
-      payload: { actionId: proposal.actionId, reason: "LOW_CONFIDENCE" },
-    });
-    await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "NEEDS_HUMAN_REVIEW", ts);
+    await emitNeedsHumanReview(ts, proposal, proposedEvent.correlationId, proposedEvent.id, "LOW_CONFIDENCE");
     return;
   }
 
   if (requiresHumanReviewForReorder(proposal.actionType)) {
-    await appendEvent({
-      id: crypto.randomUUID(),
-      type: "ActionRequiresHumanReview",
-      ts,
-      aggregateType: "Action",
-      aggregateId: proposal.actionId,
-      correlationId: proposedEvent.correlationId,
-      causationId: proposedEvent.id,
-      payload: { actionId: proposal.actionId, reason: "REORDER_REQUIRES_APPROVAL" },
-    });
-    await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "NEEDS_HUMAN_REVIEW", ts);
+    await emitNeedsHumanReview(ts, proposal, proposedEvent.correlationId, proposedEvent.id, "REORDER_REQUIRES_APPROVAL");
     return;
   }
 
   const rule = isAllowedBusinessRule({ actionType: proposal.actionType, suggestedValueCents: proposal.suggestedValueCents });
   if (!rule.ok) {
-    await appendEvent({
-      id: crypto.randomUUID(),
-      type: "ActionRejected",
-      ts,
-      aggregateType: "Action",
-      aggregateId: proposal.actionId,
-      correlationId: proposedEvent.correlationId,
-      causationId: proposedEvent.id,
-      payload: { actionId: proposal.actionId, reason: rule.reason },
-    });
-    await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "REJECTED", ts);
+    await emitActionRejected(ts, proposal, proposedEvent.correlationId, proposedEvent.id, rule.reason);
     return;
   }
 
   if (proposal.actionType === "PRICE_INCREASE" || proposal.actionType === "PRICE_DECREASE") {
     if (!(await canChangePriceToday({ productId: proposal.productId, ts }))) {
-      await appendEvent({
-        id: crypto.randomUUID(),
-        type: "ActionSuppressed",
-        ts,
-        aggregateType: "Action",
-        aggregateId: proposal.actionId,
-        correlationId: proposedEvent.correlationId,
-        causationId: proposedEvent.id,
-        payload: { actionId: proposal.actionId, reason: "PRICE_ALREADY_CHANGED_TODAY" },
-      });
-      await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "SUPPRESSED", ts);
+      await emitActionSuppressed(ts, proposal, proposedEvent.correlationId, proposedEvent.id, "PRICE_ALREADY_CHANGED_TODAY");
       return;
     }
-
     if (!isWithinBusinessHours(ts)) {
-      await appendEvent({
-        id: crypto.randomUUID(),
-        type: "ActionSuppressed",
-        ts,
-        aggregateType: "Action",
-        aggregateId: proposal.actionId,
-        correlationId: proposedEvent.correlationId,
-        causationId: proposedEvent.id,
-        payload: { actionId: proposal.actionId, reason: "OUTSIDE_BUSINESS_HOURS" },
-      });
-      await recordActionState(proposal.actionId, proposal.productId, proposal.actionType, "SUPPRESSED", ts);
+      await emitActionSuppressed(ts, proposal, proposedEvent.correlationId, proposedEvent.id, "OUTSIDE_BUSINESS_HOURS");
       return;
     }
   }
