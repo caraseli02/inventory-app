@@ -5,6 +5,8 @@ import { useToast } from './useToast';
 import type { Product } from '../types';
 import type { InputMode } from '../components/search/InputModeToggle';
 
+export const MIN_MANUAL_CODE_LENGTH = 4;
+
 export interface ScanState {
   scannedCode: string | null;
   manualCode: string;
@@ -82,7 +84,7 @@ export function useScanState(): ScanState {
   const handleManualSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const code = manualCode.trim();
-    if (code.length >= 4) handleScanSuccess(code);
+    if (code.length >= MIN_MANUAL_CODE_LENGTH) handleScanSuccess(code);
   };
 
   const productNotFound = !isLoading && !product && !error && !!scannedCode;

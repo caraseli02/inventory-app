@@ -12,7 +12,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ProductSearchDropdown } from '../components/search/ProductSearchDropdown';
 import { InputModeToggle, type InputMode } from '../components/search/InputModeToggle';
-import { useScanState, type ScanState } from '../hooks/useScanState';
+import { MIN_MANUAL_CODE_LENGTH, useScanState, type ScanState } from '../hooks/useScanState';
 import type { Product } from '../types';
 
 type ScanPageProps = {
@@ -72,9 +72,9 @@ function ScanInputSection({ inputMode, onProductSelect, onScanSuccess, manualCod
               />
               <Button
                 type="submit"
-                disabled={manualCode.length < 3}
+                disabled={manualCode.length < MIN_MANUAL_CODE_LENGTH}
                 className={`flex-shrink-0 h-12 px-6 font-medium transition-colors ${
-                  manualCode.length >= 3 ? 'bg-stone-900 hover:bg-stone-800 text-white' : 'bg-stone-200 text-stone-700 cursor-not-allowed'
+                  manualCode.length >= MIN_MANUAL_CODE_LENGTH ? 'bg-stone-900 hover:bg-stone-800 text-white' : 'bg-stone-200 text-stone-700 cursor-not-allowed'
                 }`}
               >
                 {t('scanner.addButton')}

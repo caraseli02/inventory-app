@@ -1,4 +1,4 @@
-import { useState, useMemo, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, useMemo, type ChangeEvent, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { updateProduct } from '../lib/api-provider';
 import { uploadImage, isDataUrl } from '../lib/imageUpload';
@@ -120,7 +120,7 @@ export function useProductEdit(
 ): ProductEditState {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
-  const [trackedProductId, setTrackedProductId] = useState(product.id);
+  const productRef = useRef(product);
   const [formData, setFormData] = useState<ProductEditFormData>(() => getInitialFormData(product));
   const [basicOpen, setBasicOpen] = useState(true);
   const [pricingOpen, setPricingOpen] = useState(false);
@@ -131,10 +131,13 @@ export function useProductEdit(
   const [scannerOpen, setScannerOpen] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
 
-  if (product.id !== trackedProductId) {
-    setTrackedProductId(product.id);
-    setFormData(getInitialFormData(product));
-  }
+  useEffect(() => {
+    productRef.current = product;
+  }, [product]);
+
+  useEffect(() => {
+    setFormData(getInitialFormData(productRef.current));
+  }, [product.id]);
 
   const isBarcodeEditable = !product.fields.Barcode;
   const basePrice = product.fields.Price;
