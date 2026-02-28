@@ -87,9 +87,6 @@ export default defineConfig([
   {
     files: [
       // ── Components (mixed concerns or large) ──
-      // TECHNICAL-DEBT: 1,433L — split into useInvoiceImport.ts + InvoicePreviewTable.tsx
-      'src/components/invoice/InvoiceUploadDialog.tsx',
-
 
       // ── Hooks (large functions) ──
 
