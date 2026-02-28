@@ -161,7 +161,6 @@ function classifyCheckoutError(err: unknown, t: TFunction): string {
 }
 
 async function runCheckout({ cart, dispatch, playSound, queryClient, t }: RunCheckoutArgs): Promise<void> {
-  dispatch({ type: 'HIDE_CONFIRM_DIALOG' });
   dispatch({ type: 'START_CHECKOUT' });
   const processingCart = cart.map((item): CartItem =>
     item.status === 'success' ? item : { ...item, status: 'processing' as const, statusMessage: undefined }

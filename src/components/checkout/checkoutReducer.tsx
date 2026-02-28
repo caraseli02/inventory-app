@@ -17,7 +17,6 @@ export interface CheckoutState {
 
   // Scanner state
   scannedCode: string | null;
-  showScanner: boolean;
   manualCode: string;
   barcodeSource: 'scanner' | 'quick-add' | null;
 
@@ -27,8 +26,6 @@ export interface CheckoutState {
 
   // UI state
   isCartExpanded: boolean;
-  showConfirmDialog: boolean;
-  confirmDialogMessage: string;
   showReviewModal: boolean;
   summaryExpanded: boolean;
 }
@@ -50,8 +47,6 @@ export type CheckoutAction =
   // Scanner actions
   | { type: 'SET_SCANNED_CODE'; code: string | null; source?: 'scanner' | 'quick-add' }
   | { type: 'SET_MANUAL_CODE'; code: string }
-  | { type: 'TOGGLE_SCANNER' }
-  | { type: 'SET_SHOW_SCANNER'; show: boolean }
 
   // Lookup actions
   | { type: 'REQUEST_LOOKUP' }
@@ -63,8 +58,6 @@ export type CheckoutAction =
   // UI actions
   | { type: 'TOGGLE_CART_EXPANDED' }
   | { type: 'SET_CART_EXPANDED'; expanded: boolean }
-  | { type: 'SHOW_CONFIRM_DIALOG'; message: string }
-  | { type: 'HIDE_CONFIRM_DIALOG' }
   | { type: 'SHOW_REVIEW_MODAL' }
   | { type: 'HIDE_REVIEW_MODAL' }
   | { type: 'TOGGLE_SUMMARY_EXPANDED' };
@@ -81,14 +74,11 @@ export const initialState: CheckoutState = {
   completedTotalQuantity: 0,
   completedReferenceNumber: '',
   scannedCode: null,
-  showScanner: true,
   manualCode: '',
   barcodeSource: null,
   lookupRequested: false,
   lookupError: null,
   isCartExpanded: false,
-  showConfirmDialog: false,
-  confirmDialogMessage: '',
   showReviewModal: false,
   summaryExpanded: false,
 };
@@ -222,12 +212,6 @@ export function checkoutReducer(state: CheckoutState, action: CheckoutAction): C
     case 'SET_MANUAL_CODE':
       return { ...state, manualCode: action.code };
 
-    case 'TOGGLE_SCANNER':
-      return { ...state, showScanner: !state.showScanner };
-
-    case 'SET_SHOW_SCANNER':
-      return { ...state, showScanner: action.show };
-
     // Lookup actions
     case 'REQUEST_LOOKUP':
       return { ...state, lookupRequested: true, lookupError: null };
@@ -250,12 +234,6 @@ export function checkoutReducer(state: CheckoutState, action: CheckoutAction): C
 
     case 'SET_CART_EXPANDED':
       return { ...state, isCartExpanded: action.expanded };
-
-    case 'SHOW_CONFIRM_DIALOG':
-      return { ...state, showConfirmDialog: true, confirmDialogMessage: action.message };
-
-    case 'HIDE_CONFIRM_DIALOG':
-      return { ...state, showConfirmDialog: false, confirmDialogMessage: '' };
 
     case 'SHOW_REVIEW_MODAL':
       return { ...state, showReviewModal: true };
