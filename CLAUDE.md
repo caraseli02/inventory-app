@@ -846,6 +846,18 @@ These fields are validated by the `High-Risk PR Checklist` CI job and are define
 - Default mode is `enforce`.
 - Temporary relax mode: set repository variable `RISK_POLICY_MODE=advisory`.
 
+### Delivery Policy (IMPORTANT)
+
+- **Releasable source of truth**: a change is releasable only when required CI checks are green.
+- `claude-progress.md` and `feature_list.json` are planning/tracking artifacts, not release gates.
+- Local hooks are split for feedback speed:
+  - `pre-commit`: root-file checks, docs validation, typecheck, lint
+  - `pre-push`: unit + integration tests
+  - E2E remains CI-gated via risk-tiered workflow.
+- Branch/PR policy:
+  - Target branch lifetime: under 48h
+  - PR size guidance: warn over 300 net LOC; hard limit over 600 unless `size-exception` label + justification
+
 ## Common Pitfalls
 
 1. **Using raw HTML elements**: Never use `<button>`, `<input>`, `<select>`, etc. - ALWAYS use shadcn components from `@/components/ui/`

@@ -135,6 +135,47 @@ jobs:
             ./scripts/detect-risk-tier.sh main "$PR_LABELS" "$BEFORE_SHA" "$AFTER_SHA"
           fi
 
+  pr-size-policy:
+    name: PR Size Policy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Enforce PR size thresholds
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info('No pull request payload; skipping.');
+              return;
+            }
+
+            const size = (pr.additions || 0) + (pr.deletions || 0);
+            const labels = (pr.labels || []).map((l) => l.name);
+            const hasException = labels.includes('size-exception');
+            const warnThreshold = 300;
+            const failThreshold = 600;
+
+            core.info(`PR size: ${size} (additions: ${pr.additions}, deletions: ${pr.deletions})`);
+
+            if (size > warnThreshold) {
+              core.warning(
+                `PR size ${size} is above recommended threshold (${warnThreshold}). Consider splitting into smaller PRs.`
+              );
+            }
+
+            if (size > failThreshold && !hasException) {
+              core.setFailed(
+                `PR size ${size} exceeds hard limit (${failThreshold}). Add 'size-exception' label and include justification in PR body.`
+              );
+            }
+
+            if (size > failThreshold && hasException) {
+              core.warning(
+                `PR size ${size} exceeds hard limit (${failThreshold}) but 'size-exception' label is present.`
+              );
+            }
+
   unit-tests:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest

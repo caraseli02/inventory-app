@@ -5,10 +5,16 @@ Quality gates that run locally and in GitHub Actions.
 ## Local Development
 
 Pre-commit hook runs:
+- `pnpm check-root-files`
 - `pnpm validate-docs`
 - `pnpm typecheck`
 - `pnpm lint`
-- `CI=true pnpm test:e2e`
+
+Pre-push hook runs:
+- `pnpm test:unit`
+- `pnpm test:integration`
+
+E2E remains CI-gated (risk-tier controlled in `.github/workflows/ci.yml`).
 
 This blocks commits when core checks fail.
 
@@ -32,6 +38,12 @@ Tier effects:
 - `low`: selective tests via `scripts/detect-tests.sh`
 - `medium`: broader unit + integration + e2e
 - `high`: full tests + coverage + high-risk PR checklist validation
+
+## PR Size Policy
+
+For pull requests:
+- Warn threshold: 300 net LOC (additions + deletions)
+- Hard fail threshold: 600 net LOC unless `size-exception` label is present with justification in PR body
 
 Current rollout mode defaults to `enforce` (missing items fail CI). You can temporarily relax checks by setting repository variable `RISK_POLICY_MODE=advisory`.
 
