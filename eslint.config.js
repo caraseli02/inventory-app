@@ -94,16 +94,16 @@ export default defineConfig([
 
 
       // ── Lib: backend + data layer ──
-      // TECHNICAL-DEBT: complexity 23/26 — legacy Airtable code, migrate to supabase-api
+      // NEEDS-EVALUATION: complexity 23/26 — legacy Airtable code, deferred until
+      // Airtable backend is fully removed or migrated to supabase-api
       'src/lib/api.ts',
 
 
-// TECHNICAL-DEBT: 141L function, complexity 35 — extract column mappers
+// NEEDS-EVALUATION: 141L function, complexity 35 — column mapper extraction
+      // strategy unclear; evaluate before refactoring (skip for now)
       'src/lib/xlsx/index.ts',
 
       // ── Pages (large or complex) ──
-      // TECHNICAL-DEBT: 1,146L, complexity 21 — extract CheckoutSummary, CheckoutCart components
-      'src/pages/CheckoutPage.tsx',
     ],
     rules: {
       'max-lines': 'off',
