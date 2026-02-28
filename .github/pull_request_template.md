@@ -1,11 +1,17 @@
 ## Summary
 - What changed
 - Why it changed
+- If PR is large, why splitting was not feasible
 
 ## Risk Tier (auto-detected in CI)
 - [ ] Low
 - [ ] Medium
 - [ ] High
+
+## PR Size Policy
+- Recommended: keep PR under 300 net LOC (additions + deletions)
+- Hard limit: over 600 net LOC fails CI unless `size-exception` label is added
+- If using `size-exception`, include explicit justification in Summary
 
 ## Testing
 - [ ] `pnpm typecheck`

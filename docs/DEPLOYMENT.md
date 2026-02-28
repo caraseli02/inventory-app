@@ -12,6 +12,10 @@ Complete guide for deploying the Grocery Inventory App to production.
 
 This repository uses CI risk tiers to scale checks for features, deploys, and refactors.
 
+Release truth policy:
+- **CI green = releasable**. Required GitHub checks are the canonical release gate.
+- Planning docs (`claude-progress.md`, `feature_list.json`) are informational and do not override CI outcomes.
+
 - `low`: docs/non-critical edits, selective tests.
 - `medium`: broader unit/integration/e2e checks.
 - `high`: full tests + coverage + PR checklist requirements.
