@@ -189,6 +189,7 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
   const [activeFilter, setActiveFilter] = useState<OrderStatus | 'all'>('pending');
   const queryClient = useQueryClient();
   const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const shouldPoll = !realtimeConnected;
 
   useEffect(() => {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -222,8 +223,11 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
   const { data: rawOrders, isLoading, error, refetch: refetchOrders } = useQuery({
     queryKey: ['orders', activeFilter],
     queryFn: () => getOrders(activeFilter === 'all' ? undefined : activeFilter),
-    staleTime: 1000 * 30,
-    refetchInterval: realtimeConnected ? false : 10_000,
+    staleTime: shouldPoll ? 0 : 1000 * 30,
+    refetchInterval: shouldPoll ? 10_000 : false,
+    refetchIntervalInBackground: shouldPoll,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 
   // Separate query for pending count — independent of active filter so the
@@ -231,8 +235,11 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
   const { data: pendingOrders } = useQuery({
     queryKey: ['orders', 'pending'],
     queryFn: () => getOrders('pending'),
-    staleTime: 1000 * 30,
-    refetchInterval: realtimeConnected ? false : 10_000,
+    staleTime: shouldPoll ? 0 : 1000 * 30,
+    refetchInterval: shouldPoll ? 10_000 : false,
+    refetchIntervalInBackground: shouldPoll,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 
   const hasError = !!error;
