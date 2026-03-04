@@ -1,10 +1,10 @@
 {
   "metadata": {
     "version": "1.5.0",
-    "last_updated": "2026-02-22",
+    "last_updated": "2026-03-04",
     "project": "Inventory App - Grocery Management",
     "solutions_directory": "docs/solutions/",
-    "total_features": 29,
+    "total_features": 30,
     "implemented": 24,
     "tested": 21,
     "warning": "⚠️ STRICTLY DO NOT REMOVE OR MODIFY ANYTHING IN THIS FILE BEYOND MARKING FEATURES AS IMPLEMENTED"
@@ -1467,6 +1467,36 @@
           "test_file": null
         }
       ]
+    },
+    {
+      "id": "F030",
+      "name": "WhatsApp AI Agent (Customer Q&A + Pickup Orders)",
+      "category": "AI & Integrations",
+      "priority": "Post-MVP",
+      "spec": "docs/specs/whatsapp_agent.md",
+      "implemented": false,
+      "tested": false,
+      "steps": [
+        { "step": 1, "description": "Create orders + conversation_history Supabase tables (migration)", "completed": true },
+        { "step": 2, "description": "Orders types and CRUD API (orders-api.ts)", "completed": true },
+        { "step": 3, "description": "OrdersPage — owner view with confirm/cancel", "completed": true },
+        { "step": 4, "description": "WhatsApp webhook + Claude AI loop (api/whatsapp.ts)", "completed": true },
+        { "step": 5, "description": "Apply migration to Supabase (GitHub #123 done)", "completed": true },
+        { "step": 6, "description": "Configure Twilio sandbox + Vercel env vars (GitHub #124 done)", "completed": true },
+        { "step": 7, "description": "WhatsApp reply to customer on owner confirm/cancel (#121 done)", "completed": true },
+        { "step": 8, "description": "OrdersPage real-time updates via Supabase Realtime (#120 done)", "completed": true },
+        { "step": 9, "description": "Store info config — name, address, hours in env vars (#122 open)", "completed": false }
+      ],
+      "test_scenarios": [
+        { "scenario": "Customer asks about product availability in Romanian — agent replies in Romanian with live stock", "tested": false, "test_file": null },
+        { "scenario": "Customer asks about product availability in English — agent replies in English", "tested": false, "test_file": null },
+        { "scenario": "Customer places a pickup order — order created in DB with status pending", "tested": false, "test_file": null },
+        { "scenario": "Out-of-stock product queried — agent says unavailable, does not create order", "tested": false, "test_file": null },
+        { "scenario": "Owner confirms order in OrdersPage — stock deducted, customer gets WhatsApp reply", "tested": false, "test_file": null },
+        { "scenario": "Owner cancels order — no stock movement, customer gets WhatsApp reply", "tested": false, "test_file": null },
+        { "scenario": "New order appears in OrdersPage in real-time without refresh", "tested": false, "test_file": null },
+        { "scenario": "Customer asks store hours — agent replies with correct hours from config", "tested": false, "test_file": null }
+      ]
     }
   ],
   "_deprecated_known_bugs": [
@@ -1484,35 +1514,5 @@
       "suspected_cause": "Image field update logic - Airtable attachment format may differ on update vs create",
       "workaround": "Delete image in Airtable first, then add new image"
     }
-  ,{
-    "id": "F030",
-    "name": "WhatsApp AI Agent (Customer Q&A + Pickup Orders)",
-    "category": "AI & Integrations",
-    "priority": "Post-MVP",
-    "spec": "docs/specs/whatsapp_agent.md",
-    "implemented": false,
-    "tested": false,
-    "steps": [
-      { "step": 1, "description": "Create orders + conversation_history Supabase tables (migration)", "completed": true },
-      { "step": 2, "description": "Orders types and CRUD API (orders-api.ts)", "completed": true },
-      { "step": 3, "description": "OrdersPage — owner view with confirm/cancel", "completed": true },
-      { "step": 4, "description": "WhatsApp webhook + Claude AI loop (api/whatsapp.ts)", "completed": true },
-      { "step": 5, "description": "Apply migration to Supabase (GitHub #123 done)", "completed": true },
-      { "step": 6, "description": "Configure Twilio sandbox + Vercel env vars (GitHub #124 done)", "completed": true },
-      { "step": 7, "description": "WhatsApp reply to customer on owner confirm/cancel (#121 done)", "completed": true },
-      { "step": 8, "description": "OrdersPage real-time updates via Supabase Realtime (#120 open)", "completed": false },
-      { "step": 9, "description": "Store info config — name, address, hours in env vars (#122 open)", "completed": false }
-    ],
-    "test_scenarios": [
-      { "scenario": "Customer asks about product availability in Romanian — agent replies in Romanian with live stock", "tested": false, "test_file": null },
-      { "scenario": "Customer asks about product availability in English — agent replies in English", "tested": false, "test_file": null },
-      { "scenario": "Customer places a pickup order — order created in DB with status pending", "tested": false, "test_file": null },
-      { "scenario": "Out-of-stock product queried — agent says unavailable, does not create order", "tested": false, "test_file": null },
-      { "scenario": "Owner confirms order in OrdersPage — stock deducted, customer gets WhatsApp reply", "tested": false, "test_file": null },
-      { "scenario": "Owner cancels order — no stock movement, customer gets WhatsApp reply", "tested": false, "test_file": null },
-      { "scenario": "New order appears in OrdersPage in real-time without refresh", "tested": false, "test_file": null },
-      { "scenario": "Customer asks store hours — agent replies with correct hours from config", "tested": false, "test_file": null }
-    ]
-  }
   ]
 }

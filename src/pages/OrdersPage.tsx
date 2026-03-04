@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, XCircle, Clock, ShoppingBag, Phone, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/hooks/useToast';
 import { getOrders, confirmOrder, cancelOrder } from '@/lib/orders-api';
+import { supabase } from '@/lib/supabase';
 import type { Order, OrderStatus } from '@/types/orders';
 
 interface OrdersPageProps {
@@ -186,11 +187,47 @@ function OrderCard({ order }: { order: Order }) {
 
 export default function OrdersPage({ onBack }: OrdersPageProps) {
   const [activeFilter, setActiveFilter] = useState<OrderStatus | 'all'>('pending');
+  const queryClient = useQueryClient();
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const shouldPoll = !realtimeConnected;
+
+  useEffect(() => {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) return;
+
+    const channel = supabase
+      .channel('orders-page')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['orders'] });
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setRealtimeConnected(true);
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setRealtimeConnected(false);
+          console.warn('[orders realtime] subscription status:', status);
+        }
+      });
+
+    return () => {
+      void channel.unsubscribe();
+      supabase.removeChannel(channel);
+      setRealtimeConnected(false);
+    };
+  }, [queryClient]);
 
   const { data: rawOrders, isLoading, error, refetch: refetchOrders } = useQuery({
     queryKey: ['orders', activeFilter],
     queryFn: () => getOrders(activeFilter === 'all' ? undefined : activeFilter),
-    staleTime: 1000 * 30,
+    staleTime: shouldPoll ? 0 : 1000 * 30,
+    refetchInterval: shouldPoll ? 10_000 : false,
+    refetchIntervalInBackground: shouldPoll,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 
   // Separate query for pending count — independent of active filter so the
@@ -198,7 +235,11 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
   const { data: pendingOrders } = useQuery({
     queryKey: ['orders', 'pending'],
     queryFn: () => getOrders('pending'),
-    staleTime: 1000 * 30,
+    staleTime: shouldPoll ? 0 : 1000 * 30,
+    refetchInterval: shouldPoll ? 10_000 : false,
+    refetchIntervalInBackground: shouldPoll,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 
   const hasError = !!error;
