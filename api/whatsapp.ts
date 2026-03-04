@@ -26,6 +26,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
+import { validateTwilioSignature } from './lib/twilio-signature';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,7 +47,9 @@ interface ConversationMessage {
 
 interface ProductRow {
   id: string;
+  created_at: string;
   name: string;
+  category: string | null;
   price: number | null;
   price_50: number | null;
   price_70: number | null;
@@ -71,6 +74,27 @@ interface MovementRow {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).end();
+  }
+
+  const authToken = process.env.TWILIO_AUTH_TOKEN ?? '';
+  if (!authToken) {
+    console.error('[whatsapp] Missing TWILIO_AUTH_TOKEN (required for signature validation)');
+    return res.status(500).json({ error: 'Twilio not configured' });
+  }
+
+  const signatureHeader = String(req.headers['x-twilio-signature'] ?? '');
+  const absoluteUrl = getAbsoluteUrl(req);
+  const twilioParams = normalizeTwilioParams(req.body);
+  const isValid = validateTwilioSignature({
+    authToken,
+    url: absoluteUrl,
+    params: twilioParams,
+    signature: signatureHeader,
+  });
+
+  if (!isValid) {
+    console.warn('[whatsapp] Invalid or missing Twilio signature');
+    return res.status(403).end();
   }
 
   const body = req.body as TwilioBody;
@@ -118,9 +142,10 @@ async function buildReply(phone: string, name: string, text: string): Promise<st
   );
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+  const intent = classifyIncomingText(text);
   const [history, inventoryText] = await Promise.all([
     getHistory(sb, phone),
-    getInventorySummary(sb),
+    intent === 'store_info' ? Promise.resolve('') : getInventorySummary(sb, { intent, text }),
   ]);
 
   const messages: Anthropic.MessageParam[] = [
@@ -155,54 +180,144 @@ function buildSystemPrompt(name: string, phone: string, inventoryText: string): 
   });
 
   const storeName    = process.env.STORE_NAME    ?? 'magazinul nostru';
-  const storeAddress = process.env.STORE_ADDRESS ?? '(adresă neconfigurată)';
-  const storeHours   = process.env.STORE_HOURS   ?? '(program neconfigurat)';
+  const storeAddress = process.env.STORE_ADDRESS ?? '';
+  const storeHours   = process.env.STORE_HOURS   ?? '';
   const storePhone   = process.env.STORE_PHONE   ?? '';
 
   return `Ești asistentul WhatsApp al ${storeName}.
-Adresă: ${storeAddress}
-Program: ${storeHours}${storePhone ? `\nTelefon: ${storePhone}` : ''}
+${storeAddress ? `Adresă: ${storeAddress}\n` : ''}${storeHours ? `Program: ${storeHours}\n` : ''}${storePhone ? `Telefon: ${storePhone}\n` : ''}
 
 Client curent: ${name} (telefon: ${phone})
 Data de azi: ${today}
 
-INVENTAR LIVE:
-${inventoryText}
+${inventoryText ? `INVENTAR LIVE:\n${inventoryText}\n` : ''}
 
 REGULI:
 1. Răspunde în limba clientului (română sau engleză) — auto-detectează.
 2. Fii prietenos și concis — maxim 3 propoziții per mesaj.
-3. Folosește doar datele din inventarul de mai sus. Nu inventa produse sau prețuri.
+3. Pentru produse/stoc/preț, folosește doar datele din inventar (dacă există). Nu inventa produse sau prețuri.
 4. Dacă stocul unui produs este ≤ 0, spune că nu este disponibil momentan.
 5. Nu folosi markdown (fără *, _, #) — WhatsApp afișează plain text.
-6. Când un client confirmă o comandă, adaugă pe ultima linie:
-   ORDER:{"customer_name":"${name}","customer_phone":"${phone}","items":[{"product_id":"ID_PRODUS","name":"Nume produs","qty":1,"unit_price":0.00}],"total_price":0.00,"pickup_time":"ora menționată"}`;
+6. Dacă ești întrebat de adresă/program și nu sunt în mesaj, spune că nu ai informația configurată și recomandă să sune la magazin (dacă există telefon) sau să întrebe în magazin.
+7. Când un client confirmă o comandă, adaugă pe ultima linie:
+   ORDER:{"customer_name":"${name}","customer_phone":"${phone}","items":[{"name":"Nume produs","qty":1}],"pickup_time":"ora menționată"}`;
 }
 
 // ─── Inventory summary ───────────────────────────────────────────────────────
 
-async function getInventorySummary(sb: ReturnType<typeof createClient>): Promise<string> {
-  const [{ data: products }, { data: movements }] = await Promise.all([
-    sb.from('products').select('id, name, price, price_50, price_70, price_100, markup').limit(200),
-    sb.from('stock_movements').select('product_id, quantity'),
+type IncomingIntent = 'store_info' | 'browse_inventory' | 'product_query';
+
+function classifyIncomingText(text: string): IncomingIntent {
+  const t = text.toLowerCase();
+  if (/(adresă|adresa|address|unde|locați|locati|program|orar|hours|open|închis|inchis|telefon|phone|contact)/.test(t)) {
+    return 'store_info';
+  }
+  if (/(ce av(e|ă)ți|lista|list|inventar|produse|products|available|aveți pe stoc)/.test(t)) {
+    return 'browse_inventory';
+  }
+  return 'product_query';
+}
+
+function extractSearchTerm(text: string): string | null {
+  const cleaned = text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const stop = new Set([
+    'ai', 'aveti', 'aveți', 'are', 'ati', 'ați', 'as', 'aș', 'as', 'vrea', 'vreau', 'imi', 'îmi', 'mi', 'un', 'o',
+    'la', 'in', 'în', 'pe', 'cu', 'de', 'din', 'si', 'și', 'sau', 'care', 'ce', 'cat', 'cât', 'este', 'mai', 'mult',
+    'do', 'you', 'have', 'any', 'is', 'it', 'there', 'a', 'an', 'the', 'of', 'to', 'for', 'in', 'on', 'with', 'please',
+    'price', 'cost', 'stock', 'available',
   ]);
 
+  const candidates = cleaned.filter((w) => w.length >= 3 && !stop.has(w));
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => b.length - a.length);
+  return candidates[0] ?? null;
+}
+
+async function getInventorySummary(
+  sb: ReturnType<typeof createClient>,
+  args: { intent: IncomingIntent; text: string }
+): Promise<string> {
+  const limit = args.intent === 'browse_inventory' ? 40 : 20;
+
+  const term = args.intent === 'product_query' ? extractSearchTerm(args.text) : null;
+  const productsQuery = sb
+    .from('products')
+    .select('id, created_at, name, category, price, price_50, price_70, price_100, markup');
+
+  const { data: products } = term
+    ? await productsQuery.ilike('name', `%${term}%`).limit(limit)
+    : await productsQuery.order('created_at', { ascending: false }).limit(limit);
+
   if (!products?.length) return 'Inventar indisponibil.';
+
+  const ids = (products as ProductRow[]).map((p) => p.id);
+  const { data: movements } = await sb
+    .from('stock_movements')
+    .select('product_id, quantity')
+    .in('product_id', ids);
 
   const stockMap: Record<string, number> = {};
   for (const m of (movements ?? []) as MovementRow[]) {
     stockMap[m.product_id] = (stockMap[m.product_id] ?? 0) + m.quantity;
   }
 
-  return (products as ProductRow[])
-    .map(p => {
-      const stock = stockMap[p.id] ?? 0;
+  const rows: ProductRow[] = products as ProductRow[];
+
+  let alternatives: ProductRow[] = [];
+  if (args.intent === 'product_query' && rows[0]) {
+    const first = rows[0];
+    const firstStock = stockMap[first.id] ?? 0;
+    if (firstStock <= 0 && first.category) {
+      const { data: sameCategory } = await sb
+        .from('products')
+        .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
+        .eq('category', first.category)
+        .limit(25);
+
+      const candidateIds = (sameCategory ?? []).map((p: { id: string }) => p.id);
+      const { data: altMovements } = candidateIds.length
+        ? await sb
+          .from('stock_movements')
+          .select('product_id, quantity')
+          .in('product_id', candidateIds)
+        : { data: [] as unknown[] };
+
+      const altStockMap: Record<string, number> = {};
+      for (const m of (altMovements ?? []) as MovementRow[]) {
+        altStockMap[m.product_id] = (altStockMap[m.product_id] ?? 0) + m.quantity;
+      }
+
+      alternatives = (sameCategory as ProductRow[] ?? [])
+        .filter((p) => p.id !== first.id)
+        .filter((p) => (altStockMap[p.id] ?? 0) > 0)
+        .slice(0, 3);
+    }
+  }
+
+  const lines = rows.map((p) => {
+    const stock = stockMap[p.id] ?? 0;
+    const storePrice = getStorePrice(p);
+    const price = storePrice != null ? `€${storePrice.toFixed(2)}` : 'preț nedefinit';
+    const availability = stock > 0 ? `stoc: ${stock}` : 'indisponibil';
+    const cat = p.category ? ` (${p.category})` : '';
+    return `• ${p.name}${cat} — ${price}, ${availability}`;
+  });
+
+  if (alternatives.length) {
+    lines.push('Alternative (în stoc):');
+    for (const p of alternatives) {
       const storePrice = getStorePrice(p);
       const price = storePrice != null ? `€${storePrice.toFixed(2)}` : 'preț nedefinit';
-      const availability = stock > 0 ? `stoc: ${stock}` : 'indisponibil';
-      return `• ${p.name} — ${price}, ${availability} [id:${p.id}]`;
-    })
-    .join('\n');
+      lines.push(`• ${p.name} — ${price}`);
+    }
+  }
+
+  return lines.join('\n');
 }
 
 // ─── Order intent ─────────────────────────────────────────────────────────────
@@ -218,18 +333,20 @@ async function processOrderIntent(
     const orderData = JSON.parse(match[1]) as {
       customer_name: string;
       customer_phone: string;
-      items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>;
-      total_price: number;
+      items: Array<{ product_id?: string; name: string; qty: number; unit_price?: number }>;
+      total_price?: number;
       pickup_time?: string;
     };
+
+    const resolved = await resolveOrderItems(sb, orderData.items);
 
     const { data: order } = await sb
       .from('orders')
       .insert({
         customer_name: orderData.customer_name,
         customer_phone: orderData.customer_phone,
-        items: orderData.items,
-        total_price: orderData.total_price,
+        items: resolved.items,
+        total_price: resolved.totalPrice,
         pickup_time: orderData.pickup_time ?? null,
       })
       .select('order_number')
@@ -239,7 +356,7 @@ async function processOrderIntent(
     return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, `✅ Comanda ${orderNumber} înregistrată! Te așteptăm.`);
   } catch (err) {
     console.error('[whatsapp] order creation failed:', err);
-    return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, '');
+    return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, '⚠️ Nu am reușit să înregistrez comanda automat. Te rog încearcă din nou.');
   }
 }
 
@@ -251,9 +368,16 @@ async function getHistory(
 ): Promise<ConversationMessage[]> {
   const { data } = await sb
     .from('conversation_history')
-    .select('messages')
+    .select('messages, updated_at')
     .eq('phone_number', phone)
     .maybeSingle();
+
+  const ttlDays = Number(process.env.CONVERSATION_TTL_DAYS ?? '7');
+  const effectiveTtlDays = Number.isFinite(ttlDays) && ttlDays > 0 ? ttlDays : 7;
+
+  const updatedAt = data?.updated_at ? new Date(String(data.updated_at)).getTime() : 0;
+  const isExpired = updatedAt > 0 && (Date.now() - updatedAt) > effectiveTtlDays * 24 * 60 * 60 * 1000;
+  if (isExpired) return [];
 
   return ((data?.messages ?? []) as ConversationMessage[]).slice(-20);
 }
@@ -269,4 +393,82 @@ async function saveHistory(
       { phone_number: phone, messages: messages.slice(-20) },
       { onConflict: 'phone_number' }
     );
+}
+
+async function resolveOrderItems(
+  sb: ReturnType<typeof createClient>,
+  items: Array<{ product_id?: string; name: string; qty: number; unit_price?: number }>
+): Promise<{ items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>; totalPrice: number }> {
+  const resolvedItems: Array<{ product_id: string; name: string; qty: number; unit_price: number }> = [];
+
+  for (const item of items ?? []) {
+    const qty = Math.max(1, Math.floor(Number(item.qty) || 1));
+    const name = String(item.name ?? '').trim();
+    if (!name) continue;
+
+    const baseQuery = sb
+      .from('products')
+      .select('id, created_at, name, category, price, price_50, price_70, price_100, markup');
+
+    const { data: product } = item.product_id
+      ? await baseQuery.eq('id', item.product_id).maybeSingle()
+      : await baseQuery.ilike('name', name).maybeSingle();
+
+    const p = product as ProductRow | null;
+    if (!p) throw new Error(`Product not found for item: ${name}`);
+
+    const unit = getStorePrice(p);
+    if (unit == null) throw new Error(`Missing price for item: ${p.name}`);
+
+    resolvedItems.push({
+      product_id: p.id,
+      name: p.name,
+      qty,
+      unit_price: Number(unit.toFixed(2)),
+    });
+  }
+
+  if (!resolvedItems.length) throw new Error('No valid items');
+
+  const ids = resolvedItems.map((i) => i.product_id);
+  const { data: movements } = await sb
+    .from('stock_movements')
+    .select('product_id, quantity')
+    .in('product_id', ids);
+
+  const stockMap: Record<string, number> = {};
+  for (const m of (movements ?? []) as MovementRow[]) {
+    stockMap[m.product_id] = (stockMap[m.product_id] ?? 0) + m.quantity;
+  }
+
+  for (const item of resolvedItems) {
+    const stock = stockMap[item.product_id] ?? 0;
+    if (stock < item.qty) throw new Error(`Insufficient stock for ${item.name}`);
+  }
+
+  const totalPrice = resolvedItems.reduce((sum, i) => sum + i.qty * i.unit_price, 0);
+  return { items: resolvedItems, totalPrice: Number(totalPrice.toFixed(2)) };
+}
+
+function normalizeTwilioParams(body: unknown): Record<string, string> {
+  if (typeof body === 'string') {
+    const params = new URLSearchParams(body);
+    return Object.fromEntries(params.entries());
+  }
+
+  if (!body || typeof body !== 'object') return {};
+
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+    if (v === undefined || v === null) continue;
+    out[k] = String(v);
+  }
+  return out;
+}
+
+function getAbsoluteUrl(req: VercelRequest): string {
+  const proto = String(req.headers['x-forwarded-proto'] ?? 'https');
+  const host = String(req.headers.host ?? '');
+  const path = String(req.url ?? '/api/whatsapp').split('?')[0] ?? '/api/whatsapp';
+  return `${proto}://${host}${path}`;
 }

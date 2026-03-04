@@ -324,15 +324,16 @@ Rules:
 - [x] **#124** Configure Twilio sandbox + Vercel env vars (done ✅)
 
 #### P1 — Next up
-- [ ] **#120** OrdersPage real-time updates via Supabase Realtime (~30min)
-- [ ] **#121** WhatsApp reply to customer on owner confirm/cancel (~1h)
+- [x] **#120** OrdersPage real-time updates via Supabase Realtime (~30min)
+- [x] **#121** WhatsApp reply to customer on owner confirm/cancel (~1h)
 - [ ] **#122** Store info config (STORE_NAME/ADDRESS/HOURS in Vercel env vars) (~30min)
+  - Runbook: `docs/runbooks/whatsapp_agent.md`
 
 #### P2 — Quality & robustness
-- [ ] **#125** Validate Twilio request signature (security)
-- [ ] **#126** Avoid sending full inventory in every Claude prompt (performance)
-- [ ] **#127** Conversation history TTL / expiry (quality)
-- [ ] **#128** Suggest alternative products when item out of stock — R11 (UX)
+- [x] **#125** Validate Twilio request signature (security)
+- [x] **#126** Avoid sending full inventory in every Claude prompt (performance)
+- [x] **#127** Conversation history TTL / expiry (quality)
+- [x] **#128** Suggest alternative products when item out of stock — R11 (UX)
 
 ---
 

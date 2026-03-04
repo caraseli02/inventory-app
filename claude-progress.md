@@ -1,8 +1,8 @@
 # Inventory App - Project Progress Tracker
 
-**Last Updated**: 2026-02-22
+**Last Updated**: 2026-03-04
 **Project Status**: 🚀 MVP Complete - Post-MVP Phase + WhatsApp AI Agent in progress
-**Overall Completion**: 75% (23/30 features implemented — 7 remaining incl. F030 partial)
+**Overall Completion**: 80% (24/30 features implemented — 6 remaining incl. F030 partial)
 
 ---
 
@@ -13,11 +13,11 @@ This document tracks the implementation and testing status of all features in th
 ### Key Metrics
 
 - **Total Features**: 30
-- **Implemented**: 23 (77%)
+- **Implemented**: 24 (80%)
 - **Tested**: 21 (70%)
 - **MVP-Critical Features**: 15/15 (100% complete ✅)
 - **Phase-1 Features**: 8/8 (100% complete ✅)
-- **Post-MVP Features**: F030 IN_PROGRESS (4/9 steps done)
+- **Post-MVP Features**: F030 IN_PROGRESS (8/9 steps done)
 
 ### WhatsApp Agent (F030) — Active Branch: feat/whatsapp-agent
 - ✅ DB migration (orders + conversation_history tables)
@@ -28,13 +28,13 @@ This document tracks the implementation and testing status of all features in th
 - ✅ #124 Twilio sandbox + Vercel env vars configured (done)
 - ✅ End-to-end tested: ORD-001 created via WhatsApp, cancelled via OrdersPage
 - ✅ Store selling price fix (price_50/70/100 instead of purchase cost)
-- ⏳ #120 Real-time order updates (Supabase Realtime)
-- ⏳ #121 WhatsApp reply on confirm/cancel
+- ✅ #120 Real-time order updates (Supabase Realtime)
+- ✅ #121 WhatsApp reply on confirm/cancel
 - ⏳ #122 Store info config (name, address, hours)
-- ⏳ #125 Twilio signature validation (security)
-- ⏳ #126 Avoid full inventory in every prompt (performance)
-- ⏳ #127 Conversation history TTL (quality)
-- ⏳ #128 Suggest alternatives for out-of-stock items (UX)
+- ✅ #125 Twilio signature validation (security)
+- ✅ #126 Avoid full inventory in every prompt (performance)
+- ✅ #127 Conversation history TTL (quality)
+- ✅ #128 Suggest alternatives for out-of-stock items (UX)
 
 ---
 
