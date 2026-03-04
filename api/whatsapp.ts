@@ -148,9 +148,13 @@ async function buildReply(phone: string, name: string, text: string): Promise<st
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const intent = classifyIncomingText(text);
+  if (intent === 'store_info') {
+    return buildStoreInfoReply(text);
+  }
+
   const [history, inventoryText] = await Promise.all([
     getHistory(sb, phone),
-    intent === 'store_info' ? Promise.resolve('') : getInventorySummary(sb, { intent, text }),
+    getInventorySummary(sb, { intent, text }),
   ]);
 
   const messages: Anthropic.MessageParam[] = [
@@ -158,12 +162,21 @@ async function buildReply(phone: string, name: string, text: string): Promise<st
     { role: 'user', content: text },
   ];
 
-  const response = await anthropic.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 512,
-    system: buildSystemPrompt(name, phone, inventoryText),
-    messages,
-  });
+  let response: Anthropic.Messages.Message;
+  try {
+    response = await createAnthropicMessageWithRetry(anthropic, {
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 512,
+      system: buildSystemPrompt(name, phone, inventoryText),
+      messages,
+    });
+  } catch (err) {
+    const overloaded = isAnthropicOverloaded(err);
+    if (overloaded) {
+      return buildOverloadedReply(text);
+    }
+    throw err;
+  }
 
   const replyText = response.content[0].type === 'text' ? response.content[0].text : '';
 
@@ -206,6 +219,82 @@ REGULI:
 6. Dacă ești întrebat de adresă/program și nu sunt în mesaj, spune că nu ai informația configurată și recomandă să sune la magazin (dacă există telefon) sau să întrebe în magazin.
 7. Când un client confirmă o comandă, adaugă pe ultima linie:
    ORDER:{"customer_name":"${name}","customer_phone":"${phone}","items":[{"name":"Nume produs","qty":1}],"pickup_time":"ora menționată"}`;
+}
+
+function detectEnglish(text: string): boolean {
+  const t = text.toLowerCase();
+  return /(address|hours|open|close|phone|contact)/.test(t);
+}
+
+function buildStoreInfoReply(text: string): string {
+  const storeName = process.env.STORE_NAME ?? 'our store';
+  const storeAddress = process.env.STORE_ADDRESS ?? '';
+  const storeHours = process.env.STORE_HOURS ?? '';
+  const storePhone = process.env.STORE_PHONE ?? '';
+
+  const isEn = detectEnglish(text);
+
+  const hasAny = Boolean(storeAddress || storeHours || storePhone);
+  if (!hasAny) {
+    return isEn
+      ? `Sorry — store info isn't configured yet. Please ask in-store.`
+      : `Ne pare rău — informațiile magazinului nu sunt configurate încă. Te rog întreabă în magazin.`;
+  }
+
+  const lines: string[] = [];
+  lines.push(isEn ? `Store: ${storeName}` : `Magazin: ${storeName}`);
+  if (storeAddress) lines.push(isEn ? `Address: ${storeAddress}` : `Adresă: ${storeAddress}`);
+  if (storeHours) lines.push(isEn ? `Hours: ${storeHours}` : `Program: ${storeHours}`);
+  if (storePhone) lines.push(isEn ? `Phone: ${storePhone}` : `Telefon: ${storePhone}`);
+  return lines.join('\n');
+}
+
+function buildOverloadedReply(text: string): string {
+  return detectEnglish(text)
+    ? `Sorry — we're busy right now. Please try again in 1–2 minutes.`
+    : `Ne pare rău — sistemul e ocupat acum. Te rog încearcă din nou în 1–2 minute.`;
+}
+
+function isAnthropicOverloaded(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const status = (err as { status?: unknown }).status;
+  if (status === 529) return true;
+
+  const message = (err as { message?: unknown }).message;
+  if (typeof message === 'string' && message.toLowerCase().includes('overloaded')) return true;
+
+  const errorObj = (err as { error?: unknown }).error;
+  if (errorObj && typeof errorObj === 'object') {
+    const inner = (errorObj as { error?: unknown }).error;
+    if (inner && typeof inner === 'object') {
+      const type = (inner as { type?: unknown }).type;
+      if (type === 'overloaded_error') return true;
+    }
+  }
+
+  return false;
+}
+
+async function createAnthropicMessageWithRetry(
+  anthropic: Anthropic,
+  args: Anthropic.MessageCreateParams
+): Promise<Anthropic.Messages.Message> {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await anthropic.messages.create(args);
+    } catch (err) {
+      const overloaded = isAnthropicOverloaded(err);
+      const isLast = attempt === maxAttempts;
+      if (!overloaded || isLast) throw err;
+
+      const base = attempt === 1 ? 300 : 900;
+      const jitter = Math.floor(Math.random() * 200);
+      await new Promise((r) => setTimeout(r, base + jitter));
+    }
+  }
+
+  throw new Error('Unreachable');
 }
 
 // ─── Inventory summary ───────────────────────────────────────────────────────
