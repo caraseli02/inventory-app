@@ -188,6 +188,7 @@ function OrderCard({ order }: { order: Order }) {
 export default function OrdersPage({ onBack }: OrdersPageProps) {
   const [activeFilter, setActiveFilter] = useState<OrderStatus | 'all'>('pending');
   const queryClient = useQueryClient();
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
 
   useEffect(() => {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -204,7 +205,9 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
         }
       )
       .subscribe((status) => {
+        if (status === 'SUBSCRIBED') setRealtimeConnected(true);
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setRealtimeConnected(false);
           console.warn('[orders realtime] subscription status:', status);
         }
       });
@@ -212,6 +215,7 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
     return () => {
       void channel.unsubscribe();
       supabase.removeChannel(channel);
+      setRealtimeConnected(false);
     };
   }, [queryClient]);
 
@@ -219,6 +223,7 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
     queryKey: ['orders', activeFilter],
     queryFn: () => getOrders(activeFilter === 'all' ? undefined : activeFilter),
     staleTime: 1000 * 30,
+    refetchInterval: realtimeConnected ? false : 10_000,
   });
 
   // Separate query for pending count — independent of active filter so the
@@ -227,6 +232,7 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
     queryKey: ['orders', 'pending'],
     queryFn: () => getOrders('pending'),
     staleTime: 1000 * 30,
+    refetchInterval: realtimeConnected ? false : 10_000,
   });
 
   const hasError = !!error;
