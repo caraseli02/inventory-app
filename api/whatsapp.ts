@@ -69,6 +69,11 @@ interface MovementRow {
   quantity: number;
 }
 
+type ProductMatchResult =
+  | { type: 'match'; product: ProductRow }
+  | { type: 'not_found' }
+  | { type: 'ambiguous'; candidates: string[] };
+
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -356,6 +361,28 @@ async function processOrderIntent(
     return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, `✅ Comanda ${orderNumber} înregistrată! Te așteptăm.`);
   } catch (err) {
     console.error('[whatsapp] order creation failed:', err);
+    const message = err instanceof Error ? err.message : '';
+    if (message.startsWith('AMBIGUOUS_ITEM:')) {
+      const rawName = message.slice('AMBIGUOUS_ITEM:'.length).split('|')[0] ?? 'produs';
+      return replyText.replace(
+        /ORDER:\{[\s\S]*?\}\s*$/,
+        `⚠️ Am găsit mai multe produse pentru „${rawName}”. Te rog trimite denumirea exactă.`
+      );
+    }
+    if (message.startsWith('NOT_FOUND_ITEM:')) {
+      const rawName = message.slice('NOT_FOUND_ITEM:'.length) || 'produsul cerut';
+      return replyText.replace(
+        /ORDER:\{[\s\S]*?\}\s*$/,
+        `⚠️ Nu am găsit „${rawName}” în inventar. Te rog trimite denumirea exactă.`
+      );
+    }
+    if (message.startsWith('OUT_OF_STOCK_ITEM:')) {
+      const rawName = message.slice('OUT_OF_STOCK_ITEM:'.length) || 'produsul cerut';
+      return replyText.replace(
+        /ORDER:\{[\s\S]*?\}\s*$/,
+        `⚠️ „${rawName}” nu are stoc suficient acum. Te rog ajustează cantitatea.`
+      );
+    }
     return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, '⚠️ Nu am reușit să înregistrez comanda automat. Te rog încearcă din nou.');
   }
 }
@@ -406,16 +433,13 @@ async function resolveOrderItems(
     const name = String(item.name ?? '').trim();
     if (!name) continue;
 
-    const baseQuery = sb
-      .from('products')
-      .select('id, created_at, name, category, price, price_50, price_70, price_100, markup');
+    const match = item.product_id
+      ? await resolveProductById(sb, item.product_id)
+      : await resolveProductByName(sb, name);
 
-    const { data: product } = item.product_id
-      ? await baseQuery.eq('id', item.product_id).maybeSingle()
-      : await baseQuery.ilike('name', name).maybeSingle();
-
-    const p = product as ProductRow | null;
-    if (!p) throw new Error(`Product not found for item: ${name}`);
+    if (match.type === 'not_found') throw new Error(`NOT_FOUND_ITEM:${name}`);
+    if (match.type === 'ambiguous') throw new Error(`AMBIGUOUS_ITEM:${name}|${match.candidates.join(', ')}`);
+    const p = match.product;
 
     const unit = getStorePrice(p);
     if (unit == null) throw new Error(`Missing price for item: ${p.name}`);
@@ -443,7 +467,7 @@ async function resolveOrderItems(
 
   for (const item of resolvedItems) {
     const stock = stockMap[item.product_id] ?? 0;
-    if (stock < item.qty) throw new Error(`Insufficient stock for ${item.name}`);
+    if (stock < item.qty) throw new Error(`OUT_OF_STOCK_ITEM:${item.name}`);
   }
 
   const totalPrice = resolvedItems.reduce((sum, i) => sum + i.qty * i.unit_price, 0);
@@ -466,9 +490,98 @@ function normalizeTwilioParams(body: unknown): Record<string, string> {
   return out;
 }
 
-function getAbsoluteUrl(req: VercelRequest): string {
-  const proto = String(req.headers['x-forwarded-proto'] ?? 'https');
-  const host = String(req.headers.host ?? '');
-  const path = String(req.url ?? '/api/whatsapp').split('?')[0] ?? '/api/whatsapp';
-  return `${proto}://${host}${path}`;
+export function getAbsoluteUrl(req: VercelRequest): string {
+  const configured = String(process.env.TWILIO_WEBHOOK_URL ?? '').trim();
+  if (configured) return configured;
+
+  const proto = getForwardedHeader(req.headers['x-forwarded-proto']) || 'https';
+  const host = getForwardedHeader(req.headers['x-forwarded-host']) || getForwardedHeader(req.headers.host);
+  const url = String(req.url ?? '/api/whatsapp');
+
+  return `${proto}://${host}${url}`;
+}
+
+function getForwardedHeader(value: string | string[] | undefined): string {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return String(raw ?? '').split(',')[0]?.trim() ?? '';
+}
+
+function normalizeProductText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function scoreProductName(name: string, query: string): number {
+  if (!name || !query) return 0;
+  if (name === query) return 100;
+  if (name.startsWith(query)) return 85;
+  if (name.includes(query)) return 70;
+
+  const queryTokens = new Set(query.split(' ').filter(Boolean));
+  const nameTokens = new Set(name.split(' ').filter(Boolean));
+  let overlap = 0;
+  for (const t of queryTokens) {
+    if (nameTokens.has(t)) overlap += 1;
+  }
+  return overlap > 0 ? 40 + overlap * 10 : 0;
+}
+
+async function resolveProductById(
+  sb: ReturnType<typeof createClient>,
+  id: string
+): Promise<ProductMatchResult> {
+  const { data: product } = await sb
+    .from('products')
+    .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
+    .eq('id', id)
+    .maybeSingle();
+
+  return product ? { type: 'match', product: product as ProductRow } : { type: 'not_found' };
+}
+
+async function resolveProductByName(
+  sb: ReturnType<typeof createClient>,
+  rawName: string
+): Promise<ProductMatchResult> {
+  const query = normalizeProductText(rawName);
+  if (!query) return { type: 'not_found' };
+
+  const { data: exactRows } = await sb
+    .from('products')
+    .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
+    .ilike('name', rawName.trim())
+    .limit(3);
+
+  const exact = (exactRows as ProductRow[] | null) ?? [];
+  if (exact.length === 1) return { type: 'match', product: exact[0] };
+  if (exact.length > 1) return { type: 'ambiguous', candidates: exact.slice(0, 3).map((p) => p.name) };
+
+  const { data: fuzzyRows } = await sb
+    .from('products')
+    .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
+    .ilike('name', `%${rawName.trim()}%`)
+    .limit(12);
+
+  const candidates = (fuzzyRows as ProductRow[] | null) ?? [];
+  if (!candidates.length) return { type: 'not_found' };
+
+  const ranked = candidates
+    .map((p) => ({
+      product: p,
+      score: scoreProductName(normalizeProductText(p.name), query),
+    }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.product.name.localeCompare(b.product.name, 'ro'));
+
+  if (!ranked.length || ranked[0].score < 50) return { type: 'not_found' };
+  if (ranked.length > 1 && ranked[0].score - ranked[1].score <= 5) {
+    return { type: 'ambiguous', candidates: ranked.slice(0, 3).map((x) => x.product.name) };
+  }
+
+  return { type: 'match', product: ranked[0].product };
 }

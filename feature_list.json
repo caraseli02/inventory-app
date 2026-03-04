@@ -1484,7 +1484,7 @@
         { "step": 5, "description": "Apply migration to Supabase (GitHub #123 done)", "completed": true },
         { "step": 6, "description": "Configure Twilio sandbox + Vercel env vars (GitHub #124 done)", "completed": true },
         { "step": 7, "description": "WhatsApp reply to customer on owner confirm/cancel (#121 done)", "completed": true },
-        { "step": 8, "description": "OrdersPage real-time updates via Supabase Realtime (#120 open)", "completed": true },
+        { "step": 8, "description": "OrdersPage real-time updates via Supabase Realtime (#120 done)", "completed": true },
         { "step": 9, "description": "Store info config — name, address, hours in env vars (#122 open)", "completed": false }
       ],
       "test_scenarios": [
