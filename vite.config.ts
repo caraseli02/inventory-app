@@ -1,14 +1,99 @@
-import { defineConfig } from 'vite'
+import type { IncomingMessage, ServerResponse } from 'node:http'
+import { defineConfig, loadEnv, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 import { VitePWA } from 'vite-plugin-pwa'
 
-const invoiceApiTarget = (process.env.VITE_INVOICE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+function normalizeSimPhone(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '+40000000000';
+  if (trimmed.startsWith('+')) return trimmed;
+  return `+${trimmed}`;
+}
+
+function parseJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    req.on('end', () => {
+      if (chunks.length === 0) {
+        resolve({});
+        return;
+      }
+
+      try {
+        const body = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>;
+        resolve(body ?? {});
+      } catch {
+        resolve({});
+      }
+    });
+  });
+}
+
+function sendJson(res: ServerResponse, statusCode: number, payload: Record<string, unknown>): void {
+  res.statusCode = statusCode;
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.end(JSON.stringify(payload));
+}
+
+function localWhatsappSimulatorPlugin(): PluginOption {
+  return {
+    name: 'local-whatsapp-simulator',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/api/whatsapp-simulate', async (req, res) => {
+        if (req.method !== 'POST') {
+          sendJson(res, 405, { error: 'Method Not Allowed' });
+          return;
+        }
+
+        try {
+          const body = await parseJsonBody(req);
+          const text = String(body.text ?? '').trim();
+          const phone = normalizeSimPhone(String(body.phone ?? ''));
+          const name = String(body.name ?? 'Simulator').trim() || 'Simulator';
+
+          if (!text) {
+            sendJson(res, 400, { ok: false, error: 'text is required' });
+            return;
+          }
+
+          const expectedSecret = process.env.WHATSAPP_SIMULATOR_SECRET ?? process.env.VITE_NOTIFY_SECRET ?? '';
+          const providedSecret = String(req.headers['x-notify-secret'] ?? '');
+          if (expectedSecret && providedSecret !== expectedSecret) {
+            sendJson(res, 401, { ok: false, error: 'Unauthorized' });
+            return;
+          }
+
+          const module = await server.ssrLoadModule('/api/whatsapp.ts');
+          const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
+          const reply = hasAnthropicKey
+            ? await module.buildReply(phone, name, text)
+            : await module.buildLocalSimulationReply(phone, name, text);
+          sendJson(res, 200, { ok: true, reply });
+        } catch (error) {
+          console.error('[local-whatsapp-simulate] failed:', error);
+          sendJson(res, 500, { ok: false, error: 'Simulation failed' });
+        }
+      });
+    },
+  };
+}
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  for (const [key, value] of Object.entries(env)) {
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
+  }
+  const invoiceApiTarget = (process.env.VITE_INVOICE_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+
+  return {
   server: {
     proxy: {
       // Dev-only proxy for invoice FastAPI endpoints to avoid browser CORS in local setup.
@@ -58,6 +143,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
   },
   plugins: [
+    localWhatsappSimulatorPlugin(),
     react(),
     tailwindcss(),
     VitePWA({
@@ -191,4 +277,5 @@ export default defineConfig({
       }
     })
   ],
+  };
 })

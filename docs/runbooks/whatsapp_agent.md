@@ -20,8 +20,12 @@
 
 ### Internal simulator (optional): `POST /api/whatsapp-simulate`
 
-- `WHATSAPP_SIMULATOR_SECRET` (recommended; falls back to `VITE_NOTIFY_SECRET`)
+- `WHATSAPP_SIMULATOR_SECRET` (optional; falls back to `VITE_NOTIFY_SECRET`)
 - `VITE_ENABLE_WHATSAPP_SIMULATOR=true` (frontend toggle to show simulator panel in Orders page)
+- Local Vite dev (`pnpm dev`) serves this endpoint directly (no Vercel URL/proxy needed).
+- If `ANTHROPIC_API_KEY` is missing locally, simulator still works with direct order payload:
+  - `ORDER:{"customer_name":"...","customer_phone":"+40...","items":[{"name":"...","qty":1}],"pickup_time":"18:30"}`
+  - or raw JSON object with same fields (without `ORDER:` prefix).
 
 ### Store info (shown in replies)
 

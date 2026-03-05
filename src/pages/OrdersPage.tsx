@@ -353,6 +353,9 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
                   onChange={(event) => setSimText(event.target.value)}
                   placeholder="Example: Vreau 2 sticle de lapte"
                 />
+                <p className="text-xs text-stone-500">
+                  Tip: dacă nu ai ANTHROPIC_API_KEY local, trimite ORDER JSON (cu customer_name, customer_phone, items).
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
