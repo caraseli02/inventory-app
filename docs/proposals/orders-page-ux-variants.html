@@ -1,0 +1,1730 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orders Page UX Proposals — Desktop, Tablet, Mobile (4 Variants)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@300;400;500;600;700;800&family=Spline+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --ink: #0a0a0f;
+      --paper: #fbfbf8;
+      --stone: #e7e7e2;
+      --stone-2: #d8d8d0;
+      --mint: #34d399;
+      --mint-2: #10b981;
+      --amber: #f59e0b;
+      --rose: #fb7185;
+      --slate: #64748b;
+      --shadow: rgba(12, 13, 18, .20);
+    }
+
+    html, body { height: 100%; }
+    body { font-family: "Spline Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    h1, h2, h3, .display { font-family: "Bricolage Grotesque", ui-sans-serif, system-ui; }
+
+    /* A textured, “paper + ink” studio background */
+    .paper-bg{
+      background:
+        radial-gradient(1200px 900px at 15% 0%, rgba(16,185,129,.18), transparent 55%),
+        radial-gradient(1000px 800px at 90% 20%, rgba(245,158,11,.14), transparent 60%),
+        radial-gradient(900px 700px at 60% 110%, rgba(251,113,133,.12), transparent 60%),
+        linear-gradient(180deg, #fff, #f7f7f2);
+      position: relative;
+      overflow-x: hidden;
+    }
+    .paper-bg:before{
+      content:"";
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(to right, rgba(10,10,15,.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(10,10,15,.03) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: radial-gradient(900px 600px at 50% 20%, rgba(0,0,0,.9), transparent 70%);
+      pointer-events:none;
+      opacity:.55;
+    }
+    .paper-bg:after{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        repeating-linear-gradient(90deg, rgba(10,10,15,.018) 0 1px, transparent 1px 7px),
+        repeating-linear-gradient(0deg, rgba(10,10,15,.012) 0 1px, transparent 1px 9px);
+      mix-blend-mode:multiply;
+      pointer-events:none;
+      opacity:.55;
+    }
+
+    /* Device shells */
+    .device-wrap{ --w: 392px; --h: 800px; --r: 44px; --pad: 14px; }
+    .device-wrap[data-viewport="tablet"]{ --w: 860px; --h: 640px; --r: 30px; --pad: 16px; }
+    .device-wrap[data-viewport="desktop"]{ --w: 1120px; --h: 640px; --r: 26px; --pad: 14px; }
+
+    .device-shell{
+      width: var(--w);
+      height: var(--h);
+      border-radius: calc(var(--r) + 6px);
+      padding: var(--pad);
+      background:
+        radial-gradient(140px 120px at 22% 16%, rgba(255,255,255,.12), transparent 65%),
+        radial-gradient(240px 200px at 80% 20%, rgba(16,185,129,.18), transparent 70%),
+        linear-gradient(180deg, #14141b, #0b0b10);
+      box-shadow:
+        0 30px 80px rgba(12, 13, 18, .30),
+        0 10px 30px rgba(12, 13, 18, .18),
+        inset 0 1px 0 rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      position: relative;
+    }
+    .device-screen{
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      border-radius: var(--r);
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+    }
+    .device-notch{
+      position:absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 10px;
+      width: 150px;
+      height: 28px;
+      border-radius: 18px;
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.12);
+      display:none;
+      pointer-events:none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    }
+    .device-wrap[data-viewport="phone"] .device-notch { display:block; }
+
+    /* Motion + micro-interactions */
+    @keyframes pop {
+      0% { transform: scale(.94); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .anim-pop { animation: pop .18s ease-out; }
+    .skeleton{
+      background: linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.03), rgba(0,0,0,.06));
+      background-size: 200% 100%;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+
+    /* App theming per option (scoped) */
+    .app[data-theme="A"]{ --accent: #0ea5e9; --accent2: #2563eb; --tint: rgba(14,165,233,.14); --ring: rgba(14,165,233,.22); }
+    .app[data-theme="B"]{ --accent: #a78bfa; --accent2: #7c3aed; --tint: rgba(167,139,250,.14); --ring: rgba(124,58,237,.22); }
+    .app[data-theme="C"]{ --accent: #f97316; --accent2: #ea580c; --tint: rgba(249,115,22,.14); --ring: rgba(234,88,12,.22); }
+    .app[data-theme="D"]{ --accent: #10b981; --accent2: #047857; --tint: rgba(16,185,129,.14); --ring: rgba(16,185,129,.20); }
+
+    .chip{
+      border: 1px solid rgba(0,0,0,.08);
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 8px 24px rgba(12,13,18,.08);
+      backdrop-filter: blur(10px);
+    }
+
+    /* Swipe action “underlay” for option B / D */
+    .swipe-underlay{
+      position:absolute; inset: 0;
+      display:flex;
+      align-items: stretch;
+      justify-content: flex-end;
+      gap: 0;
+      border-radius: 18px;
+      overflow: hidden;
+      pointer-events:none;
+    }
+    .swipe-underlay button{
+      pointer-events:auto;
+    }
+    .swipe-rail{
+      width: 92px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+
+    /* Accessible focus rings */
+    .focus-ring:focus-visible{
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 0 0 6px var(--ring);
+      border-color: rgba(0,0,0,.18) !important;
+    }
+
+    /* Device toggle buttons (avoid Tailwind breakpoint coupling) */
+    .vp-btn{
+      background: rgba(255,255,255,.96);
+      border-color: rgba(0,0,0,.10);
+      color: rgba(0,0,0,.78);
+    }
+    .vp-btn:hover{ background: rgba(0,0,0,.03); }
+    .vp-btn.is-active{
+      background: var(--ink);
+      border-color: var(--ink);
+      color: white;
+    }
+  </style>
+</head>
+
+<body class="paper-bg text-[var(--ink)]">
+  <!-- Header -->
+  <header class="sticky top-0 z-50 border-b border-black/10 bg-white/70 backdrop-blur-xl">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-start justify-between gap-6">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-black text-white flex items-center justify-center shadow-lg shadow-black/10">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M7 7h10v10H7z"/><path d="M4 4h16v16H4z" opacity=".35"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Orders Page UX Proposals</h1>
+            <p class="text-sm text-black/60 mt-0.5">Desktop · Tablet · Mobile — 4 interactive variants you can compare before implementation</p>
+          </div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <span class="chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs text-black/70">
+            <span class="inline-flex w-2 h-2 rounded-full bg-emerald-500"></span>
+            Tech stack detected: React 19 + TypeScript + Tailwind v4 + Radix UI + TanStack Query + Vite
+          </span>
+          <a href="#comparison" class="chip focus-ring inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border border-black/10 hover:border-black/20 hover:bg-white transition">
+            Jump to comparison
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M7 17L17 7"/><path d="M7 7h10v10"/>
+            </svg>
+          </a>
+          <a href="#sources" class="chip focus-ring inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border border-black/10 hover:border-black/20 hover:bg-white transition">
+            Sources
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19h16"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h8"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="hidden lg:flex items-center gap-2">
+        <div class="rounded-2xl border border-black/10 bg-white/70 backdrop-blur px-4 py-2 text-xs text-black/60 max-w-[440px]">
+          <div class="font-semibold text-black/75">How to use this</div>
+          <div class="mt-1 leading-relaxed">
+            Each option has a demo. Use <span class="font-semibold">Phone/Tablet/Desktop</span> toggles,
+            try filters, expand details, and run actions. Pick the feel you prefer.
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav class="max-w-7xl mx-auto px-6 pt-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <a class="focus-ring group rounded-2xl border border-black/10 bg-white/70 backdrop-blur px-4 py-4 hover:bg-white transition" href="#option-a">
+        <div class="text-xs uppercase tracking-widest text-black/50">Option A</div>
+        <div class="mt-1 font-extrabold text-lg leading-tight group-hover:tracking-tight transition">Animation-based micro-interactions</div>
+        <div class="mt-1 text-sm text-black/60">Motion-led scanning, crisp feedback, “alive” status transitions.</div>
+      </a>
+      <a class="focus-ring group rounded-2xl border border-black/10 bg-white/70 backdrop-blur px-4 py-4 hover:bg-white transition" href="#option-b">
+        <div class="text-xs uppercase tracking-widest text-black/50">Option B</div>
+        <div class="mt-1 font-extrabold text-lg leading-tight group-hover:tracking-tight transition">Inline feedback + swipe actions</div>
+        <div class="mt-1 text-sm text-black/60">Fast lane for operators: act in-place, undo, keep context.</div>
+      </a>
+      <a class="focus-ring group rounded-2xl border border-black/10 bg-white/70 backdrop-blur px-4 py-4 hover:bg-white transition" href="#option-c">
+        <div class="text-xs uppercase tracking-widest text-black/50">Option C</div>
+        <div class="mt-1 font-extrabold text-lg leading-tight group-hover:tracking-tight transition">Modal/overlay (bottom sheet / drawer)</div>
+        <div class="mt-1 text-sm text-black/60">Detail without navigation: tap an order → act in a sheet.</div>
+      </a>
+      <a class="focus-ring group rounded-2xl border border-emerald-400/60 bg-white/80 backdrop-blur px-4 py-4 hover:bg-white transition" href="#option-d">
+        <div class="flex items-center justify-between">
+          <div class="text-xs uppercase tracking-widest text-black/50">Option D</div>
+          <span class="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-3 py-1 text-[11px] font-extrabold tracking-wide">
+            RECOMMENDED
+            <span class="w-1.5 h-1.5 rounded-full bg-white/90"></span>
+          </span>
+        </div>
+        <div class="mt-1 font-extrabold text-lg leading-tight">Hybrid responsive command center</div>
+        <div class="mt-1 text-sm text-black/60">Split view on desktop, sheet on mobile, bulk ops + keyboard.</div>
+      </a>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-6 py-10 space-y-14">
+    <!-- ===================== -->
+    <!-- Option A -->
+    <!-- ===================== -->
+    <section id="option-a" class="rounded-[28px] border border-black/10 bg-white/70 backdrop-blur overflow-hidden shadow-[0_30px_80px_rgba(12,13,18,.12)]">
+      <div class="p-6 sm:p-8 border-b border-black/10 bg-gradient-to-br from-white to-sky-50/70">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="max-w-3xl">
+            <div class="flex items-center gap-3">
+              <h2 class="text-xl sm:text-2xl font-extrabold">Option A: Animation-based micro-interactions</h2>
+              <span class="inline-flex items-center rounded-full border border-sky-300/60 bg-sky-100/70 px-3 py-1 text-xs font-bold text-sky-700">Motion-first</span>
+            </div>
+            <p class="mt-2 text-black/65 leading-relaxed">
+              Designed for fast scanning with “alive” affordances: staggered list reveal, animated expand/collapse,
+              and a clean, high-confidence feedback loop for confirm/cancel (with undo).
+            </p>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold tracking-widest uppercase text-black/45">Commonly seen in:</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Google apps (Material Motion)</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Airbnb-style transitions</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Duolingo-like feedback moments</span>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black/65 max-w-md">
+            <div class="font-extrabold text-black/75">Best when</div>
+            <ul class="mt-2 space-y-1 list-disc list-inside">
+              <li>Operators triage many orders per hour</li>
+              <li>You want “confidence cues” without adding UI clutter</li>
+              <li>You can invest in polished motion + states</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 bg-gradient-to-b from-white/40 to-white/10">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="text-sm text-black/60">
+            <span class="font-extrabold text-black/80">Try:</span> switch device sizes • click an order to expand • confirm/cancel • hit undo toast
+          </div>
+          <div class="chip rounded-full px-4 py-2 text-xs text-black/70">
+            Touch target intent: ≥24×24 (WCAG 2.5.8) · recommended 44–48px for comfort
+          </div>
+        </div>
+
+        <div class="mt-6 overflow-x-auto">
+          <div class="min-w-[420px] flex justify-center">
+            <div class="demo" data-variant="A"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 border-t border-black/10 bg-white/60">
+        <h3 class="font-extrabold text-black/85">Key features & benefits</h3>
+        <div class="mt-4 grid md:grid-cols-2 gap-4">
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Staggered scan rhythm</div>
+            <div class="text-sm text-black/60 mt-1">Subtle entry motion improves “find the next order” flow without stealing attention.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Undo-first safety</div>
+            <div class="text-sm text-black/60 mt-1">Fast action + low anxiety: “confirm” is reversible for a few seconds.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Progressive disclosure</div>
+            <div class="text-sm text-black/60 mt-1">Summary stays lightweight; tap expands items + notes only when needed.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Accessible motion defaults</div>
+            <div class="text-sm text-black/60 mt-1">Respects “reduced motion” and keeps critical feedback non-animated.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== -->
+    <!-- Option B -->
+    <!-- ===================== -->
+    <section id="option-b" class="rounded-[28px] border border-black/10 bg-white/70 backdrop-blur overflow-hidden shadow-[0_30px_80px_rgba(12,13,18,.12)]">
+      <div class="p-6 sm:p-8 border-b border-black/10 bg-gradient-to-br from-white to-violet-50/70">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="max-w-3xl">
+            <div class="flex items-center gap-3">
+              <h2 class="text-xl sm:text-2xl font-extrabold">Option B: Inline feedback + swipe actions</h2>
+              <span class="inline-flex items-center rounded-full border border-violet-300/60 bg-violet-100/70 px-3 py-1 text-xs font-bold text-violet-700">Inline</span>
+            </div>
+            <p class="mt-2 text-black/65 leading-relaxed">
+              Optimized for speed: actions live “on the card” via swipe-to-reveal and a compact inline action rail
+              for desktop pointer users. Includes immediate inline feedback and an undo toast.
+            </p>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold tracking-widest uppercase text-black/45">Commonly seen in:</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Apple Mail / iOS lists</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Gmail swipe actions</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Todoist-style triage</span>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black/65 max-w-md">
+            <div class="font-extrabold text-black/75">Best when</div>
+            <ul class="mt-2 space-y-1 list-disc list-inside">
+              <li>Actions per minute matter</li>
+              <li>“Confirm / Cancel” are frequent and safe</li>
+              <li>You want fewer taps on mobile</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 bg-gradient-to-b from-white/40 to-white/10">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="text-sm text-black/60">
+            <span class="font-extrabold text-black/80">Try:</span> swipe a pending order (drag horizontally) • click action rail • undo toast
+          </div>
+          <div class="chip rounded-full px-4 py-2 text-xs text-black/70">
+            Accessibility guardrail: swipe is optional — actions always available as buttons
+          </div>
+        </div>
+
+        <div class="mt-6 overflow-x-auto">
+          <div class="min-w-[420px] flex justify-center">
+            <div class="demo" data-variant="B"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 border-t border-black/10 bg-white/60">
+        <h3 class="font-extrabold text-black/85">Key features & benefits</h3>
+        <div class="mt-4 grid md:grid-cols-2 gap-4">
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Fastest “two-action loop”</div>
+            <div class="text-sm text-black/60 mt-1">Swipe/rail puts confirm + cancel on muscle memory; fewer modal steps.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Inline feedback</div>
+            <div class="text-sm text-black/60 mt-1">Chip + card state updates immediately; undo reduces error cost.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Touch-friendly with fallbacks</div>
+            <div class="text-sm text-black/60 mt-1">Gestures are additive — keyboard + visible buttons remain first-class.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Compact density</div>
+            <div class="text-sm text-black/60 mt-1">Cards stay clean; actions appear only when you intend to act.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== -->
+    <!-- Option C -->
+    <!-- ===================== -->
+    <section id="option-c" class="rounded-[28px] border border-black/10 bg-white/70 backdrop-blur overflow-hidden shadow-[0_30px_80px_rgba(12,13,18,.12)]">
+      <div class="p-6 sm:p-8 border-b border-black/10 bg-gradient-to-br from-white to-orange-50/70">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="max-w-3xl">
+            <div class="flex items-center gap-3">
+              <h2 class="text-xl sm:text-2xl font-extrabold">Option C: Modal/overlay (bottom sheet / drawer)</h2>
+              <span class="inline-flex items-center rounded-full border border-orange-300/60 bg-orange-100/70 px-3 py-1 text-xs font-bold text-orange-700">Overlay</span>
+            </div>
+            <p class="mt-2 text-black/65 leading-relaxed">
+              Tap an order to open a bottom sheet with full details and actions. The list stays visible behind,
+              so you keep your place. On desktop, the same pattern becomes a right-side drawer.
+            </p>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold tracking-widest uppercase text-black/45">Commonly seen in:</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Google Maps bottom sheets</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Uber “trip detail” overlays</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Mobile commerce quick views</span>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black/65 max-w-md">
+            <div class="font-extrabold text-black/75">Best when</div>
+            <ul class="mt-2 space-y-1 list-disc list-inside">
+              <li>Details are needed to decide</li>
+              <li>Mobile is primary</li>
+              <li>You want strict focus + consistent actions</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 bg-gradient-to-b from-white/40 to-white/10">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="text-sm text-black/60">
+            <span class="font-extrabold text-black/80">Try:</span> open an order → bottom sheet • press ESC to close • confirm/cancel inside sheet
+          </div>
+          <div class="chip rounded-full px-4 py-2 text-xs text-black/70">
+            Focus management: dialog role + keyboard navigation
+          </div>
+        </div>
+
+        <div class="mt-6 overflow-x-auto">
+          <div class="min-w-[420px] flex justify-center">
+            <div class="demo" data-variant="C"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 border-t border-black/10 bg-white/60">
+        <h3 class="font-extrabold text-black/85">Key features & benefits</h3>
+        <div class="mt-4 grid md:grid-cols-2 gap-4">
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Keep context</div>
+            <div class="text-sm text-black/60 mt-1">You never “leave the list”; closing returns you exactly where you were.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Single action surface</div>
+            <div class="text-sm text-black/60 mt-1">All details + actions in one place reduces decision latency.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Strong accessibility alignment</div>
+            <div class="text-sm text-black/60 mt-1">Dialog pattern maps cleanly to ARIA practices (focus, ESC to dismiss).</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Tablet-friendly</div>
+            <div class="text-sm text-black/60 mt-1">Drawer on larger screens avoids a “giant modal” while preserving context.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== -->
+    <!-- Option D -->
+    <!-- ===================== -->
+    <section id="option-d" class="rounded-[28px] border border-emerald-400/60 bg-white/80 backdrop-blur overflow-hidden shadow-[0_30px_80px_rgba(12,13,18,.12)]">
+      <div class="p-6 sm:p-8 border-b border-black/10 bg-gradient-to-br from-white to-emerald-50/80">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="max-w-3xl">
+            <div class="flex items-center gap-3">
+              <h2 class="text-xl sm:text-2xl font-extrabold">Option D: Hybrid responsive command center</h2>
+              <span class="inline-flex items-center rounded-full border border-emerald-300/70 bg-emerald-100/70 px-3 py-1 text-xs font-bold text-emerald-800">Hybrid</span>
+              <span class="inline-flex items-center gap-2 rounded-full bg-emerald-600 text-white px-3 py-1 text-xs font-extrabold tracking-wide">RECOMMENDED</span>
+            </div>
+            <p class="mt-2 text-black/65 leading-relaxed">
+              Best of all patterns: split view (desktop), drawer (tablet), bottom sheet (mobile), plus bulk selection,
+              keyboard help, and a “quick find” command bar. It scales with operator speed and screen real estate.
+            </p>
+            <div class="mt-4 flex flex-wrap items-center gap-2">
+              <span class="text-xs font-bold tracking-widest uppercase text-black/45">Commonly seen in:</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Shopify Admin resource patterns</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Linear / GitLab detail panes</span>
+              <span class="px-2.5 py-1 rounded-full bg-white/80 border border-black/10 text-xs">Google “supporting panel” layouts</span>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-emerald-300/60 bg-white/85 px-4 py-3 text-sm text-black/65 max-w-md">
+            <div class="font-extrabold text-black/80">Why recommended</div>
+            <ul class="mt-2 space-y-1 list-disc list-inside">
+              <li>Fast on mobile (sheet), powerful on desktop (split)</li>
+              <li>Bulk actions for busy periods</li>
+              <li>Clear accessibility story (visible controls + keyboard)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 bg-gradient-to-b from-white/50 to-white/10">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="text-sm text-black/60">
+            <span class="font-extrabold text-black/80">Try:</span> desktop viewport → split view • select mode → bulk confirm • Ctrl/⌘+K quick find
+          </div>
+          <div class="chip rounded-full px-4 py-2 text-xs text-black/70">
+            Operator-friendly: fewer clicks + clearer state, without gesture-only actions
+          </div>
+        </div>
+
+        <div class="mt-6 overflow-x-auto">
+          <div class="min-w-[420px] flex justify-center">
+            <div class="demo" data-variant="D"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-6 sm:p-8 border-t border-black/10 bg-white/60">
+        <h3 class="font-extrabold text-black/85">Key features & benefits</h3>
+        <div class="mt-4 grid md:grid-cols-2 gap-4">
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Responsive “same intent”</div>
+            <div class="text-sm text-black/60 mt-1">One mental model across devices; the surface changes, not the workflow.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Split view = less back-and-forth</div>
+            <div class="text-sm text-black/60 mt-1">On desktop you see list + details + actions at once.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Bulk actions + guardrails</div>
+            <div class="text-sm text-black/60 mt-1">Handle peaks (many pending) while keeping undo + clear confirmations.</div>
+          </div>
+          <div class="rounded-2xl border border-black/10 bg-white/70 p-4">
+            <div class="font-extrabold">Accessibility + keyboard</div>
+            <div class="text-sm text-black/60 mt-1">Visible controls, ARIA-aligned dialogs, and shortcuts are documented in-UI.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== -->
+    <!-- Comparison -->
+    <!-- ===================== -->
+    <section id="comparison" class="rounded-[28px] border border-black/10 bg-white/75 backdrop-blur overflow-hidden shadow-[0_30px_80px_rgba(12,13,18,.10)]">
+      <div class="p-6 sm:p-8 border-b border-black/10 bg-gradient-to-br from-white to-black/[0.02]">
+        <h2 class="text-xl sm:text-2xl font-extrabold">Comparison table</h2>
+        <p class="mt-2 text-black/60 max-w-3xl leading-relaxed">
+          A practical view: speed for operators, mobile comfort, accessibility risk, and implementation complexity.
+          Option D is recommended because it scales across devices without forcing gesture-only affordances.
+        </p>
+      </div>
+
+      <div class="p-6 sm:p-8 overflow-x-auto">
+        <table class="min-w-[860px] w-full border-separate border-spacing-0">
+          <thead>
+            <tr class="text-left text-xs uppercase tracking-widest text-black/50">
+              <th class="py-3 px-4">Option</th>
+              <th class="py-3 px-4">Best for</th>
+              <th class="py-3 px-4">Operator speed</th>
+              <th class="py-3 px-4">Mobile comfort</th>
+              <th class="py-3 px-4">Accessibility risk</th>
+              <th class="py-3 px-4">Build complexity</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            <tr class="bg-white/70">
+              <td class="py-4 px-4 font-extrabold">A</td>
+              <td class="py-4 px-4 text-black/70">Scanning + delightful confidence cues</td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-sky-100 border border-sky-200 text-sky-700 font-bold">High</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200 text-black/70 font-bold">Medium</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-amber-100 border border-amber-200 text-amber-800 font-bold">Medium</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-amber-100 border border-amber-200 text-amber-800 font-bold">Medium</span></td>
+            </tr>
+            <tr class="bg-white/55">
+              <td class="py-4 px-4 font-extrabold">B</td>
+              <td class="py-4 px-4 text-black/70">Fast triage with minimal taps (swipe optional)</td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-violet-100 border border-violet-200 text-violet-700 font-bold">Very high</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-violet-100 border border-violet-200 text-violet-700 font-bold">High</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-amber-100 border border-amber-200 text-amber-800 font-bold">Medium</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-amber-100 border border-amber-200 text-amber-800 font-bold">Medium</span></td>
+            </tr>
+            <tr class="bg-white/70">
+              <td class="py-4 px-4 font-extrabold">C</td>
+              <td class="py-4 px-4 text-black/70">Detail-first decisions (sheet/drawer)</td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200 text-black/70 font-bold">Medium</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-orange-100 border border-orange-200 text-orange-800 font-bold">Very high</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold">Low</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-stone-100 border border-stone-200 text-black/70 font-bold">Medium</span></td>
+            </tr>
+            <tr class="bg-emerald-50/70 border-emerald-200">
+              <td class="py-4 px-4 font-extrabold">
+                D <span class="ml-2 inline-flex items-center rounded-full bg-emerald-600 text-white px-2.5 py-1 text-[10px] font-extrabold tracking-wide">RECOMMENDED</span>
+              </td>
+              <td class="py-4 px-4 text-black/70">All-device excellence + bulk ops + keyboard</td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold">Very high</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold">Very high</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold">Low</span></td>
+              <td class="py-4 px-4"><span class="px-2.5 py-1 rounded-full bg-rose-100 border border-rose-200 text-rose-800 font-bold">High</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mt-5 text-xs text-black/55 leading-relaxed">
+          Notes: “Accessibility risk” assumes visible non-gesture alternatives and correct focus management for overlays.
+          “Build complexity” counts states, keyboard shortcuts, selection mode, and responsive detail surfaces.
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== -->
+    <!-- Sources -->
+    <!-- ===================== -->
+    <section id="sources" class="rounded-[28px] border border-black/10 bg-white/75 backdrop-blur overflow-hidden shadow-[0_30px_80px_rgba(12,13,18,.10)]">
+      <div class="p-6 sm:p-8 border-b border-black/10 bg-gradient-to-br from-white to-black/[0.02]">
+        <h2 class="text-xl sm:text-2xl font-extrabold">Research sources (industry standards & best practices)</h2>
+        <p class="mt-2 text-black/60 max-w-3xl leading-relaxed">
+          Links used to shape the patterns: motion/micro-interactions, touch/mobile conventions, and accessibility.
+        </p>
+      </div>
+      <div class="p-6 sm:p-8 grid md:grid-cols-2 gap-6">
+        <div class="rounded-2xl border border-black/10 bg-white/70 p-5">
+          <div class="font-extrabold">Accessibility</div>
+          <ul class="mt-3 space-y-2 text-sm text-black/70">
+            <li><a class="underline hover:no-underline" href="https://www.w3.org/TR/WCAG22/" target="_blank" rel="noreferrer">WCAG 2.2 (W3C)</a></li>
+            <li><a class="underline hover:no-underline" href="https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html" target="_blank" rel="noreferrer">WCAG 2.2 Understanding: 2.5.8 Target Size (Minimum)</a></li>
+            <li><a class="underline hover:no-underline" href="https://www.w3.org/WAI/ARIA/apg/" target="_blank" rel="noreferrer">WAI-ARIA Authoring Practices Guide (APG)</a></li>
+            <li><a class="underline hover:no-underline" href="https://www.w3.org/WAI/ARIA/apg/patterns/tabs/" target="_blank" rel="noreferrer">APG pattern: Tabs (keyboard interaction)</a></li>
+            <li><a class="underline hover:no-underline" href="https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/" target="_blank" rel="noreferrer">APG pattern: Modal dialog (focus, ESC)</a></li>
+          </ul>
+        </div>
+        <div class="rounded-2xl border border-black/10 bg-white/70 p-5">
+          <div class="font-extrabold">Motion, micro-interactions, touch patterns</div>
+          <ul class="mt-3 space-y-2 text-sm text-black/70">
+            <li><a class="underline hover:no-underline" href="https://m3.material.io/foundations/interaction/gestures" target="_blank" rel="noreferrer">Material Design 3: Gestures</a></li>
+            <li><a class="underline hover:no-underline" href="https://m3.material.io/components/bottom-sheets/overview" target="_blank" rel="noreferrer">Material Design 3: Bottom sheets</a></li>
+            <li><a class="underline hover:no-underline" href="https://design.google/library/animate-with-impact/" target="_blank" rel="noreferrer">Google Design: Animate with Impact (motion principles)</a></li>
+            <li><a class="underline hover:no-underline" href="https://m1.material.io/components/buttons.html" target="_blank" rel="noreferrer">Material (M1): Buttons — touch target guidance</a></li>
+            <li><a class="underline hover:no-underline" href="https://developer.apple.com/videos/play/wwdc2019/239/" target="_blank" rel="noreferrer">Apple WWDC: Designing for iOS (touch target sizing)</a></li>
+          </ul>
+        </div>
+        <div class="rounded-2xl border border-black/10 bg-white/70 p-5 md:col-span-2">
+          <div class="font-extrabold">Commerce / order-management conventions</div>
+          <ul class="mt-3 space-y-2 text-sm text-black/70">
+            <li><a class="underline hover:no-underline" href="https://baymard.com/blog/ecommerce-orders-overview" target="_blank" rel="noreferrer">Baymard Institute: Ecommerce “Orders Overview” UX (best practices)</a></li>
+            <li><a class="underline hover:no-underline" href="https://polaris.shopify.com/patterns/resource-index-layout" target="_blank" rel="noreferrer">Shopify Polaris: Resource index layout (admin lists)</a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer class="text-center text-xs text-black/50 pb-8">
+      Built as a standalone HTML prototype (Tailwind CDN). No build step. Open locally and interact.
+    </footer>
+  </main>
+
+  <script>
+    const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const STATUS = {
+      pending:   { label: 'Pending',   pill: 'bg-amber-100 text-amber-900 border-amber-200', dot: 'bg-amber-500' },
+      confirmed: { label: 'Confirmed', pill: 'bg-emerald-100 text-emerald-900 border-emerald-200', dot: 'bg-emerald-500' },
+      cancelled: { label: 'Cancelled', pill: 'bg-rose-100 text-rose-900 border-rose-200', dot: 'bg-rose-500' },
+      completed: { label: 'Completed', pill: 'bg-stone-100 text-stone-700 border-stone-200', dot: 'bg-stone-500' },
+    };
+
+    const seedOrders = [
+      {
+        id: 'o12',
+        order_number: 'ORD-012',
+        status: 'confirmed',
+        customer_name: 'Realtime Test 2026-03-05T10-54-39-553Z',
+        customer_phone: '+40111111111',
+        pickup_time: '19:00',
+        created_at: '2026-03-05T11:54:00+01:00',
+        items: [{ qty: 1, name: 'Espresso', unit_price: 2.78 }],
+        notes: 'Created by Codex for realtime verification',
+      },
+      {
+        id: 'o11',
+        order_number: 'ORD-011',
+        status: 'confirmed',
+        customer_name: 'Browser Sim',
+        customer_phone: '+40123456789',
+        pickup_time: '18:30',
+        created_at: '2026-03-05T11:11:00+01:00',
+        items: [{ qty: 1, name: 'Cappuccino', unit_price: 3.58 }],
+        notes: '',
+      },
+      {
+        id: 'o10',
+        order_number: 'ORD-010',
+        status: 'cancelled',
+        customer_name: 'Sim',
+        customer_phone: '+40123456789',
+        pickup_time: '18:00',
+        created_at: '2026-03-05T11:10:00+01:00',
+        items: [{ qty: 1, name: 'Latte', unit_price: 3.58 }],
+        notes: '',
+      },
+      {
+        id: 'o09',
+        order_number: 'ORD-009',
+        status: 'pending',
+        customer_name: 'Walk-in Pickup',
+        customer_phone: '+40 700 000 009',
+        pickup_time: '19:10',
+        created_at: '2026-03-05T11:05:00+01:00',
+        items: [
+          { qty: 2, name: 'Flat White', unit_price: 3.90 },
+          { qty: 1, name: 'Croissant', unit_price: 2.20 },
+        ],
+        notes: 'Customer asked: no sugar.',
+      },
+      {
+        id: 'o08',
+        order_number: 'ORD-008',
+        status: 'pending',
+        customer_name: 'Maria S.',
+        customer_phone: '+34 600 111 222',
+        pickup_time: '18:55',
+        created_at: '2026-03-05T10:58:00+01:00',
+        items: [
+          { qty: 1, name: 'Iced Americano', unit_price: 3.10 },
+          { qty: 1, name: 'Brownie', unit_price: 2.60 },
+        ],
+        notes: '',
+      },
+      {
+        id: 'o07',
+        order_number: 'ORD-007',
+        status: 'completed',
+        customer_name: 'Nico',
+        customer_phone: '+40 700 000 007',
+        pickup_time: '17:30',
+        created_at: '2026-03-05T10:12:00+01:00',
+        items: [{ qty: 3, name: 'Espresso', unit_price: 2.20 }],
+        notes: '',
+      },
+    ];
+
+    function cloneOrders() {
+      return seedOrders.map(o => ({ ...o, items: o.items.map(i => ({...i})) }));
+    }
+
+    function euro(n) {
+      return '€' + (Math.round(n * 100) / 100).toFixed(2);
+    }
+
+    function orderTotal(order) {
+      return order.items.reduce((sum, item) => sum + item.qty * item.unit_price, 0);
+    }
+
+    function formatShortDate(iso) {
+      try {
+        return new Date(iso).toLocaleString('ro-RO', { dateStyle: 'short', timeStyle: 'short' });
+      } catch {
+        return iso;
+      }
+    }
+
+    function elFrom(html) {
+      const t = document.createElement('template');
+      t.innerHTML = html.trim();
+      return t.content.firstElementChild;
+    }
+
+    function renderDemoRoot(variant) {
+      return `
+        <div class="rounded-[28px] border border-black/10 bg-white/70 p-4 sm:p-5 shadow-[0_20px_60px_rgba(12,13,18,.10)]">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="inline-flex items-center gap-2">
+              <span class="inline-flex w-2.5 h-2.5 rounded-full" style="background: var(--accent)"></span>
+              <div class="text-sm font-extrabold">Interactive demo</div>
+              <div class="text-xs text-black/55">Variant ${variant}</div>
+            </div>
+            <div class="inline-flex gap-2" role="group" aria-label="Device size">
+              <button class="vp-btn focus-ring px-3 py-1.5 rounded-full border text-xs font-bold transition" data-action="viewport" data-viewport="phone">Phone</button>
+              <button class="vp-btn focus-ring px-3 py-1.5 rounded-full border text-xs font-bold transition" data-action="viewport" data-viewport="tablet">Tablet</button>
+              <button class="vp-btn focus-ring px-3 py-1.5 rounded-full border text-xs font-bold transition" data-action="viewport" data-viewport="desktop">Desktop</button>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-center">
+            <div class="device-wrap" data-viewport="phone">
+              <div class="device-shell">
+                <div class="device-notch"></div>
+                <div class="device-screen">
+                  <div class="app h-full" data-theme="${variant}">
+                    <!-- App mounts here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 text-xs text-black/55 leading-relaxed">
+            Tip: This is a clickable prototype (not production code). It’s intentionally “feel-first”.
+          </div>
+        </div>
+      `;
+    }
+
+    function pill(status) {
+      const cfg = STATUS[status];
+      return `<span class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[11px] font-extrabold ${cfg.pill}">
+        <span class="w-1.5 h-1.5 rounded-full ${cfg.dot}"></span>${cfg.label}
+      </span>`;
+    }
+
+    function icon(name) {
+      const common = 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+      if (name === 'back') return `<svg class="w-5 h-5" viewBox="0 0 24 24" ${common}><path d="M15 18l-6-6 6-6"/></svg>`;
+      if (name === 'x') return `<svg class="w-5 h-5" viewBox="0 0 24 24" ${common}><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>`;
+      if (name === 'chevDown') return `<svg class="w-5 h-5" viewBox="0 0 24 24" ${common}><path d="M6 9l6 6 6-6"/></svg>`;
+      if (name === 'chevUp') return `<svg class="w-5 h-5" viewBox="0 0 24 24" ${common}><path d="M18 15l-6-6-6 6"/></svg>`;
+      if (name === 'bag') return `<svg class="w-4 h-4" viewBox="0 0 24 24" ${common}><path d="M6 7h12l1 14H5L6 7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>`;
+      if (name === 'phone') return `<svg class="w-4 h-4" viewBox="0 0 24 24" ${common}><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72c.12.86.3 1.7.54 2.5a2 2 0 0 1-.45 2.11L9.1 10.9a16 16 0 0 0 4 4l1.57-1.57a2 2 0 0 1 2.11-.45c.8.24 1.64.42 2.5.54A2 2 0 0 1 22 16.92z"/></svg>`;
+      if (name === 'clock') return `<svg class="w-4 h-4" viewBox="0 0 24 24" ${common}><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg>`;
+      if (name === 'cal') return `<svg class="w-4 h-4" viewBox="0 0 24 24" ${common}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>`;
+      if (name === 'spark') return `<svg class="w-4 h-4" viewBox="0 0 24 24" ${common}><path d="M12 2l1.6 6.2L20 10l-6.4 1.8L12 18l-1.6-6.2L4 10l6.4-1.8L12 2z"/></svg>`;
+      if (name === 'check') return `<svg class="w-4 h-4" viewBox="0 0 24 24" ${common}><path d="M20 6L9 17l-5-5"/></svg>`;
+      if (name === 'ban') return `<svg class="w-4 h-4" viewBox="0 0 24 24" ${common}><circle cx="12" cy="12" r="9"/><path d="M6.5 6.5l11 11"/></svg>`;
+      if (name === 'kbd') return `<svg class="w-4 h-4" viewBox="0 0 24 24" ${common}><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01"/><path d="M11 10h.01"/><path d="M15 10h.01"/><path d="M7 14h10"/></svg>`;
+      return '';
+    }
+
+    function tabs(filter) {
+      const tabs = [
+        { label: 'All', value: 'all' },
+        { label: 'Pending', value: 'pending' },
+        { label: 'Confirmed', value: 'confirmed' },
+        { label: 'Completed', value: 'completed' },
+      ];
+      return `
+        <div class="px-4 pt-3 pb-3 border-b border-black/10 bg-white/90">
+          <div class="flex gap-1.5 overflow-x-auto" role="tablist" aria-label="Order status filter">
+            ${tabs.map(t => `
+              <button
+                class="focus-ring shrink-0 px-4 py-2 rounded-full text-sm font-extrabold transition border ${t.value === filter ? 'bg-black text-white border-black' : 'bg-white border-black/10 text-black/60 hover:bg-black/5'}"
+                role="tab"
+                aria-selected="${t.value === filter}"
+                data-action="filter"
+                data-filter="${t.value}"
+              >
+                ${t.label}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function topBar({ title, subtitle, showClose = true, showBack = true, rightSlot = '' }) {
+      return `
+        <div class="px-4 pt-6 pb-3 bg-white/90 border-b border-black/10">
+          <div class="flex items-center justify-between gap-3">
+            <button class="focus-ring ${showBack ? 'inline-flex' : 'hidden'} items-center justify-center w-10 h-10 rounded-2xl border border-black/10 bg-white hover:bg-black/5 transition" data-action="noop" aria-label="Back (demo)">
+              ${icon('back')}
+            </button>
+            <div class="min-w-0 text-center flex-1">
+              <div class="display font-extrabold text-lg tracking-tight truncate">${title}</div>
+              ${subtitle ? `<div class="text-[11px] text-black/50 mt-0.5 truncate">${subtitle}</div>` : ``}
+            </div>
+            <div class="flex items-center gap-2">
+              ${rightSlot}
+              <button class="focus-ring ${showClose ? 'inline-flex' : 'hidden'} items-center justify-center w-10 h-10 rounded-2xl border border-black/10 bg-white hover:bg-black/5 transition" data-action="noop" aria-label="Close (demo)">
+                ${icon('x')}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function searchBar(query) {
+      return `
+        <div class="px-4 pt-3 pb-4 bg-white/90 border-b border-black/10">
+          <div class="flex items-center gap-2">
+            <div class="flex-1 relative">
+              <input
+                class="focus-ring w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold placeholder:text-black/35"
+                placeholder="Search order, customer, phone…"
+                value="${escapeHtml(query)}"
+                data-action="searchInput"
+                aria-label="Search orders"
+              />
+              <div class="absolute right-3 top-1/2 -translate-y-1/2 text-black/35">
+                ${icon('spark')}
+              </div>
+            </div>
+            <button class="focus-ring w-12 h-12 rounded-2xl border border-black/10 bg-[var(--tint)] text-[color:var(--accent2)] hover:brightness-95 transition font-extrabold" data-action="refresh" aria-label="Refresh (demo)">
+              ↻
+            </button>
+          </div>
+          <div class="mt-2 flex items-center justify-between text-[11px] text-black/50">
+            <div class="inline-flex items-center gap-2">
+              <span class="inline-flex w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Realtime connected (simulated)
+            </div>
+            <div class="tabular-nums">Updated just now</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function orderRow(order, { expanded, variant, swipe = false, selectable = false, selected = false, showInlineActions = false }) {
+      const total = orderTotal(order);
+      const canAct = order.status === 'pending';
+      const expandedHtml = `
+        <div class="mt-3 space-y-1.5">
+          ${order.items.map(i => `
+            <div class="flex items-center justify-between text-sm">
+              <div class="text-black/70 font-semibold">${i.qty}× ${escapeHtml(i.name)}</div>
+              <div class="text-black/45 font-bold tabular-nums">${euro(i.qty * i.unit_price)}</div>
+            </div>
+          `).join('')}
+          <div class="flex items-center justify-between pt-2 mt-2 border-t border-black/10">
+            <div class="text-sm font-extrabold">Total</div>
+            <div class="text-sm font-extrabold tabular-nums">${euro(total)}</div>
+          </div>
+        </div>
+      `;
+
+      const headerActions = `
+        <button class="focus-ring inline-flex items-center justify-center w-10 h-10 rounded-2xl border border-black/10 bg-white hover:bg-black/5 transition text-black/55"
+          data-action="${variant === 'C' || variant === 'D' ? 'openDetail' : 'toggle'}"
+          data-order="${order.id}"
+          aria-label="${expanded ? 'Collapse' : 'Expand'} order"
+          aria-expanded="${expanded ? 'true' : 'false'}"
+        >
+          ${expanded ? icon('chevUp') : icon('chevDown')}
+        </button>
+      `;
+
+      const inlineActions = canAct ? `
+        <div class="mt-3 flex gap-2">
+          <button class="focus-ring flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold text-white"
+            style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%)"
+            data-action="confirm"
+            data-order="${order.id}"
+          >
+            ${icon('check')} Confirm
+          </button>
+          <button class="focus-ring flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold border border-rose-200 bg-rose-50 text-rose-700 hover:brightness-95 transition"
+            data-action="cancel"
+            data-order="${order.id}"
+          >
+            ${icon('ban')} Cancel
+          </button>
+        </div>
+      ` : ``;
+
+      const summaryLine = expanded
+        ? expandedHtml
+        : `<div class="text-sm text-black/60 font-semibold">${order.items.length} item${order.items.length !== 1 ? 's' : ''} · <span class="text-black/85 font-extrabold tabular-nums">${euro(total)}</span></div>`;
+
+      const notes = order.notes
+        ? `<div class="mt-2 text-[11px] text-black/50 italic border-l-2 border-black/10 pl-2">${escapeHtml(order.notes)}</div>`
+        : ``;
+
+      const swipeUnderlay = swipe && canAct ? `
+        <div class="swipe-underlay">
+          <button class="swipe-rail bg-emerald-600 text-white" data-action="confirm" data-order="${order.id}" aria-label="Confirm order">
+            ${icon('check')}
+          </button>
+          <button class="swipe-rail bg-rose-600 text-white" data-action="cancel" data-order="${order.id}" aria-label="Cancel order">
+            ${icon('ban')}
+          </button>
+        </div>
+      ` : ``;
+
+      const selectBox = selectable ? `
+        <button class="focus-ring inline-flex items-center justify-center w-10 h-10 rounded-2xl border ${selected ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-black/10 bg-white text-black/40'}"
+          data-action="toggleSelect"
+          data-order="${order.id}"
+          aria-pressed="${selected ? 'true' : 'false'}"
+          aria-label="${selected ? 'Deselect' : 'Select'} ${order.order_number}"
+        >
+          ${selected ? icon('check') : '<span class="text-lg leading-none">◻</span>'}
+        </button>
+      ` : ``;
+
+      const actionRail = showInlineActions && canAct ? `
+        <div class="flex items-center gap-2">
+          <button class="focus-ring inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-2 text-xs font-extrabold hover:bg-black/5 transition"
+            data-action="confirm" data-order="${order.id}">
+            ${icon('check')} Confirm
+          </button>
+          <button class="focus-ring inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-2 text-xs font-extrabold hover:bg-black/5 transition text-rose-700"
+            data-action="cancel" data-order="${order.id}">
+            ${icon('ban')} Cancel
+          </button>
+        </div>
+      ` : ``;
+
+      return `
+        <div class="relative">
+          ${swipeUnderlay}
+          <div class="${swipe ? 'swipe-card' : ''} relative rounded-[18px] border border-black/10 bg-white shadow-[0_18px_40px_rgba(12,13,18,.08)] overflow-hidden"
+            data-order-card="${order.id}" data-swipe="${swipe ? 'true' : 'false'}">
+            <div class="px-4 py-4 bg-gradient-to-br from-black/[0.02] to-white border-b border-black/5">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0">
+                  <div class="font-extrabold tracking-tight text-black/90">${order.order_number}</div>
+                  ${pill(order.status)}
+                </div>
+                <div class="flex items-center gap-2">
+                  ${actionRail}
+                  ${selectBox}
+                  ${headerActions}
+                </div>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+                <div class="inline-flex items-center gap-2 text-black/75 font-semibold min-w-0">
+                  <span class="text-black/35">${icon('bag')}</span>
+                  <span class="truncate">${escapeHtml(order.customer_name)}</span>
+                </div>
+                <div class="inline-flex items-center gap-2 text-black/55 font-semibold">
+                  <span class="text-black/30">${icon('phone')}</span>
+                  <span class="tabular-nums">${escapeHtml(order.customer_phone)}</span>
+                </div>
+                ${order.pickup_time ? `
+                  <div class="inline-flex items-center gap-2 text-black/55 font-semibold">
+                    <span class="text-black/30">${icon('clock')}</span>
+                    <span class="tabular-nums">${escapeHtml(order.pickup_time)}</span>
+                  </div>
+                ` : ``}
+                <div class="inline-flex items-center gap-2 text-black/45 font-semibold">
+                  <span class="text-black/28">${icon('cal')}</span>
+                  <span class="tabular-nums">${escapeHtml(formatShortDate(order.created_at))}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-4 py-4">
+              ${summaryLine}
+              ${notes}
+              ${(expanded && canAct && (variant === 'A' || variant === 'D')) ? inlineActions : ''}
+              ${(!expanded && canAct && variant === 'A' && showInlineActions) ? `
+                <div class="mt-3">
+                  <button class="focus-ring w-full inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold text-white"
+                    style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%)"
+                    data-action="confirm" data-order="${order.id}">
+                    ${icon('check')} Confirm & Deduct Stock
+                  </button>
+                </div>
+              ` : ``}
+              ${(expanded && canAct && variant === 'B') ? inlineActions : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      }[c]));
+    }
+
+    function emptyState(filter) {
+      return `
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <div class="w-14 h-14 rounded-3xl border border-black/10 bg-white flex items-center justify-center text-black/40">
+            ${icon('bag')}
+          </div>
+          <div class="mt-3 font-extrabold">No ${filter === 'all' ? '' : filter} orders</div>
+          <div class="mt-1 text-sm text-black/55">Orders from WhatsApp will appear here</div>
+        </div>
+      `;
+    }
+
+    function toastHtml(toast) {
+      if (!toast) return '';
+      return `
+        <div class="absolute left-3 right-3 bottom-3 z-40 anim-pop">
+          <div class="rounded-2xl border border-black/10 bg-white/90 backdrop-blur shadow-[0_18px_50px_rgba(12,13,18,.18)] px-4 py-3 flex items-start justify-between gap-3">
+            <div>
+              <div class="text-xs font-extrabold text-black/70">${toast.kind.toUpperCase()}</div>
+              <div class="text-sm font-semibold text-black/80 mt-0.5">${escapeHtml(toast.message)}</div>
+            </div>
+            ${toast.undo ? `
+              <button class="focus-ring shrink-0 rounded-full px-3 py-2 border border-black/10 bg-white text-xs font-extrabold hover:bg-black/5 transition" data-action="undo">
+                Undo
+              </button>
+            ` : `
+              <button class="focus-ring shrink-0 rounded-full px-3 py-2 border border-black/10 bg-white text-xs font-extrabold hover:bg-black/5 transition" data-action="dismissToast" aria-label="Dismiss toast">
+                ${icon('x')}
+              </button>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function detailSheetHtml(state) {
+      if (!state.sheetOpen || !state.sheetOrderId) return '';
+      const order = state.orders.find(o => o.id === state.sheetOrderId);
+      if (!order) return '';
+      const canAct = order.status === 'pending';
+      const total = orderTotal(order);
+      const isPhone = state.viewport === 'phone';
+      const isDrawer = !isPhone;
+      const containerClass = isDrawer
+        ? 'absolute top-0 right-0 bottom-0 w-[420px] max-w-[92vw] bg-white rounded-l-[26px] border-l border-black/10 shadow-[-30px_0_80px_rgba(12,13,18,.28)] p-4 anim-pop'
+        : 'absolute left-0 right-0 bottom-0 bg-white rounded-t-[26px] border border-black/10 shadow-[0_-30px_80px_rgba(12,13,18,.28)] p-4 anim-pop';
+
+      return `
+        <div class="absolute inset-0 z-50">
+          <div class="absolute inset-0 bg-black/30" data-action="closeSheet" aria-hidden="true"></div>
+          <div class="${containerClass}"
+            role="dialog" aria-modal="true" aria-label="Order details">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs uppercase tracking-widest text-black/45">Order</div>
+                <div class="display font-extrabold text-lg truncate">${order.order_number} <span class="ml-2">${pill(order.status)}</span></div>
+                <div class="text-sm text-black/60 mt-1 truncate">${escapeHtml(order.customer_name)} · ${escapeHtml(order.customer_phone)}</div>
+              </div>
+              <button class="focus-ring w-10 h-10 rounded-2xl border border-black/10 bg-white hover:bg-black/5 transition inline-flex items-center justify-center"
+                data-action="closeSheet" aria-label="Close details">
+                ${icon('x')}
+              </button>
+            </div>
+            <div class="mt-4 rounded-2xl border border-black/10 bg-black/[0.02] p-4">
+              <div class="text-xs font-extrabold text-black/55">Items</div>
+              <div class="mt-2 space-y-2">
+                ${order.items.map(i => `
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="text-black/75 font-semibold">${i.qty}× ${escapeHtml(i.name)}</div>
+                    <div class="text-black/45 font-extrabold tabular-nums">${euro(i.qty * i.unit_price)}</div>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="mt-3 pt-3 border-t border-black/10 flex items-center justify-between">
+                <div class="font-extrabold">Total</div>
+                <div class="font-extrabold tabular-nums">${euro(total)}</div>
+              </div>
+              ${order.notes ? `<div class="mt-3 text-[11px] text-black/55 italic border-l-2 border-black/10 pl-2">${escapeHtml(order.notes)}</div>` : ``}
+            </div>
+            <div class="mt-4 flex gap-2">
+              ${canAct ? `
+                <button class="focus-ring flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold text-white"
+                  style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%)"
+                  data-action="confirm" data-order="${order.id}">
+                  ${icon('check')} Confirm & Deduct Stock
+                </button>
+                <button class="focus-ring flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold border border-rose-200 bg-rose-50 text-rose-700 hover:brightness-95 transition"
+                  data-action="cancel" data-order="${order.id}">
+                  ${icon('ban')} Cancel
+                </button>
+              ` : `
+                <button class="focus-ring w-full inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold border border-black/10 bg-white hover:bg-black/5 transition"
+                  data-action="closeSheet">
+                  Done
+                </button>
+              `}
+            </div>
+            <div class="mt-3 text-[11px] text-black/45">
+              Keyboard: <span class="font-extrabold">ESC</span> closes. Buttons remain focusable.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function quickFindHtml(state) {
+      if (!state.quickFindOpen) return '';
+      return `
+        <div class="absolute inset-0 z-50">
+          <div class="absolute inset-0 bg-black/35" data-action="closeQuickFind" aria-hidden="true"></div>
+          <div class="absolute left-1/2 top-16 -translate-x-1/2 w-[min(560px,calc(100%-24px))] rounded-[22px] border border-black/10 bg-white shadow-[0_30px_90px_rgba(12,13,18,.30)] p-3 anim-pop"
+            role="dialog" aria-modal="true" aria-label="Quick find">
+            <div class="flex items-center gap-2 px-2">
+              <div class="w-10 h-10 rounded-2xl bg-[var(--tint)] text-[color:var(--accent2)] flex items-center justify-center">${icon('spark')}</div>
+              <input class="focus-ring flex-1 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-extrabold placeholder:text-black/35"
+                placeholder="Type: ORD-009, Maria, +34…"
+                value="${escapeHtml(state.query)}"
+                data-action="quickFindInput"
+                aria-label="Quick find input"
+              />
+              <button class="focus-ring w-10 h-10 rounded-2xl border border-black/10 bg-white hover:bg-black/5 transition inline-flex items-center justify-center"
+                data-action="closeQuickFind" aria-label="Close quick find">${icon('x')}</button>
+            </div>
+            <div class="mt-3 max-h-[280px] overflow-auto px-2 pb-2">
+              ${state.filtered.slice(0, 6).map(o => `
+                <button class="focus-ring w-full text-left rounded-2xl border border-black/10 bg-white hover:bg-black/[0.03] transition px-4 py-3 mb-2"
+                  data-action="selectOrder" data-order="${o.id}">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="font-extrabold">${o.order_number}</div>
+                    ${pill(o.status)}
+                  </div>
+                  <div class="text-sm text-black/60 mt-1 truncate">${escapeHtml(o.customer_name)} · <span class="tabular-nums">${escapeHtml(o.customer_phone)}</span></div>
+                </button>
+              `).join('') || `<div class="text-sm text-black/55 py-6 text-center">No results.</div>`}
+            </div>
+            <div class="text-[11px] text-black/45 px-2">
+              Shortcut: <span class="font-extrabold">Ctrl/⌘ + K</span> toggles.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderApp(state) {
+      const filtered = state.orders.filter(o => {
+        const matchesFilter = state.filter === 'all' ? true : o.status === state.filter;
+        const q = state.query.trim().toLowerCase();
+        const matchesQuery = !q
+          ? true
+          : (o.order_number + ' ' + o.customer_name + ' ' + o.customer_phone).toLowerCase().includes(q);
+        return matchesFilter && matchesQuery;
+      });
+      state.filtered = filtered;
+
+      const pendingCount = state.orders.filter(o => o.status === 'pending').length;
+      const title = pendingCount > 0 && state.filter !== 'pending' ? `Pickup Orders (${pendingCount} pending)` : 'Pickup Orders';
+
+      const rightSlot = state.variant === 'D'
+        ? `<button class="focus-ring inline-flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-3 py-2 text-xs font-extrabold hover:bg-black/5 transition"
+            data-action="toggleSelectMode" aria-pressed="${state.selectMode ? 'true' : 'false'}">
+            ${icon('kbd')} ${state.selectMode ? 'Exit select' : 'Select'}
+          </button>`
+        : ``;
+
+      const showSearch = state.variant !== 'A' ? true : true;
+
+      const base =
+        topBar({ title, subtitle: state.variant === 'D' ? 'Ctrl/⌘+K quick find · Bulk actions · Split view on desktop' : 'Orders from WhatsApp appear here', rightSlot }) +
+        tabs(state.filter) +
+        (showSearch ? searchBar(state.query) : '');
+
+      const listContent = filtered.length === 0
+        ? emptyState(state.filter)
+        : `<div class="p-4 space-y-3 ${state.variant === 'A' && !prefersReducedMotion ? 'anim-pop' : ''}">
+            ${filtered.map(o => orderRow(o, {
+              expanded: state.expanded.has(o.id),
+              variant: state.variant,
+              swipe: (state.variant === 'B' || state.variant === 'D') && state.viewport === 'phone',
+              selectable: state.variant === 'D' && state.selectMode && state.viewport !== 'phone',
+              selected: state.selected.has(o.id),
+              showInlineActions: state.variant === 'B' && state.viewport !== 'phone',
+            })).join('')}
+          </div>`;
+
+      const bulkBar = (state.variant === 'D' && state.selectMode && state.selected.size > 0) ? `
+        <div class="absolute left-3 right-3 bottom-3 z-40 anim-pop">
+          <div class="rounded-2xl border border-black/10 bg-white/90 backdrop-blur shadow-[0_18px_50px_rgba(12,13,18,.18)] px-4 py-3 flex items-center justify-between gap-3">
+            <div class="text-sm font-extrabold text-black/80">
+              ${state.selected.size} selected
+              <span class="text-xs font-semibold text-black/45 ml-2">(desktop/tablet)</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="focus-ring rounded-full px-3 py-2 border border-black/10 bg-white text-xs font-extrabold hover:bg-black/5 transition"
+                data-action="clearSelection">Clear</button>
+              <button class="focus-ring rounded-full px-3 py-2 text-xs font-extrabold text-white"
+                style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%)"
+                data-action="bulkConfirm">Bulk confirm</button>
+            </div>
+          </div>
+        </div>
+      ` : ``;
+
+      const detailPane = (state.variant === 'D' && state.viewport === 'desktop')
+        ? renderSplitDetail(state)
+        : '';
+
+      const body = (state.variant === 'D' && state.viewport === 'desktop')
+        ? `<div class="h-full flex">
+             <div class="flex-1 overflow-auto">${listContent}</div>
+             ${detailPane}
+           </div>`
+        : `<div class="flex-1 overflow-auto">${listContent}</div>`;
+
+      const sheet =
+        (state.variant === 'C')
+          ? detailSheetHtml(state)
+          : (state.variant === 'D' && state.viewport !== 'desktop')
+            ? detailSheetHtml(state)
+            : '';
+      const quickFind = state.variant === 'D' ? quickFindHtml(state) : '';
+
+      return `
+        <div class="h-full flex flex-col app" data-theme="${state.variant}">
+          <div class="sr-only" aria-live="polite">${state.toast ? escapeHtml(state.toast.message) : ''}</div>
+          ${base}
+          ${body}
+          ${toastHtml(state.toast)}
+          ${bulkBar}
+          ${sheet}
+          ${quickFind}
+        </div>
+      `;
+    }
+
+    function renderSplitDetail(state) {
+      const selected = state.detailOrderId || (state.filtered[0] && state.filtered[0].id) || null;
+      const order = state.orders.find(o => o.id === selected);
+      if (!order) return `
+        <div class="w-[420px] border-l border-black/10 bg-white/70 p-4">
+          <div class="text-sm font-extrabold">No order selected</div>
+          <div class="text-sm text-black/60 mt-1">Pick an order from the list.</div>
+        </div>
+      `;
+      const canAct = order.status === 'pending';
+      return `
+        <div class="w-[440px] border-l border-black/10 bg-white/70">
+          <div class="p-4 border-b border-black/10 bg-white/80">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="text-xs uppercase tracking-widest text-black/45">Selected</div>
+                <div class="display font-extrabold text-xl">${order.order_number} <span class="ml-2">${pill(order.status)}</span></div>
+                <div class="text-sm text-black/60 mt-1">${escapeHtml(order.customer_name)}</div>
+              </div>
+              <button class="focus-ring w-10 h-10 rounded-2xl border border-black/10 bg-white hover:bg-black/5 transition inline-flex items-center justify-center"
+                data-action="openQuickFind" aria-label="Open quick find">${icon('spark')}</button>
+            </div>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="rounded-2xl border border-black/10 bg-black/[0.02] p-4">
+              <div class="text-xs font-extrabold text-black/55">Items</div>
+              <div class="mt-2 space-y-2">
+                ${order.items.map(i => `
+                  <div class="flex items-center justify-between text-sm">
+                    <div class="text-black/75 font-semibold">${i.qty}× ${escapeHtml(i.name)}</div>
+                    <div class="text-black/45 font-extrabold tabular-nums">${euro(i.qty * i.unit_price)}</div>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="mt-3 pt-3 border-t border-black/10 flex items-center justify-between">
+                <div class="font-extrabold">Total</div>
+                <div class="font-extrabold tabular-nums">${euro(orderTotal(order))}</div>
+              </div>
+              ${order.notes ? `<div class="mt-3 text-[11px] text-black/55 italic border-l-2 border-black/10 pl-2">${escapeHtml(order.notes)}</div>` : ``}
+            </div>
+
+            <div class="rounded-2xl border border-black/10 bg-white p-4">
+              <div class="text-xs font-extrabold text-black/55">Actions</div>
+              <div class="mt-3 flex gap-2">
+                <button class="focus-ring flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold text-white ${canAct ? '' : 'opacity-40'}"
+                  style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%)"
+                  data-action="confirm" data-order="${order.id}" ${canAct ? '' : 'disabled'}>
+                  ${icon('check')} Confirm
+                </button>
+                <button class="focus-ring flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold border border-rose-200 bg-rose-50 text-rose-700 hover:brightness-95 transition ${canAct ? '' : 'opacity-40'}"
+                  data-action="cancel" data-order="${order.id}" ${canAct ? '' : 'disabled'}>
+                  ${icon('ban')} Cancel
+                </button>
+              </div>
+              <div class="mt-3 text-[11px] text-black/45">
+                Keyboard: <span class="font-extrabold">Ctrl/⌘+K</span> quick find · <span class="font-extrabold">ESC</span> closes overlays
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function createDemo(container, variant) {
+      container.innerHTML = renderDemoRoot(variant);
+
+      const wrap = container.querySelector('.device-wrap');
+      const app = container.querySelector('.app[data-theme="'+variant+'"]');
+
+      const state = {
+        variant,
+        viewport: 'phone',
+        filter: 'pending',
+        query: '',
+        expanded: new Set(),
+        orders: cloneOrders(),
+        toast: null,
+        lastMutation: null,
+        sheetOpen: false,
+        sheetOrderId: null,
+        quickFindOpen: false,
+        filtered: [],
+        selectMode: false,
+        selected: new Set(),
+        detailOrderId: null,
+      };
+
+      function render(withSkeleton = false) {
+        if (withSkeleton) {
+          app.innerHTML = `
+            <div class="h-full flex flex-col">
+              ${topBar({ title: 'Pickup Orders', subtitle: 'Refreshing…', rightSlot: '' })}
+              <div class="p-4 space-y-3">
+                ${Array.from({length: 4}).map(() => `
+                  <div class="rounded-[18px] border border-black/10 bg-white p-4 shadow-[0_18px_40px_rgba(12,13,18,.08)]">
+                    <div class="h-4 w-40 rounded skeleton"></div>
+                    <div class="mt-3 h-3 w-64 rounded skeleton"></div>
+                    <div class="mt-2 h-3 w-56 rounded skeleton"></div>
+                    <div class="mt-4 h-10 w-full rounded-2xl skeleton"></div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          return;
+        }
+        app.innerHTML = renderApp(state);
+
+        // Highlight active viewport button
+        container.querySelectorAll('[data-action="viewport"]').forEach(btn => {
+          const active = btn.getAttribute('data-viewport') === state.viewport;
+          btn.classList.toggle('is-active', active);
+        });
+      }
+
+      function setToast(kind, message, undo = false) {
+        state.toast = { kind, message, undo };
+        render();
+        if (!undo) {
+          window.setTimeout(() => {
+            if (state.toast && state.toast.message === message) {
+              state.toast = null;
+              render();
+            }
+          }, 3200);
+        }
+      }
+
+      function mutateStatus(orderId, newStatus) {
+        const idx = state.orders.findIndex(o => o.id === orderId);
+        if (idx === -1) return;
+        const prev = state.orders[idx].status;
+        state.orders[idx].status = newStatus;
+        state.lastMutation = { orderId, prevStatus: prev, newStatus };
+        setToast(newStatus === 'confirmed' ? 'success' : 'info',
+          `${state.orders[idx].order_number} ${newStatus === 'confirmed' ? 'confirmed — stock deducted' : 'cancelled'}`
+          , true);
+      }
+
+      function undo() {
+        if (!state.lastMutation) return;
+        const { orderId, prevStatus } = state.lastMutation;
+        const idx = state.orders.findIndex(o => o.id === orderId);
+        if (idx !== -1) state.orders[idx].status = prevStatus;
+        state.lastMutation = null;
+        state.toast = { kind: 'info', message: 'Undone', undo: false };
+        render();
+        window.setTimeout(() => { state.toast = null; render(); }, 1400);
+      }
+
+      function openDetail(orderId) {
+        if (state.variant === 'D' && state.viewport === 'desktop') {
+          state.detailOrderId = orderId;
+          render();
+          return;
+        }
+        state.sheetOpen = true;
+        state.sheetOrderId = orderId;
+        render();
+        // Try focus close button inside sheet
+        window.setTimeout(() => {
+          const closeBtn = app.querySelector('[data-action="closeSheet"]');
+          if (closeBtn) closeBtn.focus();
+        }, 0);
+      }
+
+      function closeDetail() {
+        state.sheetOpen = false;
+        state.sheetOrderId = null;
+        render();
+      }
+
+      function refresh() {
+        if (!prefersReducedMotion) {
+          render(true);
+          window.setTimeout(() => render(false), 650);
+        } else {
+          render();
+        }
+        setToast('info', 'List refreshed (simulated)', false);
+      }
+
+      function toggleSelectMode() {
+        state.selectMode = !state.selectMode;
+        state.selected.clear();
+        render();
+      }
+
+      function toggleSelected(orderId) {
+        if (state.selected.has(orderId)) state.selected.delete(orderId);
+        else state.selected.add(orderId);
+        render();
+      }
+
+      function bulkConfirm() {
+        const ids = Array.from(state.selected);
+        if (ids.length === 0) return;
+        ids.forEach(id => {
+          const idx = state.orders.findIndex(o => o.id === id);
+          if (idx !== -1 && state.orders[idx].status === 'pending') state.orders[idx].status = 'confirmed';
+        });
+        state.selected.clear();
+        setToast('success', `Bulk confirmed ${ids.length} order${ids.length !== 1 ? 's' : ''}`, false);
+        render();
+      }
+
+      function openQuickFind() {
+        state.quickFindOpen = true;
+        render();
+        window.setTimeout(() => {
+          const input = app.querySelector('[data-action="quickFindInput"]');
+          if (input) input.focus();
+        }, 0);
+      }
+
+      function closeQuickFind() {
+        state.quickFindOpen = false;
+        render();
+      }
+
+      function onKeyDown(e) {
+        if (e.key === 'Escape') {
+          if (state.quickFindOpen) { closeQuickFind(); return; }
+          if (state.sheetOpen) { closeDetail(); return; }
+        }
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K') && state.variant === 'D') {
+          e.preventDefault();
+          if (state.quickFindOpen) closeQuickFind();
+          else openQuickFind();
+        }
+      }
+
+      container.addEventListener('keydown', onKeyDown);
+
+      // Event delegation
+      container.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+        const action = btn.getAttribute('data-action');
+        const orderId = btn.getAttribute('data-order');
+
+        if (action === 'viewport') {
+          state.viewport = btn.getAttribute('data-viewport');
+          wrap.setAttribute('data-viewport', state.viewport);
+          // Option D: split view signals
+          render();
+          return;
+        }
+        if (action === 'filter') {
+          state.filter = btn.getAttribute('data-filter');
+          render();
+          return;
+        }
+        if (action === 'toggle') {
+          if (!orderId) return;
+          if (state.expanded.has(orderId)) state.expanded.delete(orderId);
+          else state.expanded.add(orderId);
+          render();
+          return;
+        }
+        if (action === 'openDetail') {
+          if (!orderId) return;
+          openDetail(orderId);
+          return;
+        }
+        if (action === 'closeSheet') {
+          closeDetail();
+          return;
+        }
+        if (action === 'confirm') {
+          if (!orderId) return;
+          mutateStatus(orderId, 'confirmed');
+          // close overlays if any
+          state.sheetOpen = false;
+          state.sheetOrderId = null;
+          render();
+          return;
+        }
+        if (action === 'cancel') {
+          if (!orderId) return;
+          mutateStatus(orderId, 'cancelled');
+          state.sheetOpen = false;
+          state.sheetOrderId = null;
+          render();
+          return;
+        }
+        if (action === 'undo') {
+          undo();
+          return;
+        }
+        if (action === 'dismissToast') {
+          state.toast = null;
+          render();
+          return;
+        }
+        if (action === 'refresh') {
+          refresh();
+          return;
+        }
+        if (action === 'toggleSelectMode') {
+          toggleSelectMode();
+          return;
+        }
+        if (action === 'toggleSelect') {
+          if (!orderId) return;
+          toggleSelected(orderId);
+          return;
+        }
+        if (action === 'clearSelection') {
+          state.selected.clear();
+          render();
+          return;
+        }
+        if (action === 'bulkConfirm') {
+          bulkConfirm();
+          return;
+        }
+        if (action === 'openQuickFind') {
+          openQuickFind();
+          return;
+        }
+        if (action === 'closeQuickFind') {
+          closeQuickFind();
+          return;
+        }
+        if (action === 'selectOrder') {
+          if (!orderId) return;
+          state.detailOrderId = orderId;
+          state.sheetOpen = false;
+          state.sheetOrderId = null;
+          state.quickFindOpen = false;
+          render();
+          return;
+        }
+      });
+
+      // Input handling
+      container.addEventListener('input', (e) => {
+        const target = e.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        const action = target.getAttribute('data-action');
+        if (action === 'searchInput') {
+          state.query = target.value;
+          render();
+        }
+        if (action === 'quickFindInput') {
+          state.query = target.value;
+          render();
+        }
+      });
+
+      // Swipe gestures (option B + D on phone)
+      let swipe = null;
+      container.addEventListener('pointerdown', (e) => {
+        const card = e.target.closest('[data-order-card]');
+        if (!card) return;
+        if (card.getAttribute('data-swipe') !== 'true') return;
+        const id = card.getAttribute('data-order-card');
+        swipe = { id, startX: e.clientX, startY: e.clientY, dx: 0, active: true, card };
+        card.setPointerCapture && card.setPointerCapture(e.pointerId);
+      });
+      container.addEventListener('pointermove', (e) => {
+        if (!swipe || !swipe.active) return;
+        const dx = e.clientX - swipe.startX;
+        const dy = e.clientY - swipe.startY;
+        // Bail if it becomes vertical scroll
+        if (Math.abs(dy) > 18 && Math.abs(dy) > Math.abs(dx)) {
+          swipe.active = false;
+          swipe.card.style.transform = '';
+          return;
+        }
+        swipe.dx = Math.min(0, Math.max(dx, -184));
+        swipe.card.style.transform = `translateX(${swipe.dx}px)`;
+        swipe.card.style.transition = 'none';
+      });
+      container.addEventListener('pointerup', () => {
+        if (!swipe) return;
+        const card = swipe.card;
+        const shouldOpen = swipe.dx < -86;
+        card.style.transition = 'transform 180ms ease-out';
+        card.style.transform = shouldOpen ? 'translateX(-184px)' : 'translateX(0px)';
+        window.setTimeout(() => {
+          if (card) card.style.transition = '';
+        }, 220);
+        swipe = null;
+      });
+
+      // Ensure container is focusable for keyboard shortcuts
+      container.tabIndex = 0;
+
+      // For variants where the “detail” is primary, clicking anywhere on card opens detail.
+      container.addEventListener('click', (e) => {
+        const card = e.target.closest('[data-order-card]');
+        if (!card) return;
+        const id = card.getAttribute('data-order-card');
+        if (!id) return;
+
+        // Ignore if click was on a button
+        if (e.target.closest('button')) return;
+
+        if (state.variant === 'C') {
+          openDetail(id);
+        }
+        if (state.variant === 'D') {
+          if (state.viewport === 'desktop') {
+            state.detailOrderId = id;
+            render();
+          } else {
+            openDetail(id);
+          }
+        }
+      });
+
+      render();
+    }
+
+    document.querySelectorAll('.demo').forEach((node) => {
+      const variant = node.getAttribute('data-variant');
+      createDemo(node, variant);
+    });
+  </script>
+</body>
+</html>

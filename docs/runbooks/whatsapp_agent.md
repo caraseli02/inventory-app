@@ -14,9 +14,12 @@
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
-- `VITE_NOTIFY_SECRET`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
+
+Notes:
+- `/api/whatsapp-notify` now expects an `Authorization: Bearer <supabase_access_token>` header (sent by the web app).
+- This is only a strong auth gate if your Supabase project does **not** allow anonymous sign-in.
 
 ### Internal simulator (optional): `POST /api/whatsapp-simulate`
 
