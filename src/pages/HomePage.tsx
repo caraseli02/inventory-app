@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
+import { Bot } from 'lucide-react';
 
 import { AgentInbox } from '@/components/AgentInbox';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -23,6 +24,7 @@ export default function HomePage() {
     staleTime: 1000 * 30,
   });
   const pendingOrderCount = pendingOrders.length;
+  const showSimulatorEntry = import.meta.env.DEV || import.meta.env.VITE_ENABLE_WHATSAPP_SIMULATOR === 'true';
 
   const go = useCallback((to: string) => {
     navigate(to);
@@ -97,6 +99,33 @@ export default function HomePage() {
           pendingOrderCount={pendingOrderCount}
           onClick={() => go('/orders')}
         />
+
+        {showSimulatorEntry && (
+          <Card
+            className="group relative cursor-pointer rounded-2xl border-2 border-[var(--color-lavender)]/40 bg-white p-5 sm:p-6 text-left transition hover:border-[var(--color-lavender)] hover:shadow-xl hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-900 min-h-[180px] sm:min-h-[200px]"
+            onClick={() => go('/whatsapp-simulator')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') go('/whatsapp-simulator');
+            }}
+          >
+            <div className="flex h-full flex-col justify-between gap-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-lavender)]/10 text-[var(--color-lavender)] group-hover:bg-[var(--color-lavender)]/20 group-hover:scale-110 transition-all">
+                  <Bot className="h-6 w-6" />
+                </div>
+                <Badge variant="secondary" className="bg-[var(--color-lavender)]/10 border-[var(--color-lavender)]/30 text-[var(--color-lavender)] px-2.5 py-1 text-xs font-semibold tracking-wide uppercase">
+                  Internal
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-lg sm:text-xl font-bold text-stone-900">WhatsApp Simulator</h2>
+                <p className="text-sm text-[var(--color-lavender)] leading-snug">Test chat flow without Twilio phone roundtrip</p>
+              </div>
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

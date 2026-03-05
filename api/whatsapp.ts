@@ -140,11 +140,56 @@ function twiml(message: string): string {
 
 // ─── AI reply builder ────────────────────────────────────────────────────────
 
-async function buildReply(phone: string, name: string, text: string): Promise<string> {
-  const sb = createClient(
+function createSupabaseClient() {
+  return createClient(
     process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
     process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
   );
+}
+
+function toSimulationOrderReply(phone: string, name: string, text: string): string | null {
+  const trimmed = text.trim();
+
+  if (/ORDER:\s*\{[\s\S]*\}\s*$/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed) as {
+        customer_name?: string;
+        customer_phone?: string;
+        items?: Array<{ name: string; qty: number }>;
+        pickup_time?: string;
+      };
+
+      const payload = {
+        customer_name: parsed.customer_name ?? name,
+        customer_phone: parsed.customer_phone ?? phone,
+        items: parsed.items ?? [],
+        pickup_time: parsed.pickup_time,
+      };
+      return `ORDER:${JSON.stringify(payload)}`;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+export async function buildLocalSimulationReply(phone: string, name: string, text: string): Promise<string> {
+  const orderReply = toSimulationOrderReply(phone, name, text);
+  if (!orderReply) {
+    return 'Simulator local: ANTHROPIC_API_KEY lipsește. Trimite ORDER:{...} sau JSON-ul comenzii pentru creare directă.';
+  }
+
+  const sb = createSupabaseClient();
+  return processOrderIntent(sb, orderReply);
+}
+
+export async function buildReply(phone: string, name: string, text: string): Promise<string> {
+  const sb = createSupabaseClient();
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
   const intent = classifyIncomingText(text);

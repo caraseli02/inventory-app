@@ -16,7 +16,6 @@ interface OrdersPageProps {
   onBack: () => void;
 }
 
-
 const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
   pending:   { label: 'Pending',   className: 'bg-amber-100 text-amber-800 border-amber-200' },
   confirmed: { label: 'Confirmed', className: 'bg-green-100 text-green-800 border-green-200' },
