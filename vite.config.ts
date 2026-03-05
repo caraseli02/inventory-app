@@ -52,14 +52,10 @@ function localWhatsappSimulatorPlugin(): PluginOption {
 
         try {
           const body = await parseJsonBody(req);
-          const text = String(body.text ?? '').trim();
           const phone = normalizeSimPhone(String(body.phone ?? ''));
           const name = String(body.name ?? 'Simulator').trim() || 'Simulator';
-
-          if (!text) {
-            sendJson(res, 400, { ok: false, error: 'text is required' });
-            return;
-          }
+          const reset = Boolean(body.reset);
+          const text = String(body.text ?? '').trim();
 
           const expectedSecret = process.env.WHATSAPP_SIMULATOR_SECRET ?? process.env.VITE_NOTIFY_SECRET ?? '';
           const providedSecret = String(req.headers['x-notify-secret'] ?? '');
@@ -69,11 +65,32 @@ function localWhatsappSimulatorPlugin(): PluginOption {
           }
 
           const module = await server.ssrLoadModule('/api/whatsapp.ts');
-          const hasAnthropicKey = Boolean(process.env.ANTHROPIC_API_KEY);
-          const reply = hasAnthropicKey
-            ? await module.buildReply(phone, name, text)
-            : await module.buildLocalSimulationReply(phone, name, text);
-          sendJson(res, 200, { ok: true, reply });
+          const mode = String(body.mode ?? 'agent');
+          const debug = Boolean(body.debug);
+          if (reset) {
+            await module.resetConversationHistory(phone);
+            sendJson(res, 200, { ok: true });
+            return;
+          }
+
+          if (!text) {
+            sendJson(res, 400, { ok: false, error: 'text is required' });
+            return;
+          }
+
+          if (mode === 'direct') {
+            const reply = await module.buildLocalSimulationReply(phone, name, text);
+            sendJson(res, 200, { ok: true, reply, provider: 'local' });
+            return;
+          }
+
+          const result = await module.buildSimulatorReply(phone, name, text);
+          sendJson(res, 200, {
+            ok: true,
+            reply: result.reply,
+            provider: result.provider,
+            ...(debug ? { debug: result.debug } : {}),
+          });
         } catch (error) {
           console.error('[local-whatsapp-simulate] failed:', error);
           sendJson(res, 500, { ok: false, error: 'Simulation failed' });

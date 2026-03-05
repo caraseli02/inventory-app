@@ -26,6 +26,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 import { validateTwilioSignature } from './lib/twilio-signature.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -43,6 +45,21 @@ interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+}
+
+export type WhatsAppSimulatorProvider = 'openai' | 'anthropic' | 'local';
+
+export interface WhatsAppSimulatorResult {
+  provider: WhatsAppSimulatorProvider;
+  reply: string;
+  debug?: {
+    intent: IncomingIntent;
+    inventoryText: string;
+    searchCandidatesCurrent: string[];
+    searchCandidatesFromHistory: string[];
+    searchCandidatesUsed: string[];
+    repairedOrder: boolean;
+  };
 }
 
 interface ProductRow {
@@ -181,58 +198,234 @@ function toSimulationOrderReply(phone: string, name: string, text: string): stri
 export async function buildLocalSimulationReply(phone: string, name: string, text: string): Promise<string> {
   const orderReply = toSimulationOrderReply(phone, name, text);
   if (!orderReply) {
-    return 'Simulator local: ANTHROPIC_API_KEY lipsește. Trimite ORDER:{...} sau JSON-ul comenzii pentru creare directă.';
+    return 'Simulator local: OPENAI_API_KEY / ANTHROPIC_API_KEY lipsesc. Trimite ORDER:{...} sau JSON-ul comenzii pentru creare directă.';
   }
 
   const sb = createSupabaseClient();
   return processOrderIntent(sb, orderReply);
 }
 
+export async function resetConversationHistory(phone: string): Promise<void> {
+  const sb = createSupabaseClient();
+  await sb
+    .from('conversation_history')
+    .delete()
+    .eq('phone_number', phone);
+}
+
+type LlmMessage = { role: 'user' | 'assistant'; content: string };
+type GenerateLlmReply = (args: { system: string; messages: LlmMessage[] }) => Promise<string>;
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+async function runConversationTurn(args: {
+  sb: ReturnType<typeof createClient>;
+  phone: string;
+  name: string;
+  text: string;
+  llmProvider: Exclude<WhatsAppSimulatorProvider, 'local'>;
+  generateLlmReply: GenerateLlmReply;
+  includeDebug: boolean;
+  repairOrder: boolean;
+}): Promise<WhatsAppSimulatorResult> {
+  const intent = classifyIncomingText(args.text);
+
+  if (intent === 'store_info') {
+    const reply = buildStoreInfoReply(args.text);
+    try {
+      const history = await getHistory(args.sb, args.phone);
+      await appendHistory(args.sb, args.phone, history, [
+        { role: 'user', content: args.text, timestamp: nowIso() },
+        { role: 'assistant', content: reply, timestamp: nowIso() },
+      ]);
+    } catch (err) {
+      console.error('[whatsapp] history append failed:', err);
+    }
+
+    return { provider: 'local', reply };
+  }
+
+  const history = await getHistory(args.sb, args.phone);
+  const searchCandidatesCurrent = intent === 'product_query' ? extractSearchCandidates(args.text) : [];
+  const searchCandidatesFromHistory = intent === 'product_query' ? extractSearchCandidatesFromHistory(history) : [];
+  const searchCandidatesUsed = searchCandidatesCurrent.length ? searchCandidatesCurrent : searchCandidatesFromHistory;
+  const inventoryText = await getInventorySummary(args.sb, { intent, text: args.text, candidatesOverride: searchCandidatesUsed });
+
+  const menuSelection = maybeHandleMenuSelection({
+    userText: args.text,
+    history,
+    inventoryText,
+    customerName: args.name,
+    customerPhone: args.phone,
+  });
+
+  let replyTextRaw = '';
+  let provider: WhatsAppSimulatorProvider = args.llmProvider;
+  let repairedOrder = false;
+
+  if (menuSelection) {
+    replyTextRaw = menuSelection.text;
+    provider = 'local';
+  } else {
+    const followup = maybeHandleOrderFollowup({
+      userText: args.text,
+      inventoryText,
+      customerName: args.name,
+      customerPhone: args.phone,
+    });
+
+    if (followup) {
+      replyTextRaw = followup.text;
+      provider = 'local';
+    } else {
+      const messages: LlmMessage[] = [
+        ...history.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user', content: args.text },
+      ];
+
+      const system = buildSystemPrompt(args.name, args.phone, inventoryText);
+      replyTextRaw = await args.generateLlmReply({ system, messages });
+
+      if (args.repairOrder) {
+        const repaired = maybeRepairOrderReply({
+          replyText: replyTextRaw,
+          userText: args.text,
+          inventoryText,
+          customerName: args.name,
+          customerPhone: args.phone,
+        });
+        replyTextRaw = repaired.text;
+        repairedOrder = repaired.repairedOrder;
+      }
+    }
+  }
+
+  const reply = await processOrderIntent(args.sb, replyTextRaw);
+
+  try {
+    await appendHistory(args.sb, args.phone, history, [
+      { role: 'user', content: args.text, timestamp: nowIso() },
+      { role: 'assistant', content: reply, timestamp: nowIso() },
+    ]);
+  } catch (err) {
+    console.error('[whatsapp] history append failed:', err);
+  }
+
+  return {
+    provider,
+    reply,
+    ...(args.includeDebug ? {
+      debug: {
+        intent,
+        inventoryText,
+        searchCandidatesCurrent,
+        searchCandidatesFromHistory,
+        searchCandidatesUsed,
+        repairedOrder,
+      },
+    } : {}),
+  };
+}
+
+export async function buildSimulatorReply(phone: string, name: string, text: string): Promise<WhatsAppSimulatorResult> {
+  const hasOpenAi = Boolean(process.env.OPENAI_API_KEY);
+  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
+
+  if (!hasOpenAi && !hasAnthropic) {
+    return { provider: 'local', reply: await buildLocalSimulationReply(phone, name, text) };
+  }
+
+  if (!hasOpenAi) {
+    return { provider: 'anthropic', reply: await buildReply(phone, name, text) };
+  }
+
+  const sb = createSupabaseClient();
+
+  try {
+    return await runConversationTurn({
+      sb,
+      phone,
+      name,
+      text,
+      llmProvider: 'openai',
+      repairOrder: true,
+      includeDebug: true,
+      generateLlmReply: async ({ system, messages }) => {
+        const model = String(process.env.WHATSAPP_OPENAI_MODEL ?? 'gpt-4.1-nano');
+        const result = await generateText({
+          model: openai(model),
+          system,
+          messages,
+          maxOutputTokens: 512,
+          temperature: 0.2,
+        });
+        return result.text ?? '';
+      },
+    });
+  } catch (err) {
+    if (!hasAnthropic) throw err;
+    return await runConversationTurn({
+      sb,
+      phone,
+      name,
+      text,
+      llmProvider: 'anthropic',
+      repairOrder: false,
+      includeDebug: true,
+      generateLlmReply: async ({ system, messages }) => {
+        const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        const typedMessages: Anthropic.MessageParam[] = messages.map((m) => ({ role: m.role, content: m.content }));
+        try {
+          const response = await createAnthropicMessageWithRetry(anthropic, {
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 512,
+            system,
+            messages: typedMessages,
+          });
+          return response.content[0].type === 'text' ? response.content[0].text : '';
+        } catch (inner) {
+          if (isAnthropicOverloaded(inner)) return buildOverloadedReply(text);
+          throw inner;
+        }
+      },
+    });
+  }
+}
+
 export async function buildReply(phone: string, name: string, text: string): Promise<string> {
   const sb = createSupabaseClient();
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  const intent = classifyIncomingText(text);
-  if (intent === 'store_info') {
-    return buildStoreInfoReply(text);
-  }
+  const result = await runConversationTurn({
+    sb,
+    phone,
+    name,
+    text,
+    llmProvider: 'anthropic',
+    repairOrder: false,
+    includeDebug: false,
+    generateLlmReply: async ({ system, messages }) => {
+      const typedMessages: Anthropic.MessageParam[] = messages.map((m) => ({ role: m.role, content: m.content }));
 
-  const [history, inventoryText] = await Promise.all([
-    getHistory(sb, phone),
-    getInventorySummary(sb, { intent, text }),
-  ]);
+      try {
+        const response = await createAnthropicMessageWithRetry(anthropic, {
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 512,
+          system,
+          messages: typedMessages,
+        });
 
-  const messages: Anthropic.MessageParam[] = [
-    ...history.map(m => ({ role: m.role, content: m.content } as Anthropic.MessageParam)),
-    { role: 'user', content: text },
-  ];
+        return response.content[0].type === 'text' ? response.content[0].text : '';
+      } catch (err) {
+        if (isAnthropicOverloaded(err)) return buildOverloadedReply(text);
+        throw err;
+      }
+    },
+  });
 
-  let response: Anthropic.Messages.Message;
-  try {
-    response = await createAnthropicMessageWithRetry(anthropic, {
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      system: buildSystemPrompt(name, phone, inventoryText),
-      messages,
-    });
-  } catch (err) {
-    const overloaded = isAnthropicOverloaded(err);
-    if (overloaded) {
-      return buildOverloadedReply(text);
-    }
-    throw err;
-  }
-
-  const replyText = response.content[0].type === 'text' ? response.content[0].text : '';
-
-  // Persist conversation (fire-and-forget)
-  saveHistory(sb, phone, [
-    ...history,
-    { role: 'user', content: text, timestamp: new Date().toISOString() },
-    { role: 'assistant', content: replyText, timestamp: new Date().toISOString() },
-  ]).catch(err => console.error('[whatsapp] saveHistory failed:', err));
-
-  return await processOrderIntent(sb, replyText);
+  return result.reply;
 }
 
 // ─── System prompt ────────────────────────────────────────────────────────────
@@ -258,12 +451,16 @@ ${inventoryText ? `INVENTAR LIVE:\n${inventoryText}\n` : ''}
 REGULI:
 1. Răspunde în limba clientului (română sau engleză) — auto-detectează.
 2. Fii prietenos și concis — maxim 3 propoziții per mesaj.
-3. Pentru produse/stoc/preț, folosește doar datele din inventar (dacă există). Nu inventa produse sau prețuri.
+3. Pentru produse/stoc/preț, folosește doar datele din INVENTAR LIVE (dacă există). Nu inventa produse sau prețuri.
 4. Dacă stocul unui produs este ≤ 0, spune că nu este disponibil momentan.
 5. Nu folosi markdown (fără *, _, #) — WhatsApp afișează plain text.
-6. Dacă ești întrebat de adresă/program și nu sunt în mesaj, spune că nu ai informația configurată și recomandă să sune la magazin (dacă există telefon) sau să întrebe în magazin.
-7. Când un client confirmă o comandă, adaugă pe ultima linie:
-   ORDER:{"customer_name":"${name}","customer_phone":"${phone}","items":[{"name":"Nume produs","qty":1}],"pickup_time":"ora menționată"}`;
+6. Nu spune că “nu poți verifica stocul” dacă INVENTAR LIVE este prezent. Dacă INVENTAR LIVE este “Inventar indisponibil.” atunci cere denumirea exactă a produsului sau spune că inventarul nu e disponibil.
+7. Nu inventa ora de ridicare. Dacă clientul nu spune ora, întreabă “la ce oră vrei ridicarea?”.
+8. Dacă există mai multe produse similare în inventar, cere clientului să aleagă denumirea exactă (copiată din listă).
+9. Dacă ești întrebat de adresă/program și nu sunt în mesaj, spune că nu ai informația configurată și recomandă să sune la magazin (dacă există telefon) sau să întrebe în magazin.
+10. Când un client confirmă o comandă și ai: (a) denumiri exacte produse + (b) cantități + (c) ora de ridicare, adaugă pe ultima linie:
+   ORDER:{"customer_name":"${name}","customer_phone":"${phone}","items":[{"name":"Nume produs","qty":1}],"pickup_time":"ora menționată"}
+11. Nu spune că “ai notat comanda / order noted” dacă NU ai adăugat linia ORDER:... (altfel comanda nu se salvează).`;
 }
 
 function detectEnglish(text: string): boolean {
@@ -357,7 +554,7 @@ function classifyIncomingText(text: string): IncomingIntent {
   return 'product_query';
 }
 
-function extractSearchTerm(text: string): string | null {
+function extractSearchCandidates(text: string): string[] {
   const cleaned = text
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
@@ -367,30 +564,260 @@ function extractSearchTerm(text: string): string | null {
   const stop = new Set([
     'ai', 'aveti', 'aveți', 'are', 'ati', 'ați', 'as', 'aș', 'as', 'vrea', 'vreau', 'imi', 'îmi', 'mi', 'un', 'o',
     'la', 'in', 'în', 'pe', 'cu', 'de', 'din', 'si', 'și', 'sau', 'care', 'ce', 'cat', 'cât', 'este', 'mai', 'mult',
+    'comand', 'comanda', 'comandă', 'comandați', 'comandati', 'doriți', 'doriti', 'doresc', 'vreți', 'vreti',
+    'ridic', 'ridica', 'ridicat', 'ridicare', 'ridicarea', 'ridicarii', 'ridicării', 'ora', 'pentru',
+    'ok', 'okay', 'will', 'get', 'take', 'want', 'buy', 'order', 'pickup', 'pick', 'up', 'for', 'sale', 'im', 'i',
     'do', 'you', 'have', 'any', 'is', 'it', 'there', 'a', 'an', 'the', 'of', 'to', 'for', 'in', 'on', 'with', 'please',
     'price', 'cost', 'stock', 'available',
   ]);
 
   const candidates = cleaned.filter((w) => w.length >= 3 && !stop.has(w));
-  if (!candidates.length) return null;
-  candidates.sort((a, b) => b.length - a.length);
-  return candidates[0] ?? null;
+  if (!candidates.length) return [];
+  const unique = Array.from(new Set(candidates.flatMap((w) => {
+    if (w === 'milk') return ['lapte', 'milk'];
+    return [w];
+  })));
+  unique.sort((a, b) => b.length - a.length);
+  return unique.slice(0, 3);
+}
+
+function extractSearchCandidatesFromHistory(history: ConversationMessage[]): string[] {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const msg = history[i];
+    if (msg.role !== 'user') continue;
+    if (!msg?.content) continue;
+    const candidates = extractSearchCandidates(msg.content);
+    if (candidates.length) return candidates;
+  }
+  return [];
+}
+
+function normalizeFreeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractInventoryNames(inventoryText: string): string[] {
+  return inventoryText
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('•'))
+    .map((line) => line.replace(/^•\s*/, ''))
+    .map((line) => line.split(' — ')[0] ?? '')
+    .map((left) => left.replace(/\s*\([^)]*\)\s*$/, '').trim())
+    .filter(Boolean);
+}
+
+function parsePickupTime(text: string): string | null {
+  const normalized = text.replace(/\./g, ':');
+  const m = normalized.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if (!m) return null;
+  return `${m[1]!.padStart(2, '0')}:${m[2]}`;
+}
+
+function parseSingleQuantity(text: string): number | null {
+  const m = text.match(/\b(\d{1,3})\b/);
+  if (!m) return null;
+  const n = Math.floor(Number(m[1]));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.min(99, n);
+}
+
+function parseMenuChoice(text: string): number | null {
+  const m = text.trim().match(/^([1-9])\s*[).]?\s*$/);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) && n >= 1 && n <= 9 ? n : null;
+}
+
+function extractMenuOptionsFromAssistantText(text: string): string[] {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  const options: Array<{ idx: number; name: string }> = [];
+  for (const line of lines) {
+    const m = line.match(/^(\d)\)\s+(.*)$/);
+    if (!m) continue;
+    const idx = Number(m[1]);
+    const name = String(m[2] ?? '').trim();
+    if (!name) continue;
+    options.push({ idx, name });
+  }
+
+  if (!options.length) return [];
+  options.sort((a, b) => a.idx - b.idx);
+  if (options[0]!.idx !== 1) return [];
+  for (let i = 0; i < options.length; i += 1) {
+    if (options[i]!.idx !== i + 1) return [];
+  }
+  return options.map((o) => o.name);
+}
+
+function findLastMenuOptions(history: ConversationMessage[]): string[] {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const msg = history[i];
+    if (msg.role !== 'assistant') continue;
+    if (!msg?.content) continue;
+    const options = extractMenuOptionsFromAssistantText(msg.content);
+    if (options.length >= 2) return options;
+  }
+  return [];
+}
+
+function findLastQtyAndPickupTime(history: ConversationMessage[]): { qty: number; pickupTime: string } | null {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const msg = history[i];
+    if (msg.role !== 'user') continue;
+    if (!msg?.content) continue;
+    const qty = parseSingleQuantity(msg.content);
+    const pickupTime = parsePickupTime(msg.content);
+    if (qty && pickupTime) return { qty, pickupTime };
+  }
+  return null;
+}
+
+function maybeHandleMenuSelection(args: {
+  userText: string;
+  history: ConversationMessage[];
+  inventoryText: string;
+  customerName: string;
+  customerPhone: string;
+}): { text: string } | null {
+  const choice = parseMenuChoice(args.userText);
+  if (!choice) return null;
+
+  const ctx = findLastQtyAndPickupTime(args.history);
+  if (!ctx) return null;
+
+  const optionsFromMenu = findLastMenuOptions(args.history);
+  const optionsFromInventory = extractInventoryNames(args.inventoryText).slice(0, 3);
+  const options = optionsFromMenu.length ? optionsFromMenu : optionsFromInventory;
+  if (!options.length) return null;
+
+  const chosen = options[choice - 1];
+  if (!chosen) return null;
+
+  const payload = {
+    customer_name: args.customerName,
+    customer_phone: args.customerPhone,
+    items: [{ name: chosen, qty: ctx.qty }],
+    pickup_time: ctx.pickupTime,
+  };
+
+  const reply = `Perfect — confirm: ${ctx.qty} × ${chosen}, ridicare la ${ctx.pickupTime}.\nORDER:${JSON.stringify(payload)}`;
+  return { text: reply };
+}
+
+function looksLikeOrderRequest(text: string): boolean {
+  const t = normalizeFreeText(text);
+  return /(vreau|comand|comanda|order|buy|take|get|i will|yes|da)\b/.test(t);
+}
+
+function maybeHandleOrderFollowup(args: {
+  userText: string;
+  inventoryText: string;
+  customerName: string;
+  customerPhone: string;
+}): { text: string; createdOrder: boolean } | null {
+  if (!looksLikeOrderRequest(args.userText)) return null;
+  if (!args.inventoryText || args.inventoryText.trim() === 'Inventar indisponibil.') return null;
+
+  const pickupTime = parsePickupTime(args.userText);
+  const qty = parseSingleQuantity(args.userText);
+  if (!pickupTime || !qty) return null;
+
+  const names = extractInventoryNames(args.inventoryText);
+  if (!names.length) return null;
+
+  const userNorm = normalizeFreeText(args.userText);
+  const matches = names.filter((n) => userNorm.includes(normalizeFreeText(n)));
+
+  if (matches.length === 1 || names.length === 1) {
+    const chosen = matches[0] ?? names[0]!;
+    const payload = {
+      customer_name: args.customerName,
+      customer_phone: args.customerPhone,
+      items: [{ name: chosen, qty }],
+      pickup_time: pickupTime,
+    };
+
+    const reply = `Perfect — confirm: ${qty} × ${chosen}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`;
+    return { text: reply, createdOrder: true };
+  }
+
+  const options = names.slice(0, 3);
+  const list = options.map((n, i) => `${i + 1}) ${n}`).join('\n');
+  const reply = `Am mai multe opțiuni în inventar. Care anume?\n${list}`;
+  return { text: reply, createdOrder: false };
+}
+
+function maybeRepairOrderReply(args: {
+  replyText: string;
+  userText: string;
+  inventoryText: string;
+  customerName: string;
+  customerPhone: string;
+}): { text: string; repairedOrder: boolean } {
+  if (/ORDER:\s*\{[\s\S]*\}\s*$/i.test(args.replyText)) {
+    return { text: args.replyText, repairedOrder: false };
+  }
+
+  if (!looksLikeOrderRequest(args.userText)) {
+    return { text: args.replyText, repairedOrder: false };
+  }
+
+  const pickupTime = parsePickupTime(args.userText);
+  const qty = parseSingleQuantity(args.userText);
+  if (!pickupTime || !qty) {
+    return { text: args.replyText, repairedOrder: false };
+  }
+
+  const names = extractInventoryNames(args.inventoryText);
+  if (!names.length) return { text: args.replyText, repairedOrder: false };
+
+  const userNorm = normalizeFreeText(args.userText);
+  const matches = names.filter((n) => userNorm.includes(normalizeFreeText(n)));
+  if (matches.length !== 1) return { text: args.replyText, repairedOrder: false };
+
+  const payload = {
+    customer_name: args.customerName,
+    customer_phone: args.customerPhone,
+    items: [{ name: matches[0], qty }],
+    pickup_time: pickupTime,
+  };
+
+  const repaired = `${args.replyText.trim()}\nORDER:${JSON.stringify(payload)}`;
+  return { text: repaired, repairedOrder: true };
 }
 
 async function getInventorySummary(
   sb: ReturnType<typeof createClient>,
-  args: { intent: IncomingIntent; text: string }
+  args: { intent: IncomingIntent; text: string; candidatesOverride?: string[] }
 ): Promise<string> {
   const limit = args.intent === 'browse_inventory' ? 40 : 20;
 
-  const term = args.intent === 'product_query' ? extractSearchTerm(args.text) : null;
-  const productsQuery = sb
+  const candidates = args.candidatesOverride ?? (args.intent === 'product_query' ? extractSearchCandidates(args.text) : []);
+  const makeProductsQuery = () => sb
     .from('products')
     .select('id, created_at, name, category, price, price_50, price_70, price_100, markup');
 
-  const { data: products } = term
-    ? await productsQuery.ilike('name', `%${term}%`).limit(limit)
-    : await productsQuery.order('created_at', { ascending: false }).limit(limit);
+  let products: unknown[] | null | undefined;
+  if (candidates.length) {
+    for (const term of candidates) {
+      const { data } = await makeProductsQuery().ilike('name', `%${term}%`).limit(limit);
+      if (data?.length) {
+        products = data as unknown[];
+        break;
+      }
+    }
+  }
+  if (!products?.length) {
+    const { data } = await makeProductsQuery().order('created_at', { ascending: false }).limit(limit);
+    products = data as unknown[] | null | undefined;
+  }
 
   if (!products?.length) return 'Inventar indisponibil.';
 
@@ -458,6 +885,16 @@ async function getInventorySummary(
 
   return lines.join('\n');
 }
+
+export const __private__ = {
+  extractSearchCandidates,
+  extractSearchCandidatesFromHistory,
+  maybeHandleOrderFollowup,
+  maybeHandleMenuSelection,
+  extractMenuOptionsFromAssistantText,
+  maybeRepairOrderReply,
+  getInventorySummary,
+} as const;
 
 // ─── Order intent ─────────────────────────────────────────────────────────────
 
@@ -543,15 +980,28 @@ async function getHistory(
   return ((data?.messages ?? []) as ConversationMessage[]).slice(-20);
 }
 
-async function saveHistory(
+async function appendHistory(
   sb: ReturnType<typeof createClient>,
   phone: string,
-  messages: ConversationMessage[]
+  history: ConversationMessage[],
+  newMessages: ConversationMessage[]
 ): Promise<void> {
+  const payload = newMessages.slice(-20);
+
+  try {
+    const { error } = await sb.rpc('append_conversation_history', {
+      p_phone_number: phone,
+      p_messages: payload as unknown,
+    });
+    if (!error) return;
+  } catch {
+    // fall through
+  }
+
   await sb
     .from('conversation_history')
     .upsert(
-      { phone_number: phone, messages: messages.slice(-20) },
+      { phone_number: phone, messages: [...history, ...payload].slice(-20) },
       { onConflict: 'phone_number' }
     );
 }
