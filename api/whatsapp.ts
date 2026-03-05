@@ -213,6 +213,122 @@ export async function resetConversationHistory(phone: string): Promise<void> {
     .eq('phone_number', phone);
 }
 
+type LlmMessage = { role: 'user' | 'assistant'; content: string };
+type GenerateLlmReply = (args: { system: string; messages: LlmMessage[] }) => Promise<string>;
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+async function runConversationTurn(args: {
+  sb: ReturnType<typeof createClient>;
+  phone: string;
+  name: string;
+  text: string;
+  llmProvider: Exclude<WhatsAppSimulatorProvider, 'local'>;
+  generateLlmReply: GenerateLlmReply;
+  includeDebug: boolean;
+  repairOrder: boolean;
+}): Promise<WhatsAppSimulatorResult> {
+  const intent = classifyIncomingText(args.text);
+
+  if (intent === 'store_info') {
+    const reply = buildStoreInfoReply(args.text);
+    try {
+      const history = await getHistory(args.sb, args.phone);
+      await appendHistory(args.sb, args.phone, history, [
+        { role: 'user', content: args.text, timestamp: nowIso() },
+        { role: 'assistant', content: reply, timestamp: nowIso() },
+      ]);
+    } catch (err) {
+      console.error('[whatsapp] history append failed:', err);
+    }
+
+    return { provider: 'local', reply };
+  }
+
+  const history = await getHistory(args.sb, args.phone);
+  const searchCandidatesCurrent = intent === 'product_query' ? extractSearchCandidates(args.text) : [];
+  const searchCandidatesFromHistory = intent === 'product_query' ? extractSearchCandidatesFromHistory(history) : [];
+  const searchCandidatesUsed = searchCandidatesCurrent.length ? searchCandidatesCurrent : searchCandidatesFromHistory;
+  const inventoryText = await getInventorySummary(args.sb, { intent, text: args.text, candidatesOverride: searchCandidatesUsed });
+
+  const menuSelection = maybeHandleMenuSelection({
+    userText: args.text,
+    history,
+    inventoryText,
+    customerName: args.name,
+    customerPhone: args.phone,
+  });
+
+  let replyTextRaw = '';
+  let provider: WhatsAppSimulatorProvider = args.llmProvider;
+  let repairedOrder = false;
+
+  if (menuSelection) {
+    replyTextRaw = menuSelection.text;
+    provider = 'local';
+  } else {
+    const followup = maybeHandleOrderFollowup({
+      userText: args.text,
+      inventoryText,
+      customerName: args.name,
+      customerPhone: args.phone,
+    });
+
+    if (followup) {
+      replyTextRaw = followup.text;
+      provider = 'local';
+    } else {
+      const messages: LlmMessage[] = [
+        ...history.map((m) => ({ role: m.role, content: m.content })),
+        { role: 'user', content: args.text },
+      ];
+
+      const system = buildSystemPrompt(args.name, args.phone, inventoryText);
+      replyTextRaw = await args.generateLlmReply({ system, messages });
+
+      if (args.repairOrder) {
+        const repaired = maybeRepairOrderReply({
+          replyText: replyTextRaw,
+          userText: args.text,
+          inventoryText,
+          customerName: args.name,
+          customerPhone: args.phone,
+        });
+        replyTextRaw = repaired.text;
+        repairedOrder = repaired.repairedOrder;
+      }
+    }
+  }
+
+  const reply = await processOrderIntent(args.sb, replyTextRaw);
+
+  try {
+    await appendHistory(args.sb, args.phone, history, [
+      { role: 'user', content: args.text, timestamp: nowIso() },
+      { role: 'assistant', content: reply, timestamp: nowIso() },
+    ]);
+  } catch (err) {
+    console.error('[whatsapp] history append failed:', err);
+  }
+
+  return {
+    provider,
+    reply,
+    ...(args.includeDebug ? {
+      debug: {
+        intent,
+        inventoryText,
+        searchCandidatesCurrent,
+        searchCandidatesFromHistory,
+        searchCandidatesUsed,
+        repairedOrder,
+      },
+    } : {}),
+  };
+}
+
 export async function buildSimulatorReply(phone: string, name: string, text: string): Promise<WhatsAppSimulatorResult> {
   const hasOpenAi = Boolean(process.env.OPENAI_API_KEY);
   const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
@@ -227,205 +343,89 @@ export async function buildSimulatorReply(phone: string, name: string, text: str
 
   const sb = createSupabaseClient();
 
-  const intent = classifyIncomingText(text);
-  if (intent === 'store_info') {
-    return { provider: 'local', reply: buildStoreInfoReply(text) };
-  }
-
-  const history = await getHistory(sb, phone);
-  const searchCandidatesCurrent = intent === 'product_query' ? extractSearchCandidates(text) : [];
-  const searchCandidatesFromHistory = intent === 'product_query' ? extractSearchCandidatesFromHistory(history) : [];
-  const searchCandidatesUsed = searchCandidatesCurrent.length ? searchCandidatesCurrent : searchCandidatesFromHistory;
-  const inventoryText = await getInventorySummary(sb, { intent, text, candidatesOverride: searchCandidatesUsed });
-
-  const menuSelection = maybeHandleMenuSelection({
-    userText: text,
-    history,
-    inventoryText,
-    customerName: name,
-    customerPhone: phone,
-  });
-  if (menuSelection) {
-    try {
-      await saveHistory(sb, phone, [
-        ...history,
-        { role: 'user', content: text, timestamp: new Date().toISOString() },
-        { role: 'assistant', content: menuSelection.text, timestamp: new Date().toISOString() },
-      ]);
-    } catch (err) {
-      console.error('[whatsapp] saveHistory failed:', err);
-    }
-
-    return {
-      provider: 'local',
-      reply: await processOrderIntent(sb, menuSelection.text),
-      debug: { intent, inventoryText, searchCandidatesCurrent, searchCandidatesFromHistory, searchCandidatesUsed, repairedOrder: false },
-    };
-  }
-
-  const followup = maybeHandleOrderFollowup({
-    userText: text,
-    inventoryText,
-    customerName: name,
-    customerPhone: phone,
-  });
-  if (followup) {
-    try {
-      await saveHistory(sb, phone, [
-        ...history,
-        { role: 'user', content: text, timestamp: new Date().toISOString() },
-        { role: 'assistant', content: followup.text, timestamp: new Date().toISOString() },
-      ]);
-    } catch (err) {
-      console.error('[whatsapp] saveHistory failed:', err);
-    }
-
-    return {
-      provider: 'local',
-      reply: await processOrderIntent(sb, followup.text),
-      debug: { intent, inventoryText, searchCandidatesCurrent, searchCandidatesFromHistory, searchCandidatesUsed, repairedOrder: false },
-    };
-  }
-
-  const messages = [
-    ...history.map((m) => ({ role: m.role, content: m.content } as const)),
-    { role: 'user', content: text } as const,
-  ];
-
-  const system = buildSystemPrompt(name, phone, inventoryText);
-
-  let replyText = '';
   try {
-    const model = String(process.env.WHATSAPP_OPENAI_MODEL ?? 'gpt-4.1-nano');
-    const result = await generateText({
-      model: openai(model),
-      system,
-      messages,
-      maxOutputTokens: 512,
-      temperature: 0.2,
+    return await runConversationTurn({
+      sb,
+      phone,
+      name,
+      text,
+      llmProvider: 'openai',
+      repairOrder: true,
+      includeDebug: true,
+      generateLlmReply: async ({ system, messages }) => {
+        const model = String(process.env.WHATSAPP_OPENAI_MODEL ?? 'gpt-4.1-nano');
+        const result = await generateText({
+          model: openai(model),
+          system,
+          messages,
+          maxOutputTokens: 512,
+          temperature: 0.2,
+        });
+        return result.text ?? '';
+      },
     });
-    replyText = result.text ?? '';
   } catch (err) {
     if (!hasAnthropic) throw err;
-    return { provider: 'anthropic', reply: await buildReply(phone, name, text) };
+    return await runConversationTurn({
+      sb,
+      phone,
+      name,
+      text,
+      llmProvider: 'anthropic',
+      repairOrder: false,
+      includeDebug: true,
+      generateLlmReply: async ({ system, messages }) => {
+        const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+        const typedMessages: Anthropic.MessageParam[] = messages.map((m) => ({ role: m.role, content: m.content }));
+        try {
+          const response = await createAnthropicMessageWithRetry(anthropic, {
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 512,
+            system,
+            messages: typedMessages,
+          });
+          return response.content[0].type === 'text' ? response.content[0].text : '';
+        } catch (inner) {
+          if (isAnthropicOverloaded(inner)) return buildOverloadedReply(text);
+          throw inner;
+        }
+      },
+    });
   }
-
-  const { text: repairedText, repairedOrder } = maybeRepairOrderReply({
-    replyText,
-    userText: text,
-    inventoryText,
-    customerName: name,
-    customerPhone: phone,
-  });
-  replyText = repairedText;
-
-  try {
-    await saveHistory(sb, phone, [
-      ...history,
-      { role: 'user', content: text, timestamp: new Date().toISOString() },
-      { role: 'assistant', content: replyText, timestamp: new Date().toISOString() },
-    ]);
-  } catch (err) {
-    console.error('[whatsapp] saveHistory failed:', err);
-  }
-
-  return {
-    provider: 'openai',
-    reply: await processOrderIntent(sb, replyText),
-    debug: { intent, inventoryText, searchCandidatesCurrent, searchCandidatesFromHistory, searchCandidatesUsed, repairedOrder },
-  };
 }
 
 export async function buildReply(phone: string, name: string, text: string): Promise<string> {
   const sb = createSupabaseClient();
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  const intent = classifyIncomingText(text);
-  if (intent === 'store_info') {
-    return buildStoreInfoReply(text);
-  }
+  const result = await runConversationTurn({
+    sb,
+    phone,
+    name,
+    text,
+    llmProvider: 'anthropic',
+    repairOrder: false,
+    includeDebug: false,
+    generateLlmReply: async ({ system, messages }) => {
+      const typedMessages: Anthropic.MessageParam[] = messages.map((m) => ({ role: m.role, content: m.content }));
 
-  const history = await getHistory(sb, phone);
-  const searchCandidatesCurrent = intent === 'product_query' ? extractSearchCandidates(text) : [];
-  const searchCandidatesFromHistory = intent === 'product_query' ? extractSearchCandidatesFromHistory(history) : [];
-  const searchCandidatesUsed = searchCandidatesCurrent.length ? searchCandidatesCurrent : searchCandidatesFromHistory;
-  const inventoryText = await getInventorySummary(sb, { intent, text, candidatesOverride: searchCandidatesUsed });
+      try {
+        const response = await createAnthropicMessageWithRetry(anthropic, {
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 512,
+          system,
+          messages: typedMessages,
+        });
 
-  const menuSelection = maybeHandleMenuSelection({
-    userText: text,
-    history,
-    inventoryText,
-    customerName: name,
-    customerPhone: phone,
+        return response.content[0].type === 'text' ? response.content[0].text : '';
+      } catch (err) {
+        if (isAnthropicOverloaded(err)) return buildOverloadedReply(text);
+        throw err;
+      }
+    },
   });
-  if (menuSelection) {
-    try {
-      await saveHistory(sb, phone, [
-        ...history,
-        { role: 'user', content: text, timestamp: new Date().toISOString() },
-        { role: 'assistant', content: menuSelection.text, timestamp: new Date().toISOString() },
-      ]);
-    } catch (err) {
-      console.error('[whatsapp] saveHistory failed:', err);
-    }
 
-    return await processOrderIntent(sb, menuSelection.text);
-  }
-
-  const followup = maybeHandleOrderFollowup({
-    userText: text,
-    inventoryText,
-    customerName: name,
-    customerPhone: phone,
-  });
-  if (followup) {
-    try {
-      await saveHistory(sb, phone, [
-        ...history,
-        { role: 'user', content: text, timestamp: new Date().toISOString() },
-        { role: 'assistant', content: followup.text, timestamp: new Date().toISOString() },
-      ]);
-    } catch (err) {
-      console.error('[whatsapp] saveHistory failed:', err);
-    }
-
-    return await processOrderIntent(sb, followup.text);
-  }
-
-  const messages: Anthropic.MessageParam[] = [
-    ...history.map(m => ({ role: m.role, content: m.content } as Anthropic.MessageParam)),
-    { role: 'user', content: text },
-  ];
-
-  let response: Anthropic.Messages.Message;
-  try {
-    response = await createAnthropicMessageWithRetry(anthropic, {
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 512,
-      system: buildSystemPrompt(name, phone, inventoryText),
-      messages,
-    });
-  } catch (err) {
-    const overloaded = isAnthropicOverloaded(err);
-    if (overloaded) {
-      return buildOverloadedReply(text);
-    }
-    throw err;
-  }
-
-  const replyText = response.content[0].type === 'text' ? response.content[0].text : '';
-
-  try {
-    await saveHistory(sb, phone, [
-      ...history,
-      { role: 'user', content: text, timestamp: new Date().toISOString() },
-      { role: 'assistant', content: replyText, timestamp: new Date().toISOString() },
-    ]);
-  } catch (err) {
-    console.error('[whatsapp] saveHistory failed:', err);
-  }
-
-  return await processOrderIntent(sb, replyText);
+  return result.reply;
 }
 
 // ─── System prompt ────────────────────────────────────────────────────────────
@@ -980,15 +980,28 @@ async function getHistory(
   return ((data?.messages ?? []) as ConversationMessage[]).slice(-20);
 }
 
-async function saveHistory(
+async function appendHistory(
   sb: ReturnType<typeof createClient>,
   phone: string,
-  messages: ConversationMessage[]
+  history: ConversationMessage[],
+  newMessages: ConversationMessage[]
 ): Promise<void> {
+  const payload = newMessages.slice(-20);
+
+  try {
+    const { error } = await sb.rpc('append_conversation_history', {
+      p_phone_number: phone,
+      p_messages: payload as unknown,
+    });
+    if (!error) return;
+  } catch {
+    // fall through
+  }
+
   await sb
     .from('conversation_history')
     .upsert(
-      { phone_number: phone, messages: messages.slice(-20) },
+      { phone_number: phone, messages: [...history, ...payload].slice(-20) },
       { onConflict: 'phone_number' }
     );
 }

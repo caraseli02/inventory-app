@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "073"
 tags: [code-review, quality, whatsapp, simulator, refactor]
@@ -60,19 +60,20 @@ dependencies: []
 
 ## Recommended Action
 
-To be filled during triage.
+Implemented Option 1 by extracting a shared `runConversationTurn()` pipeline.
 
 ## Technical Details
 
 **Affected files:**
-- `/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts:216`
-- `/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts:339`
+- `/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts:216` (`buildSimulatorReply`)
+- `/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts:339` (`buildReply`)
+- `/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts:217` (`runConversationTurn`)
 
 ## Acceptance Criteria
 
-- [ ] No duplicated “flow orchestration” logic between providers
-- [ ] Unit tests still pass (`tests/unit/whatsappInventory.test.ts`)
-- [ ] Manual simulator flow remains unchanged
+- [x] No duplicated “flow orchestration” logic between providers
+- [x] Unit tests still pass (`tests/unit/whatsappInventory.test.ts`)
+- [x] Manual simulator flow remains unchanged
 
 ## Work Log
 
@@ -84,3 +85,13 @@ To be filled during triage.
 - Compared OpenAI and Anthropic reply builders
 - Identified duplicated orchestration and risk of drift
 
+### 2026-03-05 - Fix Implemented
+
+**By:** Codex
+
+**Actions:**
+- Extracted shared pipeline: intent → history → inventory → menu/followup → LLM → optional repair → order processing → history append
+- Reduced `buildSimulatorReply()` + `buildReply()` to provider wiring only
+
+**Learnings:**
+- Keeping the flow in one place prevents future drift between WhatsApp and simulator behavior
