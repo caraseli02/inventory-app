@@ -140,7 +140,7 @@ function twiml(message: string): string {
 
 // ─── AI reply builder ────────────────────────────────────────────────────────
 
-async function buildReply(phone: string, name: string, text: string): Promise<string> {
+export async function buildReply(phone: string, name: string, text: string): Promise<string> {
   const sb = createClient(
     process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
     process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''

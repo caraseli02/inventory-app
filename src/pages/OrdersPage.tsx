@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useToast } from '@/hooks/useToast';
 import { getOrders, confirmOrder, cancelOrder } from '@/lib/orders-api';
@@ -16,6 +18,11 @@ interface OrdersPageProps {
   onBack: () => void;
 }
 
+interface WhatsAppSimulateResponse {
+  ok: boolean;
+  reply?: string;
+  error?: string;
+}
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
   pending:   { label: 'Pending',   className: 'bg-amber-100 text-amber-800 border-amber-200' },
@@ -188,7 +195,13 @@ function OrderCard({ order }: { order: Order }) {
 export default function OrdersPage({ onBack }: OrdersPageProps) {
   const [activeFilter, setActiveFilter] = useState<OrderStatus | 'all'>('pending');
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [simPhone, setSimPhone] = useState('+34675167719');
+  const [simName, setSimName] = useState('Simulator');
+  const [simText, setSimText] = useState('');
+  const [simReply, setSimReply] = useState('');
+  const showSimulator = import.meta.env.DEV || import.meta.env.VITE_ENABLE_WHATSAPP_SIMULATOR === 'true';
   const shouldPoll = !realtimeConnected;
 
   useEffect(() => {
@@ -246,6 +259,37 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
   const orders = rawOrders ?? [];
   const pendingCount = pendingOrders?.length ?? 0;
 
+  const simulateMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/whatsapp-simulate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-notify-secret': import.meta.env.VITE_NOTIFY_SECRET ?? '',
+        },
+        body: JSON.stringify({
+          phone: simPhone,
+          name: simName,
+          text: simText,
+        }),
+      });
+
+      const payload = (await response.json()) as WhatsAppSimulateResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? 'Simulation failed');
+      }
+      return payload.reply ?? '';
+    },
+    onSuccess: (reply) => {
+      setSimReply(reply);
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      showToast('success', 'Simulated message processed');
+    },
+    onError: (error: Error) => {
+      showToast('error', error.message);
+    },
+  });
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -274,6 +318,64 @@ export default function OrdersPage({ onBack }: OrdersPageProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {showSimulator && (
+          <Card className="border-2 border-lavender-200 bg-lavender-50/40">
+            <CardHeader className="pb-2">
+              <p className="text-sm font-semibold text-stone-800">WhatsApp Simulator (Internal)</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="sim-phone">Phone</Label>
+                  <Input
+                    id="sim-phone"
+                    value={simPhone}
+                    onChange={(event) => setSimPhone(event.target.value)}
+                    placeholder="+40123456789"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sim-name">Name</Label>
+                  <Input
+                    id="sim-name"
+                    value={simName}
+                    onChange={(event) => setSimName(event.target.value)}
+                    placeholder="Simulator"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="sim-text">Message</Label>
+                <Input
+                  id="sim-text"
+                  value={simText}
+                  onChange={(event) => setSimText(event.target.value)}
+                  placeholder="Example: Vreau 2 sticle de lapte"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => simulateMutation.mutate()}
+                  disabled={simulateMutation.isPending || !simText.trim()}
+                  className="bg-stone-900 text-white hover:bg-stone-800"
+                >
+                  {simulateMutation.isPending ? 'Running…' : 'Run Simulation'}
+                </Button>
+                {simReply && <p className="text-xs text-stone-500">Last reply captured below</p>}
+              </div>
+
+              {simReply && (
+                <div className="rounded-lg border border-stone-200 bg-white p-3">
+                  <p className="text-xs font-semibold text-stone-500 mb-1">Assistant reply</p>
+                  <p className="text-sm text-stone-800 whitespace-pre-wrap">{simReply}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {isLoading && (
           <div className="flex justify-center py-12">
             <Spinner size="lg" label="Loading orders..." />
