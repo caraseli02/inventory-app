@@ -18,6 +18,11 @@
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 
+### Internal simulator (optional): `POST /api/whatsapp-simulate`
+
+- `WHATSAPP_SIMULATOR_SECRET` (recommended; falls back to `VITE_NOTIFY_SECRET`)
+- `VITE_ENABLE_WHATSAPP_SIMULATOR=true` (frontend toggle to show simulator panel in Orders page)
+
 ### Store info (shown in replies)
 
 - `STORE_NAME` (recommended)
@@ -35,4 +40,3 @@
 - Send “Care e programul?” → reply includes real hours (no placeholders).
 - Create an order via WhatsApp → order appears in OrdersPage.
 - Confirm/cancel in OrdersPage → customer receives WhatsApp message.
-
