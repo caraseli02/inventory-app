@@ -14,6 +14,7 @@ const ScanPage = lazyWithRetry(() => import('@/pages/ScanPage'));
 const CheckoutPage = lazyWithRetry(() => import('@/pages/CheckoutPage'));
 const InventoryListPage = lazyWithRetry(() => import('@/pages/InventoryListPage'));
 const OrdersPage = lazyWithRetry(() => import('@/pages/OrdersPage'));
+const WhatsAppSimulatorPage = lazyWithRetry(() => import('@/pages/WhatsAppSimulatorPage'));
 
 const LoadingFallback = ({ label }: { label: string }) => (
   <div className="flex items-center justify-center min-h-[400px]">
@@ -72,6 +73,18 @@ function OrdersRoute() {
   );
 }
 
+function WhatsAppSimulatorRoute() {
+  const navigate = useNavigate();
+
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingFallback label="Loading simulator..." />}>
+        <WhatsAppSimulatorPage onBack={() => navigate('/')} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -92,6 +105,7 @@ export const router = createBrowserRouter([
       { path: 'checkout', element: <CheckoutRoute /> },
       { path: 'inventory', element: <InventoryRoute /> },
       { path: 'orders', element: <OrdersRoute /> },
+      { path: 'whatsapp-simulator', element: <WhatsAppSimulatorRoute /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
