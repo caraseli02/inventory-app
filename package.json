@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "check:bundle-size": "node scripts/check-bundle-size.js",
     "typecheck": "tsc -b --noEmit && tsc --project mcp/tsconfig.server.json --noEmit",
     "mcp:typecheck": "tsc --project mcp/tsconfig.server.json --noEmit",
     "lint": "eslint . --max-warnings=0",
