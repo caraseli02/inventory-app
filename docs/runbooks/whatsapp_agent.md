@@ -14,11 +14,13 @@
 - `TWILIO_ACCOUNT_SID`
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_NUMBER`
-- `VITE_NOTIFY_SECRET`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 
 ### Internal simulator (optional, local-only): `POST /api/whatsapp-simulate`
+Notes:
+- `/api/whatsapp-notify` now expects an `Authorization: Bearer <supabase_access_token>` header (sent by the web app).
+- This is only a strong auth gate if your Supabase project does **not** allow anonymous sign-in.
 
 - `VITE_ENABLE_WHATSAPP_SIMULATOR=true` (frontend toggle to show simulator panel in Orders page)
 - Local Vite dev (`pnpm dev`) serves this endpoint directly.

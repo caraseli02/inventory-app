@@ -11,7 +11,6 @@
  *   TWILIO_ACCOUNT_SID  — from Twilio Console (Account Info)
  *   TWILIO_AUTH_TOKEN   — from Twilio Console
  *   TWILIO_FROM_NUMBER  — with or without leading +, no "whatsapp:" prefix, e.g. "+14155238886"
- *   VITE_NOTIFY_SECRET  — shared secret checked against x-notify-secret header
  *   SUPABASE_URL        — Supabase project URL (prefer non-VITE_ for serverless)
  *   SUPABASE_ANON_KEY   — Supabase anon key (prefer non-VITE_ for serverless)
  *   (fallback: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY if non-prefixed not set)
@@ -45,11 +44,11 @@ type SecondLang = 'es' | 'ru';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  // Auth: verify shared secret sent by the React client
-  const secret = req.headers['x-notify-secret'];
-  const expectedSecret = process.env.VITE_NOTIFY_SECRET;
-  if (!expectedSecret || secret !== expectedSecret) {
-    console.warn('[whatsapp-notify] Unauthorized request — bad or missing x-notify-secret');
+  // Auth: require a Supabase access token (no client-shipped shared secret)
+  const authHeader = String(req.headers.authorization ?? '');
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  const accessToken = match?.[1]?.trim() ?? '';
+  if (!accessToken) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -67,10 +66,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Twilio not configured' });
   }
 
-  const sb = createClient(
-    process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
-    process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
-  );
+  const supabaseUrl =
+    process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '';
+  const supabaseAnonKey =
+    process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('[whatsapp-notify] Missing Supabase env vars');
+    return res.status(500).json({ error: 'Supabase not configured' });
+  }
+  const sb = createClient(supabaseUrl, supabaseAnonKey);
+
+  // Validate token via Supabase Auth. If your project disables anonymous sign-in,
+  // this becomes a real authorization gate for notify actions.
+  try {
+    const { data, error } = await sb.auth.getUser(accessToken);
+    if (error || !data.user) {
+      console.warn('[whatsapp-notify] Unauthorized request — invalid Supabase token');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  } catch (err) {
+    console.warn('[whatsapp-notify] Unauthorized request — token validation failed', err);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = sb as any;
