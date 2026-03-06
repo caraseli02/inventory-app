@@ -53,7 +53,7 @@
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@supabase/supabase-js": "^2.88.0",
     "@tailwindcss/vite": "^4.1.17",
-    "@tanstack/react-query": "^5.90.12",
+    "@tanstack/react-query": "^5.90.21",
     "@vercel/blob": "^2.0.0",
     "ai": "^6.0.116",
     "airtable": "^0.12.2",
@@ -62,8 +62,8 @@
     "html5-qrcode": "^2.3.8",
     "i18next": "^25.7.2",
     "lucide-react": "^0.556.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "react-i18next": "^16.4.0",
     "react-router-dom": "6.30.3",
     "sonner": "^2.0.7",
@@ -71,7 +71,7 @@
     "vite-plugin-pwa": "^1.2.0",
     "workbox-window": "^7.4.0",
     "xlsx": "^0.18.5",
-    "zod": "^4.3.5"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -79,7 +79,7 @@
     "@modelcontextprotocol/sdk": "^1.26.0",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.1",
+    "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -88,8 +88,8 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vercel/node": "^5.5.15",
-    "@vitejs/plugin-react": "^5.1.1",
-    "@vitest/coverage-v8": "^4.0.16",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.0.18",
     "cors": "^2.8.6",
     "cross-env": "^10.1.0",
     "dotenv": "^17.3.1",
@@ -101,15 +101,15 @@
     "globals": "^16.5.0",
     "js-yaml": "^4.1.1",
     "jsdom": "^27.3.0",
-    "msw": "^2.12.4",
+    "msw": "^2.12.10",
     "playwright": "^1.57.0",
     "simple-git-hooks": "^2.13.1",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4",
+    "vite": "^7.3.1",
     "vite-plugin-singlefile": "^2.3.0",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.18"
   }
 }
