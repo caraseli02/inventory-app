@@ -852,6 +852,7 @@ The repository uses risk-tiered CI checks in `.github/workflows/ci.yml`.
 - `[x] Refactor Regression Proof Added`
 
 These fields are validated by the `High-Risk PR Checklist` CI job and are defined in `.github/pull_request_template.md`.
+Before or immediately after `gh pr create`, run `pnpm pr:sync-body` to append any missing required template sections to the current PR body.
 
 **Push-event diff safety**:
 - Detection scripts accept push SHA ranges (`before`, `after`) from CI to avoid empty-diff misclassification.

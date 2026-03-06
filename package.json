@@ -25,6 +25,8 @@
     "test:visual:ui": "playwright test --config=playwright.visual.config.ts --ui",
     "validate-docs": "node scripts/validate-docs.js",
     "check-root-files": "node scripts/check-root-files.js",
+    "pr:sync-body": "node scripts/sync-pr-body.js",
+    "pr:check-body": "node scripts/sync-pr-body.js --check",
     "prepare": "simple-git-hooks",
     "mcp:build": "vite build --config mcp/vite.config.ts",
     "mcp:serve": "tsx mcp/main.ts",
