@@ -18,6 +18,11 @@ function normalizePhone(raw: string): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // The simulator is intended for local development only.
+  if (process.env.VERCEL) {
+    return res.status(404).json({ error: 'Not Found' });
+  }
+
   if (req.method !== 'POST') return res.status(405).end();
 
   const expectedSecret = process.env.WHATSAPP_SIMULATOR_SECRET ?? process.env.VITE_NOTIFY_SECRET ?? '';

@@ -62,11 +62,13 @@ function createResponse() {
 describe('api/whatsapp-simulate', () => {
   const originalSecret = process.env.WHATSAPP_SIMULATOR_SECRET;
   const originalNotifySecret = process.env.VITE_NOTIFY_SECRET;
+  const originalVercel = process.env.VERCEL;
 
   beforeEach(() => {
     vi.clearAllMocks();
     delete process.env.WHATSAPP_SIMULATOR_SECRET;
     delete process.env.VITE_NOTIFY_SECRET;
+    delete process.env.VERCEL;
   });
 
   afterEach(() => {
@@ -75,6 +77,24 @@ describe('api/whatsapp-simulate', () => {
 
     if (originalNotifySecret === undefined) delete process.env.VITE_NOTIFY_SECRET;
     else process.env.VITE_NOTIFY_SECRET = originalNotifySecret;
+
+    if (originalVercel === undefined) delete process.env.VERCEL;
+    else process.env.VERCEL = originalVercel;
+  });
+
+  it('returns 404 on Vercel because the simulator is local-only', async () => {
+    process.env.VERCEL = '1';
+
+    const req = createRequest({
+      body: { text: 'hello' },
+    });
+    const res = createResponse();
+
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(404);
+    expect(res.jsonBody).toEqual({ error: 'Not Found' });
+    expect(buildSimulatorReplyMock).not.toHaveBeenCalled();
   });
 
   it('rejects requests with the wrong simulator secret', async () => {

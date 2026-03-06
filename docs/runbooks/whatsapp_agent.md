@@ -18,11 +18,12 @@
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 
-### Internal simulator (optional): `POST /api/whatsapp-simulate`
+### Internal simulator (optional, local-only): `POST /api/whatsapp-simulate`
 
-- `WHATSAPP_SIMULATOR_SECRET` (optional; falls back to `VITE_NOTIFY_SECRET`)
 - `VITE_ENABLE_WHATSAPP_SIMULATOR=true` (frontend toggle to show simulator panel in Orders page)
-- Local Vite dev (`pnpm dev`) serves this endpoint directly (no Vercel URL/proxy needed).
+- Local Vite dev (`pnpm dev`) serves this endpoint directly.
+- The Vercel function returns `404`; simulator traffic is not supported in preview/production.
+- `WHATSAPP_SIMULATOR_SECRET` is optional for local middleware auth and may fall back to `VITE_NOTIFY_SECRET`.
 - For local LLM testing, set `OPENAI_API_KEY` (primary). Optional fallback: `ANTHROPIC_API_KEY`.
 - If both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are missing locally, simulator still works with direct order payload:
   - `ORDER:{"customer_name":"...","customer_phone":"+40...","items":[{"name":"...","qty":1}],"pickup_time":"18:30"}`
