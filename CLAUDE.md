@@ -818,6 +818,21 @@ After each testing session, ensure:
 
 **This workflow is MANDATORY** - do not skip testing or leave changes uncommitted.
 
+### Review Routing
+
+Use `workflows-review` for every substantial PR.
+
+Add a specialist review when the PR matches these risk shapes:
+
+- `security-sentinel`: any change in `api/`, `mcp/`, auth, secrets, webhooks, CORS, or env-based access control
+- `kieran-typescript-reviewer`: any React/TypeScript refactor, hook extraction, reducer/state rewrite, or i18n-sensitive UI change
+- `data-integrity-guardian`: any change that writes orders, stock, conversation history, Supabase RPCs, migrations, or retry/concurrency logic
+- `deployment-verification-agent`: any high-risk PR touching CI, deploy config, workflows, migrations, or production-only behavior
+
+Rule:
+- Keep `workflows-review` as the default broad pass
+- Add only the specialist review that matches the PR's main risk
+
 ### CI Risk-Tiered Policy (IMPORTANT)
 
 The repository uses risk-tiered CI checks in `.github/workflows/ci.yml`.
@@ -837,6 +852,7 @@ The repository uses risk-tiered CI checks in `.github/workflows/ci.yml`.
 - `[x] Refactor Regression Proof Added`
 
 These fields are validated by the `High-Risk PR Checklist` CI job and are defined in `.github/pull_request_template.md`.
+Before or immediately after `gh pr create`, run `pnpm pr:sync-body` to append any missing required template sections to the current PR body.
 
 **Push-event diff safety**:
 - Detection scripts accept push SHA ranges (`before`, `after`) from CI to avoid empty-diff misclassification.
