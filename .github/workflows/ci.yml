@@ -58,6 +58,9 @@ jobs:
           VITE_SUPABASE_URL: 'https://mock.supabase.co'
           VITE_SUPABASE_PUBLISHABLE_KEY: 'mock-key'
 
+      - name: Enforce bundle budgets
+        run: pnpm check:bundle-size
+
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:

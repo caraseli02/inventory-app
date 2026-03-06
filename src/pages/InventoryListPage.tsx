@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { lazy, Suspense, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Package } from 'lucide-react';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -17,8 +17,6 @@ import EditProductDialog from '../components/product/EditProductDialog';
 import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
 import BatchDeleteConfirmDialog from '../components/product/BatchDeleteConfirmDialog';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { ImportDialog } from '../components/xlsx/ImportDialog';
-import { InvoiceUploadDialog } from '../components/invoice/InvoiceUploadDialog';
 import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
 import { useToast } from '../hooks/useToast';
 import type { Product } from '../types';
@@ -26,6 +24,16 @@ import type { Product } from '../types';
 interface InventoryListPageProps {
   onBack: () => void;
 }
+
+const ImportDialog = lazy(async () => {
+  const module = await import('../components/xlsx/ImportDialog');
+  return { default: module.ImportDialog };
+});
+
+const InvoiceUploadDialog = lazy(async () => {
+  const module = await import('../components/invoice/InvoiceUploadDialog');
+  return { default: module.InvoiceUploadDialog };
+});
 
 const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const { t } = useTranslation();
@@ -317,21 +325,29 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       />
 
       {/* Import Dialog */}
-      <ImportDialog
-        open={importDialogOpen}
-        onOpenChange={setImportDialogOpen}
-        onImport={handleImport}
-      />
+      {importDialogOpen && (
+        <Suspense fallback={<Spinner size="sm" label="Loading import dialog..." />}>
+          <ImportDialog
+            open={importDialogOpen}
+            onOpenChange={setImportDialogOpen}
+            onImport={handleImport}
+          />
+        </Suspense>
+      )}
 
       {/* Invoice Upload Dialog */}
-      <ErrorBoundary>
-        <InvoiceUploadDialog
-          open={invoiceDialogOpen}
-          onOpenChange={setInvoiceDialogOpen}
-          onImport={handleImport}
-          products={allProducts}
-        />
-      </ErrorBoundary>
+      {invoiceDialogOpen && (
+        <ErrorBoundary>
+          <Suspense fallback={<Spinner size="sm" label="Loading invoice dialog..." />}>
+            <InvoiceUploadDialog
+              open={invoiceDialogOpen}
+              onOpenChange={setInvoiceDialogOpen}
+              onImport={handleImport}
+              products={allProducts}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      )}
     </div>
   );
 };

@@ -9,45 +9,11 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Spinner } from '@/components/ui/spinner';
 import { useSwipeReveal } from '@/hooks/useSwipeReveal';
 import { useToast } from '@/hooks/useToast';
-import { resolveSupabaseAccessToken } from '@/lib/invoiceAuth';
 import { cancelOrder, confirmOrder } from '@/lib/orders-api';
-import type { Order, OrderStatus } from '@/types/orders';
+import type { Order } from '@/types/orders';
 
-const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> = {
-  pending:   { label: 'Pending',   className: 'bg-amber-100 text-amber-800 border-amber-200' },
-  confirmed: { label: 'Confirmed', className: 'bg-green-100 text-green-800 border-green-200' },
-  cancelled: { label: 'Cancelled', className: 'bg-red-100 text-red-800 border-red-200' },
-  completed: { label: 'Completed', className: 'bg-stone-100 text-stone-600 border-stone-200' },
-};
+import { CONFIRM_ACTION_CLASSES, notifyCustomer, REJECT_ACTION_CLASSES, STATUS_CONFIG } from './orderCard.helpers';
 
-/** Fire-and-forget — sends WhatsApp notification via serverless function */
-function notifyCustomer(orderId: string, action: 'confirm' | 'cancel'): void {
-  void (async () => {
-    const token = await Promise.race([
-      resolveSupabaseAccessToken(),
-      new Promise<null>((resolve) => {
-        window.setTimeout(() => resolve(null), 800);
-      }),
-    ]);
-    if (!token) {
-      console.warn('[notify] skipped (no Supabase access token)');
-      return;
-    }
-
-    const controller = new AbortController();
-    window.setTimeout(() => controller.abort(), 2500);
-
-    await fetch('/api/whatsapp-notify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ orderId, action }),
-      signal: controller.signal,
-    });
-  })().catch(err => console.warn('[notify] failed to send customer notification:', err));
-}
 
 export function OrderCard({
   order,
@@ -140,7 +106,7 @@ export function OrderCard({
             <button
               type="button"
               data-testid="order-confirm-swipe"
-              className="w-[80px] sm:hidden flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] text-white font-semibold active:opacity-90 disabled:opacity-60"
+              className="w-20 sm:hidden flex flex-col items-center justify-center gap-1 bg-emerald-700 text-white font-semibold active:opacity-90 disabled:opacity-60"
               disabled={isLoading}
               onClick={(e) => {
                 e.stopPropagation();
@@ -150,12 +116,12 @@ export function OrderCard({
               aria-label={`Confirm ${order.order_number}`}
             >
               <CheckCircle className="h-5 w-5" />
-              <span className="text-[11px]">Confirm</span>
+              <span className="text-xs">Confirm</span>
             </button>
             <button
               type="button"
               data-testid="order-reject-swipe"
-              className="w-[80px] sm:hidden flex flex-col items-center justify-center gap-1 bg-gradient-to-br from-[var(--color-terracotta)] to-[#b93c20] text-white font-semibold active:opacity-90 disabled:opacity-60"
+              className="w-20 sm:hidden flex flex-col items-center justify-center gap-1 bg-red-600 text-white font-semibold active:opacity-90 disabled:opacity-60"
               disabled={isLoading}
               onClick={(e) => {
                 e.stopPropagation();
@@ -165,7 +131,7 @@ export function OrderCard({
               aria-label={`Reject ${order.order_number}`}
             >
               <XCircle className="h-5 w-5" />
-              <span className="text-[11px]">Reject</span>
+              <span className="text-xs">Reject</span>
             </button>
           </div>
         </div>
@@ -201,7 +167,7 @@ export function OrderCard({
                   {statusCfg.label}
                 </Badge>
                 {swipeEnabled && (
-                  <span className="sm:hidden ml-1 inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-stone-500">
+                  <span className="sm:hidden ml-1 inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-xs font-semibold text-stone-500">
                     Swipe
                     <span className="text-stone-400">←</span>
                   </span>
@@ -213,7 +179,7 @@ export function OrderCard({
                     <Button
                       size="sm"
                       data-testid="order-confirm-desktop"
-                      className="gap-2 rounded-full px-3 bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] text-white hover:opacity-90"
+                      className={CONFIRM_ACTION_CLASSES}
                       disabled={isLoading}
                       onClick={() => confirmMutation.mutate()}
                     >
@@ -224,7 +190,7 @@ export function OrderCard({
                       variant="outline"
                       size="sm"
                       data-testid="order-reject-desktop"
-                      className="gap-2 rounded-full px-3 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)]/5"
+                      className={REJECT_ACTION_CLASSES}
                       disabled={isLoading}
                       onClick={() => cancelMutation.mutate()}
                     >
@@ -316,7 +282,7 @@ export function OrderCard({
             {mobileFallbackActions && (
               <div className="flex gap-2 pt-1">
                 <Button
-                  className="flex-1 gap-2 bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] text-white hover:opacity-90"
+                  className="flex-1 gap-2 bg-emerald-700 text-white hover:bg-emerald-800"
                   size="sm"
                   data-testid="order-confirm-expanded"
                   disabled={isLoading}
@@ -333,7 +299,7 @@ export function OrderCard({
                   variant="outline"
                   size="sm"
                   data-testid="order-reject-expanded"
-                  className="flex-1 gap-2 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)]/5"
+                  className="flex-1 gap-2 border-2 border-red-600 text-red-700 hover:bg-red-50"
                   disabled={isLoading}
                   onClick={() => cancelMutation.mutate()}
                 >
@@ -359,7 +325,7 @@ export function OrderCard({
             setActionsOpen(open);
           }}
         >
-          <SheetContent side="bottom" className="h-[55vh] flex flex-col p-0">
+          <SheetContent side="bottom" className="h-[50vh] min-h-72 flex flex-col p-0">
             <SheetHeader className="bg-gradient-to-br from-stone-50 to-stone-100/50 border-b-2 border-stone-200 px-6 py-4 flex-shrink-0">
               <SheetTitle className="text-xl font-bold text-stone-900">
                 {order.order_number} · Actions
@@ -387,7 +353,7 @@ export function OrderCard({
 
               <div className="flex gap-2">
                 <Button
-                  className="flex-1 gap-2 bg-gradient-to-br from-[var(--color-forest)] to-[var(--color-forest-dark)] text-white hover:opacity-90"
+                  className="flex-1 gap-2 bg-emerald-700 text-white hover:bg-emerald-800"
                   size="lg"
                   data-testid="order-confirm-sheet"
                   disabled={isLoading}
@@ -403,7 +369,7 @@ export function OrderCard({
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1 gap-2 border-2 border-[var(--color-terracotta)] text-[var(--color-terracotta)] hover:bg-[var(--color-terracotta)]/5"
+                  className="flex-1 gap-2 border-2 border-red-600 text-red-700 hover:bg-red-50"
                   size="lg"
                   data-testid="order-reject-sheet"
                   disabled={isLoading}
