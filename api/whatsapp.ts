@@ -134,6 +134,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   console.log(`[whatsapp] message from ${phone} (${name}): ${text.slice(0, 60)}`);
 
+  const messageSid = body.MessageSid ?? '';
+  const canUseRest = Boolean(
+    process.env.TWILIO_ACCOUNT_SID &&
+    process.env.TWILIO_AUTH_TOKEN &&
+    process.env.TWILIO_FROM_NUMBER
+  );
+
+  // Step 1 — Typing indicator (fire-and-forget, marks message as read + shows "typing...")
+  void sendTypingIndicator(messageSid);
+
+  if (canUseRest) {
+    // Step 2 — Acknowledge immediately so user sees activity while AI runs
+    const ack = detectEnglish(text)
+      ? '⏳ Got it, processing your message...'
+      : '⏳ Am primit, procesăm...';
+    // Return acknowledgment via TwiML synchronously, then send result via REST
+    res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(ack));
+
+    // Build the real reply and send it via REST after TwiML is flushed
+    buildReply(phone, name, text)
+      .then((reply) => sendRestMessage(from, reply))
+      .catch((err) => {
+        console.error('[whatsapp] error building reply:', err);
+        const fallback = detectEnglish(text)
+          ? 'Sorry — something went wrong. Please try again.'
+          : 'Ne pare rău, a apărut o eroare. Încearcă din nou.';
+        return sendRestMessage(from, fallback);
+      });
+
+    return;
+  }
+
+  // Fallback: no REST credentials — single TwiML response (original behaviour)
   try {
     const reply = await buildReply(phone, name, text);
     return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(reply));
@@ -153,6 +186,66 @@ function twiml(message: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
   return `<?xml version="1.0" encoding="UTF-8"?><Response>${safe ? `<Message>${safe}</Message>` : ''}</Response>`;
+}
+
+// ─── Twilio REST helpers ──────────────────────────────────────────────────────
+
+function twilioRestBase(): { accountSid: string; authToken: string; from: string } | null {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID ?? '';
+  const authToken  = process.env.TWILIO_AUTH_TOKEN  ?? '';
+  const from       = process.env.TWILIO_FROM_NUMBER ?? '';
+  if (!accountSid || !authToken || !from) return null;
+  return { accountSid, authToken, from };
+}
+
+/**
+ * Fire-and-forget typing indicator.
+ * Shows "typing..." animation on the recipient's device + marks message as read.
+ * Public Beta — silently swallows errors so it never breaks the main flow.
+ */
+async function sendTypingIndicator(messageSid: string): Promise<void> {
+  const creds = twilioRestBase();
+  if (!creds || !messageSid) return;
+  try {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages/${messageSid}/Feedback.json`;
+    const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+    await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'Outcome=confirmed',
+    });
+  } catch {
+    // non-critical — typing indicator failure must never break reply
+  }
+}
+
+/**
+ * Send a WhatsApp message via the Twilio REST API (not TwiML).
+ * Required when we need to send two messages (acknowledgment + result)
+ * or when TwiML has already been returned.
+ */
+async function sendRestMessage(to: string, body: string): Promise<void> {
+  const creds = twilioRestBase();
+  if (!creds) {
+    console.warn('[whatsapp] REST send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    return;
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
+  const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+  const params = new URLSearchParams({
+    To:   to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
+    From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
+    Body: body,
+  });
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    console.error('[whatsapp] REST send failed: %s %s', resp.status, text.slice(0, 200));
+  }
 }
 
 // ─── AI reply builder ────────────────────────────────────────────────────────
@@ -472,7 +565,7 @@ REGULI:
 2. Fii prietenos și concis — maxim 3 propoziții per mesaj.
 3. Pentru produse/stoc/preț, folosește doar datele din INVENTAR LIVE (dacă există). Nu inventa produse sau prețuri.
 4. Dacă stocul unui produs este ≤ 0, spune că nu este disponibil momentan.
-5. Nu folosi markdown (fără *, _, #) — WhatsApp afișează plain text.
+5. Folosește *bold* (asteriscuri) pentru date cheie: număr comandă, preț total, oră ridicare, denumire produs. Nu folosi _, #, ~~ — WhatsApp le afișează ca text literal.
 6. Nu spune că “nu poți verifica stocul” dacă INVENTAR LIVE este prezent. Dacă INVENTAR LIVE este “Inventar indisponibil.” atunci cere denumirea exactă a produsului sau spune că inventarul nu e disponibil.
 7. Nu inventa ora de ridicare. Dacă clientul spune “mâine la 12:00” sau “vineri la 14:00”, folosește acea informație. Dacă nu menționează ora, întreabă “la ce oră vrei ridicarea?”.
 8. Dacă există mai multe produse similare în inventar, cere clientului să aleagă denumirea exactă (copiată din listă).
