@@ -158,10 +158,12 @@ function twiml(message: string): string {
 // ─── AI reply builder ────────────────────────────────────────────────────────
 
 function createSupabaseClient() {
-  return createClient(
-    process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
-    process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
-  );
+  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '';
+  const key = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
+  if (!url || !key) {
+    console.error('[whatsapp] Supabase not configured: url=%s key=%s', url ? 'SET' : 'MISSING', key ? 'SET' : 'MISSING');
+  }
+  return createClient(url, key);
 }
 
 function toSimulationOrderReply(phone: string, name: string, text: string): string | null {
@@ -797,17 +799,69 @@ async function getInventorySummary(
   sb: ReturnType<typeof createClient>,
   args: { intent: IncomingIntent; text: string; candidatesOverride?: string[] }
 ): Promise<string> {
-  const limit = args.intent === 'browse_inventory' ? 40 : 20;
-
-  const candidates = args.candidatesOverride ?? (args.intent === 'product_query' ? extractSearchCandidates(args.text) : []);
   const makeProductsQuery = () => sb
     .from('products')
     .select('id, created_at, name, category, price, price_50, price_70, price_100, markup');
 
+  // ── Browse intent: category-aware sampling ──────────────────────────────────
+  if (args.intent === 'browse_inventory') {
+    // Fetch all products sorted by category+name for deterministic diversity
+    const { data: allProducts } = await makeProductsQuery()
+      .order('category', { ascending: true, nullsFirst: false })
+      .order('name', { ascending: true })
+      .limit(200);
+
+    if (!allProducts?.length) {
+      console.error('[whatsapp] getInventorySummary: no products returned from Supabase (intent=browse_inventory)');
+      return 'Inventar indisponibil.';
+    }
+
+    // Sample up to 5 unique-name products per category, 40 total max
+    const byCategory: Record<string, ProductRow[]> = {};
+    for (const p of allProducts as ProductRow[]) {
+      const cat = p.category ?? 'Altele';
+      if (!byCategory[cat]) byCategory[cat] = [];
+      if (byCategory[cat].length < 5) byCategory[cat].push(p);
+    }
+
+    const sampled: ProductRow[] = [];
+    for (const rows of Object.values(byCategory)) {
+      sampled.push(...rows);
+      if (sampled.length >= 40) break;
+    }
+
+    const ids = sampled.map((p) => p.id);
+    const { data: movements } = await sb
+      .from('stock_movements')
+      .select('product_id, quantity')
+      .in('product_id', ids);
+
+    const stockMap: Record<string, number> = {};
+    for (const m of (movements ?? []) as MovementRow[]) {
+      stockMap[m.product_id] = (stockMap[m.product_id] ?? 0) + m.quantity;
+    }
+
+    const lines: string[] = [];
+    for (const [cat, rows] of Object.entries(byCategory)) {
+      lines.push(`${cat}:`);
+      for (const p of rows) {
+        const stock = stockMap[p.id] ?? 0;
+        const storePrice = getStorePrice(p);
+        const price = storePrice != null ? `€${storePrice.toFixed(2)}` : 'preț nedefinit';
+        const availability = stock > 0 ? `stoc: ${stock}` : 'indisponibil';
+        lines.push(`  • ${p.name} — ${price}, ${availability}`);
+      }
+    }
+    return lines.join('\n');
+  }
+
+  // ── Product query: search by candidates, fallback to name-sorted sample ─────
+  const candidates = args.candidatesOverride ?? extractSearchCandidates(args.text);
+
   let products: unknown[] | null | undefined;
   if (candidates.length) {
     for (const term of candidates) {
-      const { data } = await makeProductsQuery().ilike('name', `%${term}%`).limit(limit);
+      const { data } = await makeProductsQuery().ilike('name', `%${term}%`).limit(20);
       if (data?.length) {
         products = data as unknown[];
         break;
@@ -815,11 +869,15 @@ async function getInventorySummary(
     }
   }
   if (!products?.length) {
-    const { data } = await makeProductsQuery().order('created_at', { ascending: false }).limit(limit);
+    // Fallback: alphabetical sample (not created_at, to avoid category bias)
+    const { data } = await makeProductsQuery().order('name', { ascending: true }).limit(20);
     products = data as unknown[] | null | undefined;
   }
 
-  if (!products?.length) return 'Inventar indisponibil.';
+  if (!products?.length) {
+    console.error('[whatsapp] getInventorySummary: no products returned from Supabase (intent=%s candidates=%j)', args.intent, candidates);
+    return 'Inventar indisponibil.';
+  }
 
   const ids = (products as ProductRow[]).map((p) => p.id);
   const { data: movements } = await sb
@@ -835,13 +893,11 @@ async function getInventorySummary(
   const rows: ProductRow[] = products as ProductRow[];
 
   let alternatives: ProductRow[] = [];
-  if (args.intent === 'product_query' && rows[0]) {
+  if (rows[0]) {
     const first = rows[0];
     const firstStock = stockMap[first.id] ?? 0;
     if (firstStock <= 0 && first.category) {
-      const { data: sameCategory } = await sb
-        .from('products')
-        .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
+      const { data: sameCategory } = await makeProductsQuery()
         .eq('category', first.category)
         .limit(25);
 
