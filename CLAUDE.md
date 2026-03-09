@@ -27,6 +27,32 @@ pnpm preview          # Preview production build locally
 pnpm lint             # Run ESLint (warnings fail: --max-warnings=0)
 ```
 
+### Testing
+```bash
+pnpm test:unit        # Run unit tests
+pnpm test:integration # Run integration tests
+pnpm test:e2e         # Run Playwright end-to-end tests
+pnpm test:visual      # Run visual regression tests
+```
+
+### Workflow Utilities
+```bash
+pnpm validate-docs    # Validate solution docs/schema
+pnpm check-root-files # Validate protected root files
+pnpm pr:sync-body     # Sync required PR template sections
+pnpm prepare          # Install simple-git-hooks manually
+```
+
+### MCP / Agent Utilities
+```bash
+pnpm mcp:typecheck    # Type-check MCP server code only
+pnpm mcp:build        # Build MCP app bundle
+pnpm mcp:serve        # Run MCP app server
+pnpm mcp:stdio        # Run MCP server over stdio
+pnpm mcp:smoke        # Run MCP smoke test
+pnpm whatsapp:eval    # Run WhatsApp simulator eval
+```
+
 ### Environment Setup
 ```bash
 cp .env.example .env  # Create environment file
@@ -429,7 +455,7 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
 - **Solutions Knowledge Base**: `docs/solutions/` (Searchable history of resolved issues)
 - **Project management files** (root directory):
   - `feature_list.json` - Complete feature tracking with testing status
-  - `claude-progress.md` - Project completeness and sprint tracking
+  - `docs/project/claude-progress.md` - Project completeness and sprint tracking
   - `init.sh` - Initialization script for server startup and testing
 
 ### MVP Scope (from `docs/specs/mvp_scope_lean.md`)
@@ -682,7 +708,7 @@ This project uses three critical files to track progress and ensure quality:
 ```
 
 #### 2. claude-progress.md
-**Location**: `/claude-progress.md`
+**Location**: `/docs/project/claude-progress.md`
 **Purpose**: High-level project completeness and sprint tracking
 
 **Contains**:
@@ -705,6 +731,8 @@ This project uses three critical files to track progress and ensure quality:
 #### 3. init.sh
 **Location**: `/init.sh` (executable)
 **Purpose**: Automated initialization and testing guide
+
+**TODO**: Verify `init.sh` assumptions before relying on it for Supabase-first or MCP-specific workflows; it still prompts for Airtable-only setup.
 
 **What it does**:
 1. Checks environment setup (.env file)
@@ -785,7 +813,7 @@ After each test scenario passes:
    ]
    ```
 
-2. Update `claude-progress.md`:
+2. Update `docs/project/claude-progress.md`:
    - Check off the test scenario in "Testing Status" section
    - Update "Recent Activity Log" with test results
    - Note any bugs in "Known Issues & Bugs" section
@@ -794,7 +822,7 @@ After each test scenario passes:
 
 After testing is complete:
 ```bash
-git add feature_list.json claude-progress.md
+git add feature_list.json docs/project/claude-progress.md
 git commit -m "test: Complete testing for [feature name]"
 ```
 
@@ -812,7 +840,7 @@ After each testing session, ensure:
 **IMPORTANT**: After implementing any feature, you MUST:
 1. Test it immediately with Playwright MCP
 2. Mark it as tested in `feature_list.json`
-3. Update `claude-progress.md` with results
+3. Update `docs/project/claude-progress.md` with results
 4. Commit changes to git
 5. Ensure project is in merge-ready state
 
@@ -865,7 +893,7 @@ Before or immediately after `gh pr create`, run `pnpm pr:sync-body` to append an
 ### Delivery Policy (IMPORTANT)
 
 - **Releasable source of truth**: a change is releasable only when required CI checks are green.
-- `claude-progress.md` and `feature_list.json` are planning/tracking artifacts, not release gates.
+- `docs/project/claude-progress.md` and `feature_list.json` are planning/tracking artifacts, not release gates.
 - Local hooks are split for feedback speed:
   - `pre-commit`: root-file checks, docs validation, typecheck, lint
   - `pre-push`: unit + integration tests
@@ -887,6 +915,6 @@ Before or immediately after `gh pr create`, run `pnpm pr:sync-body` to append an
 9. **Modifying feature_list.json**: ONLY change `implemented` and `tested` boolean fields - NEVER remove or modify features, steps, or scenarios
 10. **Skipping testing**: ALWAYS test features with Playwright MCP after implementation - do not skip this step
 11. **Uncommitted changes**: ALWAYS commit changes after testing - leaving uncommitted work is not acceptable
-12. **Not updating progress**: ALWAYS update both `feature_list.json` and `claude-progress.md` after testing
+12. **Not updating progress**: ALWAYS update both `feature_list.json` and `docs/project/claude-progress.md` after testing
 13. **Missing high-risk PR checklist items**: High-risk PRs fail CI unless all 3 required checkbox lines are checked in PR body
 14. **Assuming push and PR diff behavior is identical**: Use SHA-aware detection logic for push events to avoid empty-diff test/risk skips
