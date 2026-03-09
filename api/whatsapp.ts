@@ -169,7 +169,7 @@ function createSupabaseClient() {
 function toSimulationOrderReply(phone: string, name: string, text: string): string | null {
   const trimmed = text.trim();
 
-  if (/ORDER:\s*\{[\s\S]*\}\s*$/i.test(trimmed)) {
+  if (/ORDER:\s*\{[\s\S]*\}/i.test(trimmed)) {
     return trimmed;
   }
 
@@ -252,7 +252,8 @@ async function runConversationTurn(args: {
   const history = await getHistory(args.sb, args.phone);
   const searchCandidatesCurrent = intent === 'product_query' ? extractSearchCandidates(args.text) : [];
   const searchCandidatesFromHistory = intent === 'product_query' ? extractSearchCandidatesFromHistory(history) : [];
-  const searchCandidatesUsed = searchCandidatesCurrent.length ? searchCandidatesCurrent : searchCandidatesFromHistory;
+  // Merge current + history; de-dup; prefer current-turn terms first (they appear first)
+  const searchCandidatesUsed = Array.from(new Set([...searchCandidatesCurrent, ...searchCandidatesFromHistory])).slice(0, 5);
   const inventoryText = await getInventorySummary(args.sb, { intent, text: args.text, candidatesOverride: searchCandidatesUsed });
 
   const menuSelection = maybeHandleMenuSelection({
@@ -291,9 +292,16 @@ async function runConversationTurn(args: {
       replyTextRaw = await args.generateLlmReply({ system, messages });
 
       if (args.repairOrder) {
+        // Pass recent history so repair can extract qty/product from earlier turns
+        const recentUserMessages = history
+          .filter((m) => m.role === 'user')
+          .slice(-3)
+          .map((m) => m.content)
+          .join(' ');
         const repaired = maybeRepairOrderReply({
           replyText: replyTextRaw,
           userText: args.text,
+          historyContext: recentUserMessages,
           inventoryText,
           customerName: args.name,
           customerPhone: args.phone,
@@ -460,9 +468,10 @@ REGULI:
 7. Nu inventa ora de ridicare. Dacă clientul nu spune ora, întreabă “la ce oră vrei ridicarea?”.
 8. Dacă există mai multe produse similare în inventar, cere clientului să aleagă denumirea exactă (copiată din listă).
 9. Dacă ești întrebat de adresă/program și nu sunt în mesaj, spune că nu ai informația configurată și recomandă să sune la magazin (dacă există telefon) sau să întrebe în magazin.
-10. Când un client confirmă o comandă și ai: (a) denumiri exacte produse + (b) cantități + (c) ora de ridicare, adaugă pe ultima linie:
-   ORDER:{"customer_name":"${name}","customer_phone":"${phone}","items":[{"name":"Nume produs","qty":1}],"pickup_time":"ora menționată"}
-11. Nu spune că “ai notat comanda / order noted” dacă NU ai adăugat linia ORDER:... (altfel comanda nu se salvează).`;
+10. Când ai TOATE detaliile (denumire exactă produs din inventar + cantitate + oră ridicare), OBLIGATORIU adaugă pe ULTIMA linie, fără text după:
+   ORDER:{“customer_name”:”${name}”,”customer_phone”:”${phone}”,”items”:[{“name”:”Nume produs”,”qty”:1}],”pickup_time”:”ora menționată”}
+11. REGULA CRITICĂ: Nu spune “am notat / a fost înregistrată / comanda ta e gata” fără linia ORDER: — dacă nu pui ORDER: comanda NU se salvează în sistem.
+12. Linia ORDER: trebuie să fie ULTIMA linie din mesaj. Nu adăuga întrebări sau text după ORDER:.`;
 }
 
 function detectEnglish(text: string): boolean {
@@ -568,6 +577,7 @@ function extractSearchCandidates(text: string): string[] {
     'la', 'in', 'în', 'pe', 'cu', 'de', 'din', 'si', 'și', 'sau', 'care', 'ce', 'cat', 'cât', 'este', 'mai', 'mult',
     'comand', 'comanda', 'comandă', 'comandați', 'comandati', 'doriți', 'doriti', 'doresc', 'vreți', 'vreti',
     'ridic', 'ridica', 'ridicat', 'ridicare', 'ridicarea', 'ridicarii', 'ridicării', 'ora', 'pentru',
+    'confirma', 'confirmat', 'confirmati', 'confirmați', 'confirm', 'confirmed',
     'ok', 'okay', 'will', 'get', 'take', 'want', 'buy', 'order', 'pickup', 'pick', 'up', 'for', 'sale', 'im', 'i',
     'do', 'you', 'have', 'any', 'is', 'it', 'there', 'a', 'an', 'the', 'of', 'to', 'for', 'in', 'on', 'with', 'please',
     'price', 'cost', 'stock', 'available',
@@ -584,9 +594,10 @@ function extractSearchCandidates(text: string): string[] {
 }
 
 function extractSearchCandidatesFromHistory(history: ConversationMessage[]): string[] {
-  for (let i = history.length - 1; i >= 0; i -= 1) {
-    const msg = history[i];
-    if (msg.role !== 'user') continue;
+  // Check last 4 messages (both user and assistant) for product keywords
+  const recent = history.slice(-4);
+  for (let i = recent.length - 1; i >= 0; i -= 1) {
+    const msg = recent[i];
     if (!msg?.content) continue;
     const candidates = extractSearchCandidates(msg.content);
     if (candidates.length) return candidates;
@@ -759,20 +770,24 @@ function maybeHandleOrderFollowup(args: {
 function maybeRepairOrderReply(args: {
   replyText: string;
   userText: string;
+  historyContext?: string;
   inventoryText: string;
   customerName: string;
   customerPhone: string;
 }): { text: string; repairedOrder: boolean } {
-  if (/ORDER:\s*\{[\s\S]*\}\s*$/i.test(args.replyText)) {
+  if (/ORDER:\s*\{[\s\S]*\}/i.test(args.replyText)) {
     return { text: args.replyText, repairedOrder: false };
   }
 
-  if (!looksLikeOrderRequest(args.userText)) {
+  // Combine current message + recent history for extraction fallback
+  const fullContext = [args.historyContext, args.userText].filter(Boolean).join(' ');
+
+  if (!looksLikeOrderRequest(fullContext)) {
     return { text: args.replyText, repairedOrder: false };
   }
 
-  const pickupTime = parsePickupTime(args.userText);
-  const qty = parseSingleQuantity(args.userText);
+  const pickupTime = parsePickupTime(args.userText) ?? parsePickupTime(args.historyContext ?? '');
+  const qty = parseSingleQuantity(args.userText) ?? parseSingleQuantity(args.historyContext ?? '');
   if (!pickupTime || !qty) {
     return { text: args.replyText, repairedOrder: false };
   }
@@ -780,8 +795,8 @@ function maybeRepairOrderReply(args: {
   const names = extractInventoryNames(args.inventoryText);
   if (!names.length) return { text: args.replyText, repairedOrder: false };
 
-  const userNorm = normalizeFreeText(args.userText);
-  const matches = names.filter((n) => userNorm.includes(normalizeFreeText(n)));
+  const contextNorm = normalizeFreeText(fullContext);
+  const matches = names.filter((n) => contextNorm.includes(normalizeFreeText(n)));
   if (matches.length !== 1) return { text: args.replyText, repairedOrder: false };
 
   const payload = {
@@ -954,15 +969,37 @@ export const __private__ = {
 
 // ─── Order intent ─────────────────────────────────────────────────────────────
 
+/** Extract the full JSON object following ORDER: using brace depth counting. */
+function extractOrderJson(text: string): { json: string; startIdx: number } | null {
+  const orderIdx = text.search(/ORDER:/i);
+  if (orderIdx === -1) return null;
+  const braceStart = text.indexOf('{', orderIdx);
+  if (braceStart === -1) return null;
+  let depth = 0;
+  for (let i = braceStart; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}') {
+      depth--;
+      if (depth === 0) return { json: text.slice(braceStart, i + 1), startIdx: orderIdx };
+    }
+  }
+  return null;
+}
+
 async function processOrderIntent(
   sb: ReturnType<typeof createClient>,
   replyText: string
 ): Promise<string> {
-  const match = replyText.match(/ORDER:(\{[\s\S]*?\})\s*$/);
-  if (!match) return replyText;
+  // Match ORDER: anywhere in the reply, using brace-depth counting to handle nested JSON
+  const extracted = extractOrderJson(replyText);
+  if (!extracted) return replyText;
+
+  // Strip ORDER:{...} and any trailing text the LLM appended after it
+  const stripOrder = (text: string, replacement: string) =>
+    text.replace(/\s*ORDER:\{[\s\S]*\}[\s\S]*$/i, `\n${replacement}`).trim();
 
   try {
-    const orderData = JSON.parse(match[1]) as {
+    const orderData = JSON.parse(extracted.json) as {
       customer_name: string;
       customer_phone: string;
       items: Array<{ product_id?: string; name: string; qty: number; unit_price?: number }>;
@@ -985,32 +1022,23 @@ async function processOrderIntent(
       .single();
 
     const orderNumber = (order as { order_number: string } | null)?.order_number ?? '—';
-    return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, `✅ Comanda ${orderNumber} înregistrată! Te așteptăm.`);
+    return stripOrder(replyText, `✅ Comanda ${orderNumber} înregistrată! Te așteptăm.`);
   } catch (err) {
     console.error('[whatsapp] order creation failed:', err);
     const message = err instanceof Error ? err.message : '';
     if (message.startsWith('AMBIGUOUS_ITEM:')) {
       const rawName = message.slice('AMBIGUOUS_ITEM:'.length).split('|')[0] ?? 'produs';
-      return replyText.replace(
-        /ORDER:\{[\s\S]*?\}\s*$/,
-        `⚠️ Am găsit mai multe produse pentru „${rawName}”. Te rog trimite denumirea exactă.`
-      );
+      return stripOrder(replyText, `⚠️ Am găsit mai multe produse pentru „${rawName}”. Te rog trimite denumirea exactă.`);
     }
     if (message.startsWith('NOT_FOUND_ITEM:')) {
       const rawName = message.slice('NOT_FOUND_ITEM:'.length) || 'produsul cerut';
-      return replyText.replace(
-        /ORDER:\{[\s\S]*?\}\s*$/,
-        `⚠️ Nu am găsit „${rawName}” în inventar. Te rog trimite denumirea exactă.`
-      );
+      return stripOrder(replyText, `⚠️ Nu am găsit „${rawName}” în inventar. Te rog trimite denumirea exactă.`);
     }
     if (message.startsWith('OUT_OF_STOCK_ITEM:')) {
       const rawName = message.slice('OUT_OF_STOCK_ITEM:'.length) || 'produsul cerut';
-      return replyText.replace(
-        /ORDER:\{[\s\S]*?\}\s*$/,
-        `⚠️ „${rawName}” nu are stoc suficient acum. Te rog ajustează cantitatea.`
-      );
+      return stripOrder(replyText, `⚠️ „${rawName}” nu are stoc suficient acum. Te rog ajustează cantitatea.`);
     }
-    return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, '⚠️ Nu am reușit să înregistrez comanda automat. Te rog încearcă din nou.');
+    return stripOrder(replyText, '⚠️ Nu am reușit să înregistrez comanda automat. Te rog încearcă din nou.');
   }
 }
 
