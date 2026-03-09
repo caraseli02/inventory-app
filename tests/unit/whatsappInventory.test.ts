@@ -142,13 +142,15 @@ describe('WhatsApp inventory summary', () => {
     expect(candidates).toContain('lapte')
   })
 
-  it('does not reuse assistant words as search candidates', () => {
+  it('also extracts product keywords from recent assistant messages (multi-turn context)', () => {
+    // After our fix, assistant messages are included so confirmations like "da, ora 11"
+    // can still find the product mentioned in the previous assistant turn.
     const history = [
       { role: 'user', content: 'aveti lapte?', timestamp: 't1' },
       { role: 'assistant', content: 'Da, avem lapte condensat integral de 370G.', timestamp: 't2' },
     ]
     const candidates = __private__.extractSearchCandidatesFromHistory(history as any)
-    expect(candidates).toEqual(['lapte'])
+    expect(candidates).toContain('lapte')
   })
 
   it('repairs missing ORDER line when user provides exact product + qty + pickup time', () => {

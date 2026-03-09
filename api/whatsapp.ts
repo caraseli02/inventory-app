@@ -234,8 +234,10 @@ async function runConversationTurn(args: {
 }): Promise<WhatsAppSimulatorResult> {
   const intent = classifyIncomingText(args.text);
 
-  if (intent === 'store_info') {
-    const reply = buildStoreInfoReply(args.text);
+  if (intent === 'store_info' || intent === 'cancel_order') {
+    const reply = intent === 'cancel_order'
+      ? await handleCancellationRequest(args.sb, args.phone, args.text)
+      : buildStoreInfoReply(args.text);
     try {
       const history = await getHistory(args.sb, args.phone);
       await appendHistory(args.sb, args.phone, history, [
@@ -382,7 +384,7 @@ export async function buildSimulatorReply(phone: string, name: string, text: str
       name,
       text,
       llmProvider: 'anthropic',
-      repairOrder: false,
+      repairOrder: true,
       includeDebug: true,
       generateLlmReply: async ({ system, messages }) => {
         const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -414,7 +416,7 @@ export async function buildReply(phone: string, name: string, text: string): Pro
     name,
     text,
     llmProvider: 'anthropic',
-    repairOrder: false,
+    repairOrder: true,
     includeDebug: false,
     generateLlmReply: async ({ system, messages }) => {
       const typedMessages: Anthropic.MessageParam[] = messages.map((m) => ({ role: m.role, content: m.content }));
@@ -441,8 +443,14 @@ export async function buildReply(phone: string, name: string, text: string): Pro
 // ─── System prompt ────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(name: string, phone: string, inventoryText: string): string {
-  const today = new Date().toLocaleDateString('ro-RO', {
+  const now = new Date();
+  const today = now.toLocaleDateString('ro-RO', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+  const tomorrowDate = new Date(now);
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrow = tomorrowDate.toLocaleDateString('ro-RO', {
+    weekday: 'long', day: 'numeric', month: 'long',
   });
 
   const storeName    = process.env.STORE_NAME    ?? 'magazinul nostru';
@@ -455,6 +463,7 @@ ${storeAddress ? `Adresă: ${storeAddress}\n` : ''}${storeHours ? `Program: ${st
 
 Client curent: ${name} (telefon: ${phone})
 Data de azi: ${today}
+Mâine: ${tomorrow}
 
 ${inventoryText ? `INVENTAR LIVE:\n${inventoryText}\n` : ''}
 
@@ -465,11 +474,11 @@ REGULI:
 4. Dacă stocul unui produs este ≤ 0, spune că nu este disponibil momentan.
 5. Nu folosi markdown (fără *, _, #) — WhatsApp afișează plain text.
 6. Nu spune că “nu poți verifica stocul” dacă INVENTAR LIVE este prezent. Dacă INVENTAR LIVE este “Inventar indisponibil.” atunci cere denumirea exactă a produsului sau spune că inventarul nu e disponibil.
-7. Nu inventa ora de ridicare. Dacă clientul nu spune ora, întreabă “la ce oră vrei ridicarea?”.
+7. Nu inventa ora de ridicare. Dacă clientul spune “mâine la 12:00” sau “vineri la 14:00”, folosește acea informație. Dacă nu menționează ora, întreabă “la ce oră vrei ridicarea?”.
 8. Dacă există mai multe produse similare în inventar, cere clientului să aleagă denumirea exactă (copiată din listă).
 9. Dacă ești întrebat de adresă/program și nu sunt în mesaj, spune că nu ai informația configurată și recomandă să sune la magazin (dacă există telefon) sau să întrebe în magazin.
 10. Când ai TOATE detaliile (denumire exactă produs din inventar + cantitate + oră ridicare), OBLIGATORIU adaugă pe ULTIMA linie, fără text după:
-   ORDER:{“customer_name”:”${name}”,”customer_phone”:”${phone}”,”items”:[{“name”:”Nume produs”,”qty”:1}],”pickup_time”:”ora menționată”}
+   ORDER:{“customer_name”:”${name}”,”customer_phone”:”${phone}”,”items”:[{“name”:”Nume produs”,”qty”:1}],”pickup_time”:”ora menționată (ex: mâine 12:00, vineri 14:00, 11:00)”}
 11. REGULA CRITICĂ: Nu spune “am notat / a fost înregistrată / comanda ta e gata” fără linia ORDER: — dacă nu pui ORDER: comanda NU se salvează în sistem.
 12. Linia ORDER: trebuie să fie ULTIMA linie din mesaj. Nu adăuga întrebări sau text după ORDER:.`;
 }
@@ -552,10 +561,15 @@ async function createAnthropicMessageWithRetry(
 
 // ─── Inventory summary ───────────────────────────────────────────────────────
 
-type IncomingIntent = 'store_info' | 'browse_inventory' | 'product_query';
+type IncomingIntent = 'store_info' | 'browse_inventory' | 'product_query' | 'cancel_order';
 
 function classifyIncomingText(text: string): IncomingIntent {
-  const t = text.toLowerCase();
+  // Strip JSON blocks first to avoid false-positive keyword matches (e.g. "customer_phone")
+  const stripped = text.replace(/\{[\s\S]*?\}/g, ' ');
+  const t = stripped.toLowerCase();
+  if (/(anule[az]|anulez|anulati|anulați|cancel|revocare|stornez|nu mai vreau|nu mai vin)/.test(t)) {
+    return 'cancel_order';
+  }
   if (/(adresă|adresa|address|unde|locați|locati|program|orar|hours|open|închis|inchis|telefon|phone|contact)/.test(t)) {
     return 'store_info';
   }
@@ -626,11 +640,55 @@ function extractInventoryNames(inventoryText: string): string[] {
     .filter(Boolean);
 }
 
+/** Map Romanian date words → normalized label for storage. */
+const DATE_WORDS: Record<string, string> = {
+  azi: 'azi', astazi: 'azi', 'astăzi': 'azi',
+  maine: 'mâine', 'mâine': 'mâine',
+  poimaine: 'poimâine', 'poimâine': 'poimâine',
+  luni: 'luni', marti: 'marți', 'marți': 'marți', miercuri: 'miercuri',
+  joi: 'joi', vineri: 'vineri', sambata: 'sâmbătă', 'sâmbătă': 'sâmbătă',
+  duminica: 'duminică', 'duminică': 'duminică',
+};
+
+/**
+ * Extract pickup time (and optional date word) from free text.
+ * "maine la 12:00" → "mâine 12:00"
+ * "ora 11.30"      → "11:30"
+ * "vineri 14:00"   → "vineri 14:00"
+ * Returns null if no time found.
+ */
+function parsePickupDateTime(text: string): string | null {
+  const normalized = text.toLowerCase().replace(/\./g, ':');
+  const timeMatch = normalized.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if (!timeMatch) return null;
+  const timePart = `${timeMatch[1]!.padStart(2, '0')}:${timeMatch[2]}`;
+
+  for (const [key, label] of Object.entries(DATE_WORDS)) {
+    if (normalized.includes(key)) return `${label} ${timePart}`;
+  }
+  return timePart;
+}
+
+/** Keep old name for internal callers that only need the time fragment. */
 function parsePickupTime(text: string): string | null {
-  const normalized = text.replace(/\./g, ':');
-  const m = normalized.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
-  if (!m) return null;
-  return `${m[1]!.padStart(2, '0')}:${m[2]}`;
+  return parsePickupDateTime(text);
+}
+
+/**
+ * Normalize a raw pickup_time string from the ORDER JSON before DB insert.
+ * "11"          → "11:00"
+ * "ora 11"      → "11:00"
+ * "maine 12:00" → "mâine 12:00"
+ */
+function normalizePickupTime(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+
+  // Pure hour number e.g. "11"
+  if (/^\d{1,2}$/.test(trimmed)) return `${trimmed.padStart(2, '0')}:00`;
+
+  // Delegate to date+time parser for everything else
+  return parsePickupDateTime(trimmed) ?? trimmed;
 }
 
 function parseSingleQuantity(text: string): number | null {
@@ -810,6 +868,46 @@ function maybeRepairOrderReply(args: {
   return { text: repaired, repairedOrder: true };
 }
 
+async function handleCancellationRequest(
+  sb: ReturnType<typeof createClient>,
+  phone: string,
+  userText: string,
+): Promise<string> {
+  const isEn = detectEnglish(userText);
+
+  const { data: orders } = await sb
+    .from('orders')
+    .select('id, order_number, items, pickup_time')
+    .eq('customer_phone', phone)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (!orders?.length) {
+    return isEn
+      ? 'No active orders found for your number. If you need help, please call the store.'
+      : 'Nu am găsit nicio comandă activă pentru numărul tău. Dacă ai nevoie de ajutor, te rog sună la magazin.';
+  }
+
+  const order = orders[0] as { id: string; order_number: string; items: unknown; pickup_time: string | null };
+
+  const { error } = await sb
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('id', order.id);
+
+  if (error) {
+    console.error('[whatsapp] cancellation failed:', error);
+    return isEn
+      ? 'Sorry — could not cancel your order. Please call the store.'
+      : 'Ne pare rău — nu am putut anula comanda. Te rog sună la magazin.';
+  }
+
+  return isEn
+    ? `Order ${order.order_number} has been cancelled. Sorry you couldn't make it — we're here whenever you need us!`
+    : `Comanda ${order.order_number} a fost anulată. Ne pare rău că nu poți ridica comanda — suntem la dispoziție oricând!`;
+}
+
 async function getInventorySummary(
   sb: ReturnType<typeof createClient>,
   args: { intent: IncomingIntent; text: string; candidatesOverride?: string[] }
@@ -965,6 +1063,10 @@ export const __private__ = {
   extractMenuOptionsFromAssistantText,
   maybeRepairOrderReply,
   getInventorySummary,
+  classifyIncomingText,
+  extractOrderJson,
+  normalizePickupTime,
+  parsePickupDateTime,
 } as const;
 
 // ─── Order intent ─────────────────────────────────────────────────────────────
@@ -1016,7 +1118,7 @@ async function processOrderIntent(
         customer_phone: orderData.customer_phone,
         items: resolved.items,
         total_price: resolved.totalPrice,
-        pickup_time: orderData.pickup_time ?? null,
+        pickup_time: orderData.pickup_time ? normalizePickupTime(orderData.pickup_time) : null,
       })
       .select('order_number')
       .single();
