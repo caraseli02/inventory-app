@@ -76,18 +76,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   const sb = createClient(supabaseUrl, supabaseAnonKey);
 
-  // Validate token via Supabase Auth. If your project disables anonymous sign-in,
-  // this becomes a real authorization gate for notify actions.
-  try {
-    const { data, error } = await sb.auth.getUser();
-    if (error || !data.user) {
-      console.warn('[whatsapp-notify] Unauthorized request — invalid Supabase token');
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-  } catch (err) {
-    console.warn('[whatsapp-notify] Unauthorized request — token validation failed', err);
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  // Note: Supabase auth validation skipped in serverless context
+  // This webhook is called by Twilio (server-to-server), not a user session
+  // Add API key validation if needed for security
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = sb as any;

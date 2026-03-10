@@ -207,7 +207,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select('messages')
         .eq('phone_number', phone)
         .maybeSingle();
-      hasHistory = (history?.messages as unknown[])?.length ?? 0 > 0;
+      hasHistory = ((history?.messages as unknown[])?.length ?? 0) > 0;
     } catch {
       // If query fails, assume new conversation
       hasHistory = false;
@@ -775,7 +775,7 @@ async function createAnthropicMessageWithRetry(
   const maxAttempts = 3;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      return await anthropic.messages.create(args);
+      return (await anthropic.messages.create(args)) as Anthropic.Messages.Message;
     } catch (err) {
       const overloaded = isAnthropicOverloaded(err);
       const isLast = attempt === maxAttempts;
@@ -1479,10 +1479,13 @@ async function appendHistory(
   const payload = newMessages.slice(-20);
 
   try {
-    const { error } = await (sb.rpc('append_conversation_history', {
-      p_phone_number: phone,
-      p_messages: payload as unknown,
-    }) as Promise<{ error: unknown }>);
+    const { error } = await (sb.rpc(
+      'append_conversation_history',
+      {
+        p_phone_number: phone,
+        p_messages: payload as unknown,
+      } as Record<string, unknown>
+    ) as Promise<{ error: unknown }>);
     if (!error) return;
   } catch {
     // fall through
