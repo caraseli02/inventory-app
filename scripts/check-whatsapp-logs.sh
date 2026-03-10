@@ -1,0 +1,18 @@
+#!/bin/bash
+
+echo "📋 Checking WhatsApp webhook logs from Vercel..."
+echo ""
+echo "⚠️  Make sure you are logged in to Vercel:"
+echo "   vercel login"
+echo ""
+echo "Then run:"
+echo "   vercel logs --follow --since 5m -- --function api/whatsapp"
+echo ""
+echo "Or check logs in dashboard:"
+echo "   https://vercel.com/dashboard/project/inventory-app?tab=logs&function=api%2Fwhatsapp"
+echo ""
+echo "Look for:"
+echo "   ✓ '[whatsapp] starting async reply...' - means waitUntil started"
+echo "   ✓ '[whatsapp] REST reply sent' - means message was sent"
+echo "   ✗ '[whatsapp] error building reply:' - check error details"
+echo "   ✗ 'REST send failed:' - Twilio error"

@@ -189,6 +189,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   );
   const contentSid = process.env.TWILIO_CONFIRM_CONTENT_SID ?? '';
 
+  // Diagnostic: log which path will be taken
+  if (!canUseRest) {
+    console.log('[whatsapp] REST credentials not available — will use TwiML-only fallback');
+  }
+
   // Step 1 — Typing indicator (fire-and-forget, marks message as read + shows "typing...")
   void sendTypingIndicator(messageSid);
 
