@@ -200,14 +200,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (canUseRest) {
     // Check if this is a new conversation (no history) — only show ack on first message
     const sb = createSupabaseClient();
-    const { data: history } = await sb
-      .from('conversation_history')
-      .select('messages')
-      .eq('phone_number', phone)
-      .maybeSingle()
-      .catch(() => ({ data: null }));
-
-    const hasHistory = (history?.messages as unknown[])?.length ?? 0 > 0;
+    let hasHistory = false;
+    try {
+      const { data: history } = await sb
+        .from('conversation_history')
+        .select('messages')
+        .eq('phone_number', phone)
+        .maybeSingle();
+      hasHistory = (history?.messages as unknown[])?.length ?? 0 > 0;
+    } catch {
+      // If query fails, assume new conversation
+      hasHistory = false;
+    }
 
     // Step 2 — Acknowledge only on new conversations
     if (!hasHistory) {
@@ -767,7 +771,7 @@ function isAnthropicOverloaded(err: unknown): boolean {
 async function createAnthropicMessageWithRetry(
   anthropic: Anthropic,
   args: Anthropic.MessageCreateParams
-): Promise<Anthropic.Messages.Message | Anthropic.Messages.RawMessageStreamEvent> {
+): Promise<Anthropic.Messages.Message> {
   const maxAttempts = 3;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -1475,10 +1479,10 @@ async function appendHistory(
   const payload = newMessages.slice(-20);
 
   try {
-    const { error } = await sb.rpc('append_conversation_history', {
+    const { error } = await (sb.rpc('append_conversation_history', {
       p_phone_number: phone,
       p_messages: payload as unknown,
-    } as Record<string, unknown>);
+    }) as Promise<{ error: unknown }>);
     if (!error) return;
   } catch {
     // fall through
