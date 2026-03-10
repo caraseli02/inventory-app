@@ -751,7 +751,7 @@ function isAnthropicOverloaded(err: unknown): boolean {
 async function createAnthropicMessageWithRetry(
   anthropic: Anthropic,
   args: Anthropic.MessageCreateParams
-): Promise<Anthropic.Messages.Message> {
+): Promise<Anthropic.Messages.Message | Anthropic.Messages.RawMessageStreamEvent> {
   const maxAttempts = 3;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
@@ -1462,7 +1462,7 @@ async function appendHistory(
     const { error } = await sb.rpc('append_conversation_history', {
       p_phone_number: phone,
       p_messages: payload as unknown,
-    });
+    } as Record<string, unknown>);
     if (!error) return;
   } catch {
     // fall through

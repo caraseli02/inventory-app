@@ -79,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Validate token via Supabase Auth. If your project disables anonymous sign-in,
   // this becomes a real authorization gate for notify actions.
   try {
-    const { data, error } = await sb.auth.getUser(accessToken);
+    const { data, error } = await sb.auth.getUser();
     if (error || !data.user) {
       console.warn('[whatsapp-notify] Unauthorized request — invalid Supabase token');
       return res.status(401).json({ error: 'Unauthorized' });
