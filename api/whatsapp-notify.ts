@@ -41,6 +41,16 @@ interface OrderRow {
 
 type SecondLang = 'es' | 'ru';
 
+function createServerSupabaseClient(url: string, key: string) {
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -74,11 +84,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('[whatsapp-notify] Missing Supabase env vars');
     return res.status(500).json({ error: 'Supabase not configured' });
   }
-  const sb = createClient(supabaseUrl, supabaseAnonKey);
+  const sb = createServerSupabaseClient(supabaseUrl, supabaseAnonKey);
 
-  // Note: Supabase auth validation skipped in serverless context
-  // This webhook is called by Twilio (server-to-server), not a user session
-  // Add API key validation if needed for security
+  try {
+    const { data, error } = await sb.auth.getUser(accessToken);
+    if (error || !data.user) {
+      console.warn('[whatsapp-notify] Unauthorized request — invalid Supabase token');
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  } catch (err) {
+    console.warn('[whatsapp-notify] Unauthorized request — token validation failed', err);
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = sb as any;

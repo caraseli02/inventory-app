@@ -204,7 +204,7 @@ describe('api/whatsapp (webhook handler)', () => {
       expect(res.sentBody).toContain('<?xml');
       expect(res.headers['Content-Type']).toBe('text/xml');
       // Should contain acknowledgment message
-      expect(res.sentBody).toMatch(/Am primit|Got it/i);
+      expect(res.sentBody).toMatch(/Bună ziua, procesăm|Hello, processing/i);
     });
 
     it('skips REST TwiML ack when REST credentials are missing', async () => {
@@ -255,7 +255,7 @@ describe('api/whatsapp (webhook handler)', () => {
       expect(res.statusCode).toBe(200);
       expect(res.sentBody).toContain('<?xml');
       // Should be the ack message, not the final AI response
-      expect(res.sentBody).toMatch(/⏳/);
+      expect(res.sentBody).toMatch(/Bună ziua, procesăm|Hello, processing/i);
     });
 
     it('button payload confirm returns TwiML (not REST) for immediate response', async () => {
@@ -308,7 +308,7 @@ describe('api/whatsapp (webhook handler)', () => {
 
       await handler(req, res);
 
-      expect(res.sentBody).toContain('⏳ Am primit');
+      expect(res.sentBody).toContain('Bună ziua, procesăm');
     });
 
     it('returns English ack for English messages (with English keywords)', async () => {
@@ -322,7 +322,7 @@ describe('api/whatsapp (webhook handler)', () => {
 
       await handler(req, res);
 
-      expect(res.sentBody).toContain('⏳ Got it, processing');
+      expect(res.sentBody).toContain('Hello, processing your message');
     });
   });
 });

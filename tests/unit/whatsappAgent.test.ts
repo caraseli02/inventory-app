@@ -8,7 +8,13 @@
 import { describe, expect, it } from 'vitest';
 import { __private__ } from '../../api/whatsapp';
 
-const { extractOrderJson, normalizePickupTime, parsePickupDateTime, classifyIncomingText } = __private__;
+const {
+  extractOrderJson,
+  normalizePickupTime,
+  parsePickupDateTime,
+  classifyIncomingText,
+  createPendingOrderFromPending,
+} = __private__;
 
 // ─── extractOrderJson ─────────────────────────────────────────────────────────
 
@@ -153,5 +159,32 @@ describe('classifyIncomingText', () => {
   it('does NOT false-positive on "address" inside a JSON string', () => {
     const text = '{"billing_address":"Str. Florilor 1"}';
     expect(classifyIncomingText(text)).toBe('product_query');
+  });
+});
+
+describe('createPendingOrderFromPending', () => {
+  it('creates orders with pending status', async () => {
+    const single = async () => ({ data: { order_number: 'ORD-123' }, error: null });
+    const select = () => ({ single });
+    const insert = (payload: Record<string, unknown>) => {
+      expect(payload.status).toBe('pending');
+      expect(payload.customer_name).toBe('Ion');
+      return { select };
+    };
+    const from = (table: string) => {
+      expect(table).toBe('orders');
+      return { insert };
+    };
+    const sb = { from } as unknown as Parameters<typeof createPendingOrderFromPending>[0];
+
+    const orderNumber = await createPendingOrderFromPending(sb, {
+      customer_name: 'Ion',
+      customer_phone: '+40123',
+      items: [{ product_id: 'p1', name: 'Lapte', qty: 2, unit_price: 3.5 }],
+      total_price: 7,
+      pickup_time: 'mâine 12:00',
+    });
+
+    expect(orderNumber).toBe('ORD-123');
   });
 });

@@ -119,7 +119,7 @@ async function testWebhook() {
 
     console.log('');
     console.log('📊 What should happen:');
-    console.log('   1. TwiML ack ("⏳ Am primit...") sent immediately');
+    console.log('   1. TwiML ack ("Bună ziua, procesăm..." on first contact) sent immediately');
     console.log('   2. Logs show "[whatsapp] starting async reply..."');
     console.log('   3. Anthropic API called (3-10s)');
     console.log('   4. REST message sent via Twilio');

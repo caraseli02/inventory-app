@@ -33,7 +33,7 @@ POST /api/whatsapp (1,631 lines)
   ├─ Intent classification (product_query | browse | cancel | store_info)
   │
   ├─ Button handling (if ButtonPayload)
-  │  ├─ confirm → insert order to DB
+  │  ├─ confirm → create pending order request in DB
   │  └─ cancel → discard pending order
   │
   ├─ Message handling (if text Body)
@@ -74,8 +74,8 @@ async function sendTypingIndicator(messageSid: string)
 
 ### Step 2: Two-Message Acknowledgment (2026-03-10)
 ```typescript
-// Webhook returns immediately with acknowledgment
-res.status(200).send(twiml("⏳ Am primit, procesăm..."))
+// On first message in a conversation, webhook returns immediate acknowledgment
+res.status(200).send(twiml("Bună ziua, procesăm..."))
 
 // Then builds real reply async + sends via REST
 buildReplyWithPending(phone, name, text)
@@ -110,7 +110,7 @@ storePendingOrder(phone, {items, total_price, pickup_time})
 
 // 4. When button tapped:
 ButtonPayload = "confirm" | "cancel"
-getPendingOrder(phone) → insert to DB or discard
+getPendingOrder(phone) → create pending order in DB or discard
 ```
 
 ---
@@ -171,9 +171,9 @@ getPendingOrder(phone)
   → clear it (update to null)
   ↓
 INSERT to orders table:
-  customer_name, customer_phone, items, total_price, pickup_time, status='confirmed'
+  customer_name, customer_phone, items, total_price, pickup_time, status='pending'
   ↓
-WhatsApp: "✅ Comanda ORD-025 înregistrată! Te așteptăm."
+WhatsApp: "✅ Cererea ORD-025 a fost înregistrată și așteaptă confirmarea magazinului."
 ```
 
 ---
@@ -363,4 +363,3 @@ a829005 fix(whatsapp): category-aware browse inventory + Supabase diagnostics
 2. Add product browsing by category
 3. Owner notifications on new orders
 4. Customer order history
-

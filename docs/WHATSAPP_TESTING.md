@@ -45,33 +45,25 @@ The simulator will be available at: `http://localhost:5173/api/whatsapp-simulate
 
 ## Testing Methods
 
-### Option 1: Interactive CLI (Recommended)
+### Option 1: Interactive webhook simulator (Recommended)
 ```bash
-pnpm tsx scripts/test-whatsapp-local.ts
+pnpm whatsapp:test
 ```
 
-This opens an interactive menu:
-```
-Choose a feature to test:
-  1. Product Q&A
-  2. Order Creation
-  3. Multi-Turn Context
-  4. Natural Date Parsing
-  5. Cancellation Intent
-  6. Store Info
-  0. Exit
-```
+This talks to the real `/api/whatsapp` handler locally:
+- Type free-form messages
+- See immediate TwiML responses
+- Exercise the async REST follow-up path
+- Simulate button-confirm / cancel flows through the real webhook logic
 
-Each feature runs pre-defined test cases and shows results with colored output.
-
-**Pros**: Easy to use, see all cases at once
-**Cons**: Non-interactive (runs scripts, not live)
+**Pros**: Closest to real Twilio behavior
+**Cons**: Requires more env vars than simulator-only testing
 
 ---
 
 ### Option 2: Automated Integration Tests
 ```bash
-pnpm test:integration
+pnpm whatsapp:test:all
 ```
 
 Runs full test suite with vitest:
@@ -205,8 +197,8 @@ Test cases:
 
 ### View full debug info
 ```bash
-pnpm tsx scripts/test-whatsapp-local.ts
-# Select feature, look for "Intent: ..." output
+pnpm whatsapp:test
+# Or use the simulator endpoint directly with debug=true
 ```
 
 Or with curl + `"debug": true`:
@@ -349,11 +341,11 @@ ANTHROPIC_API_KEY=sk-ant-v0-...
 - `api/whatsapp.ts` (1,631 lines) — Main agent
 
 **Testing**:
-- `scripts/test-whatsapp-local.ts` — Interactive CLI
+- `scripts/whatsapp-local-test.ts` — Interactive real-webhook local test
+- `scripts/test-whatsapp-webhook-local.ts` — One-shot webhook smoke test
 - `tests/integration/whatsapp-agent.test.ts` — Automated tests
 
 **Configuration**:
 - `docs/whatsapp_agent_overview.md` — Architecture
 - `docs/WHATSAPP_TESTING.md` — This file
 - `.env` — Local secrets (gitignored)
-

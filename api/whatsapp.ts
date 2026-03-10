@@ -134,44 +134,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Handle button tap (order confirmation/cancellation) — ButtonPayload takes priority over text
   if (buttonPayload) {
     console.log(`[whatsapp] button from ${phone}: ${buttonPayload}`);
+    // Respond instantly with empty TwiML, send real response via REST
+    res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
     const sb = createSupabaseClient();
-
-    try {
-      if (buttonPayload === 'confirm') {
-        const pending = await getPendingOrder(sb, phone);
-        if (!pending) {
-          const response = '⚠️ Comanda a expirat. Te rog trimite din nou.';
-          return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(response));
+    waitUntil(
+      (async () => {
+        if (buttonPayload === 'confirm') {
+          const pending = await getPendingOrder(sb, phone);
+          if (!pending) {
+            await sendRestMessage(from, '⚠️ Comanda a expirat. Te rog trimite din nou.');
+            return;
+          }
+          const orderNumber = await createPendingOrderFromPending(sb, pending);
+          await sendRestMessage(from, `✅ Cererea ${orderNumber} a fost înregistrată și așteaptă confirmarea magazinului.`);
+        } else if (buttonPayload === 'cancel') {
+          await getPendingOrder(sb, phone); // reads + nulls pending_order
+          await sendRestMessage(from, '❌ Comanda a fost anulată.');
         }
-
-        // Insert the pending order to DB
-        const { data: order } = await sb
-          .from('orders')
-          .insert({
-            customer_name: pending.customer_name,
-            customer_phone: pending.customer_phone,
-            items: pending.items,
-            total_price: pending.total_price,
-            pickup_time: pending.pickup_time,
-            status: 'confirmed',
-          })
-          .select('order_number')
-          .single();
-
-        const orderNumber = (order as { order_number: string } | null)?.order_number ?? '—';
-        const response = `✅ Comanda ${orderNumber} a fost înregistrată! Te așteptăm.`;
-        return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(response));
-      } else if (buttonPayload === 'cancel') {
-        // Clear pending order
-        await getPendingOrder(sb, phone);
-        const response = '❌ Comanda a fost anulată.';
-        return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(response));
-      }
-    } catch (err) {
-      console.error('[whatsapp] button handling failed:', err);
-      const fallback = 'Ne pare rău, a apărut o eroare.';
-      return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(fallback));
-    }
+      })().catch(async (err) => {
+        console.error('[whatsapp] button handling failed:', err);
+        await sendRestMessage(from, 'Ne pare rău, a apărut o eroare.');
+      })
+    );
+    return;
   }
 
   // Ignore non-text or empty messages
@@ -194,35 +179,76 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[whatsapp] REST credentials not available — will use TwiML-only fallback');
   }
 
-  // Step 1 — Typing indicator (fire-and-forget, marks message as read + shows "typing...")
+  // Step 1 — Typing indicator (fire-and-forget, marks message as read)
   void sendTypingIndicator(messageSid);
 
+  // DA/NU text fallback: handle order confirm/cancel when customer typed instead of tapping button
+  const isConfirmText = /^\s*(da|yes)\s*$/i.test(text);
+  const isRejectText  = /^\s*(nu|no)\s*$/i.test(text);
+
+  if (isConfirmText || isRejectText) {
+    const sbDaNu = createSupabaseClient();
+    const pending = await getPendingOrder(sbDaNu, phone);
+    if (pending) {
+      if (isConfirmText) {
+        try {
+          const orderNumber = await createPendingOrderFromPending(sbDaNu, pending);
+          const reply = `✅ Cererea ${orderNumber} a fost înregistrată și așteaptă confirmarea magazinului.`;
+          if (canUseRest) {
+            res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
+            waitUntil(sendRestMessage(from, reply));
+          } else {
+            return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(reply));
+          }
+        } catch (err) {
+          console.error('[whatsapp] DA order insert failed:', err);
+          const errMsg = 'Ne pare rău, nu am putut înregistra comanda. Încearcă din nou.';
+          if (canUseRest) {
+            res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
+            waitUntil(sendRestMessage(from, errMsg));
+          } else {
+            return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(errMsg));
+          }
+        }
+      } else {
+        // NU — pending order already cleared by getPendingOrder
+        const reply = '❌ Comanda a fost anulată.';
+        if (canUseRest) {
+          res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
+          waitUntil(sendRestMessage(from, reply));
+        } else {
+          return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(reply));
+        }
+      }
+      return;
+    }
+    // No pending order → fall through to normal LLM handling
+  }
+
   if (canUseRest) {
-    // Check if this is a new conversation (no history) — only show ack on first message
-    const sb = createSupabaseClient();
+    // Check if this is a new conversation (no history) — only ack on first message
+    const sbAck = createSupabaseClient();
     let hasHistory = false;
     try {
-      const { data: history } = await sb
+      const { data: historyRow } = await sbAck
         .from('conversation_history')
         .select('messages')
         .eq('phone_number', phone)
         .maybeSingle();
-      hasHistory = ((history?.messages as unknown[])?.length ?? 0) > 0;
+      hasHistory = ((historyRow?.messages as unknown[])?.length ?? 0) > 0;
     } catch {
-      // If query fails, assume new conversation
       hasHistory = false;
     }
 
-    // Step 2 — Acknowledge only on new conversations
     if (!hasHistory) {
+      // Step 2 — Acknowledge only on first message of a new conversation
       const ack = detectEnglish(text)
-        ? '⏳ Got it, processing your message...'
-        : '⏳ Am primit, procesăm...';
-      // Return acknowledgment via TwiML synchronously, then send result via REST
+        ? 'Hello, processing your message...'
+        : 'Bună ziua, procesăm...';
       res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(ack));
     } else {
-      // For ongoing conversations, return empty TwiML (no ack needed)
-      res.status(200).send(twiml(''));
+      // Returning customer — return empty TwiML, real reply comes via REST
+      res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
     }
 
     // Keep Vercel function alive for async work (buildReplyWithPending + REST send)
@@ -232,18 +258,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .then(async (result) => {
           const sb = createSupabaseClient();
 
-          // If there's a pending order, send the Quick Reply template instead of text
-          if (result.pending && contentSid) {
-            // Store the pending order so button tap can retrieve it
+          // If there's a pending order, confirm via Quick Reply buttons or plain text fallback
+          if (result.pending) {
             await storePendingOrder(sb, phone, result.pending);
-
-            const variables = {
-              product_name: result.pending.items.map((i) => `${i.qty}x ${i.name}`).join(', '),
-              price: result.pending.total_price.toFixed(2),
-              pickup_time: result.pending.pickup_time || 'la preluare',
-            };
-            await sendTemplateMessage(from, contentSid, variables);
-            console.log('[whatsapp] sent confirmation template for pending order');
+            if (contentSid) {
+              const variables = {
+                product_name: result.pending.items.map((i) => `${i.qty}x ${i.name}`).join(', '),
+                price: result.pending.total_price.toFixed(2),
+                pickup_time: result.pending.pickup_time || 'la preluare',
+              };
+              await sendTemplateMessage(from, contentSid, variables);
+              console.log('[whatsapp] sent confirmation template for pending order');
+            } else {
+              // No contentSid — fall back to plain text DA/NU confirmation
+              console.warn('[whatsapp] TWILIO_CONFIRM_CONTENT_SID not set — using DA/NU text fallback');
+              const itemsList = result.pending.items.map((i) => `${i.qty}x ${i.name}`).join(', ');
+              const fallbackMsg = `Confirmi comanda?\n${itemsList}\n*€${result.pending.total_price.toFixed(2)}*\nRidicare: ${result.pending.pickup_time || 'la preluare'}\n\nRăspunde *DA* sau *NU*.`;
+              await sendRestMessage(from, fallbackMsg);
+              console.log('[whatsapp] sent plain text DA/NU confirmation fallback');
+            }
           } else {
             await sendRestMessage(from, result.reply);
             console.log('[whatsapp] REST reply sent');
@@ -302,12 +335,13 @@ async function sendTypingIndicator(messageSid: string): Promise<void> {
   const creds = twilioRestBase();
   if (!creds || !messageSid) return;
   try {
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages/${messageSid}/Feedback.json`;
+    // Mark message as read via the Engagements API (shows double blue ticks)
+    const readUrl = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages/${messageSid}.json`;
     const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
-    await fetch(url, {
+    await fetch(readUrl, {
       method: 'POST',
       headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'Outcome=confirmed',
+      body: 'Status=read',
     });
   } catch {
     // non-critical — typing indicator failure must never break reply
@@ -384,7 +418,13 @@ function createSupabaseClient() {
   if (!url || !key) {
     console.error('[whatsapp] Supabase not configured: url=%s key=%s', url ? 'SET' : 'MISSING', key ? 'SET' : 'MISSING');
   }
-  return createClient(url, key);
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
 }
 
 function toSimulationOrderReply(phone: string, name: string, text: string): string | null {
@@ -716,7 +756,8 @@ REGULI:
 
 function detectEnglish(text: string): boolean {
   const t = text.toLowerCase();
-  return /(address|hours|open|close|phone|contact)/.test(t);
+  // Broad English detection: common words + store-specific keywords
+  return /(address|hours|open|close|phone|contact|\bthe\b|\bwant\b|\bhave\b|\bdo you\b|\bi would\b|\bplease\b|\border\b|\bstock\b|\bavailable\b|\bprice\b|\bhello\b|\bhi\b)/.test(t);
 }
 
 function buildStoreInfoReply(text: string): string {
@@ -1351,6 +1392,7 @@ export const __private__ = {
   getInventorySummary,
   classifyIncomingText,
   extractOrderJson,
+  createPendingOrderFromPending,
   normalizePickupTime,
   parsePickupDateTime,
 } as const;
@@ -1385,6 +1427,27 @@ interface PendingOrder {
 interface ProcessOrderResult {
   reply: string;
   pending?: PendingOrder;
+}
+
+async function createPendingOrderFromPending(
+  sb: ReturnType<typeof createClient>,
+  pending: PendingOrder
+): Promise<string> {
+  const { data: order, error } = await sb
+    .from('orders')
+    .insert({
+      customer_name: pending.customer_name,
+      customer_phone: pending.customer_phone,
+      items: pending.items,
+      total_price: pending.total_price,
+      pickup_time: pending.pickup_time,
+      status: 'pending',
+    })
+    .select('order_number')
+    .single();
+
+  if (error) throw error;
+  return (order as { order_number: string } | null)?.order_number ?? '—';
 }
 
 async function processOrderIntent(
