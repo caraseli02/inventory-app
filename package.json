@@ -34,7 +34,9 @@
     "mcp:stdio": "tsx mcp/main.ts --stdio",
     "mcp:smoke": "tsx scripts/mcp-smoke-test.ts",
     "whatsapp:eval": "tsx scripts/whatsapp-sim-eval.ts",
-    "whatsapp:eval:followup": "tsx scripts/whatsapp-sim-followup-eval.ts"
+    "whatsapp:eval:followup": "tsx scripts/whatsapp-sim-followup-eval.ts",
+    "whatsapp:test": "tsx scripts/test-whatsapp-local.ts",
+    "whatsapp:test:all": "pnpm test:integration -- tests/integration/whatsapp-agent.test.ts"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm check-root-files && pnpm validate-docs && pnpm typecheck && pnpm lint",
