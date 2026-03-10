@@ -39,6 +39,7 @@ interface TwilioBody {
   To?: string;          // your Twilio number
   MessageSid?: string;
   NumMedia?: string;
+  ButtonPayload?: string; // Quick Reply button tap: "confirm" | "cancel"
 }
 
 interface ConversationMessage {
@@ -52,6 +53,7 @@ export type WhatsAppSimulatorProvider = 'openai' | 'anthropic' | 'local';
 export interface WhatsAppSimulatorResult {
   provider: WhatsAppSimulatorProvider;
   reply: string;
+  pending?: PendingOrder;
   debug?: {
     intent: IncomingIntent;
     inventoryText: string;
@@ -122,15 +124,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = req.body as TwilioBody;
   const from = body.From ?? '';
   const text = (body.Body ?? '').trim();
+  const buttonPayload = body.ButtonPayload ?? '';
   const name = body.ProfileName ?? from.replace('whatsapp:', '');
+
+  // Strip "whatsapp:" prefix for DB storage, keep full form for Twilio reply
+  const phone = from.replace('whatsapp:', '');
+
+  // Handle button tap (order confirmation/cancellation)
+  if (buttonPayload && !text) {
+    console.log(`[whatsapp] button from ${phone}: ${buttonPayload}`);
+    const sb = createSupabaseClient();
+
+    try {
+      if (buttonPayload === 'confirm') {
+        const pending = await getPendingOrder(sb, phone);
+        if (!pending) {
+          const response = '⚠️ Comanda a expirat. Te rog trimite din nou.';
+          return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(response));
+        }
+
+        // Insert the pending order to DB
+        const { data: order } = await sb
+          .from('orders')
+          .insert({
+            customer_name: pending.customer_name,
+            customer_phone: pending.customer_phone,
+            items: pending.items,
+            total_price: pending.total_price,
+            pickup_time: pending.pickup_time,
+            status: 'confirmed',
+          })
+          .select('order_number')
+          .single();
+
+        const orderNumber = (order as { order_number: string } | null)?.order_number ?? '—';
+        const response = `✅ Comanda ${orderNumber} a fost înregistrată! Te așteptăm.`;
+        return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(response));
+      } else if (buttonPayload === 'cancel') {
+        // Clear pending order
+        await getPendingOrder(sb, phone);
+        const response = '❌ Comanda a fost anulată.';
+        return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(response));
+      }
+    } catch (err) {
+      console.error('[whatsapp] button handling failed:', err);
+      const fallback = 'Ne pare rău, a apărut o eroare.';
+      return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(fallback));
+    }
+  }
 
   // Ignore non-text or empty messages
   if (!from || !text) {
     return res.status(200).send(twiml(''));
   }
-
-  // Strip "whatsapp:" prefix for DB storage, keep full form for Twilio reply
-  const phone = from.replace('whatsapp:', '');
 
   console.log(`[whatsapp] message from ${phone} (${name}): ${text.slice(0, 60)}`);
 
@@ -140,6 +186,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.TWILIO_AUTH_TOKEN &&
     process.env.TWILIO_FROM_NUMBER
   );
+  const contentSid = process.env.TWILIO_CONFIRM_CONTENT_SID ?? '';
 
   // Step 1 — Typing indicator (fire-and-forget, marks message as read + shows "typing...")
   void sendTypingIndicator(messageSid);
@@ -153,8 +200,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(ack));
 
     // Build the real reply and send it via REST after TwiML is flushed
-    buildReply(phone, name, text)
-      .then((reply) => sendRestMessage(from, reply))
+    buildReplyWithPending(phone, name, text)
+      .then(async (result) => {
+        const sb = createSupabaseClient();
+
+        // If there's a pending order, send the Quick Reply template instead of text
+        if (result.pending && contentSid) {
+          // Store the pending order so button tap can retrieve it
+          await storePendingOrder(sb, phone, result.pending);
+
+          const variables = {
+            product_name: result.pending.items.map((i) => `${i.qty}x ${i.name}`).join(', '),
+            price: result.pending.total_price.toFixed(2),
+            pickup_time: result.pending.pickup_time || 'la preluare',
+          };
+          await sendTemplateMessage(from, contentSid, variables);
+          console.log('[whatsapp] sent confirmation template for pending order');
+        } else {
+          await sendRestMessage(from, result.reply);
+        }
+      })
       .catch((err) => {
         console.error('[whatsapp] error building reply:', err);
         const fallback = detectEnglish(text)
@@ -168,8 +233,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Fallback: no REST credentials — single TwiML response (original behaviour)
   try {
-    const reply = await buildReply(phone, name, text);
-    return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(reply));
+    const result = await buildReplyWithPending(phone, name, text);
+    return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(result.reply));
   } catch (err) {
     console.error('[whatsapp] error:', err);
     const fallback = 'Ne pare rău, a apărut o eroare. Încearcă din nou.';
@@ -248,6 +313,39 @@ async function sendRestMessage(to: string, body: string): Promise<void> {
   }
 }
 
+/**
+ * Send a WhatsApp message using a Quick Reply content template.
+ * Required for order confirmation flow with buttons.
+ */
+async function sendTemplateMessage(
+  to: string,
+  contentSid: string,
+  variables?: Record<string, string>
+): Promise<void> {
+  const creds = twilioRestBase();
+  if (!creds) {
+    console.warn('[whatsapp] Template send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    return;
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
+  const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+  const params = new URLSearchParams({
+    To:   to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
+    From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
+    ContentSid: contentSid,
+    ...(variables && { ContentVariables: JSON.stringify(variables) }),
+  });
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    console.error('[whatsapp] Template send failed: %s %s', resp.status, text.slice(0, 200));
+  }
+}
+
 // ─── AI reply builder ────────────────────────────────────────────────────────
 
 function createSupabaseClient() {
@@ -297,7 +395,8 @@ export async function buildLocalSimulationReply(phone: string, name: string, tex
   }
 
   const sb = createSupabaseClient();
-  return processOrderIntent(sb, orderReply);
+  const result = await processOrderIntent(sb, orderReply);
+  return result.reply;
 }
 
 export async function resetConversationHistory(phone: string): Promise<void> {
@@ -407,7 +506,8 @@ async function runConversationTurn(args: {
     }
   }
 
-  const reply = await processOrderIntent(args.sb, replyTextRaw);
+  const orderResult = await processOrderIntent(args.sb, replyTextRaw);
+  const { reply, pending } = orderResult;
 
   try {
     await appendHistory(args.sb, args.phone, history, [
@@ -421,6 +521,7 @@ async function runConversationTurn(args: {
   return {
     provider,
     reply,
+    ...(pending && { pending }),
     ...(args.includeDebug ? {
       debug: {
         intent,
@@ -499,11 +600,15 @@ export async function buildSimulatorReply(phone: string, name: string, text: str
   }
 }
 
-export async function buildReply(phone: string, name: string, text: string): Promise<string> {
+export async function buildReplyWithPending(
+  phone: string,
+  name: string,
+  text: string
+): Promise<WhatsAppSimulatorResult> {
   const sb = createSupabaseClient();
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  const result = await runConversationTurn({
+  return runConversationTurn({
     sb,
     phone,
     name,
@@ -529,7 +634,10 @@ export async function buildReply(phone: string, name: string, text: string): Pro
       }
     },
   });
+}
 
+export async function buildReply(phone: string, name: string, text: string): Promise<string> {
+  const result = await buildReplyWithPending(phone, name, text);
   return result.reply;
 }
 
@@ -1148,6 +1256,61 @@ async function getInventorySummary(
   return lines.join('\n');
 }
 
+// ─── Pending order storage ────────────────────────────────────────────────────
+
+/**
+ * Store a pending order temporarily (awaiting button confirmation).
+ * Uses Supabase JSON to avoid schema changes.
+ */
+async function storePendingOrder(
+  sb: ReturnType<typeof createClient>,
+  phone: string,
+  order: PendingOrder
+): Promise<void> {
+  try {
+    await sb.from('conversation_history').upsert(
+      {
+        phone_number: phone,
+        pending_order: order as unknown,
+      },
+      { onConflict: 'phone_number' }
+    );
+  } catch (err) {
+    console.error('[whatsapp] failed to store pending order:', err);
+  }
+}
+
+/**
+ * Retrieve and remove a pending order.
+ */
+async function getPendingOrder(
+  sb: ReturnType<typeof createClient>,
+  phone: string
+): Promise<PendingOrder | null> {
+  try {
+    const { data } = await sb
+      .from('conversation_history')
+      .select('pending_order')
+      .eq('phone_number', phone)
+      .maybeSingle();
+
+    const order = (data?.pending_order ?? null) as PendingOrder | null;
+
+    // Clear pending order after retrieval
+    if (order) {
+      await sb
+        .from('conversation_history')
+        .update({ pending_order: null })
+        .eq('phone_number', phone);
+    }
+
+    return order;
+  } catch (err) {
+    console.error('[whatsapp] failed to get pending order:', err);
+    return null;
+  }
+}
+
 export const __private__ = {
   extractSearchCandidates,
   extractSearchCandidatesFromHistory,
@@ -1181,13 +1344,26 @@ function extractOrderJson(text: string): { json: string; startIdx: number } | nu
   return null;
 }
 
+interface PendingOrder {
+  customer_name: string;
+  customer_phone: string;
+  items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>;
+  total_price: number;
+  pickup_time: string | null;
+}
+
+interface ProcessOrderResult {
+  reply: string;
+  pending?: PendingOrder;
+}
+
 async function processOrderIntent(
   sb: ReturnType<typeof createClient>,
   replyText: string
-): Promise<string> {
+): Promise<ProcessOrderResult> {
   // Match ORDER: anywhere in the reply, using brace-depth counting to handle nested JSON
   const extracted = extractOrderJson(replyText);
-  if (!extracted) return replyText;
+  if (!extracted) return { reply: replyText };
 
   // Strip ORDER:{...} and any trailing text the LLM appended after it
   const stripOrder = (text: string, replacement: string) =>
@@ -1203,37 +1379,42 @@ async function processOrderIntent(
     };
 
     const resolved = await resolveOrderItems(sb, orderData.items);
+    const normalizedPickupTime = orderData.pickup_time ? normalizePickupTime(orderData.pickup_time) : null;
 
-    const { data: order } = await sb
-      .from('orders')
-      .insert({
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        items: resolved.items,
-        total_price: resolved.totalPrice,
-        pickup_time: orderData.pickup_time ? normalizePickupTime(orderData.pickup_time) : null,
-      })
-      .select('order_number')
-      .single();
+    // Store pending order for confirmation flow
+    const pending: PendingOrder = {
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      items: resolved.items,
+      total_price: resolved.totalPrice,
+      pickup_time: normalizedPickupTime,
+    };
 
-    const orderNumber = (order as { order_number: string } | null)?.order_number ?? '—';
-    return stripOrder(replyText, `✅ Comanda ${orderNumber} înregistrată! Te așteptăm.`);
+    // Return pending order — don't insert yet, wait for button confirmation
+    const confirmationPrompt = stripOrder(
+      replyText,
+      `${resolved.items.map((i) => `${i.qty}x ${i.name}`).join('\n')}
+€${resolved.totalPrice.toFixed(2)}
+Ridicare: ${normalizedPickupTime || 'la preluare'}`
+    );
+
+    return { reply: confirmationPrompt, pending };
   } catch (err) {
     console.error('[whatsapp] order creation failed:', err);
     const message = err instanceof Error ? err.message : '';
     if (message.startsWith('AMBIGUOUS_ITEM:')) {
       const rawName = message.slice('AMBIGUOUS_ITEM:'.length).split('|')[0] ?? 'produs';
-      return stripOrder(replyText, `⚠️ Am găsit mai multe produse pentru „${rawName}”. Te rog trimite denumirea exactă.`);
+      return { reply: stripOrder(replyText, `⚠️ Am găsit mai multe produse pentru „${rawName}”. Te rog trimite denumirea exactă.`) };
     }
     if (message.startsWith('NOT_FOUND_ITEM:')) {
       const rawName = message.slice('NOT_FOUND_ITEM:'.length) || 'produsul cerut';
-      return stripOrder(replyText, `⚠️ Nu am găsit „${rawName}” în inventar. Te rog trimite denumirea exactă.`);
+      return { reply: stripOrder(replyText, `⚠️ Nu am găsit „${rawName}” în inventar. Te rog trimite denumirea exactă.`) };
     }
     if (message.startsWith('OUT_OF_STOCK_ITEM:')) {
       const rawName = message.slice('OUT_OF_STOCK_ITEM:'.length) || 'produsul cerut';
-      return stripOrder(replyText, `⚠️ „${rawName}” nu are stoc suficient acum. Te rog ajustează cantitatea.`);
+      return { reply: stripOrder(replyText, `⚠️ „${rawName}” nu are stoc suficient acum. Te rog ajustează cantitatea.`) };
     }
-    return stripOrder(replyText, '⚠️ Nu am reușit să înregistrez comanda automat. Te rog încearcă din nou.');
+    return { reply: stripOrder(replyText, '⚠️ Nu am reușit să înregistrez comanda automat. Te rog încearcă din nou.') };
   }
 }
 
