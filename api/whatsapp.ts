@@ -1512,7 +1512,7 @@ async function resolveOrderItems(
 
     const match = item.product_id
       ? await resolveProductById(sb, item.product_id)
-      : await resolveProductByName(sb, name);
+      : await resolveProductByName(sb, name, item.unit_price);
 
     if (match.type === 'not_found') throw new Error(`NOT_FOUND_ITEM:${name}`);
     if (match.type === 'ambiguous') throw new Error(`AMBIGUOUS_ITEM:${name}|${match.candidates.join(', ')}`);
@@ -1623,7 +1623,8 @@ async function resolveProductById(
 
 async function resolveProductByName(
   sb: ReturnType<typeof createClient>,
-  rawName: string
+  rawName: string,
+  targetPrice?: number
 ): Promise<ProductMatchResult> {
   const query = normalizeProductText(rawName);
   if (!query) return { type: 'not_found' };
@@ -1632,11 +1633,25 @@ async function resolveProductByName(
     .from('products')
     .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
     .ilike('name', rawName.trim())
-    .limit(3);
+    .limit(10);
 
   const exact = (exactRows as ProductRow[] | null) ?? [];
   if (exact.length === 1) return { type: 'match', product: exact[0] };
-  if (exact.length > 1) return { type: 'ambiguous', candidates: exact.slice(0, 3).map((p) => p.name) };
+
+  if (exact.length > 1) {
+    // Multiple variants of same product (different prices)
+    // If targetPrice provided, pick the matching variant
+    if (targetPrice) {
+      const match = exact.find((p) => {
+        const prices = [p.price, p.price_50, p.price_70, p.price_100].filter((x) => x != null);
+        return prices.some((price) => Math.abs(price - targetPrice) < 0.01);
+      });
+      if (match) return { type: 'match', product: match };
+    }
+    // Otherwise pick the most recent (highest created_at)
+    const sorted = exact.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return { type: 'match', product: sorted[0] };
+  }
 
   const { data: fuzzyRows } = await sb
     .from('products')
