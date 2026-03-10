@@ -131,8 +131,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Strip "whatsapp:" prefix for DB storage, keep full form for Twilio reply
   const phone = from.replace('whatsapp:', '');
 
-  // Handle button tap (order confirmation/cancellation)
-  if (buttonPayload && !text) {
+  // Handle button tap (order confirmation/cancellation) — ButtonPayload takes priority over text
+  if (buttonPayload) {
     console.log(`[whatsapp] button from ${phone}: ${buttonPayload}`);
     const sb = createSupabaseClient();
 
@@ -198,12 +198,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   void sendTypingIndicator(messageSid);
 
   if (canUseRest) {
-    // Step 2 — Acknowledge immediately so user sees activity while AI runs
-    const ack = detectEnglish(text)
-      ? '⏳ Got it, processing your message...'
-      : '⏳ Am primit, procesăm...';
-    // Return acknowledgment via TwiML synchronously, then send result via REST
-    res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(ack));
+    // Check if this is a new conversation (no history) — only show ack on first message
+    const sb = createSupabaseClient();
+    const { data: history } = await sb
+      .from('conversation_history')
+      .select('messages')
+      .eq('phone_number', phone)
+      .maybeSingle()
+      .catch(() => ({ data: null }));
+
+    const hasHistory = (history?.messages as unknown[])?.length ?? 0 > 0;
+
+    // Step 2 — Acknowledge only on new conversations
+    if (!hasHistory) {
+      const ack = detectEnglish(text)
+        ? '⏳ Got it, processing your message...'
+        : '⏳ Am primit, procesăm...';
+      // Return acknowledgment via TwiML synchronously, then send result via REST
+      res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(ack));
+    } else {
+      // For ongoing conversations, return empty TwiML (no ack needed)
+      res.status(200).send(twiml(''));
+    }
 
     // Keep Vercel function alive for async work (buildReplyWithPending + REST send)
     console.log('[whatsapp] starting async reply...');
