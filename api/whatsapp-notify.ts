@@ -87,7 +87,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const sb = createServerSupabaseClient(supabaseUrl, supabaseAnonKey);
 
   try {
-    const { data, error } = await sb.auth.getUser(accessToken);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (sb.auth as any).getUser(accessToken);
     if (error || !data.user) {
       console.warn('[whatsapp-notify] Unauthorized request — invalid Supabase token');
       return res.status(401).json({ error: 'Unauthorized' });

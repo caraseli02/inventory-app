@@ -1542,13 +1542,11 @@ async function appendHistory(
   const payload = newMessages.slice(-20);
 
   try {
-    const { error } = await (sb.rpc(
-      'append_conversation_history',
-      {
-        p_phone_number: phone,
-        p_messages: payload as unknown,
-      } as Record<string, unknown>
-    ) as Promise<{ error: unknown }>);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (sb as any).rpc('append_conversation_history', {
+      p_phone_number: phone,
+      p_messages: payload,
+    });
     if (!error) return;
   } catch {
     // fall through
