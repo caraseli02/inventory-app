@@ -59,6 +59,9 @@ importers:
       '@vercel/blob':
         specifier: ^2.0.0
         version: 2.0.0
+      '@vercel/functions':
+        specifier: ^3.4.3
+        version: 3.4.3
       ai:
         specifier: ^6.0.116
         version: 6.0.116(zod@4.3.6)
@@ -2283,6 +2286,15 @@ packages:
   '@vercel/error-utils@2.0.3':
     resolution: {integrity: sha512-CqC01WZxbLUxoiVdh9B/poPbNpY9U+tO1N9oWHwTl5YAZxcqXmmWJ8KNMFItJCUUWdY3J3xv8LvAuQv2KZ5YdQ==}
 
+  '@vercel/functions@3.4.3':
+    resolution: {integrity: sha512-kA14KIUVgAY6VXbhZ5jjY+s0883cV3cZqIU3WhrSRxuJ9KvxatMjtmzl0K23HK59oOUjYl7HaE/eYMmhmqpZzw==}
+    engines: {node: '>= 20'}
+    peerDependencies:
+      '@aws-sdk/credential-provider-web-identity': '*'
+    peerDependenciesMeta:
+      '@aws-sdk/credential-provider-web-identity':
+        optional: true
+
   '@vercel/nft@1.1.1':
     resolution: {integrity: sha512-mKMGa7CEUcXU75474kOeqHbtvK1kAcu4wiahhmlUenB5JbTQB8wVlDI8CyHR3rpGo0qlzoRWqcDzI41FUoBJCA==}
     engines: {node: '>=20'}
@@ -2293,6 +2305,10 @@ packages:
 
   '@vercel/oidc@3.1.0':
     resolution: {integrity: sha512-Fw28YZpRnA3cAHHDlkt7xQHiJ0fcL+NRcIqsocZQUSmbzeIKRpwttJjik5ZGanXP+vlA4SbTg+AbA3bP363l+w==}
+    engines: {node: '>= 20'}
+
+  '@vercel/oidc@3.2.0':
+    resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
 
   '@vercel/static-config@3.1.2':
@@ -7127,6 +7143,10 @@ snapshots:
 
   '@vercel/error-utils@2.0.3': {}
 
+  '@vercel/functions@3.4.3':
+    dependencies:
+      '@vercel/oidc': 3.2.0
+
   '@vercel/nft@1.1.1(rollup@4.59.0)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3
@@ -7179,6 +7199,8 @@ snapshots:
       - supports-color
 
   '@vercel/oidc@3.1.0': {}
+
+  '@vercel/oidc@3.2.0': {}
 
   '@vercel/static-config@3.1.2':
     dependencies:

@@ -24,6 +24,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { waitUntil } from '@vercel/functions';
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import { generateText } from 'ai';
@@ -199,34 +200,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Return acknowledgment via TwiML synchronously, then send result via REST
     res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(ack));
 
-    // Build the real reply and send it via REST after TwiML is flushed
-    buildReplyWithPending(phone, name, text)
-      .then(async (result) => {
-        const sb = createSupabaseClient();
+    // Keep Vercel function alive for async work (buildReplyWithPending + REST send)
+    console.log('[whatsapp] starting async reply...');
+    waitUntil(
+      buildReplyWithPending(phone, name, text)
+        .then(async (result) => {
+          const sb = createSupabaseClient();
 
-        // If there's a pending order, send the Quick Reply template instead of text
-        if (result.pending && contentSid) {
-          // Store the pending order so button tap can retrieve it
-          await storePendingOrder(sb, phone, result.pending);
+          // If there's a pending order, send the Quick Reply template instead of text
+          if (result.pending && contentSid) {
+            // Store the pending order so button tap can retrieve it
+            await storePendingOrder(sb, phone, result.pending);
 
-          const variables = {
-            product_name: result.pending.items.map((i) => `${i.qty}x ${i.name}`).join(', '),
-            price: result.pending.total_price.toFixed(2),
-            pickup_time: result.pending.pickup_time || 'la preluare',
-          };
-          await sendTemplateMessage(from, contentSid, variables);
-          console.log('[whatsapp] sent confirmation template for pending order');
-        } else {
-          await sendRestMessage(from, result.reply);
-        }
-      })
-      .catch((err) => {
-        console.error('[whatsapp] error building reply:', err);
-        const fallback = detectEnglish(text)
-          ? 'Sorry — something went wrong. Please try again.'
-          : 'Ne pare rău, a apărut o eroare. Încearcă din nou.';
-        return sendRestMessage(from, fallback);
-      });
+            const variables = {
+              product_name: result.pending.items.map((i) => `${i.qty}x ${i.name}`).join(', '),
+              price: result.pending.total_price.toFixed(2),
+              pickup_time: result.pending.pickup_time || 'la preluare',
+            };
+            await sendTemplateMessage(from, contentSid, variables);
+            console.log('[whatsapp] sent confirmation template for pending order');
+          } else {
+            await sendRestMessage(from, result.reply);
+            console.log('[whatsapp] REST reply sent');
+          }
+        })
+        .catch((err) => {
+          console.error('[whatsapp] error building reply:', err);
+          const fallback = detectEnglish(text)
+            ? 'Sorry — something went wrong. Please try again.'
+            : 'Ne pare rău, a apărut o eroare. Încearcă din nou.';
+          return sendRestMessage(from, fallback);
+        })
+    );
 
     return;
   }
