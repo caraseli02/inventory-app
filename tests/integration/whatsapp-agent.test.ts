@@ -16,7 +16,322 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import express from 'express';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+
+type ProductRow = {
+  id: string;
+  created_at: string;
+  name: string;
+  category: string | null;
+  price: number | null;
+  price_50: number | null;
+  price_70: number | null;
+  price_100: number | null;
+  markup: number | null;
+};
+
+type ConversationRow = {
+  phone_number: string;
+  messages?: Array<{ role: 'user' | 'assistant'; content: string; timestamp: string }>;
+  pending_order?: unknown;
+  updated_at?: string;
+};
+
+const {
+  createMockSupabaseClient,
+  resetMockSupabaseState,
+} = vi.hoisted(() => {
+  const baseProducts: ProductRow[] = [
+    { id: 'p-lapte-1', created_at: '2026-03-01T10:00:00Z', name: '370G LAPTE CONDEN INTEG ICINEA', category: 'Dairy', price: 3.42, price_50: null, price_70: 3.42, price_100: null, markup: 70 },
+    { id: 'p-lapte-2', created_at: '2026-03-02T10:00:00Z', name: '370G LAPTE CONDEN FIERT IRISK', category: 'Dairy', price: 3.34, price_50: null, price_70: 3.34, price_100: null, markup: 70 },
+    { id: 'p-paine-1', created_at: '2026-03-01T09:00:00Z', name: 'Paine Alba', category: 'Bakery', price: 1.2, price_50: null, price_70: 1.2, price_100: null, markup: 70 },
+    { id: 'p-branza-1', created_at: '2026-03-01T11:00:00Z', name: 'Branza Cheddar', category: 'Dairy', price: 4.5, price_50: null, price_70: 4.5, price_100: null, markup: 70 },
+    { id: 'p-zahar-1', created_at: '2026-03-01T12:00:00Z', name: 'Zahar Alb', category: 'Pantry', price: 2.1, price_50: null, price_70: 2.1, price_100: null, markup: 70 },
+    { id: 'p-vin-1', created_at: '2026-03-01T13:00:00Z', name: '0.75L BACIO DI BOLLE D/SEC ALB', category: 'Wine', price: 8.27, price_50: null, price_70: 8.27, price_100: null, markup: 70 },
+    { id: 'p-vin-2', created_at: '2026-03-01T14:00:00Z', name: '0.75L VIORICA ECO CRICOVA DEMI', category: 'Wine', price: 13.24, price_50: null, price_70: 13.24, price_100: null, markup: 70 },
+  ];
+
+  const baseStock = new Map<string, number>([
+    ['p-lapte-1', 24],
+    ['p-lapte-2', 30],
+    ['p-paine-1', 20],
+    ['p-branza-1', 8],
+    ['p-zahar-1', 12],
+    ['p-vin-1', 6],
+    ['p-vin-2', 4],
+  ]);
+
+  let conversations = new Map<string, ConversationRow>();
+  let orders: Array<Record<string, unknown>> = [];
+  let nextOrder = 24;
+
+  function resetMockSupabaseState() {
+    conversations = new Map();
+    orders = [];
+    nextOrder = 24;
+  }
+
+  function likeToRegex(pattern: string): RegExp {
+    const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*');
+    return new RegExp(`^${escaped}$`, 'i');
+  }
+
+  function projectRow<T extends Record<string, unknown>>(row: T, fields?: string): Record<string, unknown> {
+    if (!fields) return row;
+    const out: Record<string, unknown> = {};
+    for (const field of fields.split(',').map((value) => value.trim()).filter(Boolean)) {
+      out[field] = row[field as keyof T];
+    }
+    return out;
+  }
+
+  function sortProducts(products: ProductRow[], sorters: Array<{ field: string; ascending?: boolean; nullsFirst?: boolean }>) {
+    return [...products].sort((left, right) => {
+      for (const sorter of sorters) {
+        const field = sorter.field as keyof ProductRow;
+        const a = left[field];
+        const b = right[field];
+        if (a == null || b == null) {
+          if (a == null && b == null) continue;
+          const nullsFirst = sorter.nullsFirst ?? false;
+          return a == null ? (nullsFirst ? -1 : 1) : (nullsFirst ? 1 : -1);
+        }
+        const cmp = typeof a === 'number' && typeof b === 'number'
+          ? a - b
+          : String(a).localeCompare(String(b), 'ro');
+        if (cmp !== 0) return sorter.ascending === false ? -cmp : cmp;
+      }
+      return 0;
+    });
+  }
+
+  function createProductsQuery() {
+    let selectFields = '';
+    const ilikes: Array<{ field: string; pattern: string }> = [];
+    const equals = new Map<string, unknown>();
+    const sorters: Array<{ field: string; ascending?: boolean; nullsFirst?: boolean }> = [];
+
+    function resolveRows(limit?: number) {
+      let rows = [...baseProducts];
+      for (const [field, value] of equals.entries()) {
+        rows = rows.filter((row) => row[field as keyof ProductRow] === value);
+      }
+      for (const filter of ilikes) {
+        const regex = likeToRegex(filter.pattern);
+        rows = rows.filter((row) => regex.test(String(row[filter.field as keyof ProductRow] ?? '')));
+      }
+      if (sorters.length) rows = sortProducts(rows, sorters);
+      if (typeof limit === 'number') rows = rows.slice(0, limit);
+      return rows.map((row) => projectRow(row, selectFields));
+    }
+
+    const api = {
+      select(fields: string) {
+        selectFields = fields;
+        return api;
+      },
+      ilike(field: string, pattern: string) {
+        ilikes.push({ field, pattern });
+        return api;
+      },
+      eq(field: string, value: unknown) {
+        equals.set(field, value);
+        return api;
+      },
+      order(field: string, options: { ascending?: boolean; nullsFirst?: boolean } = {}) {
+        sorters.push({ field, ...options });
+        return api;
+      },
+      async limit(count: number) {
+        return { data: resolveRows(count), error: null };
+      },
+      async maybeSingle() {
+        return { data: resolveRows(1)[0] ?? null, error: null };
+      },
+      async single() {
+        return { data: resolveRows(1)[0] ?? null, error: null };
+      },
+    };
+
+    return api;
+  }
+
+  function createStockMovementsQuery() {
+    let ids: string[] = [];
+    const api = {
+      select() {
+        return api;
+      },
+      async in(_field: string, values: string[]) {
+        ids = values;
+        return {
+          data: ids.map((id) => ({ product_id: id, quantity: baseStock.get(id) ?? 0 })),
+          error: null,
+        };
+      },
+    };
+    return api;
+  }
+
+  function createConversationQuery() {
+    let selectFields = '';
+    let phoneNumber = '';
+
+    const readApi = {
+      select(fields: string) {
+        selectFields = fields;
+        return readApi;
+      },
+      eq(_field: string, value: string) {
+        phoneNumber = value;
+        return readApi;
+      },
+      async maybeSingle() {
+        const row = conversations.get(phoneNumber) ?? null;
+        return { data: row ? projectRow(row, selectFields) : null, error: null };
+      },
+      async delete() {
+        conversations.delete(phoneNumber);
+        return { error: null };
+      },
+      update(payload: Partial<ConversationRow>) {
+        return {
+          async eq(_field: string, value: string) {
+            const existing = conversations.get(value) ?? { phone_number: value };
+            conversations.set(value, { ...existing, ...payload, updated_at: new Date().toISOString() });
+            return { error: null };
+          },
+        };
+      },
+      async upsert(payload: ConversationRow) {
+        const existing = conversations.get(payload.phone_number) ?? { phone_number: payload.phone_number };
+        conversations.set(payload.phone_number, {
+          ...existing,
+          ...payload,
+          messages: payload.messages ?? existing.messages ?? [],
+          updated_at: new Date().toISOString(),
+        });
+        return { error: null };
+      },
+    };
+
+    return {
+      select: readApi.select,
+      eq: readApi.eq,
+      maybeSingle: readApi.maybeSingle,
+      delete() {
+        return {
+          async eq(_field: string, value: string) {
+            conversations.delete(value);
+            return { error: null };
+          },
+        };
+      },
+      update: readApi.update,
+      upsert: readApi.upsert,
+    };
+  }
+
+  function createOrdersQuery() {
+    let equals = new Map<string, unknown>();
+    let sortField = '';
+    let sortAscending = true;
+
+    function filteredOrders() {
+      let rows = [...orders];
+      for (const [field, value] of equals.entries()) {
+        rows = rows.filter((row) => row[field] === value);
+      }
+      if (sortField) {
+        rows.sort((left, right) => {
+          const a = String(left[sortField] ?? '');
+          const b = String(right[sortField] ?? '');
+          const cmp = a.localeCompare(b, 'ro');
+          return sortAscending ? cmp : -cmp;
+        });
+      }
+      return rows;
+    }
+
+    const queryApi = {
+      select() {
+        return queryApi;
+      },
+      eq(field: string, value: unknown) {
+        equals.set(field, value);
+        return queryApi;
+      },
+      order(field: string, options: { ascending?: boolean } = {}) {
+        sortField = field;
+        sortAscending = options.ascending !== false;
+        return queryApi;
+      },
+      async limit(count: number) {
+        return { data: filteredOrders().slice(0, count), error: null };
+      },
+      update(payload: Record<string, unknown>) {
+        return {
+          async eq(field: string, value: unknown) {
+            orders = orders.map((row) => (row[field] === value ? { ...row, ...payload } : row));
+            return { error: null };
+          },
+        };
+      },
+      insert(payload: Record<string, unknown>) {
+        return {
+          select() {
+            return {
+              async single() {
+                nextOrder += 1;
+                const row = {
+                  id: `order-${nextOrder}`,
+                  order_number: `ORD-${String(nextOrder).padStart(3, '0')}`,
+                  created_at: new Date().toISOString(),
+                  ...payload,
+                };
+                orders.push(row);
+                return { data: row, error: null };
+              },
+            };
+          },
+        };
+      },
+    };
+
+    return queryApi;
+  }
+
+  function createMockSupabaseClient() {
+    return {
+      from(table: string) {
+        if (table === 'products') return createProductsQuery();
+        if (table === 'stock_movements') return createStockMovementsQuery();
+        if (table === 'conversation_history') return createConversationQuery();
+        if (table === 'orders') return createOrdersQuery();
+        throw new Error(`Unsupported mock table: ${table}`);
+      },
+      async rpc(name: string, args: { p_phone_number: string; p_messages: ConversationRow['messages'] }) {
+        if (name !== 'append_conversation_history') {
+          return { error: new Error(`Unsupported mock rpc: ${name}`) };
+        }
+        const existing = conversations.get(args.p_phone_number) ?? { phone_number: args.p_phone_number, messages: [] };
+        conversations.set(args.p_phone_number, {
+          ...existing,
+          messages: [...(existing.messages ?? []), ...(args.p_messages ?? [])].slice(-20),
+          updated_at: new Date().toISOString(),
+        });
+        return { error: null };
+      },
+    };
+  }
+
+  return { createMockSupabaseClient, resetMockSupabaseState };
+});
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: () => createMockSupabaseClient(),
+}));
+
 import simulateHandler from '../../api/whatsapp-simulate';
 
 let baseUrl = '';
@@ -67,6 +382,7 @@ async function simulateMessage(
 
 describe('WhatsApp AI Agent', () => {
   beforeAll(async () => {
+    resetMockSupabaseState();
     const app = express();
     app.use(express.json());
     app.post('/api/whatsapp-simulate', (req, res) =>
