@@ -1,0 +1,78 @@
+import { getTwilioRestCredentials } from './config.js';
+
+export function twiml(message: string): string {
+  const safe = message
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return `<?xml version="1.0" encoding="UTF-8"?><Response>${safe ? `<Message>${safe}</Message>` : ''}</Response>`;
+}
+
+export async function sendTypingIndicator(messageSid: string): Promise<void> {
+  const creds = getTwilioRestCredentials();
+  if (!creds || !messageSid) return;
+  try {
+    const readUrl = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages/${messageSid}.json`;
+    const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+    await fetch(readUrl, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'Status=read',
+    });
+  } catch {
+    // non-critical
+  }
+}
+
+export async function sendRestMessage(to: string, body: string): Promise<void> {
+  const creds = getTwilioRestCredentials();
+  if (!creds) {
+    console.warn('[whatsapp] REST send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    return;
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
+  const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+  const params = new URLSearchParams({
+    To: to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
+    From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
+    Body: body,
+  });
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    console.error('[whatsapp] REST send failed: %s %s', resp.status, text.slice(0, 200));
+  }
+}
+
+export async function sendTemplateMessage(
+  to: string,
+  contentSid: string,
+  variables?: Record<string, string>
+): Promise<void> {
+  const creds = getTwilioRestCredentials();
+  if (!creds) {
+    console.warn('[whatsapp] Template send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    return;
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
+  const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+  const params = new URLSearchParams({
+    To: to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
+    From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
+    ContentSid: contentSid,
+    ...(variables && { ContentVariables: JSON.stringify(variables) }),
+  });
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    console.error('[whatsapp] Template send failed: %s %s', resp.status, text.slice(0, 200));
+  }
+}

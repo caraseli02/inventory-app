@@ -30,40 +30,21 @@ import Anthropic from '@anthropic-ai/sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { validateTwilioSignature } from './lib/twilio-signature.js';
+import { getTwilioAuthToken } from './whatsapp/config.js';
+import { twiml, sendRestMessage, sendTemplateMessage, sendTypingIndicator } from './whatsapp/transport.js';
+import {
+  getAbsoluteUrl,
+} from './whatsapp/url.js';
+import type {
+  ConversationMessage,
+  IncomingIntent,
+  PendingOrder,
+  TwilioBody,
+  WhatsAppSimulatorProvider,
+  WhatsAppSimulatorResult,
+} from './whatsapp/types.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-interface TwilioBody {
-  From?: string;        // e.g. "whatsapp:+40123456789"
-  Body?: string;        // message text
-  ProfileName?: string; // sender's WhatsApp display name
-  To?: string;          // your Twilio number
-  MessageSid?: string;
-  NumMedia?: string;
-  ButtonPayload?: string; // Quick Reply button tap: "confirm" | "cancel"
-}
-
-interface ConversationMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-}
-
-export type WhatsAppSimulatorProvider = 'openai' | 'anthropic' | 'local';
-
-export interface WhatsAppSimulatorResult {
-  provider: WhatsAppSimulatorProvider;
-  reply: string;
-  pending?: PendingOrder;
-  debug?: {
-    intent: IncomingIntent;
-    inventoryText?: string;
-    searchCandidatesCurrent?: string[];
-    searchCandidatesFromHistory?: string[];
-    searchCandidatesUsed?: string[];
-    repairedOrder?: boolean;
-  };
-}
 
 interface ProductRow {
   id: string;
@@ -101,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).end();
   }
 
-  const authToken = process.env.TWILIO_AUTH_TOKEN ?? '';
+  const authToken = getTwilioAuthToken();
   if (!authToken) {
     console.error('[whatsapp] Missing TWILIO_AUTH_TOKEN (required for signature validation)');
     return res.status(500).json({ error: 'Twilio not configured' });
@@ -302,111 +283,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('[whatsapp] error:', err);
     const fallback = 'Ne pare rău, a apărut o eroare. Încearcă din nou.';
     return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(fallback));
-  }
-}
-
-// ─── TwiML response ───────────────────────────────────────────────────────────
-
-function twiml(message: string): string {
-  // Escape XML special chars
-  const safe = message
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  return `<?xml version="1.0" encoding="UTF-8"?><Response>${safe ? `<Message>${safe}</Message>` : ''}</Response>`;
-}
-
-// ─── Twilio REST helpers ──────────────────────────────────────────────────────
-
-function twilioRestBase(): { accountSid: string; authToken: string; from: string } | null {
-  const accountSid = process.env.TWILIO_ACCOUNT_SID ?? '';
-  const authToken  = process.env.TWILIO_AUTH_TOKEN  ?? '';
-  const from       = process.env.TWILIO_FROM_NUMBER ?? '';
-  if (!accountSid || !authToken || !from) return null;
-  return { accountSid, authToken, from };
-}
-
-/**
- * Fire-and-forget typing indicator.
- * Shows "typing..." animation on the recipient's device + marks message as read.
- * Public Beta — silently swallows errors so it never breaks the main flow.
- */
-async function sendTypingIndicator(messageSid: string): Promise<void> {
-  const creds = twilioRestBase();
-  if (!creds || !messageSid) return;
-  try {
-    // Mark message as read via the Engagements API (shows double blue ticks)
-    const readUrl = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages/${messageSid}.json`;
-    const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
-    await fetch(readUrl, {
-      method: 'POST',
-      headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'Status=read',
-    });
-  } catch {
-    // non-critical — typing indicator failure must never break reply
-  }
-}
-
-/**
- * Send a WhatsApp message via the Twilio REST API (not TwiML).
- * Required when we need to send two messages (acknowledgment + result)
- * or when TwiML has already been returned.
- */
-async function sendRestMessage(to: string, body: string): Promise<void> {
-  const creds = twilioRestBase();
-  if (!creds) {
-    console.warn('[whatsapp] REST send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
-    return;
-  }
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
-  const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
-  const params = new URLSearchParams({
-    To:   to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
-    From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
-    Body: body,
-  });
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
-  });
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    console.error('[whatsapp] REST send failed: %s %s', resp.status, text.slice(0, 200));
-  }
-}
-
-/**
- * Send a WhatsApp message using a Quick Reply content template.
- * Required for order confirmation flow with buttons.
- */
-async function sendTemplateMessage(
-  to: string,
-  contentSid: string,
-  variables?: Record<string, string>
-): Promise<void> {
-  const creds = twilioRestBase();
-  if (!creds) {
-    console.warn('[whatsapp] Template send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
-    return;
-  }
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
-  const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
-  const params = new URLSearchParams({
-    To:   to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
-    From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
-    ContentSid: contentSid,
-    ...(variables && { ContentVariables: JSON.stringify(variables) }),
-  });
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params.toString(),
-  });
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    console.error('[whatsapp] Template send failed: %s %s', resp.status, text.slice(0, 200));
   }
 }
 
@@ -912,8 +788,6 @@ async function createAnthropicMessageWithRetry(
 }
 
 // ─── Inventory summary ───────────────────────────────────────────────────────
-
-type IncomingIntent = 'store_info' | 'browse_inventory' | 'product_query' | 'cancel_order';
 
 function classifyIncomingText(text: string): IncomingIntent {
   // Strip JSON blocks first to avoid false-positive keyword matches (e.g. "customer_phone")
@@ -1549,14 +1423,6 @@ function extractOrderJson(text: string): { json: string; startIdx: number } | nu
   return null;
 }
 
-interface PendingOrder {
-  customer_name: string;
-  customer_phone: string;
-  items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>;
-  total_price: number;
-  pickup_time: string | null;
-}
-
 interface ProcessOrderResult {
   reply: string;
   pending?: PendingOrder;
@@ -1759,22 +1625,6 @@ function normalizeTwilioParams(body: unknown): Record<string, string> {
     out[k] = String(v);
   }
   return out;
-}
-
-export function getAbsoluteUrl(req: VercelRequest): string {
-  const configured = String(process.env.TWILIO_WEBHOOK_URL ?? '').trim();
-  if (configured) return configured;
-
-  const proto = getForwardedHeader(req.headers['x-forwarded-proto']) || 'https';
-  const host = getForwardedHeader(req.headers['x-forwarded-host']) || getForwardedHeader(req.headers.host);
-  const url = String(req.url ?? '/api/whatsapp');
-
-  return `${proto}://${host}${url}`;
-}
-
-function getForwardedHeader(value: string | string[] | undefined): string {
-  const raw = Array.isArray(value) ? value[0] : value;
-  return String(raw ?? '').split(',')[0]?.trim() ?? '';
 }
 
 function normalizeProductText(value: string): string {
