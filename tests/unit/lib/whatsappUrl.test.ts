@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { VercelRequest } from '@vercel/node';
 
-import { getAbsoluteUrl } from '../../../api/whatsapp';
+import { getAbsoluteUrl } from '../../../api/whatsapp/url.js';
 
 function makeReq(args: { url?: string; headers?: Record<string, string> }): VercelRequest {
   return {
