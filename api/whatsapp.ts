@@ -24,6 +24,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { waitUntil } from '@vercel/functions';
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import { generateText } from 'ai';
@@ -39,6 +40,7 @@ interface TwilioBody {
   To?: string;          // your Twilio number
   MessageSid?: string;
   NumMedia?: string;
+  ButtonPayload?: string; // Quick Reply button tap: "confirm" | "cancel"
 }
 
 interface ConversationMessage {
@@ -52,6 +54,7 @@ export type WhatsAppSimulatorProvider = 'openai' | 'anthropic' | 'local';
 export interface WhatsAppSimulatorResult {
   provider: WhatsAppSimulatorProvider;
   reply: string;
+  pending?: PendingOrder;
   debug?: {
     intent: IncomingIntent;
     inventoryText: string;
@@ -122,21 +125,179 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const body = req.body as TwilioBody;
   const from = body.From ?? '';
   const text = (body.Body ?? '').trim();
+  const buttonPayload = body.ButtonPayload ?? '';
   const name = body.ProfileName ?? from.replace('whatsapp:', '');
+
+  // Strip "whatsapp:" prefix for DB storage, keep full form for Twilio reply
+  const phone = from.replace('whatsapp:', '');
+
+  // Handle button tap (order confirmation/cancellation) — ButtonPayload takes priority over text
+  if (buttonPayload) {
+    console.log(`[whatsapp] button from ${phone}: ${buttonPayload}`);
+    // Respond instantly with empty TwiML, send real response via REST
+    res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
+    const sb = createSupabaseClient();
+    waitUntil(
+      (async () => {
+        if (buttonPayload === 'confirm') {
+          const pending = await getPendingOrder(sb, phone);
+          if (!pending) {
+            await sendRestMessage(from, '⚠️ Comanda a expirat. Te rog trimite din nou.');
+            return;
+          }
+          const orderNumber = await createPendingOrderFromPending(sb, pending);
+          await sendRestMessage(from, `✅ Cererea ${orderNumber} a fost înregistrată și așteaptă confirmarea magazinului.`);
+        } else if (buttonPayload === 'cancel') {
+          await getPendingOrder(sb, phone); // reads + nulls pending_order
+          await sendRestMessage(from, '❌ Comanda a fost anulată.');
+        }
+      })().catch(async (err) => {
+        console.error('[whatsapp] button handling failed:', err);
+        await sendRestMessage(from, 'Ne pare rău, a apărut o eroare.');
+      })
+    );
+    return;
+  }
 
   // Ignore non-text or empty messages
   if (!from || !text) {
     return res.status(200).send(twiml(''));
   }
 
-  // Strip "whatsapp:" prefix for DB storage, keep full form for Twilio reply
-  const phone = from.replace('whatsapp:', '');
-
   console.log(`[whatsapp] message from ${phone} (${name}): ${text.slice(0, 60)}`);
 
+  const messageSid = body.MessageSid ?? '';
+  const canUseRest = Boolean(
+    process.env.TWILIO_ACCOUNT_SID &&
+    process.env.TWILIO_AUTH_TOKEN &&
+    process.env.TWILIO_FROM_NUMBER
+  );
+  const contentSid = process.env.TWILIO_CONFIRM_CONTENT_SID ?? '';
+
+  // Diagnostic: log which path will be taken
+  if (!canUseRest) {
+    console.log('[whatsapp] REST credentials not available — will use TwiML-only fallback');
+  }
+
+  // Step 1 — Typing indicator (fire-and-forget, marks message as read)
+  void sendTypingIndicator(messageSid);
+
+  // DA/NU text fallback: handle order confirm/cancel when customer typed instead of tapping button
+  const isConfirmText = /^\s*(da|yes)\s*$/i.test(text);
+  const isRejectText  = /^\s*(nu|no)\s*$/i.test(text);
+
+  if (isConfirmText || isRejectText) {
+    const sbDaNu = createSupabaseClient();
+    const pending = await getPendingOrder(sbDaNu, phone);
+    if (pending) {
+      if (isConfirmText) {
+        try {
+          const orderNumber = await createPendingOrderFromPending(sbDaNu, pending);
+          const reply = `✅ Cererea ${orderNumber} a fost înregistrată și așteaptă confirmarea magazinului.`;
+          if (canUseRest) {
+            res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
+            waitUntil(sendRestMessage(from, reply));
+          } else {
+            return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(reply));
+          }
+        } catch (err) {
+          console.error('[whatsapp] DA order insert failed:', err);
+          const errMsg = 'Ne pare rău, nu am putut înregistra comanda. Încearcă din nou.';
+          if (canUseRest) {
+            res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
+            waitUntil(sendRestMessage(from, errMsg));
+          } else {
+            return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(errMsg));
+          }
+        }
+      } else {
+        // NU — pending order already cleared by getPendingOrder
+        const reply = '❌ Comanda a fost anulată.';
+        if (canUseRest) {
+          res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
+          waitUntil(sendRestMessage(from, reply));
+        } else {
+          return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(reply));
+        }
+      }
+      return;
+    }
+    // No pending order → fall through to normal LLM handling
+  }
+
+  if (canUseRest) {
+    // Check if this is a new conversation (no history) — only ack on first message
+    const sbAck = createSupabaseClient();
+    let hasHistory = false;
+    try {
+      const { data: historyRow } = await sbAck
+        .from('conversation_history')
+        .select('messages')
+        .eq('phone_number', phone)
+        .maybeSingle();
+      hasHistory = ((historyRow?.messages as unknown[])?.length ?? 0) > 0;
+    } catch {
+      hasHistory = false;
+    }
+
+    if (!hasHistory) {
+      // Step 2 — Acknowledge only on first message of a new conversation
+      const ack = detectEnglish(text)
+        ? 'Hello, processing your message...'
+        : 'Bună ziua, procesăm...';
+      res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(ack));
+    } else {
+      // Returning customer — return empty TwiML, real reply comes via REST
+      res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(''));
+    }
+
+    // Keep Vercel function alive for async work (buildReplyWithPending + REST send)
+    console.log('[whatsapp] starting async reply...');
+    waitUntil(
+      buildReplyWithPending(phone, name, text)
+        .then(async (result) => {
+          const sb = createSupabaseClient();
+
+          // If there's a pending order, confirm via Quick Reply buttons or plain text fallback
+          if (result.pending) {
+            await storePendingOrder(sb, phone, result.pending);
+            if (contentSid) {
+              const variables = {
+                product_name: result.pending.items.map((i) => `${i.qty}x ${i.name}`).join(', '),
+                price: result.pending.total_price.toFixed(2),
+                pickup_time: result.pending.pickup_time || 'la preluare',
+              };
+              await sendTemplateMessage(from, contentSid, variables);
+              console.log('[whatsapp] sent confirmation template for pending order');
+            } else {
+              // No contentSid — fall back to plain text DA/NU confirmation
+              console.warn('[whatsapp] TWILIO_CONFIRM_CONTENT_SID not set — using DA/NU text fallback');
+              const itemsList = result.pending.items.map((i) => `${i.qty}x ${i.name}`).join(', ');
+              const fallbackMsg = `Confirmi comanda?\n${itemsList}\n*€${result.pending.total_price.toFixed(2)}*\nRidicare: ${result.pending.pickup_time || 'la preluare'}\n\nRăspunde *DA* sau *NU*.`;
+              await sendRestMessage(from, fallbackMsg);
+              console.log('[whatsapp] sent plain text DA/NU confirmation fallback');
+            }
+          } else {
+            await sendRestMessage(from, result.reply);
+            console.log('[whatsapp] REST reply sent');
+          }
+        })
+        .catch((err) => {
+          console.error('[whatsapp] error building reply:', err);
+          const fallback = detectEnglish(text)
+            ? 'Sorry — something went wrong. Please try again.'
+            : 'Ne pare rău, a apărut o eroare. Încearcă din nou.';
+          return sendRestMessage(from, fallback);
+        })
+    );
+
+    return;
+  }
+
+  // Fallback: no REST credentials — single TwiML response (original behaviour)
   try {
-    const reply = await buildReply(phone, name, text);
-    return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(reply));
+    const result = await buildReplyWithPending(phone, name, text);
+    return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(result.reply));
   } catch (err) {
     console.error('[whatsapp] error:', err);
     const fallback = 'Ne pare rău, a apărut o eroare. Încearcă din nou.';
@@ -155,19 +316,121 @@ function twiml(message: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?><Response>${safe ? `<Message>${safe}</Message>` : ''}</Response>`;
 }
 
+// ─── Twilio REST helpers ──────────────────────────────────────────────────────
+
+function twilioRestBase(): { accountSid: string; authToken: string; from: string } | null {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID ?? '';
+  const authToken  = process.env.TWILIO_AUTH_TOKEN  ?? '';
+  const from       = process.env.TWILIO_FROM_NUMBER ?? '';
+  if (!accountSid || !authToken || !from) return null;
+  return { accountSid, authToken, from };
+}
+
+/**
+ * Fire-and-forget typing indicator.
+ * Shows "typing..." animation on the recipient's device + marks message as read.
+ * Public Beta — silently swallows errors so it never breaks the main flow.
+ */
+async function sendTypingIndicator(messageSid: string): Promise<void> {
+  const creds = twilioRestBase();
+  if (!creds || !messageSid) return;
+  try {
+    // Mark message as read via the Engagements API (shows double blue ticks)
+    const readUrl = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages/${messageSid}.json`;
+    const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+    await fetch(readUrl, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'Status=read',
+    });
+  } catch {
+    // non-critical — typing indicator failure must never break reply
+  }
+}
+
+/**
+ * Send a WhatsApp message via the Twilio REST API (not TwiML).
+ * Required when we need to send two messages (acknowledgment + result)
+ * or when TwiML has already been returned.
+ */
+async function sendRestMessage(to: string, body: string): Promise<void> {
+  const creds = twilioRestBase();
+  if (!creds) {
+    console.warn('[whatsapp] REST send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    return;
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
+  const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+  const params = new URLSearchParams({
+    To:   to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
+    From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
+    Body: body,
+  });
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    console.error('[whatsapp] REST send failed: %s %s', resp.status, text.slice(0, 200));
+  }
+}
+
+/**
+ * Send a WhatsApp message using a Quick Reply content template.
+ * Required for order confirmation flow with buttons.
+ */
+async function sendTemplateMessage(
+  to: string,
+  contentSid: string,
+  variables?: Record<string, string>
+): Promise<void> {
+  const creds = twilioRestBase();
+  if (!creds) {
+    console.warn('[whatsapp] Template send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    return;
+  }
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
+  const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+  const params = new URLSearchParams({
+    To:   to.startsWith('whatsapp:') ? to : `whatsapp:${to}`,
+    From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
+    ContentSid: contentSid,
+    ...(variables && { ContentVariables: JSON.stringify(variables) }),
+  });
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    console.error('[whatsapp] Template send failed: %s %s', resp.status, text.slice(0, 200));
+  }
+}
+
 // ─── AI reply builder ────────────────────────────────────────────────────────
 
 function createSupabaseClient() {
-  return createClient(
-    process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '',
-    process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ''
-  );
+  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '';
+  const key = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
+  if (!url || !key) {
+    console.error('[whatsapp] Supabase not configured: url=%s key=%s', url ? 'SET' : 'MISSING', key ? 'SET' : 'MISSING');
+  }
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  });
 }
 
 function toSimulationOrderReply(phone: string, name: string, text: string): string | null {
   const trimmed = text.trim();
 
-  if (/ORDER:\s*\{[\s\S]*\}\s*$/i.test(trimmed)) {
+  if (/ORDER:\s*\{[\s\S]*\}/i.test(trimmed)) {
     return trimmed;
   }
 
@@ -198,11 +461,85 @@ function toSimulationOrderReply(phone: string, name: string, text: string): stri
 export async function buildLocalSimulationReply(phone: string, name: string, text: string): Promise<string> {
   const orderReply = toSimulationOrderReply(phone, name, text);
   if (!orderReply) {
-    return 'Simulator local: OPENAI_API_KEY / ANTHROPIC_API_KEY lipsesc. Trimite ORDER:{...} sau JSON-ul comenzii pentru creare directă.';
+    const result = await buildLocalSimulatorTurn(phone, name, text);
+    return result.reply;
   }
 
   const sb = createSupabaseClient();
-  return processOrderIntent(sb, orderReply);
+  const result = await processOrderIntent(sb, orderReply);
+  return result.reply;
+}
+
+function buildLocalGeneratedReply(args: {
+  text: string;
+  inventoryText: string;
+  history: ConversationMessage[];
+  customerName: string;
+  customerPhone: string;
+}): string {
+  const inventoryLines = args.inventoryText
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('•'));
+  const isEn = detectEnglish(args.text);
+
+  const followup = maybeHandleOrderFollowup({
+    userText: args.text,
+    history: args.history,
+    inventoryText: args.inventoryText,
+    customerName: args.customerName,
+    customerPhone: args.customerPhone,
+  });
+  if (followup) return followup.text;
+
+  if (!inventoryLines.length) {
+    return isEn
+      ? 'Sorry — inventory is unavailable right now. Please send the exact product name.'
+      : 'Inventarul nu este disponibil acum. Te rog trimite denumirea exactă a produsului.';
+  }
+
+  if (looksLikeOrderRequest(args.text)) {
+    const options = inventoryLines
+      .slice(0, 3)
+      .map((line, index) => `${index + 1}) ${line.replace(/^•\s*/, '')}`)
+      .join('\n');
+    return isEn
+      ? `I found multiple matching options. Which one do you want?\n${options}`
+      : `Am mai multe opțiuni în inventar. Care anume?\n${options}`;
+  }
+
+  if (classifyIncomingText(args.text) === 'browse_inventory') {
+    const preview = inventoryLines.slice(0, 5).join('\n');
+    return isEn
+      ? `Here are some available products:\n${preview}`
+      : `Avem câteva produse disponibile:\n${preview}`;
+  }
+
+  return inventoryLines.slice(0, 3).join('\n');
+}
+
+async function buildLocalSimulatorTurn(phone: string, name: string, text: string): Promise<WhatsAppSimulatorResult> {
+  const sb = createSupabaseClient();
+  return runConversationTurn({
+    sb,
+    phone,
+    name,
+    text,
+    llmProvider: 'local',
+    repairOrder: true,
+    includeDebug: true,
+    generateLlmReply: async ({ messages, ...rest }) => buildLocalGeneratedReply({
+      text,
+      inventoryText: rest.system.includes('INVENTAR LIVE:')
+        ? rest.system.split('INVENTAR LIVE:\n')[1]?.split('\n\nREGULI:')[0]?.trim() ?? 'Inventar indisponibil.'
+        : 'Inventar indisponibil.',
+      history: messages
+        .filter((message) => message.role !== 'user' || message.content !== text)
+        .map((message) => ({ role: message.role, content: message.content, timestamp: nowIso() })),
+      customerName: name,
+      customerPhone: phone,
+    }),
+  });
 }
 
 export async function resetConversationHistory(phone: string): Promise<void> {
@@ -232,8 +569,10 @@ async function runConversationTurn(args: {
 }): Promise<WhatsAppSimulatorResult> {
   const intent = classifyIncomingText(args.text);
 
-  if (intent === 'store_info') {
-    const reply = buildStoreInfoReply(args.text);
+  if (intent === 'store_info' || intent === 'cancel_order') {
+    const reply = intent === 'cancel_order'
+      ? await handleCancellationRequest(args.sb, args.phone, args.text)
+      : buildStoreInfoReply(args.text);
     try {
       const history = await getHistory(args.sb, args.phone);
       await appendHistory(args.sb, args.phone, history, [
@@ -244,13 +583,18 @@ async function runConversationTurn(args: {
       console.error('[whatsapp] history append failed:', err);
     }
 
-    return { provider: 'local', reply };
+    return {
+      provider: 'local',
+      reply,
+      ...(args.includeDebug ? { debug: { intent } } : {}),
+    };
   }
 
   const history = await getHistory(args.sb, args.phone);
   const searchCandidatesCurrent = intent === 'product_query' ? extractSearchCandidates(args.text) : [];
   const searchCandidatesFromHistory = intent === 'product_query' ? extractSearchCandidatesFromHistory(history) : [];
-  const searchCandidatesUsed = searchCandidatesCurrent.length ? searchCandidatesCurrent : searchCandidatesFromHistory;
+  // Merge current + history; de-dup; prefer current-turn terms first (they appear first)
+  const searchCandidatesUsed = Array.from(new Set([...searchCandidatesCurrent, ...searchCandidatesFromHistory])).slice(0, 5);
   const inventoryText = await getInventorySummary(args.sb, { intent, text: args.text, candidatesOverride: searchCandidatesUsed });
 
   const menuSelection = maybeHandleMenuSelection({
@@ -271,6 +615,7 @@ async function runConversationTurn(args: {
   } else {
     const followup = maybeHandleOrderFollowup({
       userText: args.text,
+      history,
       inventoryText,
       customerName: args.name,
       customerPhone: args.phone,
@@ -289,9 +634,16 @@ async function runConversationTurn(args: {
       replyTextRaw = await args.generateLlmReply({ system, messages });
 
       if (args.repairOrder) {
+        // Pass recent history so repair can extract qty/product from earlier turns
+        const recentUserMessages = history
+          .filter((m) => m.role === 'user')
+          .slice(-3)
+          .map((m) => m.content)
+          .join(' ');
         const repaired = maybeRepairOrderReply({
           replyText: replyTextRaw,
           userText: args.text,
+          historyContext: recentUserMessages,
           inventoryText,
           customerName: args.name,
           customerPhone: args.phone,
@@ -302,7 +654,8 @@ async function runConversationTurn(args: {
     }
   }
 
-  const reply = await processOrderIntent(args.sb, replyTextRaw);
+  const orderResult = await processOrderIntent(args.sb, replyTextRaw);
+  const { reply, pending } = orderResult;
 
   try {
     await appendHistory(args.sb, args.phone, history, [
@@ -316,6 +669,7 @@ async function runConversationTurn(args: {
   return {
     provider,
     reply,
+    ...(pending && { pending }),
     ...(args.includeDebug ? {
       debug: {
         intent,
@@ -334,7 +688,7 @@ export async function buildSimulatorReply(phone: string, name: string, text: str
   const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
 
   if (!hasOpenAi && !hasAnthropic) {
-    return { provider: 'local', reply: await buildLocalSimulationReply(phone, name, text) };
+    return buildLocalSimulatorTurn(phone, name, text);
   }
 
   if (!hasOpenAi) {
@@ -372,7 +726,7 @@ export async function buildSimulatorReply(phone: string, name: string, text: str
       name,
       text,
       llmProvider: 'anthropic',
-      repairOrder: false,
+      repairOrder: true,
       includeDebug: true,
       generateLlmReply: async ({ system, messages }) => {
         const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -394,17 +748,21 @@ export async function buildSimulatorReply(phone: string, name: string, text: str
   }
 }
 
-export async function buildReply(phone: string, name: string, text: string): Promise<string> {
+export async function buildReplyWithPending(
+  phone: string,
+  name: string,
+  text: string
+): Promise<WhatsAppSimulatorResult> {
   const sb = createSupabaseClient();
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  const result = await runConversationTurn({
+  return runConversationTurn({
     sb,
     phone,
     name,
     text,
     llmProvider: 'anthropic',
-    repairOrder: false,
+    repairOrder: true,
     includeDebug: false,
     generateLlmReply: async ({ system, messages }) => {
       const typedMessages: Anthropic.MessageParam[] = messages.map((m) => ({ role: m.role, content: m.content }));
@@ -424,15 +782,24 @@ export async function buildReply(phone: string, name: string, text: string): Pro
       }
     },
   });
+}
 
+export async function buildReply(phone: string, name: string, text: string): Promise<string> {
+  const result = await buildReplyWithPending(phone, name, text);
   return result.reply;
 }
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(name: string, phone: string, inventoryText: string): string {
-  const today = new Date().toLocaleDateString('ro-RO', {
+  const now = new Date();
+  const today = now.toLocaleDateString('ro-RO', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+  const tomorrowDate = new Date(now);
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrow = tomorrowDate.toLocaleDateString('ro-RO', {
+    weekday: 'long', day: 'numeric', month: 'long',
   });
 
   const storeName    = process.env.STORE_NAME    ?? 'magazinul nostru';
@@ -445,6 +812,7 @@ ${storeAddress ? `Adresă: ${storeAddress}\n` : ''}${storeHours ? `Program: ${st
 
 Client curent: ${name} (telefon: ${phone})
 Data de azi: ${today}
+Mâine: ${tomorrow}
 
 ${inventoryText ? `INVENTAR LIVE:\n${inventoryText}\n` : ''}
 
@@ -453,19 +821,21 @@ REGULI:
 2. Fii prietenos și concis — maxim 3 propoziții per mesaj.
 3. Pentru produse/stoc/preț, folosește doar datele din INVENTAR LIVE (dacă există). Nu inventa produse sau prețuri.
 4. Dacă stocul unui produs este ≤ 0, spune că nu este disponibil momentan.
-5. Nu folosi markdown (fără *, _, #) — WhatsApp afișează plain text.
+5. Folosește *bold* (asteriscuri) pentru date cheie: număr comandă, preț total, oră ridicare, denumire produs. Nu folosi _, #, ~~ — WhatsApp le afișează ca text literal.
 6. Nu spune că “nu poți verifica stocul” dacă INVENTAR LIVE este prezent. Dacă INVENTAR LIVE este “Inventar indisponibil.” atunci cere denumirea exactă a produsului sau spune că inventarul nu e disponibil.
-7. Nu inventa ora de ridicare. Dacă clientul nu spune ora, întreabă “la ce oră vrei ridicarea?”.
+7. Nu inventa ora de ridicare. Dacă clientul spune “mâine la 12:00” sau “vineri la 14:00”, folosește acea informație. Dacă nu menționează ora, întreabă “la ce oră vrei ridicarea?”.
 8. Dacă există mai multe produse similare în inventar, cere clientului să aleagă denumirea exactă (copiată din listă).
 9. Dacă ești întrebat de adresă/program și nu sunt în mesaj, spune că nu ai informația configurată și recomandă să sune la magazin (dacă există telefon) sau să întrebe în magazin.
-10. Când un client confirmă o comandă și ai: (a) denumiri exacte produse + (b) cantități + (c) ora de ridicare, adaugă pe ultima linie:
-   ORDER:{"customer_name":"${name}","customer_phone":"${phone}","items":[{"name":"Nume produs","qty":1}],"pickup_time":"ora menționată"}
-11. Nu spune că “ai notat comanda / order noted” dacă NU ai adăugat linia ORDER:... (altfel comanda nu se salvează).`;
+10. Când ai TOATE detaliile (denumire exactă produs din inventar + cantitate + oră ridicare), OBLIGATORIU adaugă pe ULTIMA linie, fără text după:
+   ORDER:{“customer_name”:”${name}”,”customer_phone”:”${phone}”,”items”:[{“name”:”Nume produs”,”qty”:1}],”pickup_time”:”ora menționată (ex: mâine 12:00, vineri 14:00, 11:00)”}
+11. REGULA CRITICĂ: Nu spune “am notat / a fost înregistrată / comanda ta e gata” fără linia ORDER: — dacă nu pui ORDER: comanda NU se salvează în sistem.
+12. Linia ORDER: trebuie să fie ULTIMA linie din mesaj. Nu adăuga întrebări sau text după ORDER:.`;
 }
 
 function detectEnglish(text: string): boolean {
   const t = text.toLowerCase();
-  return /(address|hours|open|close|phone|contact)/.test(t);
+  // Broad English detection: common words + store-specific keywords
+  return /(address|hours|open|close|phone|contact|\bthe\b|\bwant\b|\bhave\b|\bdo you\b|\bi would\b|\bplease\b|\border\b|\bstock\b|\bavailable\b|\bprice\b|\bhello\b|\bhi\b)/.test(t);
 }
 
 function buildStoreInfoReply(text: string): string {
@@ -524,7 +894,7 @@ async function createAnthropicMessageWithRetry(
   const maxAttempts = 3;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      return await anthropic.messages.create(args);
+      return (await anthropic.messages.create(args)) as Anthropic.Messages.Message;
     } catch (err) {
       const overloaded = isAnthropicOverloaded(err);
       const isLast = attempt === maxAttempts;
@@ -541,10 +911,15 @@ async function createAnthropicMessageWithRetry(
 
 // ─── Inventory summary ───────────────────────────────────────────────────────
 
-type IncomingIntent = 'store_info' | 'browse_inventory' | 'product_query';
+type IncomingIntent = 'store_info' | 'browse_inventory' | 'product_query' | 'cancel_order';
 
 function classifyIncomingText(text: string): IncomingIntent {
-  const t = text.toLowerCase();
+  // Strip JSON blocks first to avoid false-positive keyword matches (e.g. "customer_phone")
+  const stripped = text.replace(/\{[\s\S]*?\}/g, ' ');
+  const t = stripped.toLowerCase();
+  if (/(anule[az]|anulez|anulati|anulați|cancel|revocare|stornez|nu mai vreau|nu mai vin)/.test(t)) {
+    return 'cancel_order';
+  }
   if (/(adresă|adresa|address|unde|locați|locati|program|orar|hours|open|închis|inchis|telefon|phone|contact)/.test(t)) {
     return 'store_info';
   }
@@ -566,6 +941,7 @@ function extractSearchCandidates(text: string): string[] {
     'la', 'in', 'în', 'pe', 'cu', 'de', 'din', 'si', 'și', 'sau', 'care', 'ce', 'cat', 'cât', 'este', 'mai', 'mult',
     'comand', 'comanda', 'comandă', 'comandați', 'comandati', 'doriți', 'doriti', 'doresc', 'vreți', 'vreti',
     'ridic', 'ridica', 'ridicat', 'ridicare', 'ridicarea', 'ridicarii', 'ridicării', 'ora', 'pentru',
+    'confirma', 'confirmat', 'confirmati', 'confirmați', 'confirm', 'confirmed',
     'ok', 'okay', 'will', 'get', 'take', 'want', 'buy', 'order', 'pickup', 'pick', 'up', 'for', 'sale', 'im', 'i',
     'do', 'you', 'have', 'any', 'is', 'it', 'there', 'a', 'an', 'the', 'of', 'to', 'for', 'in', 'on', 'with', 'please',
     'price', 'cost', 'stock', 'available',
@@ -582,9 +958,10 @@ function extractSearchCandidates(text: string): string[] {
 }
 
 function extractSearchCandidatesFromHistory(history: ConversationMessage[]): string[] {
-  for (let i = history.length - 1; i >= 0; i -= 1) {
-    const msg = history[i];
-    if (msg.role !== 'user') continue;
+  // Check last 4 messages (both user and assistant) for product keywords
+  const recent = history.slice(-4);
+  for (let i = recent.length - 1; i >= 0; i -= 1) {
+    const msg = recent[i];
     if (!msg?.content) continue;
     const candidates = extractSearchCandidates(msg.content);
     if (candidates.length) return candidates;
@@ -613,11 +990,67 @@ function extractInventoryNames(inventoryText: string): string[] {
     .filter(Boolean);
 }
 
+function extractProductNamesFromAssistantText(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => /^([*•-]\s+|\d+\)\s+)/.test(line))
+    .map((line) => line.replace(/^([*•-]\s+|\d+\)\s+)/, ''))
+    .map((line) => line.split(' — ')[0] ?? '')
+    .map((line) => line.replace(/\s*\([^)]*\)\s*$/, '').trim())
+    .filter(Boolean);
+}
+
+/** Map Romanian date words → normalized label for storage. */
+const DATE_WORDS: Record<string, string> = {
+  azi: 'azi', astazi: 'azi', 'astăzi': 'azi',
+  maine: 'mâine', 'mâine': 'mâine',
+  poimaine: 'poimâine', 'poimâine': 'poimâine',
+  luni: 'luni', marti: 'marți', 'marți': 'marți', miercuri: 'miercuri',
+  joi: 'joi', vineri: 'vineri', sambata: 'sâmbătă', 'sâmbătă': 'sâmbătă',
+  duminica: 'duminică', 'duminică': 'duminică',
+};
+
+/**
+ * Extract pickup time (and optional date word) from free text.
+ * "maine la 12:00" → "mâine 12:00"
+ * "ora 11.30"      → "11:30"
+ * "vineri 14:00"   → "vineri 14:00"
+ * Returns null if no time found.
+ */
+function parsePickupDateTime(text: string): string | null {
+  const normalized = text.toLowerCase().replace(/\./g, ':');
+  const timeMatch = normalized.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  if (!timeMatch) return null;
+  const timePart = `${timeMatch[1]!.padStart(2, '0')}:${timeMatch[2]}`;
+
+  for (const [key, label] of Object.entries(DATE_WORDS)) {
+    if (normalized.includes(key)) return `${label} ${timePart}`;
+  }
+  return timePart;
+}
+
+/** Keep old name for internal callers that only need the time fragment. */
 function parsePickupTime(text: string): string | null {
-  const normalized = text.replace(/\./g, ':');
-  const m = normalized.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
-  if (!m) return null;
-  return `${m[1]!.padStart(2, '0')}:${m[2]}`;
+  return parsePickupDateTime(text);
+}
+
+/**
+ * Normalize a raw pickup_time string from the ORDER JSON before DB insert.
+ * "11"          → "11:00"
+ * "ora 11"      → "11:00"
+ * "maine 12:00" → "mâine 12:00"
+ */
+function normalizePickupTime(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return trimmed;
+
+  // Pure hour number e.g. "11"
+  if (/^\d{1,2}$/.test(trimmed)) return `${trimmed.padStart(2, '0')}:00`;
+
+  // Delegate to date+time parser for everything else
+  return parsePickupDateTime(trimmed) ?? trimmed;
 }
 
 function parseSingleQuantity(text: string): number | null {
@@ -626,6 +1059,15 @@ function parseSingleQuantity(text: string): number | null {
   const n = Math.floor(Number(m[1]));
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.min(99, n);
+}
+
+function parseRepeatedQuantity(text: string): number | null {
+  const normalized = normalizeFreeText(text);
+  const match = normalized.match(/\b(\d{1,2})\s+(?:de\s+cada|cada\s+uno|din\s+fiecare|each)\b/);
+  if (!match) return null;
+  const qty = Number(match[1]);
+  if (!Number.isFinite(qty) || qty <= 0) return null;
+  return Math.min(99, Math.floor(qty));
 }
 
 function parseMenuChoice(text: string): number | null {
@@ -663,6 +1105,21 @@ function findLastMenuOptions(history: ConversationMessage[]): string[] {
     if (!msg?.content) continue;
     const options = extractMenuOptionsFromAssistantText(msg.content);
     if (options.length >= 2) return options;
+  }
+  return [];
+}
+
+function findRecentAssistantProductMentions(history: ConversationMessage[]): string[] {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const msg = history[i];
+    if (msg.role !== 'assistant') continue;
+    if (!msg?.content) continue;
+
+    const menuOptions = extractMenuOptionsFromAssistantText(msg.content);
+    if (menuOptions.length >= 2) return menuOptions;
+
+    const listedProducts = extractProductNamesFromAssistantText(msg.content);
+    if (listedProducts.length >= 2) return listedProducts;
   }
   return [];
 }
@@ -718,6 +1175,7 @@ function looksLikeOrderRequest(text: string): boolean {
 
 function maybeHandleOrderFollowup(args: {
   userText: string;
+  history: ConversationMessage[];
   inventoryText: string;
   customerName: string;
   customerPhone: string;
@@ -727,28 +1185,44 @@ function maybeHandleOrderFollowup(args: {
 
   const pickupTime = parsePickupTime(args.userText);
   const qty = parseSingleQuantity(args.userText);
-  if (!pickupTime || !qty) return null;
+  const repeatedQty = parseRepeatedQuantity(args.userText);
+  if (!pickupTime || (!qty && !repeatedQty)) return null;
 
   const names = extractInventoryNames(args.inventoryText);
-  if (!names.length) return null;
+  const recentNames = findRecentAssistantProductMentions(args.history);
+  const candidateNames = recentNames.length ? recentNames : names;
+  if (!candidateNames.length) return null;
 
   const userNorm = normalizeFreeText(args.userText);
-  const matches = names.filter((n) => userNorm.includes(normalizeFreeText(n)));
+  const matches = candidateNames.filter((n) => userNorm.includes(normalizeFreeText(n)));
 
-  if (matches.length === 1 || names.length === 1) {
-    const chosen = matches[0] ?? names[0]!;
+  if (repeatedQty && recentNames.length >= 2) {
     const payload = {
       customer_name: args.customerName,
       customer_phone: args.customerPhone,
-      items: [{ name: chosen, qty }],
+      items: recentNames.map((name) => ({ name, qty: repeatedQty })),
       pickup_time: pickupTime,
     };
 
-    const reply = `Perfect — confirm: ${qty} × ${chosen}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`;
+    const itemsText = recentNames.map((name) => `${repeatedQty} × ${name}`).join(', ');
+    const reply = `Perfect — confirm: ${itemsText}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`;
     return { text: reply, createdOrder: true };
   }
 
-  const options = names.slice(0, 3);
+  if (matches.length === 1 || candidateNames.length === 1) {
+    const chosen = matches[0] ?? candidateNames[0]!;
+    const payload = {
+      customer_name: args.customerName,
+      customer_phone: args.customerPhone,
+      items: [{ name: chosen, qty: qty ?? repeatedQty ?? 1 }],
+      pickup_time: pickupTime,
+    };
+
+    const reply = `Perfect — confirm: ${(qty ?? repeatedQty ?? 1)} × ${chosen}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`;
+    return { text: reply, createdOrder: true };
+  }
+
+  const options = candidateNames.slice(0, 3);
   const list = options.map((n, i) => `${i + 1}) ${n}`).join('\n');
   const reply = `Am mai multe opțiuni în inventar. Care anume?\n${list}`;
   return { text: reply, createdOrder: false };
@@ -757,20 +1231,24 @@ function maybeHandleOrderFollowup(args: {
 function maybeRepairOrderReply(args: {
   replyText: string;
   userText: string;
+  historyContext?: string;
   inventoryText: string;
   customerName: string;
   customerPhone: string;
 }): { text: string; repairedOrder: boolean } {
-  if (/ORDER:\s*\{[\s\S]*\}\s*$/i.test(args.replyText)) {
+  if (/ORDER:\s*\{[\s\S]*\}/i.test(args.replyText)) {
     return { text: args.replyText, repairedOrder: false };
   }
 
-  if (!looksLikeOrderRequest(args.userText)) {
+  // Combine current message + recent history for extraction fallback
+  const fullContext = [args.historyContext, args.userText].filter(Boolean).join(' ');
+
+  if (!looksLikeOrderRequest(fullContext)) {
     return { text: args.replyText, repairedOrder: false };
   }
 
-  const pickupTime = parsePickupTime(args.userText);
-  const qty = parseSingleQuantity(args.userText);
+  const pickupTime = parsePickupTime(args.userText) ?? parsePickupTime(args.historyContext ?? '');
+  const qty = parseSingleQuantity(args.userText) ?? parseSingleQuantity(args.historyContext ?? '');
   if (!pickupTime || !qty) {
     return { text: args.replyText, repairedOrder: false };
   }
@@ -778,8 +1256,8 @@ function maybeRepairOrderReply(args: {
   const names = extractInventoryNames(args.inventoryText);
   if (!names.length) return { text: args.replyText, repairedOrder: false };
 
-  const userNorm = normalizeFreeText(args.userText);
-  const matches = names.filter((n) => userNorm.includes(normalizeFreeText(n)));
+  const contextNorm = normalizeFreeText(fullContext);
+  const matches = names.filter((n) => contextNorm.includes(normalizeFreeText(n)));
   if (matches.length !== 1) return { text: args.replyText, repairedOrder: false };
 
   const payload = {
@@ -793,21 +1271,113 @@ function maybeRepairOrderReply(args: {
   return { text: repaired, repairedOrder: true };
 }
 
+async function handleCancellationRequest(
+  sb: ReturnType<typeof createClient>,
+  phone: string,
+  userText: string,
+): Promise<string> {
+  const isEn = detectEnglish(userText);
+
+  const { data: orders } = await sb
+    .from('orders')
+    .select('id, order_number, items, pickup_time')
+    .eq('customer_phone', phone)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (!orders?.length) {
+    return isEn
+      ? 'No active orders found for your number. If you need help, please call the store.'
+      : 'Nu am găsit nicio comandă activă pentru numărul tău. Dacă ai nevoie de ajutor, te rog sună la magazin.';
+  }
+
+  const order = orders[0] as { id: string; order_number: string; items: unknown; pickup_time: string | null };
+
+  const { error } = await sb
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('id', order.id);
+
+  if (error) {
+    console.error('[whatsapp] cancellation failed:', error);
+    return isEn
+      ? 'Sorry — could not cancel your order. Please call the store.'
+      : 'Ne pare rău — nu am putut anula comanda. Te rog sună la magazin.';
+  }
+
+  return isEn
+    ? `Order ${order.order_number} has been cancelled. Sorry you couldn't make it — we're here whenever you need us!`
+    : `Comanda ${order.order_number} a fost anulată. Ne pare rău că nu poți ridica comanda — suntem la dispoziție oricând!`;
+}
+
 async function getInventorySummary(
   sb: ReturnType<typeof createClient>,
   args: { intent: IncomingIntent; text: string; candidatesOverride?: string[] }
 ): Promise<string> {
-  const limit = args.intent === 'browse_inventory' ? 40 : 20;
-
-  const candidates = args.candidatesOverride ?? (args.intent === 'product_query' ? extractSearchCandidates(args.text) : []);
   const makeProductsQuery = () => sb
     .from('products')
     .select('id, created_at, name, category, price, price_50, price_70, price_100, markup');
 
+  // ── Browse intent: category-aware sampling ──────────────────────────────────
+  if (args.intent === 'browse_inventory') {
+    // Fetch all products sorted by category+name for deterministic diversity
+    const { data: allProducts } = await makeProductsQuery()
+      .order('category', { ascending: true, nullsFirst: false })
+      .order('name', { ascending: true })
+      .limit(200);
+
+    if (!allProducts?.length) {
+      console.error('[whatsapp] getInventorySummary: no products returned from Supabase (intent=browse_inventory)');
+      return 'Inventar indisponibil.';
+    }
+
+    // Sample up to 5 unique-name products per category, 40 total max
+    const byCategory: Record<string, ProductRow[]> = {};
+    for (const p of allProducts as ProductRow[]) {
+      const cat = p.category ?? 'Altele';
+      if (!byCategory[cat]) byCategory[cat] = [];
+      if (byCategory[cat].length < 5) byCategory[cat].push(p);
+    }
+
+    const sampled: ProductRow[] = [];
+    for (const rows of Object.values(byCategory)) {
+      sampled.push(...rows);
+      if (sampled.length >= 40) break;
+    }
+
+    const ids = sampled.map((p) => p.id);
+    const { data: movements } = await sb
+      .from('stock_movements')
+      .select('product_id, quantity')
+      .in('product_id', ids);
+
+    const stockMap: Record<string, number> = {};
+    for (const m of (movements ?? []) as MovementRow[]) {
+      stockMap[m.product_id] = (stockMap[m.product_id] ?? 0) + m.quantity;
+    }
+
+    const lines: string[] = [];
+    for (const [cat, rows] of Object.entries(byCategory)) {
+      lines.push(`${cat}:`);
+      for (const p of rows) {
+        const stock = stockMap[p.id] ?? 0;
+        const storePrice = getStorePrice(p);
+        const price = storePrice != null ? `€${storePrice.toFixed(2)}` : 'preț nedefinit';
+        const availability = stock > 0 ? `stoc: ${stock}` : 'indisponibil';
+        lines.push(`  • ${p.name} — ${price}, ${availability}`);
+      }
+    }
+    return lines.join('\n');
+  }
+
+  // ── Product query: search by candidates, fallback to name-sorted sample ─────
+  const candidates = args.candidatesOverride ?? extractSearchCandidates(args.text);
+
   let products: unknown[] | null | undefined;
   if (candidates.length) {
     for (const term of candidates) {
-      const { data } = await makeProductsQuery().ilike('name', `%${term}%`).limit(limit);
+      const { data } = await makeProductsQuery().ilike('name', `%${term}%`).limit(20);
       if (data?.length) {
         products = data as unknown[];
         break;
@@ -815,11 +1385,15 @@ async function getInventorySummary(
     }
   }
   if (!products?.length) {
-    const { data } = await makeProductsQuery().order('created_at', { ascending: false }).limit(limit);
+    // Fallback: alphabetical sample (not created_at, to avoid category bias)
+    const { data } = await makeProductsQuery().order('name', { ascending: true }).limit(20);
     products = data as unknown[] | null | undefined;
   }
 
-  if (!products?.length) return 'Inventar indisponibil.';
+  if (!products?.length) {
+    console.error('[whatsapp] getInventorySummary: no products returned from Supabase (intent=%s candidates=%j)', args.intent, candidates);
+    return 'Inventar indisponibil.';
+  }
 
   const ids = (products as ProductRow[]).map((p) => p.id);
   const { data: movements } = await sb
@@ -835,13 +1409,11 @@ async function getInventorySummary(
   const rows: ProductRow[] = products as ProductRow[];
 
   let alternatives: ProductRow[] = [];
-  if (args.intent === 'product_query' && rows[0]) {
+  if (rows[0]) {
     const first = rows[0];
     const firstStock = stockMap[first.id] ?? 0;
     if (firstStock <= 0 && first.category) {
-      const { data: sameCategory } = await sb
-        .from('products')
-        .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
+      const { data: sameCategory } = await makeProductsQuery()
         .eq('category', first.category)
         .limit(25);
 
@@ -886,6 +1458,61 @@ async function getInventorySummary(
   return lines.join('\n');
 }
 
+// ─── Pending order storage ────────────────────────────────────────────────────
+
+/**
+ * Store a pending order temporarily (awaiting button confirmation).
+ * Uses Supabase JSON to avoid schema changes.
+ */
+async function storePendingOrder(
+  sb: ReturnType<typeof createClient>,
+  phone: string,
+  order: PendingOrder
+): Promise<void> {
+  try {
+    await sb.from('conversation_history').upsert(
+      {
+        phone_number: phone,
+        pending_order: order as unknown,
+      },
+      { onConflict: 'phone_number' }
+    );
+  } catch (err) {
+    console.error('[whatsapp] failed to store pending order:', err);
+  }
+}
+
+/**
+ * Retrieve and remove a pending order.
+ */
+async function getPendingOrder(
+  sb: ReturnType<typeof createClient>,
+  phone: string
+): Promise<PendingOrder | null> {
+  try {
+    const { data } = await sb
+      .from('conversation_history')
+      .select('pending_order')
+      .eq('phone_number', phone)
+      .maybeSingle();
+
+    const order = (data?.pending_order ?? null) as PendingOrder | null;
+
+    // Clear pending order after retrieval
+    if (order) {
+      await sb
+        .from('conversation_history')
+        .update({ pending_order: null })
+        .eq('phone_number', phone);
+    }
+
+    return order;
+  } catch (err) {
+    console.error('[whatsapp] failed to get pending order:', err);
+    return null;
+  }
+}
+
 export const __private__ = {
   extractSearchCandidates,
   extractSearchCandidatesFromHistory,
@@ -894,19 +1521,80 @@ export const __private__ = {
   extractMenuOptionsFromAssistantText,
   maybeRepairOrderReply,
   getInventorySummary,
+  classifyIncomingText,
+  extractOrderJson,
+  createPendingOrderFromPending,
+  normalizePickupTime,
+  parsePickupDateTime,
 } as const;
 
 // ─── Order intent ─────────────────────────────────────────────────────────────
 
+/** Extract the full JSON object following ORDER: using brace depth counting. */
+function extractOrderJson(text: string): { json: string; startIdx: number } | null {
+  const orderIdx = text.search(/ORDER:/i);
+  if (orderIdx === -1) return null;
+  const braceStart = text.indexOf('{', orderIdx);
+  if (braceStart === -1) return null;
+  let depth = 0;
+  for (let i = braceStart; i < text.length; i++) {
+    if (text[i] === '{') depth++;
+    else if (text[i] === '}') {
+      depth--;
+      if (depth === 0) return { json: text.slice(braceStart, i + 1), startIdx: orderIdx };
+    }
+  }
+  return null;
+}
+
+interface PendingOrder {
+  customer_name: string;
+  customer_phone: string;
+  items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>;
+  total_price: number;
+  pickup_time: string | null;
+}
+
+interface ProcessOrderResult {
+  reply: string;
+  pending?: PendingOrder;
+}
+
+async function createPendingOrderFromPending(
+  sb: ReturnType<typeof createClient>,
+  pending: PendingOrder
+): Promise<string> {
+  const { data: order, error } = await sb
+    .from('orders')
+    .insert({
+      customer_name: pending.customer_name,
+      customer_phone: pending.customer_phone,
+      items: pending.items,
+      total_price: pending.total_price,
+      pickup_time: pending.pickup_time,
+      status: 'pending',
+    })
+    .select('order_number')
+    .single();
+
+  if (error) throw error;
+  return (order as { order_number: string } | null)?.order_number ?? '—';
+}
+
 async function processOrderIntent(
   sb: ReturnType<typeof createClient>,
   replyText: string
-): Promise<string> {
-  const match = replyText.match(/ORDER:(\{[\s\S]*?\})\s*$/);
-  if (!match) return replyText;
+): Promise<ProcessOrderResult> {
+  // Match ORDER: anywhere in the reply, using brace-depth counting to handle nested JSON
+  const extracted = extractOrderJson(replyText);
+  if (!extracted) return { reply: replyText };
+
+  // Strip ORDER:{...} and any trailing text the LLM appended after it
+  const stripOrder = (text: string, replacement: string) =>
+    text.replace(/\s*ORDER:\{[\s\S]*\}[\s\S]*$/i, `\n${replacement}`).trim();
 
   try {
-    const orderData = JSON.parse(match[1]) as {
+    const orderData = JSON.parse(extracted.json) as {
       customer_name: string;
       customer_phone: string;
       items: Array<{ product_id?: string; name: string; qty: number; unit_price?: number }>;
@@ -915,46 +1603,42 @@ async function processOrderIntent(
     };
 
     const resolved = await resolveOrderItems(sb, orderData.items);
+    const normalizedPickupTime = orderData.pickup_time ? normalizePickupTime(orderData.pickup_time) : null;
 
-    const { data: order } = await sb
-      .from('orders')
-      .insert({
-        customer_name: orderData.customer_name,
-        customer_phone: orderData.customer_phone,
-        items: resolved.items,
-        total_price: resolved.totalPrice,
-        pickup_time: orderData.pickup_time ?? null,
-      })
-      .select('order_number')
-      .single();
+    // Store pending order for confirmation flow
+    const pending: PendingOrder = {
+      customer_name: orderData.customer_name,
+      customer_phone: orderData.customer_phone,
+      items: resolved.items,
+      total_price: resolved.totalPrice,
+      pickup_time: normalizedPickupTime,
+    };
 
-    const orderNumber = (order as { order_number: string } | null)?.order_number ?? '—';
-    return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, `✅ Comanda ${orderNumber} înregistrată! Te așteptăm.`);
+    // Return pending order — don't insert yet, wait for button confirmation
+    const confirmationPrompt = stripOrder(
+      replyText,
+      `${resolved.items.map((i) => `${i.qty}x ${i.name}`).join('\n')}
+€${resolved.totalPrice.toFixed(2)}
+Ridicare: ${normalizedPickupTime || 'la preluare'}`
+    );
+
+    return { reply: confirmationPrompt, pending };
   } catch (err) {
     console.error('[whatsapp] order creation failed:', err);
     const message = err instanceof Error ? err.message : '';
     if (message.startsWith('AMBIGUOUS_ITEM:')) {
       const rawName = message.slice('AMBIGUOUS_ITEM:'.length).split('|')[0] ?? 'produs';
-      return replyText.replace(
-        /ORDER:\{[\s\S]*?\}\s*$/,
-        `⚠️ Am găsit mai multe produse pentru „${rawName}”. Te rog trimite denumirea exactă.`
-      );
+      return { reply: stripOrder(replyText, `⚠️ Am găsit mai multe produse pentru „${rawName}”. Te rog trimite denumirea exactă.`) };
     }
     if (message.startsWith('NOT_FOUND_ITEM:')) {
       const rawName = message.slice('NOT_FOUND_ITEM:'.length) || 'produsul cerut';
-      return replyText.replace(
-        /ORDER:\{[\s\S]*?\}\s*$/,
-        `⚠️ Nu am găsit „${rawName}” în inventar. Te rog trimite denumirea exactă.`
-      );
+      return { reply: stripOrder(replyText, `⚠️ Nu am găsit „${rawName}” în inventar. Te rog trimite denumirea exactă.`) };
     }
     if (message.startsWith('OUT_OF_STOCK_ITEM:')) {
       const rawName = message.slice('OUT_OF_STOCK_ITEM:'.length) || 'produsul cerut';
-      return replyText.replace(
-        /ORDER:\{[\s\S]*?\}\s*$/,
-        `⚠️ „${rawName}” nu are stoc suficient acum. Te rog ajustează cantitatea.`
-      );
+      return { reply: stripOrder(replyText, `⚠️ „${rawName}” nu are stoc suficient acum. Te rog ajustează cantitatea.`) };
     }
-    return replyText.replace(/ORDER:\{[\s\S]*?\}\s*$/, '⚠️ Nu am reușit să înregistrez comanda automat. Te rog încearcă din nou.');
+    return { reply: stripOrder(replyText, '⚠️ Nu am reușit să înregistrez comanda automat. Te rog încearcă din nou.') };
   }
 }
 
@@ -989,9 +1673,10 @@ async function appendHistory(
   const payload = newMessages.slice(-20);
 
   try {
-    const { error } = await sb.rpc('append_conversation_history', {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (sb as any).rpc('append_conversation_history', {
       p_phone_number: phone,
-      p_messages: payload as unknown,
+      p_messages: payload,
     });
     if (!error) return;
   } catch {
@@ -1019,7 +1704,7 @@ async function resolveOrderItems(
 
     const match = item.product_id
       ? await resolveProductById(sb, item.product_id)
-      : await resolveProductByName(sb, name);
+      : await resolveProductByName(sb, name, item.unit_price);
 
     if (match.type === 'not_found') throw new Error(`NOT_FOUND_ITEM:${name}`);
     if (match.type === 'ambiguous') throw new Error(`AMBIGUOUS_ITEM:${name}|${match.candidates.join(', ')}`);
@@ -1130,7 +1815,8 @@ async function resolveProductById(
 
 async function resolveProductByName(
   sb: ReturnType<typeof createClient>,
-  rawName: string
+  rawName: string,
+  targetPrice?: number
 ): Promise<ProductMatchResult> {
   const query = normalizeProductText(rawName);
   if (!query) return { type: 'not_found' };
@@ -1139,11 +1825,25 @@ async function resolveProductByName(
     .from('products')
     .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
     .ilike('name', rawName.trim())
-    .limit(3);
+    .limit(10);
 
   const exact = (exactRows as ProductRow[] | null) ?? [];
   if (exact.length === 1) return { type: 'match', product: exact[0] };
-  if (exact.length > 1) return { type: 'ambiguous', candidates: exact.slice(0, 3).map((p) => p.name) };
+
+  if (exact.length > 1) {
+    // Multiple variants of same product (different prices)
+    // If targetPrice provided, pick the matching variant
+    if (targetPrice) {
+      const match = exact.find((p) => {
+        const prices = [p.price, p.price_50, p.price_70, p.price_100].filter((x) => x != null);
+        return prices.some((price) => Math.abs(price - targetPrice) < 0.01);
+      });
+      if (match) return { type: 'match', product: match };
+    }
+    // Otherwise pick the most recent (highest created_at)
+    const sorted = exact.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return { type: 'match', product: sorted[0] };
+  }
 
   const { data: fuzzyRows } = await sb
     .from('products')

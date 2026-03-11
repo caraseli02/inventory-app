@@ -3,6 +3,9 @@
   "functions": {
     "api/mcp.ts": {
       "includeFiles": "mcp/dist/**"
+    },
+    "api/whatsapp.ts": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
