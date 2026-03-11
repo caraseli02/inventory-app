@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { resetConversationHistory } from '../lib/whatsapp/conversation-state.js';
-import { buildLocalSimulationReply, buildSimulatorReply } from './whatsapp.js';
+import { buildLocalSimulationReply, buildSimulatorReply } from '../lib/whatsapp/simulator.js';
 
 interface SimulateBody {
   phone?: string;

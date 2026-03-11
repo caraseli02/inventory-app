@@ -355,15 +355,28 @@ This phase is the recommended starting point and should be one small PR.
 
 ### Phase 4: Extract orchestration layers
 
-- Extract:
+- [x] Extract:
   - `prompts.ts`
   - `llm.ts`
   - `simulator.ts`
 - Make webhook route and simulator route both consume shared orchestration intentionally, not incidentally.
 
 **Success criteria**
-- webhook route contains no prompt-building or simulator logic
-- simulator route imports simulator module only
+- [x] webhook route contains no prompt-building or simulator logic
+- [x] simulator route imports simulator module only
+
+Completed 2026-03-11:
+- Added:
+  - [`lib/whatsapp/prompts.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/prompts.ts)
+  - [`lib/whatsapp/llm.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/llm.ts)
+  - [`lib/whatsapp/simulator.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/simulator.ts)
+- Rewired [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) to consume shared LLM orchestration only.
+- Rewired [`api/whatsapp-simulate.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp-simulate.ts) and local dev middleware in [`vite.config.ts`](/Users/vladislavcaraseli/Documents/inventory-app/vite.config.ts) to consume the extracted simulator/state modules directly.
+- Retargeted simulator mocks in [`tests/unit/api/whatsapp-simulate.test.ts`](/Users/vladislavcaraseli/Documents/inventory-app/tests/unit/api/whatsapp-simulate.test.ts).
+- Verified with:
+  - `pnpm typecheck`
+  - `pnpm vitest run tests/unit/api/whatsapp-conversation-state.test.ts tests/unit/api/whatsapp-webhook.test.ts tests/unit/api/whatsapp-simulate.test.ts tests/unit/whatsappAgent.test.ts tests/unit/whatsappInventory.test.ts`
+  - `pnpm vitest run tests/integration/whatsapp-agent.test.ts`
 
 ### Phase 5: Thin-route cleanup and follow-on hardening
 
@@ -390,10 +403,10 @@ This phase is the recommended starting point and should be one small PR.
 
 ### Structural
 
-- [ ] [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) is reduced to a thin route entrypoint
-- [ ] transport, state, domain, LLM, and simulator concerns are separated into dedicated modules
-- [ ] no module mixes Twilio transport and order-state mutation logic
-- [ ] no simulator-only helpers remain in the webhook route file
+- [x] [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) is reduced to a thin route entrypoint
+- [x] transport, state, domain, LLM, and simulator concerns are separated into dedicated modules
+- [x] no module mixes Twilio transport and order-state mutation logic
+- [x] no simulator-only helpers remain in the webhook route file
 
 ### Quality gates
 
