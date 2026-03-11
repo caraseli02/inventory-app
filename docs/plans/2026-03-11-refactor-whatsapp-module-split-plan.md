@@ -106,7 +106,7 @@ Start with the smallest safe extraction:
 
 Do not split persistence or orchestration in the first pass.
 
-Create a `api/whatsapp/` module tree gradually and reduce [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) in mergeable steps.
+Create a `lib/whatsapp/` module tree gradually and reduce [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) in mergeable steps.
 
 ### Incremental target split
 
@@ -120,20 +120,20 @@ Create a `api/whatsapp/` module tree gradually and reduce [`api/whatsapp.ts`](/U
   - route to button flow or text flow
   - map failures to HTTP/TwiML responses
 
-- `api/whatsapp/request.ts`
+- `lib/whatsapp/request.ts`
   - parse incoming Twilio form body
   - normalize body params
   - sanitize / validate phone, name, message text
   - expose typed `IncomingWhatsAppRequest`
 
-- `api/whatsapp/url.ts`
+- `lib/whatsapp/url.ts`
   - `getAbsoluteUrl`
   - forwarded-header helpers
   - any `TWILIO_WEBHOOK_URL` hardening changes
 
 #### 2. Transport / channel actions
 
-- `api/whatsapp/transport.ts`
+- `lib/whatsapp/transport.ts`
   - `twiml`
   - `sendRestMessage`
   - `sendTemplateMessage`
@@ -144,13 +144,13 @@ This module must not know about orders, pending state, or LLM prompts.
 
 #### 3. Config / shared types
 
-- `api/whatsapp/config.ts`
+- `lib/whatsapp/config.ts`
   - env reads
   - Twilio capability flags
   - store info config
   - model/provider config
 
-- `api/whatsapp/types.ts`
+- `lib/whatsapp/types.ts`
   - request/body types
   - conversation types
   - pending-order types
@@ -158,10 +158,10 @@ This module must not know about orders, pending state, or LLM prompts.
 
 #### 4. Persistence / conversation state
 
-- `api/whatsapp/db.ts`
+- `lib/whatsapp/db.ts`
   - `createSupabaseClient`
 
-- `api/whatsapp/conversation-state.ts`
+- `lib/whatsapp/conversation-state.ts`
   - `getHistory`
   - `appendHistory`
   - `resetConversationHistory`
@@ -173,7 +173,7 @@ This module should own `conversation_history` access in one place first, because
 
 #### 5. Inventory / product resolution
 
-- `api/whatsapp/inventory.ts`
+- `lib/whatsapp/inventory.ts`
   - `getInventorySummary`
   - `resolveOrderItems`
   - `resolveProductById`
@@ -182,12 +182,12 @@ This module should own `conversation_history` access in one place first, because
 
 #### 6. Deterministic order flow
 
-- `api/whatsapp/order-intent.ts`
+- `lib/whatsapp/order-intent.ts`
   - `extractOrderJson`
   - `processOrderIntent`
   - `createPendingOrderFromPending`
 
-- `api/whatsapp/conversation.ts`
+- `lib/whatsapp/conversation.ts`
   - intent heuristics
   - pickup/quantity parsing
   - menu selection parsing
@@ -199,12 +199,12 @@ Keep this boundary broader at first. Split `followups.ts` later only after the o
 
 #### 7. LLM / prompt orchestration
 
-- `api/whatsapp/prompts.ts`
+- `lib/whatsapp/prompts.ts`
   - `buildSystemPrompt`
   - store info reply builders
   - overloaded fallback reply builders
 
-- `api/whatsapp/llm.ts`
+- `lib/whatsapp/llm.ts`
   - provider calls
   - retry rules
   - `runConversationTurn`
@@ -215,7 +215,7 @@ This layer may call inventory and order-intent modules, but it should not send T
 
 #### 8. Simulator-specific composition
 
-- `api/whatsapp/simulator.ts`
+- `lib/whatsapp/simulator.ts`
   - `toSimulationOrderReply`
   - `buildLocalGeneratedReply`
   - `buildLocalSimulatorTurn`
@@ -283,7 +283,7 @@ Before Phase 2, add or reshape tests so post-refactor checks cover the real seam
 
 This phase is the recommended starting point and should be one small PR.
 
-- [x] Create `api/whatsapp/` directory and move pure helpers first:
+- [x] Create `lib/whatsapp/` directory and move pure helpers first:
   - [x] `types.ts`
   - [x] `config.ts`
   - [x] `url.ts`
@@ -302,10 +302,10 @@ This phase is the recommended starting point and should be one small PR.
 **Delivered on 2026-03-11**
 
 - Extracted:
-  - [`api/whatsapp/types.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp/types.ts)
-  - [`api/whatsapp/config.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp/config.ts)
-  - [`api/whatsapp/url.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp/url.ts)
-  - [`api/whatsapp/transport.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp/transport.ts)
+  - [`lib/whatsapp/types.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/types.ts)
+  - [`lib/whatsapp/config.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/config.ts)
+  - [`lib/whatsapp/url.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/url.ts)
+  - [`lib/whatsapp/transport.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/transport.ts)
 - Rewired [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) to import those helpers.
 - Added direct helper coverage in [`tests/unit/api/whatsapp-transport.test.ts`](/Users/vladislavcaraseli/Documents/inventory-app/tests/unit/api/whatsapp-transport.test.ts).
 - Updated [`tests/unit/lib/whatsappUrl.test.ts`](/Users/vladislavcaraseli/Documents/inventory-app/tests/unit/lib/whatsappUrl.test.ts) to target the extracted URL module.
@@ -328,8 +328,8 @@ This phase is the recommended starting point and should be one small PR.
 **Delivered on 2026-03-11**
 
 - Extracted:
-  - [`api/whatsapp/db.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp/db.ts)
-  - [`api/whatsapp/conversation-state.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp/conversation-state.ts)
+  - [`lib/whatsapp/db.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/db.ts)
+  - [`lib/whatsapp/conversation-state.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/conversation-state.ts)
 - Rewired [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) to consume shared Supabase/state helpers for:
   - conversation history reads
   - history append RPC fallback
@@ -344,6 +344,7 @@ This phase is the recommended starting point and should be one small PR.
 
 ### Phase 3: Extract conversation and inventory domains
 
+- [x] Phase 3 complete.
 - [x] Extract:
   - `inventory.ts`
   - `order-intent.ts`
@@ -352,6 +353,20 @@ This phase is the recommended starting point and should be one small PR.
 **Success criteria**
 - [x] deterministic order and follow-up logic no longer lives in the route file
 - [x] extracted domain modules have direct tests instead of `__private__` coupling
+
+Completed 2026-03-11:
+- Added:
+  - [`lib/whatsapp/inventory.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/inventory.ts)
+  - [`lib/whatsapp/order-intent.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/order-intent.ts)
+  - [`lib/whatsapp/conversation.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/conversation.ts)
+- Rewired [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) and shared LLM flows to consume extracted inventory, follow-up, and order parsing logic.
+- Kept direct unit coverage in:
+  - [`tests/unit/whatsappInventory.test.ts`](/Users/vladislavcaraseli/Documents/inventory-app/tests/unit/whatsappInventory.test.ts)
+  - [`tests/unit/whatsappAgent.test.ts`](/Users/vladislavcaraseli/Documents/inventory-app/tests/unit/whatsappAgent.test.ts)
+- Verified with:
+  - `pnpm typecheck`
+  - `pnpm vitest run tests/unit/api/whatsapp-conversation-state.test.ts tests/unit/api/whatsapp-webhook.test.ts tests/unit/api/whatsapp-simulate.test.ts tests/unit/whatsappAgent.test.ts tests/unit/whatsappInventory.test.ts`
+  - `pnpm vitest run tests/integration/whatsapp-agent.test.ts`
 
 ### Phase 4: Extract orchestration layers
 
@@ -380,7 +395,8 @@ Completed 2026-03-11:
 
 ### Phase 5: Thin-route cleanup and follow-on hardening
 
-- Reduce [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) to thin orchestration.
+- [x] Phase 5 complete.
+- [x] Reduce [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) to thin orchestration.
 - Immediately queue or apply the module-enabled hardening items:
   - atomic pending-order consume
   - pending-order TTL
@@ -389,8 +405,18 @@ Completed 2026-03-11:
   - `TWILIO_WEBHOOK_URL` hardening
 
 **Success criteria**
-- route file is small and readable
-- unresolved WhatsApp security/data-integrity work is easier to land as isolated changes
+- [x] route file is small and readable
+- [x] unresolved WhatsApp security/data-integrity work is easier to land as isolated changes
+
+Completed 2026-03-11:
+- Added:
+  - [`lib/whatsapp/webhook.ts`](/Users/vladislavcaraseli/Documents/inventory-app/lib/whatsapp/webhook.ts)
+- Reduced [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) to a route entrypoint that only re-exports the shared webhook handler.
+- Moved Twilio request validation, button handling, DA/NU fallback handling, REST-vs-TwiML reply branching, and pending-order confirmation orchestration into the shared webhook module.
+- Verified with:
+  - `pnpm typecheck`
+  - `pnpm vitest run tests/unit/api/whatsapp-webhook.test.ts tests/unit/api/whatsapp-simulate.test.ts tests/unit/api/whatsapp-conversation-state.test.ts tests/unit/whatsappAgent.test.ts tests/unit/whatsappInventory.test.ts`
+  - `pnpm vitest run tests/integration/whatsapp-agent.test.ts`
 
 ## Acceptance Criteria
 
@@ -451,7 +477,7 @@ Completed 2026-03-11:
 
 - Update [`docs/runbooks/whatsapp_agent.md`](/Users/vladislavcaraseli/Documents/inventory-app/docs/runbooks/whatsapp_agent.md) if env ownership or route behavior changes
 - Update [`docs/specs/whatsapp_agent.md`](/Users/vladislavcaraseli/Documents/inventory-app/docs/specs/whatsapp_agent.md) only if behavior changes, not for pure extraction
-- Add a short architecture note if the new `api/whatsapp/` tree introduces stable module ownership worth documenting
+- Add a short architecture note if the new `lib/whatsapp/` tree introduces stable module ownership worth documenting
 
 ## References & Research
 
