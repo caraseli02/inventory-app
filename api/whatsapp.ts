@@ -25,13 +25,20 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { waitUntil } from '@vercel/functions';
-import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { validateTwilioSignature } from './lib/twilio-signature.js';
 import { getTwilioAuthToken } from '../lib/whatsapp/config.js';
+import { createSupabaseClient, type ServerSupabaseClient } from '../lib/whatsapp/db.js';
 import { twiml, sendRestMessage, sendTemplateMessage, sendTypingIndicator } from '../lib/whatsapp/transport.js';
+import {
+  appendHistory,
+  getHistory,
+  getPendingOrder,
+  hasConversationHistory,
+  storePendingOrder,
+} from '../lib/whatsapp/conversation-state.js';
 import { getAbsoluteUrl } from '../lib/whatsapp/url.js';
 import {
   buildOverloadedReply,
@@ -50,7 +57,6 @@ import { getInventorySummary } from '../lib/whatsapp/inventory.js';
 import { createPendingOrderFromPending, processOrderIntent } from '../lib/whatsapp/order-intent.js';
 import type {
   ConversationMessage,
-  PendingOrder,
   TwilioBody,
   WhatsAppSimulatorProvider,
   WhatsAppSimulatorResult,
@@ -190,17 +196,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (canUseRest) {
     // Check if this is a new conversation (no history) — only ack on first message
     const sbAck = createSupabaseClient();
-    let hasHistory = false;
-    try {
-      const { data: historyRow } = await sbAck
-        .from('conversation_history')
-        .select('messages')
-        .eq('phone_number', phone)
-        .maybeSingle();
-      hasHistory = ((historyRow?.messages as unknown[])?.length ?? 0) > 0;
-    } catch {
-      hasHistory = false;
-    }
+    const hasHistory = await hasConversationHistory(sbAck, phone);
 
     if (!hasHistory) {
       // Step 2 — Acknowledge only on first message of a new conversation
@@ -268,23 +264,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 }
 
 // ─── AI reply builder ────────────────────────────────────────────────────────
-
-function createSupabaseClient() {
-  const url = process.env.SUPABASE_URL ?? process.env.VITE_SUPABASE_URL ?? '';
-  const key = process.env.SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_ANON_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? '';
-  if (!url || !key) {
-    console.error('[whatsapp] Supabase not configured: url=%s key=%s', url ? 'SET' : 'MISSING', key ? 'SET' : 'MISSING');
-  }
-  return createClient(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-    },
-  });
-}
-
-type ServerSupabaseClient = ReturnType<typeof createSupabaseClient>;
 
 function toSimulationOrderReply(phone: string, name: string, text: string): string | null {
   const trimmed = text.trim();
@@ -399,14 +378,6 @@ async function buildLocalSimulatorTurn(phone: string, name: string, text: string
       customerPhone: phone,
     }),
   });
-}
-
-export async function resetConversationHistory(phone: string): Promise<void> {
-  const sb = createSupabaseClient();
-  await sb
-    .from('conversation_history')
-    .delete()
-    .eq('phone_number', phone);
 }
 
 type LlmMessage = { role: 'user' | 'assistant'; content: string };
@@ -739,104 +710,6 @@ async function createAnthropicMessageWithRetry(
  * Store a pending order temporarily (awaiting button confirmation).
  * Uses Supabase JSON to avoid schema changes.
  */
-async function storePendingOrder(
-  sb: ServerSupabaseClient,
-  phone: string,
-  order: PendingOrder
-): Promise<void> {
-  try {
-    await sb.from('conversation_history').upsert(
-      {
-        phone_number: phone,
-        pending_order: order as unknown,
-      },
-      { onConflict: 'phone_number' }
-    );
-  } catch (err) {
-    console.error('[whatsapp] failed to store pending order:', err);
-  }
-}
-
-/**
- * Retrieve and remove a pending order.
- */
-async function getPendingOrder(
-  sb: ServerSupabaseClient,
-  phone: string
-): Promise<PendingOrder | null> {
-  try {
-    const { data } = await sb
-      .from('conversation_history')
-      .select('pending_order')
-      .eq('phone_number', phone)
-      .maybeSingle();
-
-    const order = (data?.pending_order ?? null) as PendingOrder | null;
-
-    // Clear pending order after retrieval
-    if (order) {
-      await sb
-        .from('conversation_history')
-        .update({ pending_order: null })
-        .eq('phone_number', phone);
-    }
-
-    return order;
-  } catch (err) {
-    console.error('[whatsapp] failed to get pending order:', err);
-    return null;
-  }
-}
-
-// ─── Conversation history ─────────────────────────────────────────────────────
-
-async function getHistory(
-  sb: ServerSupabaseClient,
-  phone: string
-): Promise<ConversationMessage[]> {
-  const { data } = await sb
-    .from('conversation_history')
-    .select('messages, updated_at')
-    .eq('phone_number', phone)
-    .maybeSingle();
-
-  const ttlDays = Number(process.env.CONVERSATION_TTL_DAYS ?? '7');
-  const effectiveTtlDays = Number.isFinite(ttlDays) && ttlDays > 0 ? ttlDays : 7;
-
-  const updatedAt = data?.updated_at ? new Date(String(data.updated_at)).getTime() : 0;
-  const isExpired = updatedAt > 0 && (Date.now() - updatedAt) > effectiveTtlDays * 24 * 60 * 60 * 1000;
-  if (isExpired) return [];
-
-  return ((data?.messages ?? []) as ConversationMessage[]).slice(-20);
-}
-
-async function appendHistory(
-  sb: ServerSupabaseClient,
-  phone: string,
-  history: ConversationMessage[],
-  newMessages: ConversationMessage[]
-): Promise<void> {
-  const payload = newMessages.slice(-20);
-
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (sb as any).rpc('append_conversation_history', {
-      p_phone_number: phone,
-      p_messages: payload,
-    });
-    if (!error) return;
-  } catch {
-    // fall through
-  }
-
-  await sb
-    .from('conversation_history')
-    .upsert(
-      { phone_number: phone, messages: [...history, ...payload].slice(-20) },
-      { onConflict: 'phone_number' }
-    );
-}
-
 function normalizeTwilioParams(body: unknown): Record<string, string> {
   if (typeof body === 'string') {
     const params = new URLSearchParams(body);
