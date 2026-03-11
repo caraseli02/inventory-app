@@ -315,14 +315,32 @@ This phase is the recommended starting point and should be one small PR.
 
 ### Phase 2: Extract shared conversation state
 
-- Extract:
-  - `db.ts`
-  - `conversation-state.ts`
-- Replace `__private__` dependence with targeted module exports where useful.
+- [x] Phase 2 complete.
+- [x] Extract:
+  - [x] `db.ts`
+  - [x] `conversation-state.ts`
+- [x] Replace `__private__` dependence with targeted module exports where useful.
 
 **Success criteria**
-- `conversation_history` and `pending_order` access no longer live in the route file.
-- state behavior is covered by focused tests before more decomposition starts.
+- [x] `conversation_history` and `pending_order` access no longer live in the route file.
+- [x] state behavior is covered by focused tests before more decomposition starts.
+
+**Delivered on 2026-03-11**
+
+- Extracted:
+  - [`api/whatsapp/db.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp/db.ts)
+  - [`api/whatsapp/conversation-state.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp/conversation-state.ts)
+- Rewired [`api/whatsapp.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp.ts) to consume shared Supabase/state helpers for:
+  - conversation history reads
+  - history append RPC fallback
+  - pending-order store/read-clear flow
+- Updated [`api/whatsapp-simulate.ts`](/Users/vladislavcaraseli/Documents/inventory-app/api/whatsapp-simulate.ts) to reset history through the extracted state module.
+- Added focused state coverage in [`tests/unit/api/whatsapp-conversation-state.test.ts`](/Users/vladislavcaraseli/Documents/inventory-app/tests/unit/api/whatsapp-conversation-state.test.ts).
+- Retargeted simulator reset mocking in [`tests/unit/api/whatsapp-simulate.test.ts`](/Users/vladislavcaraseli/Documents/inventory-app/tests/unit/api/whatsapp-simulate.test.ts).
+- Verified with:
+  - `pnpm typecheck`
+  - `pnpm vitest run tests/unit/api/whatsapp-conversation-state.test.ts tests/unit/api/whatsapp-webhook.test.ts tests/unit/api/whatsapp-simulate.test.ts tests/unit/whatsappAgent.test.ts tests/unit/whatsappInventory.test.ts`
+  - `pnpm vitest run tests/integration/whatsapp-agent.test.ts`
 
 ### Phase 3: Extract conversation and inventory domains
 
@@ -365,10 +383,10 @@ This phase is the recommended starting point and should be one small PR.
 
 ### Functional
 
-- [ ] `POST /api/whatsapp` preserves current customer-visible behavior for existing covered flows
-- [ ] `POST /api/whatsapp-simulate` still works and uses shared domain logic where intended
-- [ ] confirm/cancel button flow still works with template send and text fallback
-- [ ] store-info fast path still works
+- [x] `POST /api/whatsapp` preserves current customer-visible behavior for existing covered flows
+- [x] `POST /api/whatsapp-simulate` still works and uses shared domain logic where intended
+- [x] confirm/cancel button flow still works with template send and text fallback
+- [x] store-info fast path still works
 
 ### Structural
 
@@ -379,12 +397,12 @@ This phase is the recommended starting point and should be one small PR.
 
 ### Quality gates
 
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm test:unit` passes for WhatsApp-related suites
-- [ ] targeted integration suite passes:
+- [x] `pnpm typecheck` passes
+- [x] `pnpm test:unit` passes for WhatsApp-related suites
+- [x] targeted integration suite passes:
   - `tests/integration/whatsapp-agent.test.ts`
-- [ ] module-level tests cover extracted helpers without relying on broad `__private__` exports
-- [ ] before Phase 2, webhook/state test gaps are closed enough to validate the deeper split
+- [x] module-level tests cover extracted helpers without relying on broad `__private__` exports
+- [x] before Phase 2, webhook/state test gaps are closed enough to validate the deeper split
 
 ## Dependencies & Risks
 
