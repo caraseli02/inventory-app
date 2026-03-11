@@ -461,12 +461,85 @@ function toSimulationOrderReply(phone: string, name: string, text: string): stri
 export async function buildLocalSimulationReply(phone: string, name: string, text: string): Promise<string> {
   const orderReply = toSimulationOrderReply(phone, name, text);
   if (!orderReply) {
-    return 'Simulator local: OPENAI_API_KEY / ANTHROPIC_API_KEY lipsesc. Trimite ORDER:{...} sau JSON-ul comenzii pentru creare directă.';
+    const result = await buildLocalSimulatorTurn(phone, name, text);
+    return result.reply;
   }
 
   const sb = createSupabaseClient();
   const result = await processOrderIntent(sb, orderReply);
   return result.reply;
+}
+
+function buildLocalGeneratedReply(args: {
+  text: string;
+  inventoryText: string;
+  history: ConversationMessage[];
+  customerName: string;
+  customerPhone: string;
+}): string {
+  const inventoryLines = args.inventoryText
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('•'));
+  const isEn = detectEnglish(args.text);
+
+  const followup = maybeHandleOrderFollowup({
+    userText: args.text,
+    history: args.history,
+    inventoryText: args.inventoryText,
+    customerName: args.customerName,
+    customerPhone: args.customerPhone,
+  });
+  if (followup) return followup.text;
+
+  if (!inventoryLines.length) {
+    return isEn
+      ? 'Sorry — inventory is unavailable right now. Please send the exact product name.'
+      : 'Inventarul nu este disponibil acum. Te rog trimite denumirea exactă a produsului.';
+  }
+
+  if (looksLikeOrderRequest(args.text)) {
+    const options = inventoryLines
+      .slice(0, 3)
+      .map((line, index) => `${index + 1}) ${line.replace(/^•\s*/, '')}`)
+      .join('\n');
+    return isEn
+      ? `I found multiple matching options. Which one do you want?\n${options}`
+      : `Am mai multe opțiuni în inventar. Care anume?\n${options}`;
+  }
+
+  if (classifyIncomingText(args.text) === 'browse_inventory') {
+    const preview = inventoryLines.slice(0, 5).join('\n');
+    return isEn
+      ? `Here are some available products:\n${preview}`
+      : `Avem câteva produse disponibile:\n${preview}`;
+  }
+
+  return inventoryLines.slice(0, 3).join('\n');
+}
+
+async function buildLocalSimulatorTurn(phone: string, name: string, text: string): Promise<WhatsAppSimulatorResult> {
+  const sb = createSupabaseClient();
+  return runConversationTurn({
+    sb,
+    phone,
+    name,
+    text,
+    llmProvider: 'local',
+    repairOrder: true,
+    includeDebug: true,
+    generateLlmReply: async ({ messages, ...rest }) => buildLocalGeneratedReply({
+      text,
+      inventoryText: rest.system.includes('INVENTAR LIVE:')
+        ? rest.system.split('INVENTAR LIVE:\n')[1]?.split('\n\nREGULI:')[0]?.trim() ?? 'Inventar indisponibil.'
+        : 'Inventar indisponibil.',
+      history: messages
+        .filter((message) => message.role !== 'user' || message.content !== text)
+        .map((message) => ({ role: message.role, content: message.content, timestamp: nowIso() })),
+      customerName: name,
+      customerPhone: phone,
+    }),
+  });
 }
 
 export async function resetConversationHistory(phone: string): Promise<void> {
@@ -615,7 +688,7 @@ export async function buildSimulatorReply(phone: string, name: string, text: str
   const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
 
   if (!hasOpenAi && !hasAnthropic) {
-    return { provider: 'local', reply: await buildLocalSimulationReply(phone, name, text) };
+    return buildLocalSimulatorTurn(phone, name, text);
   }
 
   if (!hasOpenAi) {
