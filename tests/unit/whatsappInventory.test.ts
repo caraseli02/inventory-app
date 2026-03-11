@@ -6,8 +6,8 @@ import {
   maybeHandleMenuSelection,
   maybeHandleOrderFollowup,
   maybeRepairOrderReply,
-} from '../../api/whatsapp/conversation'
-import { getInventorySummary } from '../../api/whatsapp/inventory'
+} from '../../lib/whatsapp/conversation'
+import { getInventorySummary } from '../../lib/whatsapp/inventory'
 
 type ProductRow = {
   id: string

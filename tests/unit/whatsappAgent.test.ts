@@ -10,11 +10,11 @@ import {
   classifyIncomingText,
   normalizePickupTime,
   parsePickupDateTime,
-} from '../../api/whatsapp/conversation';
+} from '../../lib/whatsapp/conversation';
 import {
   createPendingOrderFromPending,
   extractOrderJson,
-} from '../../api/whatsapp/order-intent';
+} from '../../lib/whatsapp/order-intent';
 
 // ─── extractOrderJson ─────────────────────────────────────────────────────────
 

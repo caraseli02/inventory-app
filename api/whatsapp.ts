@@ -30,9 +30,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { validateTwilioSignature } from './lib/twilio-signature.js';
-import { getTwilioAuthToken } from './whatsapp/config.js';
-import { twiml, sendRestMessage, sendTemplateMessage, sendTypingIndicator } from './whatsapp/transport.js';
-import { getAbsoluteUrl } from './whatsapp/url.js';
+import { getTwilioAuthToken } from '../lib/whatsapp/config.js';
+import { twiml, sendRestMessage, sendTemplateMessage, sendTypingIndicator } from '../lib/whatsapp/transport.js';
+import { getAbsoluteUrl } from '../lib/whatsapp/url.js';
 import {
   buildOverloadedReply,
   buildStoreInfoReply,
@@ -45,16 +45,16 @@ import {
   maybeHandleOrderFollowup,
   maybeRepairOrderReply,
   handleCancellationRequest,
-} from './whatsapp/conversation.js';
-import { getInventorySummary } from './whatsapp/inventory.js';
-import { createPendingOrderFromPending, processOrderIntent } from './whatsapp/order-intent.js';
+} from '../lib/whatsapp/conversation.js';
+import { getInventorySummary } from '../lib/whatsapp/inventory.js';
+import { createPendingOrderFromPending, processOrderIntent } from '../lib/whatsapp/order-intent.js';
 import type {
   ConversationMessage,
   PendingOrder,
   TwilioBody,
   WhatsAppSimulatorProvider,
   WhatsAppSimulatorResult,
-} from './whatsapp/types.js';
+} from '../lib/whatsapp/types.js';
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
 
