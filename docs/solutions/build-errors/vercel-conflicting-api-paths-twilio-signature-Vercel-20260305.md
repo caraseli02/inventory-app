@@ -48,3 +48,6 @@ creates a “duplicate route/module path” conflict during bundling.
 - [ ] Add a CI check that fails if both `.ts` and `.js` exist with same basename under `api/`.
 - [ ] Prefer one canonical source format for serverless modules (either all `.ts` compiled by bundler, or all `.js`).
 
+# Related Documentation
+
+- See also: [vercel-serverless-api-types-not-checked-local-ci-Vercel-20260311.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/build-errors/vercel-serverless-api-types-not-checked-local-ci-Vercel-20260311.md)

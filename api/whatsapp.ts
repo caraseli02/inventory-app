@@ -57,11 +57,11 @@ export interface WhatsAppSimulatorResult {
   pending?: PendingOrder;
   debug?: {
     intent: IncomingIntent;
-    inventoryText: string;
-    searchCandidatesCurrent: string[];
-    searchCandidatesFromHistory: string[];
-    searchCandidatesUsed: string[];
-    repairedOrder: boolean;
+    inventoryText?: string;
+    searchCandidatesCurrent?: string[];
+    searchCandidatesFromHistory?: string[];
+    searchCandidatesUsed?: string[];
+    repairedOrder?: boolean;
   };
 }
 
@@ -427,6 +427,8 @@ function createSupabaseClient() {
   });
 }
 
+type ServerSupabaseClient = ReturnType<typeof createSupabaseClient>;
+
 function toSimulationOrderReply(phone: string, name: string, text: string): string | null {
   const trimmed = text.trim();
 
@@ -558,11 +560,11 @@ function nowIso(): string {
 }
 
 async function runConversationTurn(args: {
-  sb: ReturnType<typeof createClient>;
+  sb: ServerSupabaseClient;
   phone: string;
   name: string;
   text: string;
-  llmProvider: Exclude<WhatsAppSimulatorProvider, 'local'>;
+  llmProvider: WhatsAppSimulatorProvider;
   generateLlmReply: GenerateLlmReply;
   includeDebug: boolean;
   repairOrder: boolean;
@@ -1272,7 +1274,7 @@ function maybeRepairOrderReply(args: {
 }
 
 async function handleCancellationRequest(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   phone: string,
   userText: string,
 ): Promise<string> {
@@ -1312,7 +1314,7 @@ async function handleCancellationRequest(
 }
 
 async function getInventorySummary(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   args: { intent: IncomingIntent; text: string; candidatesOverride?: string[] }
 ): Promise<string> {
   const makeProductsQuery = () => sb
@@ -1465,7 +1467,7 @@ async function getInventorySummary(
  * Uses Supabase JSON to avoid schema changes.
  */
 async function storePendingOrder(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   phone: string,
   order: PendingOrder
 ): Promise<void> {
@@ -1486,7 +1488,7 @@ async function storePendingOrder(
  * Retrieve and remove a pending order.
  */
 async function getPendingOrder(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   phone: string
 ): Promise<PendingOrder | null> {
   try {
@@ -1561,7 +1563,7 @@ interface ProcessOrderResult {
 }
 
 async function createPendingOrderFromPending(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   pending: PendingOrder
 ): Promise<string> {
   const { data: order, error } = await sb
@@ -1582,7 +1584,7 @@ async function createPendingOrderFromPending(
 }
 
 async function processOrderIntent(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   replyText: string
 ): Promise<ProcessOrderResult> {
   // Match ORDER: anywhere in the reply, using brace-depth counting to handle nested JSON
@@ -1645,7 +1647,7 @@ Ridicare: ${normalizedPickupTime || 'la preluare'}`
 // ─── Conversation history ─────────────────────────────────────────────────────
 
 async function getHistory(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   phone: string
 ): Promise<ConversationMessage[]> {
   const { data } = await sb
@@ -1665,7 +1667,7 @@ async function getHistory(
 }
 
 async function appendHistory(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   phone: string,
   history: ConversationMessage[],
   newMessages: ConversationMessage[]
@@ -1692,7 +1694,7 @@ async function appendHistory(
 }
 
 async function resolveOrderItems(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   items: Array<{ product_id?: string; name: string; qty: number; unit_price?: number }>
 ): Promise<{ items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>; totalPrice: number }> {
   const resolvedItems: Array<{ product_id: string; name: string; qty: number; unit_price: number }> = [];
@@ -1801,7 +1803,7 @@ function scoreProductName(name: string, query: string): number {
 }
 
 async function resolveProductById(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   id: string
 ): Promise<ProductMatchResult> {
   const { data: product } = await sb
@@ -1814,7 +1816,7 @@ async function resolveProductById(
 }
 
 async function resolveProductByName(
-  sb: ReturnType<typeof createClient>,
+  sb: ServerSupabaseClient,
   rawName: string,
   targetPrice?: number
 ): Promise<ProductMatchResult> {
