@@ -64,11 +64,12 @@ function localWhatsappSimulatorPlugin(): PluginOption {
             return;
           }
 
-          const module = await server.ssrLoadModule('/api/whatsapp.ts');
+          const simulatorModule = await server.ssrLoadModule('/lib/whatsapp/simulator.ts');
+          const stateModule = await server.ssrLoadModule('/lib/whatsapp/conversation-state.ts');
           const mode = String(body.mode ?? 'agent');
           const debug = Boolean(body.debug);
           if (reset) {
-            await module.resetConversationHistory(phone);
+            await stateModule.resetConversationHistory(phone);
             sendJson(res, 200, { ok: true });
             return;
           }
@@ -79,12 +80,12 @@ function localWhatsappSimulatorPlugin(): PluginOption {
           }
 
           if (mode === 'direct') {
-            const reply = await module.buildLocalSimulationReply(phone, name, text);
+            const reply = await simulatorModule.buildLocalSimulationReply(phone, name, text);
             sendJson(res, 200, { ok: true, reply, provider: 'local' });
             return;
           }
 
-          const result = await module.buildSimulatorReply(phone, name, text);
+          const result = await simulatorModule.buildSimulatorReply(phone, name, text);
           sendJson(res, 200, {
             ok: true,
             reply: result.reply,
