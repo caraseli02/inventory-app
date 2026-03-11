@@ -6,15 +6,15 @@
  * - classifyIncomingText (cancel intent + JSON false-positive fix)
  */
 import { describe, expect, it } from 'vitest';
-import { __private__ } from '../../api/whatsapp';
-
-const {
-  extractOrderJson,
+import {
+  classifyIncomingText,
   normalizePickupTime,
   parsePickupDateTime,
-  classifyIncomingText,
+} from '../../api/whatsapp/conversation';
+import {
   createPendingOrderFromPending,
-} = __private__;
+  extractOrderJson,
+} from '../../api/whatsapp/order-intent';
 
 // ─── extractOrderJson ─────────────────────────────────────────────────────────
 

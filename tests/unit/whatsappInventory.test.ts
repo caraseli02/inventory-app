@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { __private__ } from '../../api/whatsapp'
+import {
+  extractSearchCandidates,
+  extractSearchCandidatesFromHistory,
+  maybeHandleMenuSelection,
+  maybeHandleOrderFollowup,
+  maybeRepairOrderReply,
+} from '../../api/whatsapp/conversation'
+import { getInventorySummary } from '../../api/whatsapp/inventory'
 
 type ProductRow = {
   id: string
@@ -103,7 +110,7 @@ describe('WhatsApp inventory summary', () => {
       },
     }) as any
 
-    const summary = await __private__.getInventorySummary(sb, {
+    const summary = await getInventorySummary(sb, {
       intent: 'product_query',
       text: 'vreau 1 FOOBARLONGGG condensat icinea',
     })
@@ -114,7 +121,7 @@ describe('WhatsApp inventory summary', () => {
   })
 
   it('filters order-related words from search candidates', () => {
-    const candidates = __private__.extractSearchCandidates('vreu sa comand 2 lapte pentru ora 18.30')
+    const candidates = extractSearchCandidates('vreu sa comand 2 lapte pentru ora 18.30')
     expect(candidates).not.toContain('comand')
     expect(candidates).not.toContain('pentru')
     expect(candidates).not.toContain('ora')
@@ -122,12 +129,12 @@ describe('WhatsApp inventory summary', () => {
   })
 
   it('maps english milk to romanian lapte', () => {
-    const candidates = __private__.extractSearchCandidates('hey, do you have milk for sale?')
+    const candidates = extractSearchCandidates('hey, do you have milk for sale?')
     expect(candidates).toContain('lapte')
   })
 
   it('filters english filler words from search candidates', () => {
-    const candidates = __private__.extractSearchCandidates('ok I will get 2')
+    const candidates = extractSearchCandidates('ok I will get 2')
     expect(candidates).not.toContain('will')
     expect(candidates).not.toContain('get')
     expect(candidates).not.toContain('ok')
@@ -138,7 +145,7 @@ describe('WhatsApp inventory summary', () => {
       { role: 'assistant', content: 'We have condensed milk ICINEA', timestamp: 't1' },
       { role: 'user', content: 'hey, do you have milk for sale?', timestamp: 't2' },
     ]
-    const candidates = __private__.extractSearchCandidatesFromHistory(history as any)
+    const candidates = extractSearchCandidatesFromHistory(history as any)
     expect(candidates).toContain('lapte')
   })
 
@@ -149,7 +156,7 @@ describe('WhatsApp inventory summary', () => {
       { role: 'user', content: 'aveti lapte?', timestamp: 't1' },
       { role: 'assistant', content: 'Da, avem lapte condensat integral de 370G.', timestamp: 't2' },
     ]
-    const candidates = __private__.extractSearchCandidatesFromHistory(history as any)
+    const candidates = extractSearchCandidatesFromHistory(history as any)
     expect(candidates).toContain('lapte')
   })
 
@@ -158,7 +165,7 @@ describe('WhatsApp inventory summary', () => {
     const userText = 'vreu sa comand 2 de 370G LAPTE CONDEN INTEG ICINEA pentru ora 18.30'
     const replyText = 'Am notat comanda. Mulțumesc!'
 
-    const repaired = __private__.maybeRepairOrderReply({
+    const repaired = maybeRepairOrderReply({
       replyText,
       userText,
       inventoryText,
@@ -178,7 +185,7 @@ describe('WhatsApp inventory summary', () => {
       '• 370G LAPTE CONDEN FIERT IRISK (Dairy) — €3.34, stoc: 30',
     ].join('\n')
 
-    const followup = __private__.maybeHandleOrderFollowup({
+    const followup = maybeHandleOrderFollowup({
       userText: 'da 2, sa ridic la 18.30',
       history: [],
       inventoryText,
@@ -204,7 +211,7 @@ describe('WhatsApp inventory summary', () => {
       },
     ]
 
-    const selection = __private__.maybeHandleMenuSelection({
+    const selection = maybeHandleMenuSelection({
       userText: '1',
       history: history as any,
       inventoryText: [
@@ -234,7 +241,7 @@ describe('WhatsApp inventory summary', () => {
       },
     ]
 
-    const followup = __private__.maybeHandleOrderFollowup({
+    const followup = maybeHandleOrderFollowup({
       userText: 'vreau 1 de cada pentru 19:00',
       history: history as any,
       inventoryText: '• 0.5L DIVIN AUTENTIC VSOP 5 ANI — €12.00, stoc: 5',
