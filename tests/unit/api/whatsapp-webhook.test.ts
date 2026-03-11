@@ -2,6 +2,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { computeTwilioSignature } from '../../../api/lib/twilio-signature.js';
 
+const { createClientMock, waitUntilMock } = vi.hoisted(() => ({
+  createClientMock: vi.fn(),
+  waitUntilMock: vi.fn(),
+}));
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: createClientMock,
+}));
+
+vi.mock('@vercel/functions', () => ({
+  waitUntil: waitUntilMock,
+}));
+
 type JsonValue = Record<string, unknown> | null;
 
 function makeSignature(params: Record<string, string>): string {
@@ -58,12 +71,86 @@ function createResponse() {
   };
 }
 
+type PendingOrder = {
+  customer_name: string;
+  customer_phone: string;
+  items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>;
+  total_price: number;
+  pickup_time: string | null;
+};
+
+function createSupabaseDouble(args: {
+  pendingOrder?: PendingOrder | null;
+  historyMessages?: unknown[];
+  orderNumber?: string;
+}) {
+  const pendingOrder = args.pendingOrder ?? null;
+  const historyMessages = args.historyMessages ?? [];
+
+  const maybeSingleMock = vi.fn().mockResolvedValue({
+    data: pendingOrder != null
+      ? { pending_order: pendingOrder, messages: historyMessages }
+      : { pending_order: null, messages: historyMessages },
+  });
+  const selectEqMock = vi.fn().mockReturnValue({ maybeSingle: maybeSingleMock });
+  const selectMock = vi.fn().mockReturnValue({ eq: selectEqMock });
+
+  const updateEqMock = vi.fn().mockResolvedValue({ data: null, error: null });
+  const updateMock = vi.fn().mockReturnValue({ eq: updateEqMock });
+
+  const upsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+  const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
+
+  const singleMock = vi.fn().mockResolvedValue({
+    data: { order_number: args.orderNumber ?? 'ORD-001' },
+    error: null,
+  });
+  const ordersSelectMock = vi.fn().mockReturnValue({ single: singleMock });
+  const insertMock = vi.fn().mockReturnValue({ select: ordersSelectMock });
+
+  const inMock = vi.fn().mockResolvedValue({ data: [] });
+  const movementsSelectMock = vi.fn().mockReturnValue({ in: inMock });
+
+  const fromMock = vi.fn((table: string) => {
+    if (table === 'conversation_history') {
+      return { select: selectMock, update: updateMock, upsert: upsertMock };
+    }
+    if (table === 'orders') {
+      return { insert: insertMock };
+    }
+    if (table === 'stock_movements') {
+      return { select: movementsSelectMock };
+    }
+    return {
+      select: selectMock,
+      update: updateMock,
+      upsert: upsertMock,
+      insert: insertMock,
+    };
+  });
+
+  return {
+    client: { from: fromMock, rpc: rpcMock },
+    spies: {
+      fromMock,
+      selectEqMock,
+      updateMock,
+      updateEqMock,
+      upsertMock,
+      insertMock,
+      maybeSingleMock,
+    },
+  };
+}
+
 describe('api/whatsapp (webhook handler)', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
   const ENV_VARS = ['TWILIO_AUTH_TOKEN', 'TWILIO_ACCOUNT_SID', 'TWILIO_FROM_NUMBER', 'TWILIO_CONFIRM_CONTENT_SID'];
   let savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
+    vi.clearAllMocks();
+
     // Save original env vars
     savedEnv = Object.fromEntries(ENV_VARS.map((k) => [k, process.env[k]]));
 
@@ -78,9 +165,8 @@ describe('api/whatsapp (webhook handler)', () => {
       text: async () => '',
     });
     vi.stubGlobal('fetch', fetchMock);
-
-    // Clear all mocks
-    vi.clearAllMocks();
+    waitUntilMock.mockImplementation((promise: Promise<unknown>) => promise);
+    createClientMock.mockReturnValue(createSupabaseDouble({}).client);
   });
 
   afterEach(() => {
@@ -262,6 +348,15 @@ describe('api/whatsapp (webhook handler)', () => {
       const { default: handler } = await import('../../../api/whatsapp');
       process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
       process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion Popescu',
+        customer_phone: '+40123456789',
+        items: [{ product_id: 'p1', name: 'Lapte', qty: 2, unit_price: 3.42 }],
+        total_price: 6.84,
+        pickup_time: 'mâine 12:00',
+      };
+      const sb = createSupabaseDouble({ pendingOrder, orderNumber: 'ORD-025' });
+      createClientMock.mockReturnValue(sb.client);
 
       const req = createRequest({
         From: 'whatsapp:+40123456789',
@@ -275,12 +370,26 @@ describe('api/whatsapp (webhook handler)', () => {
       // Button taps should return TwiML, not trigger async REST
       expect(res.statusCode).toBe(200);
       expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
+      expect(sb.spies.insertMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock).toHaveBeenCalled();
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
     });
 
     it('button payload cancel returns TwiML (not REST) for immediate response', async () => {
       const { default: handler } = await import('../../../api/whatsapp');
       process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
       process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion Popescu',
+        customer_phone: '+40123456789',
+        items: [{ product_id: 'p1', name: 'Lapte', qty: 1, unit_price: 3.42 }],
+        total_price: 3.42,
+        pickup_time: null,
+      };
+      const sb = createSupabaseDouble({ pendingOrder });
+      createClientMock.mockReturnValue(sb.client);
 
       const req = createRequest({
         From: 'whatsapp:+40123456789',
@@ -294,6 +403,33 @@ describe('api/whatsapp (webhook handler)', () => {
       // Button taps should return TwiML
       expect(res.statusCode).toBe(200);
       expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
+      expect(sb.spies.insertMock).not.toHaveBeenCalled();
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+fost+anulat');
+    });
+
+    it('button payload confirm sends expired message when no pending order exists', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({ pendingOrder: null });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        ButtonPayload: 'confirm',
+        Body: '',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(sb.spies.insertMock).not.toHaveBeenCalled();
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+expirat');
     });
   });
 

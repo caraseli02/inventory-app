@@ -510,7 +510,11 @@ async function runConversationTurn(args: {
       console.error('[whatsapp] history append failed:', err);
     }
 
-    return { provider: 'local', reply };
+    return {
+      provider: 'local',
+      reply,
+      ...(args.includeDebug ? { debug: { intent } } : {}),
+    };
   }
 
   const history = await getHistory(args.sb, args.phone);
@@ -538,6 +542,7 @@ async function runConversationTurn(args: {
   } else {
     const followup = maybeHandleOrderFollowup({
       userText: args.text,
+      history,
       inventoryText,
       customerName: args.name,
       customerPhone: args.phone,
@@ -912,6 +917,18 @@ function extractInventoryNames(inventoryText: string): string[] {
     .filter(Boolean);
 }
 
+function extractProductNamesFromAssistantText(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => /^([*•-]\s+|\d+\)\s+)/.test(line))
+    .map((line) => line.replace(/^([*•-]\s+|\d+\)\s+)/, ''))
+    .map((line) => line.split(' — ')[0] ?? '')
+    .map((line) => line.replace(/\s*\([^)]*\)\s*$/, '').trim())
+    .filter(Boolean);
+}
+
 /** Map Romanian date words → normalized label for storage. */
 const DATE_WORDS: Record<string, string> = {
   azi: 'azi', astazi: 'azi', 'astăzi': 'azi',
@@ -971,6 +988,15 @@ function parseSingleQuantity(text: string): number | null {
   return Math.min(99, n);
 }
 
+function parseRepeatedQuantity(text: string): number | null {
+  const normalized = normalizeFreeText(text);
+  const match = normalized.match(/\b(\d{1,2})\s+(?:de\s+cada|cada\s+uno|din\s+fiecare|each)\b/);
+  if (!match) return null;
+  const qty = Number(match[1]);
+  if (!Number.isFinite(qty) || qty <= 0) return null;
+  return Math.min(99, Math.floor(qty));
+}
+
 function parseMenuChoice(text: string): number | null {
   const m = text.trim().match(/^([1-9])\s*[).]?\s*$/);
   if (!m) return null;
@@ -1006,6 +1032,21 @@ function findLastMenuOptions(history: ConversationMessage[]): string[] {
     if (!msg?.content) continue;
     const options = extractMenuOptionsFromAssistantText(msg.content);
     if (options.length >= 2) return options;
+  }
+  return [];
+}
+
+function findRecentAssistantProductMentions(history: ConversationMessage[]): string[] {
+  for (let i = history.length - 1; i >= 0; i -= 1) {
+    const msg = history[i];
+    if (msg.role !== 'assistant') continue;
+    if (!msg?.content) continue;
+
+    const menuOptions = extractMenuOptionsFromAssistantText(msg.content);
+    if (menuOptions.length >= 2) return menuOptions;
+
+    const listedProducts = extractProductNamesFromAssistantText(msg.content);
+    if (listedProducts.length >= 2) return listedProducts;
   }
   return [];
 }
@@ -1061,6 +1102,7 @@ function looksLikeOrderRequest(text: string): boolean {
 
 function maybeHandleOrderFollowup(args: {
   userText: string;
+  history: ConversationMessage[];
   inventoryText: string;
   customerName: string;
   customerPhone: string;
@@ -1070,28 +1112,44 @@ function maybeHandleOrderFollowup(args: {
 
   const pickupTime = parsePickupTime(args.userText);
   const qty = parseSingleQuantity(args.userText);
-  if (!pickupTime || !qty) return null;
+  const repeatedQty = parseRepeatedQuantity(args.userText);
+  if (!pickupTime || (!qty && !repeatedQty)) return null;
 
   const names = extractInventoryNames(args.inventoryText);
-  if (!names.length) return null;
+  const recentNames = findRecentAssistantProductMentions(args.history);
+  const candidateNames = recentNames.length ? recentNames : names;
+  if (!candidateNames.length) return null;
 
   const userNorm = normalizeFreeText(args.userText);
-  const matches = names.filter((n) => userNorm.includes(normalizeFreeText(n)));
+  const matches = candidateNames.filter((n) => userNorm.includes(normalizeFreeText(n)));
 
-  if (matches.length === 1 || names.length === 1) {
-    const chosen = matches[0] ?? names[0]!;
+  if (repeatedQty && recentNames.length >= 2) {
     const payload = {
       customer_name: args.customerName,
       customer_phone: args.customerPhone,
-      items: [{ name: chosen, qty }],
+      items: recentNames.map((name) => ({ name, qty: repeatedQty })),
       pickup_time: pickupTime,
     };
 
-    const reply = `Perfect — confirm: ${qty} × ${chosen}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`;
+    const itemsText = recentNames.map((name) => `${repeatedQty} × ${name}`).join(', ');
+    const reply = `Perfect — confirm: ${itemsText}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`;
     return { text: reply, createdOrder: true };
   }
 
-  const options = names.slice(0, 3);
+  if (matches.length === 1 || candidateNames.length === 1) {
+    const chosen = matches[0] ?? candidateNames[0]!;
+    const payload = {
+      customer_name: args.customerName,
+      customer_phone: args.customerPhone,
+      items: [{ name: chosen, qty: qty ?? repeatedQty ?? 1 }],
+      pickup_time: pickupTime,
+    };
+
+    const reply = `Perfect — confirm: ${(qty ?? repeatedQty ?? 1)} × ${chosen}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`;
+    return { text: reply, createdOrder: true };
+  }
+
+  const options = candidateNames.slice(0, 3);
   const list = options.map((n, i) => `${i + 1}) ${n}`).join('\n');
   const reply = `Am mai multe opțiuni în inventar. Care anume?\n${list}`;
   return { text: reply, createdOrder: false };

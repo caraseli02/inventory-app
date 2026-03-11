@@ -180,6 +180,7 @@ describe('WhatsApp inventory summary', () => {
 
     const followup = __private__.maybeHandleOrderFollowup({
       userText: 'da 2, sa ridic la 18.30',
+      history: [],
       inventoryText,
       customerName: 'Test',
       customerPhone: '+40000000000',
@@ -217,5 +218,34 @@ describe('WhatsApp inventory summary', () => {
     expect(selection?.text).toContain('ORDER:')
     expect(selection?.text).toContain('370G LAPTE CONDEN INTEG ICINEA')
     expect(selection?.text).toContain('18:30')
+  })
+
+  it('creates a multi-item order for "de cada" using the last assistant list', () => {
+    const history = [
+      {
+        role: 'assistant',
+        content: [
+          '* 0.75L BACIO DI BOLLE D/SEC ALB — €8.27',
+          '* 0.75L VIORICA ECO CRICOVA DEMI — €13.24',
+          '',
+          'Care te interesează?',
+        ].join('\n'),
+        timestamp: 't1',
+      },
+    ]
+
+    const followup = __private__.maybeHandleOrderFollowup({
+      userText: 'vreau 1 de cada pentru 19:00',
+      history: history as any,
+      inventoryText: '• 0.5L DIVIN AUTENTIC VSOP 5 ANI — €12.00, stoc: 5',
+      customerName: 'Test',
+      customerPhone: '+40000000000',
+    })
+
+    expect(followup?.createdOrder).toBe(true)
+    expect(followup?.text).toContain('BACIO DI BOLLE')
+    expect(followup?.text).toContain('VIORICA ECO CRICOVA DEMI')
+    expect(followup?.text).toContain('19:00')
+    expect(followup?.text).toContain('ORDER:')
   })
 })
