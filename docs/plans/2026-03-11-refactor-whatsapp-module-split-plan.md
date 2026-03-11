@@ -344,14 +344,14 @@ This phase is the recommended starting point and should be one small PR.
 
 ### Phase 3: Extract conversation and inventory domains
 
-- Extract:
+- [x] Extract:
   - `inventory.ts`
   - `order-intent.ts`
   - `conversation.ts`
 
 **Success criteria**
-- deterministic order and follow-up logic no longer lives in the route file
-- extracted domain modules have direct tests instead of `__private__` coupling
+- [x] deterministic order and follow-up logic no longer lives in the route file
+- [x] extracted domain modules have direct tests instead of `__private__` coupling
 
 ### Phase 4: Extract orchestration layers
 

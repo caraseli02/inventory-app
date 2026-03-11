@@ -16,7 +16,7 @@ vi.mock('../../../api/whatsapp.js', () => ({
   buildSimulatorReply: buildSimulatorReplyMock,
 }));
 
-vi.mock('../../../api/whatsapp/conversation-state.js', () => ({
+vi.mock('../../../lib/whatsapp/conversation-state.js', () => ({
   resetConversationHistory: resetConversationHistoryMock,
 }));
 

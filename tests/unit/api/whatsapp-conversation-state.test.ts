@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { ConversationMessage, PendingOrder } from '../../../api/whatsapp/types';
+import type { ConversationMessage, PendingOrder } from '../../../lib/whatsapp/types';
 
 const { createClientMock } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
@@ -16,7 +16,7 @@ import {
   hasConversationHistory,
   resetConversationHistory,
   storePendingOrder,
-} from '../../../api/whatsapp/conversation-state';
+} from '../../../lib/whatsapp/conversation-state';
 
 function createConversationStateDouble(args: {
   selectData?: Record<string, unknown> | null;

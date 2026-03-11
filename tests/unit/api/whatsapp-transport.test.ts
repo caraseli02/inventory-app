@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { sendRestMessage, sendTemplateMessage, twiml } from '../../../api/whatsapp/transport.js';
+import { sendRestMessage, sendTemplateMessage, twiml } from '../../../lib/whatsapp/transport.js';
 
 describe('whatsapp transport', () => {
   const originalEnv = {

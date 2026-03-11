@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { resetConversationHistory } from './whatsapp/conversation-state.js';
+import { resetConversationHistory } from '../lib/whatsapp/conversation-state.js';
 import { buildLocalSimulationReply, buildSimulatorReply } from './whatsapp.js';
 
 interface SimulateBody {
