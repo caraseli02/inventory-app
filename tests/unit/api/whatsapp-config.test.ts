@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { getTwilioAuthToken, getTwilioRestCredentials } from '../../../api/whatsapp/config.js';
+import { getTwilioAuthToken, getTwilioRestCredentials } from '../../../lib/whatsapp/config.js';
 
 describe('whatsapp config', () => {
   const originalEnv = {
