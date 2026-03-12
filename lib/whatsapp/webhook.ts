@@ -52,6 +52,25 @@ async function replyViaAvailableChannel(args: {
   sendTwiml(args.res, args.message);
 }
 
+async function findLatestPendingOrderNumberByPhone(sb: ReturnType<typeof createSupabaseClient>, phone: string): Promise<string | null> {
+  try {
+    // Supabase's generated generic type for chained order lookups gets too deep here.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (sb.from('orders') as any)
+      .select('order_number, status, created_at')
+      .eq('customer_phone', phone)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const orderNumber = (data?.[0] as { order_number?: string } | undefined)?.order_number;
+    return orderNumber ? String(orderNumber) : null;
+  } catch (err) {
+    console.error('[whatsapp] failed to find latest pending order:', err);
+    return null;
+  }
+}
+
 async function handlePendingTextDecision(args: {
   res: VercelResponse;
   from: string;
@@ -142,6 +161,11 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   if (buttonPayload === 'confirm') {
     const pendingState = await consumePendingOrder(sb, phone);
     if (pendingState.status !== 'fresh') {
+      const existingOrderNumber = await findLatestPendingOrderNumberByPhone(sb, phone);
+      if (existingOrderNumber) {
+        await sendRestMessage(from, `✅ Cererea ${existingOrderNumber} a fost deja înregistrată și așteaptă confirmarea magazinului.`);
+        return;
+      }
       await sendRestMessage(from, '⚠️ Comanda a expirat. Te rog trimite din nou.');
       return;
     }
@@ -160,6 +184,11 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   if (buttonPayload === 'cancel') {
     const pendingState = await consumePendingOrder(sb, phone);
     if (pendingState.status !== 'fresh') {
+      const existingOrderNumber = await findLatestPendingOrderNumberByPhone(sb, phone);
+      if (existingOrderNumber) {
+        await sendRestMessage(from, `ℹ️ Cererea ${existingOrderNumber} este deja înregistrată și nu mai poate fi anulată din acest mesaj.`);
+        return;
+      }
       await sendRestMessage(from, '⚠️ Comanda a expirat. Te rog trimite din nou.');
       return;
     }

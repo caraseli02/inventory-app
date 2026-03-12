@@ -84,9 +84,11 @@ function createSupabaseDouble(args: {
   pendingOrder?: PendingOrder | null;
   historyMessages?: unknown[];
   orderNumber?: string;
+  latestOrder?: { order_number: string; status?: string; created_at?: string } | null;
 }) {
   const pendingOrder = args.pendingOrder ?? null;
   const historyMessages = args.historyMessages ?? [];
+  const latestOrder = args.latestOrder ?? null;
 
   const maybeSingleMock = vi.fn().mockResolvedValue({
     data: pendingOrder != null
@@ -124,6 +126,17 @@ function createSupabaseDouble(args: {
   });
   const ordersSelectMock = vi.fn().mockReturnValue({ single: singleMock });
   const insertMock = vi.fn().mockReturnValue({ select: ordersSelectMock });
+  const ordersLimitMock = vi.fn().mockResolvedValue({
+    data: latestOrder ? [{
+      order_number: latestOrder.order_number,
+      status: latestOrder.status ?? 'pending',
+      created_at: latestOrder.created_at ?? new Date().toISOString(),
+    }] : [],
+  });
+  const ordersOrderMock = vi.fn().mockReturnValue({ limit: ordersLimitMock });
+  const ordersEqStatusMock = vi.fn().mockReturnValue({ order: ordersOrderMock });
+  const ordersEqPhoneMock = vi.fn().mockReturnValue({ eq: ordersEqStatusMock });
+  const ordersLookupSelectMock = vi.fn().mockReturnValue({ eq: ordersEqPhoneMock });
 
   const inMock = vi.fn().mockResolvedValue({ data: [] });
   const movementsSelectMock = vi.fn().mockReturnValue({ in: inMock });
@@ -133,7 +146,7 @@ function createSupabaseDouble(args: {
       return { select: selectMock, update: updateMock, upsert: upsertMock };
     }
     if (table === 'orders') {
-      return { insert: insertMock };
+      return { insert: insertMock, select: ordersLookupSelectMock };
     }
     if (table === 'stock_movements') {
       return { select: movementsSelectMock };
@@ -159,6 +172,7 @@ function createSupabaseDouble(args: {
       updateSelectMaybeSingleMock,
       upsertMock,
       insertMock,
+      ordersLookupSelectMock,
       maybeSingleMock,
     },
   };
@@ -474,6 +488,59 @@ describe('api/whatsapp (webhook handler)', () => {
       await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
       expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+expirat');
+    });
+
+    it('button payload confirm replays success when pending draft was already consumed but order exists', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({
+        pendingOrder: null,
+        latestOrder: { order_number: 'ORD-025', status: 'pending' },
+      });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        ButtonPayload: 'confirm',
+        Body: '',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(sb.spies.insertMock).not.toHaveBeenCalled();
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).not.toContain('Comanda+a+expirat');
+    });
+
+    it('button payload cancel reports already-registered order when pending draft was already consumed', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({
+        pendingOrder: null,
+        latestOrder: { order_number: 'ORD-025', status: 'pending' },
+      });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        ButtonPayload: 'cancel',
+        Body: '',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).not.toContain('Comanda+a+expirat');
     });
 
     it('text DA confirms only with a fresh pending order', async () => {
