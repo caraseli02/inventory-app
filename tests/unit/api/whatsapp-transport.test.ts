@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { sendRestMessage, sendTemplateMessage, twiml } from '../../../lib/whatsapp/transport.js';
+import { sendRestMessage, sendTemplateMessage, sendTypingIndicator, twiml } from '../../../lib/whatsapp/transport.js';
 
 describe('whatsapp transport', () => {
   const originalEnv = {
@@ -50,5 +50,41 @@ describe('whatsapp transport', () => {
     const body = String(fetchMock.mock.calls[0]?.[1]?.body ?? '');
     expect(body).toContain('ContentSid=HX123');
     expect(body).toContain('ContentVariables=');
+  });
+
+  it('marks incoming message as read via typing indicator endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await sendTypingIndicator('SM123');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toContain('/Accounts/AC123/Messages/SM123.json');
+    expect(init).toMatchObject({
+      method: 'POST',
+      headers: expect.objectContaining({ 'Content-Type': 'application/x-www-form-urlencoded' }),
+      body: 'Status=read',
+    });
+  });
+
+  it('does not call fetch when typing indicator message sid is empty', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await sendTypingIndicator('');
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('skips REST sends when credentials are incomplete', async () => {
+    delete process.env.TWILIO_FROM_NUMBER;
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await sendRestMessage('+40712345678', 'hello');
+    await sendTemplateMessage('+40712345678', 'HX123');
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
