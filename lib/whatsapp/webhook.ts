@@ -3,7 +3,9 @@ import { waitUntil } from '@vercel/functions';
 import { validateTwilioSignature } from '../../api/lib/twilio-signature.js';
 import { getTwilioAuthToken, getTwilioRestCredentials } from './config.js';
 import {
-  getPendingOrder,
+  clearPendingOrder,
+  consumePendingOrder,
+  getPendingOrderState,
   hasConversationHistory,
   storePendingOrder,
 } from './conversation-state.js';
@@ -63,12 +65,21 @@ async function handlePendingTextDecision(args: {
   if (!isConfirmText && !isRejectText) return false;
 
   const sb = createSupabaseClient();
-  const pending = await getPendingOrder(sb, args.phone);
-  if (!pending) return false;
+  const pendingState = await (isConfirmText ? consumePendingOrder(sb, args.phone) : getPendingOrderState(sb, args.phone));
+  if (pendingState.status === 'expired') {
+    await replyViaAvailableChannel({
+      res: args.res,
+      from: args.from,
+      canUseRest: args.canUseRest,
+      message: '⚠️ Comanda a expirat. Te rog trimite din nou.',
+    });
+    return true;
+  }
+  if (pendingState.status === 'missing') return false;
 
   if (isConfirmText) {
     try {
-      const orderNumber = await createPendingOrderFromPending(sb, pending);
+      const orderNumber = await createPendingOrderFromPending(sb, pendingState.order);
       await replyViaAvailableChannel({
         res: args.res,
         from: args.from,
@@ -77,6 +88,7 @@ async function handlePendingTextDecision(args: {
       });
     } catch (err) {
       console.error('[whatsapp] DA order insert failed:', err);
+      await storePendingOrder(sb, args.phone, pendingState.order);
       await replyViaAvailableChannel({
         res: args.res,
         from: args.from,
@@ -87,6 +99,7 @@ async function handlePendingTextDecision(args: {
     return true;
   }
 
+  await clearPendingOrder(sb, args.phone);
   await replyViaAvailableChannel({
     res: args.res,
     from: args.from,
@@ -127,19 +140,30 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   const sb = createSupabaseClient();
 
   if (buttonPayload === 'confirm') {
-    const pending = await getPendingOrder(sb, phone);
-    if (!pending) {
+    const pendingState = await consumePendingOrder(sb, phone);
+    if (pendingState.status !== 'fresh') {
       await sendRestMessage(from, '⚠️ Comanda a expirat. Te rog trimite din nou.');
       return;
     }
 
-    const orderNumber = await createPendingOrderFromPending(sb, pending);
-    await sendRestMessage(from, `✅ Cererea ${orderNumber} a fost înregistrată și așteaptă confirmarea magazinului.`);
+    try {
+      const orderNumber = await createPendingOrderFromPending(sb, pendingState.order);
+      await sendRestMessage(from, `✅ Cererea ${orderNumber} a fost înregistrată și așteaptă confirmarea magazinului.`);
+    } catch (err) {
+      console.error('[whatsapp] button confirm order insert failed:', err);
+      await storePendingOrder(sb, phone, pendingState.order);
+      await sendRestMessage(from, 'Ne pare rău, nu am putut înregistra comanda. Încearcă din nou.');
+    }
     return;
   }
 
   if (buttonPayload === 'cancel') {
-    await getPendingOrder(sb, phone);
+    const pendingState = await consumePendingOrder(sb, phone);
+    if (pendingState.status !== 'fresh') {
+      await sendRestMessage(from, '⚠️ Comanda a expirat. Te rog trimite din nou.');
+      return;
+    }
+
     await sendRestMessage(from, '❌ Comanda a fost anulată.');
   }
 }

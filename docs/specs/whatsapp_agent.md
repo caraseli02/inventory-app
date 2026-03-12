@@ -102,6 +102,7 @@ Customer can place a pickup order by specifying items and pickup time. Order is 
 - Then an order record is created in Supabase with status `pending`
 - And customer receives confirmation with order number and total price
 - And order creation is based on current-turn evidence or explicit confirmation signals, not history-only reconstruction
+- And `DA/NU` or button confirm/cancel only act on one fresh pending order
 
 **R05 — Orders Page in App**
 New page in the React app showing pending pickup orders with confirm/cancel actions.
@@ -216,6 +217,7 @@ notes         text
 id            uuid PRIMARY KEY
 phone_number  text NOT NULL
 messages      jsonb NOT NULL       -- [{role, content, timestamp}]
+pending_order jsonb                -- transactional state with embedded created-at metadata
 updated_at    timestamptz DEFAULT now()
 ```
 
@@ -284,7 +286,8 @@ Rules:
 | Does the store already have WhatsApp Business? Separate number needed for API | Store Owner | ✅ Yes — need number before Meta setup | TBD |
 | What is the store name, address, hours for system prompt? | Store Owner | ✅ Yes — needed for agent config | TBD |
 | Should orders reduce stock immediately on creation, or only on confirmation? | Product | Yes — affects inventory accuracy | ✅ **Stock reduces on owner confirmation only** — prevents phantom reductions from cancelled orders |
-| Conversation history TTL — how long to keep context? 24h? 7 days? | Engineering | No | TBD |
+| Conversation history TTL — how long to keep context? 24h? 7 days? | Engineering | No | 7 days |
+| Pending-order expiry window for `DA/NU` and button confirm/cancel | Engineering | No | 120 minutes default via env override |
 | Should the agent handle complaints or only product Q&A? | Store Owner | No | TBD |
 
 ---

@@ -1,6 +1,45 @@
 import type { ConversationMessage, PendingOrder } from './types.js';
 import { createSupabaseClient, type ServerSupabaseClient } from './db.js';
 
+export type PendingOrderState =
+  | { status: 'missing'; order: null }
+  | { status: 'expired'; order: null }
+  | { status: 'fresh'; order: PendingOrder };
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function getPendingOrderTtlMs(): number {
+  const ttlMinutes = Number(process.env.WHATSAPP_PENDING_ORDER_TTL_MINUTES ?? '120');
+  const effectiveTtlMinutes = Number.isFinite(ttlMinutes) && ttlMinutes > 0 ? ttlMinutes : 120;
+  return effectiveTtlMinutes * 60 * 1000;
+}
+
+function isPendingOrderExpired(order: PendingOrder | null): boolean {
+  if (!order?.pending_order_created_at) return false;
+  const createdAt = new Date(order.pending_order_created_at).getTime();
+  if (!Number.isFinite(createdAt) || createdAt <= 0) return false;
+  return Date.now() - createdAt > getPendingOrderTtlMs();
+}
+
+function toPendingOrderState(order: PendingOrder | null): PendingOrderState {
+  if (!order) return { status: 'missing', order: null };
+  if (isPendingOrderExpired(order)) return { status: 'expired', order: null };
+  return { status: 'fresh', order };
+}
+
+export async function clearPendingOrder(
+  sb: ServerSupabaseClient,
+  phone: string
+): Promise<void> {
+  try {
+    await sb.from('conversation_history').update({ pending_order: null }).eq('phone_number', phone);
+  } catch (err) {
+    console.error('[whatsapp] failed to clear pending order:', err);
+  }
+}
+
 export async function resetConversationHistory(phone: string): Promise<void> {
   const sb = createSupabaseClient();
   await sb.from('conversation_history').delete().eq('phone_number', phone);
@@ -29,10 +68,14 @@ export async function storePendingOrder(
   order: PendingOrder
 ): Promise<void> {
   try {
+    const pendingOrder: PendingOrder = {
+      ...order,
+      pending_order_created_at: order.pending_order_created_at ?? nowIso(),
+    };
     await sb.from('conversation_history').upsert(
       {
         phone_number: phone,
-        pending_order: order as unknown,
+        pending_order: pendingOrder as unknown,
       },
       { onConflict: 'phone_number' }
     );
@@ -41,10 +84,12 @@ export async function storePendingOrder(
   }
 }
 
-export async function getPendingOrder(
+// Pending orders are transactional state. Callers should peek first and only
+// clear after an explicit confirm/cancel transition.
+export async function getPendingOrderState(
   sb: ServerSupabaseClient,
   phone: string
-): Promise<PendingOrder | null> {
+): Promise<PendingOrderState> {
   try {
     const { data } = await sb
       .from('conversation_history')
@@ -53,15 +98,46 @@ export async function getPendingOrder(
       .maybeSingle();
 
     const order = (data?.pending_order ?? null) as PendingOrder | null;
-
-    if (order) {
-      await sb.from('conversation_history').update({ pending_order: null }).eq('phone_number', phone);
+    const state = toPendingOrderState(order);
+    if (state.status === 'expired') {
+      await clearPendingOrder(sb, phone);
     }
 
-    return order;
+    return state;
   } catch (err) {
-    console.error('[whatsapp] failed to get pending order:', err);
-    return null;
+    console.error('[whatsapp] failed to peek pending order:', err);
+    return { status: 'missing', order: null };
+  }
+}
+
+export async function peekPendingOrder(
+  sb: ServerSupabaseClient,
+  phone: string
+): Promise<PendingOrder | null> {
+  const state = await getPendingOrderState(sb, phone);
+  return state.status === 'fresh' ? state.order : null;
+}
+
+export async function consumePendingOrder(
+  sb: ServerSupabaseClient,
+  phone: string
+): Promise<PendingOrderState> {
+  try {
+    // Supabase's generated generic type for update-returning chains is too deep
+    // here; cast locally so the atomic consume query stays readable.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const query = (sb.from('conversation_history') as any)
+      .update({ pending_order: null })
+      .eq('phone_number', phone)
+      .not('pending_order', 'is', null)
+      .select('pending_order');
+
+    const { data } = await query.maybeSingle();
+    const order = (data?.pending_order ?? null) as PendingOrder | null;
+    return toPendingOrderState(order);
+  } catch (err) {
+    console.error('[whatsapp] failed to consume pending order:', err);
+    return { status: 'missing', order: null };
   }
 }
 

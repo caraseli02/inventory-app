@@ -11,9 +11,11 @@ vi.mock('@supabase/supabase-js', () => ({
 
 import {
   appendHistory,
+  clearPendingOrder,
+  consumePendingOrder,
   getHistory,
-  getPendingOrder,
   hasConversationHistory,
+  peekPendingOrder,
   resetConversationHistory,
   storePendingOrder,
 } from '../../../lib/whatsapp/conversation-state';
@@ -26,8 +28,16 @@ function createConversationStateDouble(args: {
   const eqMock = vi.fn().mockReturnValue({ maybeSingle: maybeSingleMock });
   const selectMock = vi.fn().mockReturnValue({ eq: eqMock });
 
-  const updateEqMock = vi.fn().mockResolvedValue({ error: null });
-  const updateMock = vi.fn().mockReturnValue({ eq: updateEqMock });
+  const updateSelectMaybeSingleMock = vi.fn().mockResolvedValue({ data: args.selectData ?? null, error: null });
+  const updateSelectMock = vi.fn().mockReturnValue({ maybeSingle: updateSelectMaybeSingleMock });
+  const updateNotMock = vi.fn().mockReturnValue({ select: updateSelectMock });
+  const updateEqPromiseMock = vi.fn().mockResolvedValue({ error: null });
+  const updateMock = vi.fn().mockReturnValue({
+    eq: vi.fn((field: string, value: string) => {
+      updateEqPromiseMock(field, value);
+      return { not: updateNotMock };
+    }),
+  });
 
   const deleteEqMock = vi.fn().mockResolvedValue({ error: null });
   const deleteMock = vi.fn().mockReturnValue({ eq: deleteEqMock });
@@ -53,7 +63,10 @@ function createConversationStateDouble(args: {
       eqMock,
       maybeSingleMock,
       updateMock,
-      updateEqMock,
+      updateEqPromiseMock,
+      updateNotMock,
+      updateSelectMock,
+      updateSelectMaybeSingleMock,
       deleteMock,
       deleteEqMock,
       upsertMock,
@@ -65,6 +78,7 @@ function createConversationStateDouble(args: {
 afterEach(() => {
   vi.clearAllMocks();
   delete process.env.CONVERSATION_TTL_DAYS;
+  delete process.env.WHATSAPP_PENDING_ORDER_TTL_MINUTES;
 });
 
 describe('api/whatsapp/conversation-state', () => {
@@ -106,28 +120,70 @@ describe('api/whatsapp/conversation-state', () => {
     await storePendingOrder(sb, '+40123', pendingOrder);
 
     expect(upsertSpy).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         phone_number: '+40123',
-        pending_order: pendingOrder,
-      },
+        pending_order: expect.objectContaining(pendingOrder),
+      }),
       { onConflict: 'phone_number' }
     );
+    expect(upsertSpy.mock.calls[0]?.[0]).toMatchObject({
+      pending_order: {
+        pending_order_created_at: expect.any(String),
+      },
+    });
   });
 
-  it('reads and clears pending orders on fetch', async () => {
+  it('peeks pending orders without clearing them', async () => {
     const pendingOrder: PendingOrder = {
       customer_name: 'Ion',
       customer_phone: '+40123',
       items: [{ product_id: 'p1', name: 'Lapte', qty: 1, unit_price: 3.42 }],
       total_price: 3.42,
       pickup_time: null,
+      pending_order_created_at: new Date().toISOString(),
     };
     const state = createConversationStateDouble({ selectData: { pending_order: pendingOrder } });
     const sb = state.client as never;
 
-    await expect(getPendingOrder(sb, '+40123')).resolves.toEqual(pendingOrder);
+    await expect(peekPendingOrder(sb, '+40123')).resolves.toEqual(pendingOrder);
+    expect(state.spies.updateMock).not.toHaveBeenCalled();
+  });
+
+  it('consumes pending orders only when explicitly requested', async () => {
+    const pendingOrder: PendingOrder = {
+      customer_name: 'Ion',
+      customer_phone: '+40123',
+      items: [{ product_id: 'p1', name: 'Lapte', qty: 1, unit_price: 3.42 }],
+      total_price: 3.42,
+      pickup_time: null,
+      pending_order_created_at: new Date().toISOString(),
+    };
+    const state = createConversationStateDouble({ selectData: { pending_order: pendingOrder } });
+    const sb = state.client as never;
+
+    await expect(consumePendingOrder(sb, '+40123')).resolves.toEqual({ status: 'fresh', order: pendingOrder });
     expect(state.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
-    expect(state.spies.updateEqMock).toHaveBeenCalledWith('phone_number', '+40123');
+    expect(state.spies.updateEqPromiseMock).toHaveBeenCalledWith('phone_number', '+40123');
+    expect(state.spies.updateNotMock).toHaveBeenCalledWith('pending_order', 'is', null);
+    expect(state.spies.updateSelectMock).toHaveBeenCalledWith('pending_order');
+  });
+
+  it('clears expired pending orders before returning them', async () => {
+    process.env.WHATSAPP_PENDING_ORDER_TTL_MINUTES = '5';
+    const pendingOrder: PendingOrder = {
+      customer_name: 'Ion',
+      customer_phone: '+40123',
+      items: [{ product_id: 'p1', name: 'Lapte', qty: 1, unit_price: 3.42 }],
+      total_price: 3.42,
+      pickup_time: null,
+      pending_order_created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    };
+    const state = createConversationStateDouble({ selectData: { pending_order: pendingOrder } });
+    const sb = state.client as never;
+
+    await expect(peekPendingOrder(sb, '+40123')).resolves.toBeNull();
+    expect(state.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
+    expect(state.spies.updateEqPromiseMock).toHaveBeenCalledWith('phone_number', '+40123');
   });
 
   it('returns the latest 20 messages when history is fresh', async () => {
@@ -215,5 +271,15 @@ describe('api/whatsapp/conversation-state', () => {
 
     expect(createClientMock).toHaveBeenCalledOnce();
     expect(state.spies.deleteEqMock).toHaveBeenCalledWith('phone_number', '+40123');
+  });
+
+  it('clears pending orders explicitly', async () => {
+    const state = createConversationStateDouble({});
+    const sb = state.client as never;
+
+    await clearPendingOrder(sb, '+40123');
+
+    expect(state.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
+    expect(state.spies.updateEqPromiseMock).toHaveBeenCalledWith('phone_number', '+40123');
   });
 });

@@ -179,6 +179,23 @@ describe('WhatsApp inventory summary', () => {
     expect(repaired.text).toContain('18:30')
   })
 
+  it('does not repair an order from stale history alone on a fresh browse query', () => {
+    const inventoryText = '• Carne Porc (Meat) — €8.50, stoc: 12'
+    const replyText = 'Avem cateva produse disponibile:\n• Carne Porc (Meat) — €8.50, stoc: 12'
+
+    const repaired = maybeRepairOrderReply({
+      replyText,
+      userText: 'Ce aveti de carne?',
+      historyContext: 'vreau 1 370G LAPTE CONDEN INTEG ICINEA maine la 10.30',
+      inventoryText,
+      customerName: 'Test',
+      customerPhone: '+40000000000',
+    })
+
+    expect(repaired.repairedOrder).toBe(false)
+    expect(repaired.text).not.toContain('ORDER:')
+  })
+
   it('asks to choose when followup has qty+time but no exact product and inventory has multiple options', () => {
     const inventoryText = [
       '• 370G LAPTE CONDEN INTEG ICINEA (Dairy) — €3.42, stoc: 24',

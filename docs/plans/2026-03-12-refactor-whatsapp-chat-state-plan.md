@@ -19,6 +19,12 @@ Refactor the WhatsApp chat/state layer so conversational memory can improve answ
 
 The immediate trigger is the March 12, 2026 production bug where a fresh browse query revived an older milk pickup order. The broader goal is to stop future history-bleed bugs before more prompt/provider changes land.
 
+## Execution Notes
+
+- 2026-03-12: implemented explicit pending-order peek/clear semantics with embedded creation timestamps
+- 2026-03-12: aligned button and `DA/NU` confirmation flows to require one fresh pending order
+- 2026-03-12: added regression coverage for stale-history browse and expired pending-order behavior
+
 ## Problem Statement / Motivation
 
 The current WhatsApp stack still mixes three concerns too tightly:
