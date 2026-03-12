@@ -48,3 +48,5 @@ Notes:
 - Send “Care e programul?” → reply includes real hours (no placeholders).
 - Create an order via WhatsApp → order appears in OrdersPage.
 - Confirm/cancel in OrdersPage → customer receives WhatsApp message.
+- After creating a pending order, send a fresh browse query (example: `Salut, ce aveti de carne?`) → reply must not reuse old item lines or old pickup details.
+- If Twilio quick replies are enabled, confirm/cancel via button payload and verify the result matches the text fallback path.

@@ -141,6 +141,7 @@ describe('classifyIncomingText', () => {
 
   it('classifies browse inventory requests', () => {
     expect(classifyIncomingText('ce aveți pe stoc?')).toBe('browse_inventory');
+    expect(classifyIncomingText('Ce aveti?')).toBe('browse_inventory');
     expect(classifyIncomingText('lista de produse')).toBe('browse_inventory');
     expect(classifyIncomingText('what products are available?')).toBe('browse_inventory');
   });

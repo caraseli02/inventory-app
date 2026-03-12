@@ -101,6 +101,25 @@ src/
 4. Backend interacts with Supabase PostgreSQL or Airtable
 5. AI suggestions fetched from `lib/ai/` when product not found
 
+### WhatsApp Chat State Guardrails
+
+**Critical**: conversational memory and transactional order state are different domains.
+
+- `conversation_history.messages` may help answer follow-ups, but must not by itself create or confirm an order
+- `pending_order` is transactional state and needs explicit lifecycle, expiry, and regression coverage
+- Never let assistant reply text become the default source for future product search candidates
+- Never rebuild `ORDER:` from history-only quantity or pickup time; current-turn evidence is required
+- Prefer explicit channel signals over inferred history when available:
+  - Twilio `ButtonPayload`
+  - reply-context metadata
+  - current-turn structured order fields
+- A fresh browse query must not resurrect an older pending order
+
+Required reading before WhatsApp/chat refactors:
+- `docs/solutions/logic-errors/stale-history-revives-old-order-WhatsAppAgent-20260312.md`
+- `docs/plans/2026-03-12-refactor-whatsapp-chat-state-plan.md`
+- `docs/runbooks/whatsapp_agent.md`
+
 ### Backend Integration
 
 #### API Provider Pattern (`lib/api-provider.ts`)
@@ -845,6 +864,19 @@ After each testing session, ensure:
 5. Ensure project is in merge-ready state
 
 **This workflow is MANDATORY** - do not skip testing or leave changes uncommitted.
+
+**WhatsApp-specific minimum regression set** for changes touching `lib/whatsapp/`, `api/whatsapp.ts`, `api/whatsapp-simulate.ts`, or Orders confirmation paths:
+
+```bash
+pnpm vitest run tests/unit/whatsappAgent.test.ts tests/integration/whatsapp-agent.test.ts
+```
+
+Must cover:
+- fresh browse query after prior pending order
+- exact-product order creation
+- button confirm/cancel
+- `DA` / `NU` fallback
+- expired pending-order behavior
 
 ### Review Routing
 

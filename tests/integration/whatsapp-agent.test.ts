@@ -630,6 +630,21 @@ describe('WhatsApp AI Agent', () => {
       expect(turn2.reply).toBeDefined();
       expect(turn2.reply).toMatch(/19:00|ORDER:|confirm/i);
     });
+
+    it('does not resurrect a previous pending item for a new browse query', async () => {
+      await simulateMessage('', { reset: true });
+
+      const orderTurn = await simulateMessage('vreau 1 370G LAPTE CONDEN INTEG ICINEA maine la 10.30', { debug: true });
+      expect(orderTurn.ok).toBe(true);
+      expect(orderTurn.reply).toMatch(/Ridicare: mâine 10:30/i);
+
+      const browseTurn = await simulateMessage('Salut, vreu sa fac o commanda de carne. Ce aveti?', { debug: true });
+      expect(browseTurn.ok).toBe(true);
+      expect(browseTurn.reply).not.toMatch(/Ridicare:\s*mâine 10:30/i);
+      expect(browseTurn.reply).not.toMatch(/Perfect\s+—\s+confirm/i);
+      expect(browseTurn.debug?.repairedOrder).toBe(false);
+      expect(browseTurn.debug?.intent).toBe('browse_inventory');
+    });
   });
 
   describe('Store Info', () => {

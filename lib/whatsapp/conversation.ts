@@ -56,14 +56,14 @@ export function buildOverloadedReply(text: string): string {
 
 export function classifyIncomingText(text: string): IncomingIntent {
   const stripped = text.replace(/\{[\s\S]*?\}/g, ' ');
-  const t = stripped.toLowerCase();
+  const t = normalizeFreeText(stripped);
   if (/(anule[az]|anulez|anulati|anulați|cancel|revocare|stornez|nu mai vreau|nu mai vin)/.test(t)) {
     return 'cancel_order';
   }
-  if (/(adresă|adresa|address|unde|locați|locati|program|orar|hours|open|închis|inchis|telefon|phone|contact)/.test(t)) {
+  if (/(adresa|address|unde|locati|program|orar|hours|open|inchis|telefon|phone|contact)/.test(t)) {
     return 'store_info';
   }
-  if (/(ce av(e|ă)ți|lista|list|inventar|produse|products|available|aveți pe stoc)/.test(t)) {
+  if (/(ce aveti|lista|list|inventar|produse|products|available|aveti pe stoc)/.test(t)) {
     return 'browse_inventory';
   }
   return 'product_query';
@@ -103,7 +103,7 @@ export function extractSearchCandidatesFromHistory(history: ConversationMessage[
   const recent = history.slice(-4);
   for (let index = recent.length - 1; index >= 0; index -= 1) {
     const message = recent[index];
-    if (!message?.content) continue;
+    if (message?.role !== 'user' || !message.content) continue;
     const candidates = extractSearchCandidates(message.content);
     if (candidates.length) return candidates;
   }
@@ -373,9 +373,14 @@ export function maybeRepairOrderReply(args: {
     return { text: args.replyText, repairedOrder: false };
   }
 
-  const pickupTime = parsePickupTime(args.userText) ?? parsePickupTime(args.historyContext ?? '');
-  const qty = parseSingleQuantity(args.userText) ?? parseSingleQuantity(args.historyContext ?? '');
-  if (!pickupTime || !qty) return { text: args.replyText, repairedOrder: false };
+  const pickupTimeFromUser = parsePickupTime(args.userText);
+  const qtyFromUser = parseSingleQuantity(args.userText);
+  if (!pickupTimeFromUser || !qtyFromUser) {
+    return { text: args.replyText, repairedOrder: false };
+  }
+
+  const pickupTime = pickupTimeFromUser;
+  const qty = qtyFromUser;
 
   const names = extractInventoryNames(args.inventoryText);
   if (!names.length) return { text: args.replyText, repairedOrder: false };
