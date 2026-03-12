@@ -649,6 +649,68 @@ describe('api/whatsapp (webhook handler)', () => {
       await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).not.toContain('Comanda+a+expirat');
     });
+
+    it('echoed interactive confirm body is treated as confirm text', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion Popescu',
+        customer_phone: '+40123456789',
+        items: [
+          { product_id: 'p1', name: '100G SEMINTE FL SOAR BANZAI', qty: 1, unit_price: 1.08 },
+          { product_id: 'p2', name: '100G CICOARE AFINE STOLETOV', qty: 1, unit_price: 2.71 },
+        ],
+        total_price: 3.79,
+        pickup_time: '18:00',
+        pending_order_created_at: new Date().toISOString(),
+      };
+      const sb = createSupabaseDouble({ pendingOrder, orderNumber: 'ORD-031' });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        Body: [
+          'Confirmi această comandă?',
+          ' 1x 100G SEMINTE FL SOAR BANZAI, 1x 100G CICOARE AFINE STOLETOV — €3.79',
+          ' Ridicare: 18:00',
+          '✅ Da, confirmă',
+        ].join('\n'),
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(sb.spies.insertMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-031');
+    });
+
+    it('echoed interactive confirm body replays success when order already exists', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({
+        pendingOrder: null,
+        latestOrder: { order_number: 'ORD-031', status: 'pending' },
+      });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        Body: [
+          'Confirmi această comandă?',
+          ' 1x 100G SEMINTE FL SOAR BANZAI, 1x 100G CICOARE AFINE STOLETOV — €3.79',
+          ' Ridicare: 18:00',
+          '✅ Da, confirmă',
+        ].join('\n'),
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-031');
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).not.toContain('Comanda+a+expirat');
+    });
   });
 
   describe('Language detection', () => {

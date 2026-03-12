@@ -37,6 +37,43 @@ function sendTwiml(res: VercelResponse, body: string) {
   return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(body));
 }
 
+type PendingTextDecision =
+  | { kind: 'confirm'; source: 'exact' | 'interactive' }
+  | { kind: 'cancel'; source: 'exact' | 'interactive' };
+
+function normalizeDecisionText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parsePendingTextDecision(text: string): PendingTextDecision | null {
+  const normalizedFull = normalizeDecisionText(text);
+  if (/^(da|yes)$/.test(normalizedFull)) return { kind: 'confirm', source: 'exact' };
+  if (/^(nu|no)$/.test(normalizedFull)) return { kind: 'cancel', source: 'exact' };
+
+  const lastLine = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .at(-1);
+  if (!lastLine) return null;
+
+  const normalizedLastLine = normalizeDecisionText(lastLine);
+  if (/^(da|yes)\s+confirma?$/.test(normalizedLastLine) || /^confirma$/.test(normalizedLastLine)) {
+    return { kind: 'confirm', source: 'interactive' };
+  }
+  if (/^anuleaza$/.test(normalizedLastLine) || /^(nu|no)\s+anuleaza$/.test(normalizedLastLine) || /^cancel$/.test(normalizedLastLine)) {
+    return { kind: 'cancel', source: 'interactive' };
+  }
+
+  return null;
+}
+
 async function replyViaAvailableChannel(args: {
   res: VercelResponse;
   from: string;
@@ -78,14 +115,28 @@ async function handlePendingTextDecision(args: {
   text: string;
   canUseRest: boolean;
 }) {
-  const isConfirmText = /^\s*(da|yes)\s*$/i.test(args.text);
-  const isRejectText = /^\s*(nu|no)\s*$/i.test(args.text);
-
-  if (!isConfirmText && !isRejectText) return false;
+  const decision = parsePendingTextDecision(args.text);
+  if (!decision) return false;
+  const isConfirmText = decision.kind === 'confirm';
 
   const sb = createSupabaseClient();
   const pendingState = await (isConfirmText ? consumePendingOrder(sb, args.phone) : getPendingOrderState(sb, args.phone));
+  const existingOrderNumber = pendingState.status !== 'fresh'
+    ? await findLatestPendingOrderNumberByPhone(sb, args.phone)
+    : null;
+
   if (pendingState.status === 'expired') {
+    if (existingOrderNumber) {
+      await replyViaAvailableChannel({
+        res: args.res,
+        from: args.from,
+        canUseRest: args.canUseRest,
+        message: isConfirmText
+          ? `✅ Cererea ${existingOrderNumber} a fost deja înregistrată și așteaptă confirmarea magazinului.`
+          : `ℹ️ Cererea ${existingOrderNumber} este deja înregistrată și nu mai poate fi anulată din acest mesaj.`,
+      });
+      return true;
+    }
     await replyViaAvailableChannel({
       res: args.res,
       from: args.from,
@@ -94,7 +145,27 @@ async function handlePendingTextDecision(args: {
     });
     return true;
   }
-  if (pendingState.status === 'missing') return false;
+  if (pendingState.status === 'missing') {
+    if (existingOrderNumber) {
+      await replyViaAvailableChannel({
+        res: args.res,
+        from: args.from,
+        canUseRest: args.canUseRest,
+        message: isConfirmText
+          ? `✅ Cererea ${existingOrderNumber} a fost deja înregistrată și așteaptă confirmarea magazinului.`
+          : `ℹ️ Cererea ${existingOrderNumber} este deja înregistrată și nu mai poate fi anulată din acest mesaj.`,
+      });
+      return true;
+    }
+    return decision.source === 'interactive'
+      ? replyViaAvailableChannel({
+        res: args.res,
+        from: args.from,
+        canUseRest: args.canUseRest,
+        message: '⚠️ Comanda a expirat. Te rog trimite din nou.',
+      }).then(() => true)
+      : false;
+  }
 
   if (isConfirmText) {
     try {
