@@ -22,6 +22,7 @@ export interface PendingOrder {
   items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>;
   total_price: number;
   pickup_time: string | null;
+  pending_order_created_at?: string;
 }
 
 export type WhatsAppSimulatorProvider = 'openai' | 'anthropic' | 'local';

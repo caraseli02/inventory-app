@@ -7,7 +7,8 @@ import {
   maybeHandleOrderFollowup,
   maybeRepairOrderReply,
 } from '../../lib/whatsapp/conversation'
-import { getInventorySummary } from '../../lib/whatsapp/inventory'
+import { processOrderIntent } from '../../lib/whatsapp/order-intent'
+import { getInventorySummary, resolveOrderItems } from '../../lib/whatsapp/inventory'
 
 type ProductRow = {
   id: string
@@ -179,6 +180,23 @@ describe('WhatsApp inventory summary', () => {
     expect(repaired.text).toContain('18:30')
   })
 
+  it('does not repair an order from stale history alone on a fresh browse query', () => {
+    const inventoryText = '• Carne Porc (Meat) — €8.50, stoc: 12'
+    const replyText = 'Avem cateva produse disponibile:\n• Carne Porc (Meat) — €8.50, stoc: 12'
+
+    const repaired = maybeRepairOrderReply({
+      replyText,
+      userText: 'Ce aveti de carne?',
+      historyContext: 'vreau 1 370G LAPTE CONDEN INTEG ICINEA maine la 10.30',
+      inventoryText,
+      customerName: 'Test',
+      customerPhone: '+40000000000',
+    })
+
+    expect(repaired.repairedOrder).toBe(false)
+    expect(repaired.text).not.toContain('ORDER:')
+  })
+
   it('asks to choose when followup has qty+time but no exact product and inventory has multiple options', () => {
     const inventoryText = [
       '• 370G LAPTE CONDEN INTEG ICINEA (Dairy) — €3.42, stoc: 24',
@@ -254,5 +272,119 @@ describe('WhatsApp inventory summary', () => {
     expect(followup?.text).toContain('VIORICA ECO CRICOVA DEMI')
     expect(followup?.text).toContain('19:00')
     expect(followup?.text).toContain('ORDER:')
+  })
+
+  it('resolves assistant-style packaging suffixes back to canonical inventory names', async () => {
+    const divin: ProductRow = {
+      id: 'p-divin-1',
+      created_at: new Date('2026-03-05T12:00:00Z').toISOString(),
+      name: '0.5L DIVIN 5 ANI BARDAR SILVER',
+      category: 'Wine',
+      price: 10.35,
+      price_50: null,
+      price_70: 10.35,
+      price_100: null,
+      markup: 70,
+    }
+
+    const viorica: ProductRow = {
+      id: 'p-viorica-1',
+      created_at: new Date('2026-03-05T12:00:00Z').toISOString(),
+      name: '0.75L VIORICA ECO CRICOVA DEMI',
+      category: 'Wine',
+      price: 13.24,
+      price_50: null,
+      price_70: 13.24,
+      price_100: null,
+      markup: 70,
+    }
+
+    const sb = createFakeSupabase({
+      productsByTerm: {
+        'DIVIN 5 ANI BARDAR SILVER (0.5L)': [],
+        'DIVIN 5 ANI BARDAR SILVER': [divin],
+        'VIORICA ECO CRICOVA (0.75L)': [],
+        'VIORICA ECO CRICOVA': [viorica],
+      },
+      fallbackProducts: [],
+      movementsByProductId: {
+        'p-divin-1': 5,
+        'p-viorica-1': 4,
+      },
+    }) as any
+
+    const resolved = await resolveOrderItems(sb, [
+      { name: 'DIVIN 5 ANI BARDAR SILVER (0.5L)', qty: 1, unit_price: 10.35 },
+      { name: 'VIORICA ECO CRICOVA (0.75L)', qty: 1, unit_price: 13.24 },
+    ])
+
+    expect(resolved.items).toEqual([
+      { product_id: 'p-divin-1', name: '0.5L DIVIN 5 ANI BARDAR SILVER', qty: 1, unit_price: 10.35 },
+      { product_id: 'p-viorica-1', name: '0.75L VIORICA ECO CRICOVA DEMI', qty: 1, unit_price: 13.24 },
+    ])
+    expect(resolved.totalPrice).toBe(23.59)
+  })
+
+  it('resolves the phone flow labels back to canonical stock rows after pickup followup', async () => {
+    const freedom: ProductRow = {
+      id: 'p-freedom-1',
+      created_at: new Date('2026-03-05T12:00:00Z').toISOString(),
+      name: '0.75L FREEDOM BLEND PURCARI',
+      category: 'Wine',
+      price: 18.73,
+      price_50: null,
+      price_70: 18.73,
+      price_100: null,
+      markup: 70,
+    }
+
+    const chocolates: ProductRow = {
+      id: 'p-choco-1',
+      created_at: new Date('2026-03-05T12:00:00Z').toISOString(),
+      name: 'BOMBOANE CIOCO 5 MINUTE 125G',
+      category: 'Snacks',
+      price: 2.57,
+      price_50: null,
+      price_70: 2.57,
+      price_100: null,
+      markup: 70,
+    }
+
+    const sb = createFakeSupabase({
+      productsByTerm: {
+        'FREEDOM BLEND PURCAR': [],
+        'BOMBOANE CIOCO 5 MINUTE (125G) — €2.57': [],
+        freedom: [freedom],
+        blend: [freedom],
+        purcar: [freedom],
+        bomboane: [chocolates],
+        minute: [chocolates],
+        '125g': [chocolates],
+      },
+      fallbackProducts: [],
+      movementsByProductId: {
+        'p-freedom-1': 8,
+        'p-choco-1': 15,
+      },
+    }) as any
+
+    const result = await processOrderIntent(
+      sb,
+      [
+        'Perfecto. Confirmo tu pedido:',
+        '- 1x FREEDOM BLEND PURCAR (0.75L) — €18.73',
+        '- 1x BOMBOANE CIOCO 5 MINUTE (125G) — €2.57',
+        '*Total: €21.30*',
+        '*Recogida: hoy jueves 12 de marzo a las 19:00*',
+        'ORDER:{"customer_name":"Vlad","customer_phone":"+34000000000","items":[{"name":"FREEDOM BLEND PURCAR","qty":1,"unit_price":18.73},{"name":"BOMBOANE CIOCO 5 MINUTE (125G) — €2.57","qty":1,"unit_price":2.57}],"pickup_time":"azi 19:00"}',
+      ].join('\n'),
+    )
+
+    expect(result.reply).not.toContain('⚠️ Nu am găsit')
+    expect(result.pending?.items).toEqual([
+      { product_id: 'p-freedom-1', name: '0.75L FREEDOM BLEND PURCARI', qty: 1, unit_price: 18.73 },
+      { product_id: 'p-choco-1', name: 'BOMBOANE CIOCO 5 MINUTE 125G', qty: 1, unit_price: 2.57 },
+    ])
+    expect(result.pending?.total_price).toBe(21.3)
   })
 })

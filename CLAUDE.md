@@ -107,6 +107,7 @@ src/
 
 - `conversation_history.messages` may help answer follow-ups, but must not by itself create or confirm an order
 - `pending_order` is transactional state and needs explicit lifecycle, expiry, and regression coverage
+- `pending_order` must be read with peek semantics by default; only explicit confirm/cancel transitions may consume/clear it
 - Never let assistant reply text become the default source for future product search candidates
 - Never rebuild `ORDER:` from history-only quantity or pickup time; current-turn evidence is required
 - Prefer explicit channel signals over inferred history when available:

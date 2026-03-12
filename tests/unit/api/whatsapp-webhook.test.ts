@@ -77,15 +77,18 @@ type PendingOrder = {
   items: Array<{ product_id: string; name: string; qty: number; unit_price: number }>;
   total_price: number;
   pickup_time: string | null;
+  pending_order_created_at?: string;
 };
 
 function createSupabaseDouble(args: {
   pendingOrder?: PendingOrder | null;
   historyMessages?: unknown[];
   orderNumber?: string;
+  latestOrder?: { order_number: string; status?: string; created_at?: string } | null;
 }) {
   const pendingOrder = args.pendingOrder ?? null;
   const historyMessages = args.historyMessages ?? [];
+  const latestOrder = args.latestOrder ?? null;
 
   const maybeSingleMock = vi.fn().mockResolvedValue({
     data: pendingOrder != null
@@ -95,8 +98,24 @@ function createSupabaseDouble(args: {
   const selectEqMock = vi.fn().mockReturnValue({ maybeSingle: maybeSingleMock });
   const selectMock = vi.fn().mockReturnValue({ eq: selectEqMock });
 
-  const updateEqMock = vi.fn().mockResolvedValue({ data: null, error: null });
-  const updateMock = vi.fn().mockReturnValue({ eq: updateEqMock });
+  const updateSelectMaybeSingleMock = vi.fn().mockResolvedValue({
+    data: pendingOrder != null ? { pending_order: pendingOrder } : null,
+    error: null,
+  });
+  const updateSelectMock = vi.fn().mockReturnValue({ maybeSingle: updateSelectMaybeSingleMock });
+  const updateNotMock = vi.fn().mockReturnValue({ select: updateSelectMock });
+  const updateEqMock = vi.fn((field: string, value: string) => {
+    void field;
+    void value;
+    return { not: updateNotMock };
+  });
+  const updateEqPromiseMock = vi.fn().mockResolvedValue({ data: null, error: null });
+  const updateMock = vi.fn().mockReturnValue({
+    eq: vi.fn((field: string, value: string) => {
+      updateEqPromiseMock(field, value);
+      return updateEqMock(field, value);
+    }),
+  });
 
   const upsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
   const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
@@ -107,6 +126,17 @@ function createSupabaseDouble(args: {
   });
   const ordersSelectMock = vi.fn().mockReturnValue({ single: singleMock });
   const insertMock = vi.fn().mockReturnValue({ select: ordersSelectMock });
+  const ordersLimitMock = vi.fn().mockResolvedValue({
+    data: latestOrder ? [{
+      order_number: latestOrder.order_number,
+      status: latestOrder.status ?? 'pending',
+      created_at: latestOrder.created_at ?? new Date().toISOString(),
+    }] : [],
+  });
+  const ordersOrderMock = vi.fn().mockReturnValue({ limit: ordersLimitMock });
+  const ordersEqStatusMock = vi.fn().mockReturnValue({ order: ordersOrderMock });
+  const ordersEqPhoneMock = vi.fn().mockReturnValue({ eq: ordersEqStatusMock });
+  const ordersLookupSelectMock = vi.fn().mockReturnValue({ eq: ordersEqPhoneMock });
 
   const inMock = vi.fn().mockResolvedValue({ data: [] });
   const movementsSelectMock = vi.fn().mockReturnValue({ in: inMock });
@@ -116,7 +146,7 @@ function createSupabaseDouble(args: {
       return { select: selectMock, update: updateMock, upsert: upsertMock };
     }
     if (table === 'orders') {
-      return { insert: insertMock };
+      return { insert: insertMock, select: ordersLookupSelectMock };
     }
     if (table === 'stock_movements') {
       return { select: movementsSelectMock };
@@ -136,8 +166,13 @@ function createSupabaseDouble(args: {
       selectEqMock,
       updateMock,
       updateEqMock,
+      updateEqPromiseMock,
+      updateNotMock,
+      updateSelectMock,
+      updateSelectMaybeSingleMock,
       upsertMock,
       insertMock,
+      ordersLookupSelectMock,
       maybeSingleMock,
     },
   };
@@ -145,7 +180,7 @@ function createSupabaseDouble(args: {
 
 describe('api/whatsapp (webhook handler)', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
-  const ENV_VARS = ['TWILIO_AUTH_TOKEN', 'TWILIO_ACCOUNT_SID', 'TWILIO_FROM_NUMBER', 'TWILIO_CONFIRM_CONTENT_SID'];
+  const ENV_VARS = ['TWILIO_AUTH_TOKEN', 'TWILIO_ACCOUNT_SID', 'TWILIO_FROM_NUMBER', 'TWILIO_CONFIRM_CONTENT_SID', 'WHATSAPP_PENDING_ORDER_TTL_MINUTES'];
   let savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -430,6 +465,250 @@ describe('api/whatsapp (webhook handler)', () => {
       await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
       expect(sb.spies.insertMock).not.toHaveBeenCalled();
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+expirat');
+    });
+
+    it('button payload cancel sends expired message when no pending order exists', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({ pendingOrder: null });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        ButtonPayload: 'cancel',
+        Body: '',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+expirat');
+    });
+
+    it('button payload confirm replays success when pending draft was already consumed but order exists', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({
+        pendingOrder: null,
+        latestOrder: { order_number: 'ORD-025', status: 'pending' },
+      });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        ButtonPayload: 'confirm',
+        Body: '',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(sb.spies.insertMock).not.toHaveBeenCalled();
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).not.toContain('Comanda+a+expirat');
+    });
+
+    it('button payload cancel reports already-registered order when pending draft was already consumed', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({
+        pendingOrder: null,
+        latestOrder: { order_number: 'ORD-025', status: 'pending' },
+      });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        ButtonPayload: 'cancel',
+        Body: '',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).not.toContain('Comanda+a+expirat');
+    });
+
+    it('text DA confirms only with a fresh pending order', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion Popescu',
+        customer_phone: '+40123456789',
+        items: [{ product_id: 'p1', name: 'Lapte', qty: 2, unit_price: 3.42 }],
+        total_price: 6.84,
+        pickup_time: 'mâine 12:00',
+        pending_order_created_at: new Date().toISOString(),
+      };
+      const sb = createSupabaseDouble({ pendingOrder, orderNumber: 'ORD-025' });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        Body: 'DA',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(sb.spies.insertMock).toHaveBeenCalledTimes(1);
+      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
+    });
+
+    it('text NU cancels only with a fresh pending order', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion Popescu',
+        customer_phone: '+40123456789',
+        items: [{ product_id: 'p1', name: 'Lapte', qty: 2, unit_price: 3.42 }],
+        total_price: 6.84,
+        pickup_time: 'mâine 12:00',
+        pending_order_created_at: new Date().toISOString(),
+      };
+      const sb = createSupabaseDouble({ pendingOrder });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        Body: 'NU',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(sb.spies.insertMock).not.toHaveBeenCalled();
+      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+fost+anulat');
+    });
+
+    it('text DA sends expired message when pending order is stale', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      process.env.WHATSAPP_PENDING_ORDER_TTL_MINUTES = '5';
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion Popescu',
+        customer_phone: '+40123456789',
+        items: [{ product_id: 'p1', name: 'Lapte', qty: 2, unit_price: 3.42 }],
+        total_price: 6.84,
+        pickup_time: 'mâine 12:00',
+        pending_order_created_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+      };
+      const sb = createSupabaseDouble({ pendingOrder });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        Body: 'DA',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(sb.spies.insertMock).not.toHaveBeenCalled();
+      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+expirat');
+    });
+
+    it('text DA without pending order falls through instead of sending expired message', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({ pendingOrder: null });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        Body: 'DA',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      expect(res.sentBody).toMatch(/Bună ziua, procesăm|Hello, processing/i);
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).not.toContain('Comanda+a+expirat');
+    });
+
+    it('echoed interactive confirm body is treated as confirm text', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion Popescu',
+        customer_phone: '+40123456789',
+        items: [
+          { product_id: 'p1', name: '100G SEMINTE FL SOAR BANZAI', qty: 1, unit_price: 1.08 },
+          { product_id: 'p2', name: '100G CICOARE AFINE STOLETOV', qty: 1, unit_price: 2.71 },
+        ],
+        total_price: 3.79,
+        pickup_time: '18:00',
+        pending_order_created_at: new Date().toISOString(),
+      };
+      const sb = createSupabaseDouble({ pendingOrder, orderNumber: 'ORD-031' });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        Body: [
+          'Confirmi această comandă?',
+          ' 1x 100G SEMINTE FL SOAR BANZAI, 1x 100G CICOARE AFINE STOLETOV — €3.79',
+          ' Ridicare: 18:00',
+          '✅ Da, confirmă',
+        ].join('\n'),
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(sb.spies.insertMock).toHaveBeenCalledTimes(1);
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-031');
+    });
+
+    it('echoed interactive confirm body replays success when order already exists', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({
+        pendingOrder: null,
+        latestOrder: { order_number: 'ORD-031', status: 'pending' },
+      });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        Body: [
+          'Confirmi această comandă?',
+          ' 1x 100G SEMINTE FL SOAR BANZAI, 1x 100G CICOARE AFINE STOLETOV — €3.79',
+          ' Ridicare: 18:00',
+          '✅ Da, confirmă',
+        ].join('\n'),
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-031');
+      expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).not.toContain('Comanda+a+expirat');
     });
   });
 

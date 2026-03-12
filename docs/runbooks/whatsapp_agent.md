@@ -26,6 +26,7 @@ Notes:
 - Local Vite dev (`pnpm dev`) serves this endpoint directly.
 - The Vercel function returns `404`; simulator traffic is not supported in preview/production.
 - `WHATSAPP_SIMULATOR_SECRET` is optional for local middleware auth and may fall back to `VITE_NOTIFY_SECRET`.
+- `WHATSAPP_PENDING_ORDER_TTL_MINUTES` is optional. Default is `120`; stale pending orders are expired before `DA/NU` or button confirm/cancel.
 - For local LLM testing, set `OPENAI_API_KEY` (primary). Optional fallback: `ANTHROPIC_API_KEY`.
 - If both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are missing locally, simulator still works with direct order payload:
   - `ORDER:{"customer_name":"...","customer_phone":"+40...","items":[{"name":"...","qty":1}],"pickup_time":"18:30"}`
@@ -49,4 +50,5 @@ Notes:
 - Create an order via WhatsApp → order appears in OrdersPage.
 - Confirm/cancel in OrdersPage → customer receives WhatsApp message.
 - After creating a pending order, send a fresh browse query (example: `Salut, ce aveti de carne?`) → reply must not reuse old item lines or old pickup details.
+- Lower `WHATSAPP_PENDING_ORDER_TTL_MINUTES` locally, wait past expiry, then send `DA` / `NU` or a confirm/cancel button payload → reply must say the pending order expired.
 - If Twilio quick replies are enabled, confirm/cancel via button payload and verify the result matches the text fallback path.
