@@ -7,6 +7,7 @@ import {
   maybeHandleOrderFollowup,
   maybeRepairOrderReply,
 } from '../../lib/whatsapp/conversation'
+import { processOrderIntent } from '../../lib/whatsapp/order-intent'
 import { getInventorySummary, resolveOrderItems } from '../../lib/whatsapp/inventory'
 
 type ProductRow = {
@@ -322,5 +323,68 @@ describe('WhatsApp inventory summary', () => {
       { product_id: 'p-viorica-1', name: '0.75L VIORICA ECO CRICOVA DEMI', qty: 1, unit_price: 13.24 },
     ])
     expect(resolved.totalPrice).toBe(23.59)
+  })
+
+  it('resolves the phone flow labels back to canonical stock rows after pickup followup', async () => {
+    const freedom: ProductRow = {
+      id: 'p-freedom-1',
+      created_at: new Date('2026-03-05T12:00:00Z').toISOString(),
+      name: '0.75L FREEDOM BLEND PURCARI',
+      category: 'Wine',
+      price: 18.73,
+      price_50: null,
+      price_70: 18.73,
+      price_100: null,
+      markup: 70,
+    }
+
+    const chocolates: ProductRow = {
+      id: 'p-choco-1',
+      created_at: new Date('2026-03-05T12:00:00Z').toISOString(),
+      name: 'BOMBOANE CIOCO 5 MINUTE 125G',
+      category: 'Snacks',
+      price: 2.57,
+      price_50: null,
+      price_70: 2.57,
+      price_100: null,
+      markup: 70,
+    }
+
+    const sb = createFakeSupabase({
+      productsByTerm: {
+        'FREEDOM BLEND PURCAR': [],
+        'BOMBOANE CIOCO 5 MINUTE (125G) — €2.57': [],
+        freedom: [freedom],
+        blend: [freedom],
+        purcar: [freedom],
+        bomboane: [chocolates],
+        minute: [chocolates],
+        '125g': [chocolates],
+      },
+      fallbackProducts: [],
+      movementsByProductId: {
+        'p-freedom-1': 8,
+        'p-choco-1': 15,
+      },
+    }) as any
+
+    const result = await processOrderIntent(
+      sb,
+      [
+        'Perfecto. Confirmo tu pedido:',
+        '- 1x FREEDOM BLEND PURCAR (0.75L) — €18.73',
+        '- 1x BOMBOANE CIOCO 5 MINUTE (125G) — €2.57',
+        '*Total: €21.30*',
+        '*Recogida: hoy jueves 12 de marzo a las 19:00*',
+        'ORDER:{"customer_name":"Vlad","customer_phone":"+34000000000","items":[{"name":"FREEDOM BLEND PURCAR","qty":1,"unit_price":18.73},{"name":"BOMBOANE CIOCO 5 MINUTE (125G) — €2.57","qty":1,"unit_price":2.57}],"pickup_time":"azi 19:00"}',
+      ].join('\n'),
+    )
+
+    expect(result.reply).not.toContain('⚠️ Nu am găsit')
+    expect(result.pending?.items).toEqual([
+      { product_id: 'p-freedom-1', name: '0.75L FREEDOM BLEND PURCARI', qty: 1, unit_price: 18.73 },
+      { product_id: 'p-choco-1', name: 'BOMBOANE CIOCO 5 MINUTE 125G', qty: 1, unit_price: 2.57 },
+    ])
+    expect(result.pending?.total_price).toBe(21.3)
   })
 })

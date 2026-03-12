@@ -62,9 +62,31 @@ function normalizeProductText(value: string): string {
 function sanitizeOrderItemName(rawName: string): string {
   return rawName
     .replace(/^\s*\d+\s*[x×]\s*/i, '')
-    .replace(/\s*\(([^)]*)\)\s*$/g, '')
+    .replace(/\s+[—-]\s*€?\s*\d+(?:[.,]\d{1,2})?\s*$/u, '')
+    .replace(/\(([^)]*)\)/g, ' $1 ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function stripOrderItemPackaging(rawName: string): string {
+  return rawName
+    .replace(/^\s*\d+\s*[x×]\s*/i, '')
+    .replace(/\s+[—-]\s*€?\s*\d+(?:[.,]\d{1,2})?\s*$/u, '')
+    .replace(/\s*\([^)]*\)\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractLookupTerms(rawName: string): string[] {
+  const normalized = normalizeProductText(rawName);
+  if (!normalized) return [];
+
+  return Array.from(new Set(
+    normalized
+      .split(' ')
+      .map((term) => term.trim())
+      .filter((term) => term.length >= 4 && /[\p{L}\p{N}]/u.test(term)),
+  ));
 }
 
 function scoreProductName(name: string, query: string): number {
@@ -78,7 +100,15 @@ function scoreProductName(name: string, query: string): number {
   let overlap = 0;
 
   for (const token of queryTokens) {
-    if (nameTokens.has(token)) overlap += 1;
+    if (nameTokens.has(token)) {
+      overlap += 1;
+      continue;
+    }
+
+    const partial = Array.from(nameTokens).some((nameToken) => (
+      nameToken.startsWith(token) || token.startsWith(nameToken)
+    ));
+    if (partial) overlap += 0.75;
   }
 
   return overlap > 0 ? 40 + overlap * 10 : 0;
@@ -105,7 +135,8 @@ export async function resolveProductByName(
   const makeProductsQuery = () => (sb.from('products') as ProductsQuery)
     .select('id, created_at, name, category, price, price_50, price_70, price_100, markup');
   const sanitizedName = sanitizeOrderItemName(rawName);
-  const lookupCandidates = Array.from(new Set([rawName.trim(), sanitizedName].filter(Boolean)));
+  const strippedName = stripOrderItemPackaging(rawName);
+  const lookupCandidates = Array.from(new Set([rawName.trim(), sanitizedName, strippedName].filter(Boolean)));
   const query = normalizeProductText(sanitizedName || rawName);
   if (!query) return { type: 'not_found' };
 
@@ -135,6 +166,16 @@ export async function resolveProductByName(
   for (const lookupName of lookupCandidates) {
     const { data: fuzzyRows } = await makeProductsQuery()
       .ilike('name', `%${lookupName}%`)
+      .limit(12);
+
+    for (const candidate of (fuzzyRows as ProductRow[] | null) ?? []) {
+      candidateMap.set(candidate.id, candidate);
+    }
+  }
+
+  for (const term of extractLookupTerms(sanitizedName || rawName)) {
+    const { data: fuzzyRows } = await makeProductsQuery()
+      .ilike('name', `%${term}%`)
       .limit(12);
 
     for (const candidate of (fuzzyRows as ProductRow[] | null) ?? []) {
