@@ -1,9 +1,9 @@
 # Feature: WhatsApp AI Agent for Customer Q&A & Pickup Orders
 
-**Version**: 0.2.0
+**Version**: 0.2.1
 **Status**: IN_PROGRESS
 **Owner**: TBD
-**Last Updated**: 2026-02-22
+**Last Updated**: 2026-03-12
 **Dependencies**: [stock_management.md], [product_management.md], [checkout_flow.md]
 
 ---
@@ -91,6 +91,7 @@ Agent answers product availability and price questions in natural language, in t
 - When the agent processes the message
 - Then the response is in Romanian
 - And includes stock status and price in EUR (€)
+- And a fresh browse query does not reuse an older pending order's items or pickup details
 
 **R04 — Pickup Order Creation**
 Customer can place a pickup order by specifying items and pickup time. Order is saved to Supabase `orders` table.
@@ -100,6 +101,7 @@ Customer can place a pickup order by specifying items and pickup time. Order is 
 - When the agent collects: item(s), quantity, customer name, pickup time
 - Then an order record is created in Supabase with status `pending`
 - And customer receives confirmation with order number and total price
+- And order creation is based on current-turn evidence or explicit confirmation signals, not history-only reconstruction
 
 **R05 — Orders Page in App**
 New page in the React app showing pending pickup orders with confirm/cancel actions.
