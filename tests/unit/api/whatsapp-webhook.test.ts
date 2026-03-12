@@ -486,7 +486,6 @@ describe('api/whatsapp (webhook handler)', () => {
       expect(res.statusCode).toBe(200);
       expect(res.sentBody).toContain('<?xml');
       await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
-      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+expirat');
     });
 

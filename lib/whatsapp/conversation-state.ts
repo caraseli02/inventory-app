@@ -123,18 +123,23 @@ export async function consumePendingOrder(
   phone: string
 ): Promise<PendingOrderState> {
   try {
-    // Supabase's generated generic type for update-returning chains is too deep
-    // here; cast locally so the atomic consume query stays readable.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const query = (sb.from('conversation_history') as any)
-      .update({ pending_order: null })
+    // Read current value first — PostgREST .update().select() returns the
+    // post-update row (all NULLs after clearing), not the pre-update value.
+    const { data: peekData } = await sb
+      .from('conversation_history')
+      .select('pending_order')
       .eq('phone_number', phone)
-      .not('pending_order', 'is', null)
-      .select('pending_order');
+      .maybeSingle();
 
-    const { data } = await query.maybeSingle();
-    const order = (data?.pending_order ?? null) as PendingOrder | null;
-    return toPendingOrderState(order);
+    const order = (peekData?.pending_order ?? null) as PendingOrder | null;
+    const state = toPendingOrderState(order);
+
+    // Clear regardless of expired/fresh — both cases should consume the slot.
+    if (order !== null) {
+      await sb.from('conversation_history').update({ pending_order: null }).eq('phone_number', phone);
+    }
+
+    return state;
   } catch (err) {
     console.error('[whatsapp] failed to consume pending order:', err);
     return { status: 'missing', order: null };

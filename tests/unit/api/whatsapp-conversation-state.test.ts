@@ -164,8 +164,6 @@ describe('api/whatsapp/conversation-state', () => {
     await expect(consumePendingOrder(sb, '+40123')).resolves.toEqual({ status: 'fresh', order: pendingOrder });
     expect(state.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
     expect(state.spies.updateEqPromiseMock).toHaveBeenCalledWith('phone_number', '+40123');
-    expect(state.spies.updateNotMock).toHaveBeenCalledWith('pending_order', 'is', null);
-    expect(state.spies.updateSelectMock).toHaveBeenCalledWith('pending_order');
   });
 
   it('clears expired pending orders before returning them', async () => {
