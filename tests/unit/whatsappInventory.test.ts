@@ -7,7 +7,7 @@ import {
   maybeHandleOrderFollowup,
   maybeRepairOrderReply,
 } from '../../lib/whatsapp/conversation'
-import { getInventorySummary } from '../../lib/whatsapp/inventory'
+import { getInventorySummary, resolveOrderItems } from '../../lib/whatsapp/inventory'
 
 type ProductRow = {
   id: string
@@ -271,5 +271,56 @@ describe('WhatsApp inventory summary', () => {
     expect(followup?.text).toContain('VIORICA ECO CRICOVA DEMI')
     expect(followup?.text).toContain('19:00')
     expect(followup?.text).toContain('ORDER:')
+  })
+
+  it('resolves assistant-style packaging suffixes back to canonical inventory names', async () => {
+    const divin: ProductRow = {
+      id: 'p-divin-1',
+      created_at: new Date('2026-03-05T12:00:00Z').toISOString(),
+      name: '0.5L DIVIN 5 ANI BARDAR SILVER',
+      category: 'Wine',
+      price: 10.35,
+      price_50: null,
+      price_70: 10.35,
+      price_100: null,
+      markup: 70,
+    }
+
+    const viorica: ProductRow = {
+      id: 'p-viorica-1',
+      created_at: new Date('2026-03-05T12:00:00Z').toISOString(),
+      name: '0.75L VIORICA ECO CRICOVA DEMI',
+      category: 'Wine',
+      price: 13.24,
+      price_50: null,
+      price_70: 13.24,
+      price_100: null,
+      markup: 70,
+    }
+
+    const sb = createFakeSupabase({
+      productsByTerm: {
+        'DIVIN 5 ANI BARDAR SILVER (0.5L)': [],
+        'DIVIN 5 ANI BARDAR SILVER': [divin],
+        'VIORICA ECO CRICOVA (0.75L)': [],
+        'VIORICA ECO CRICOVA': [viorica],
+      },
+      fallbackProducts: [],
+      movementsByProductId: {
+        'p-divin-1': 5,
+        'p-viorica-1': 4,
+      },
+    }) as any
+
+    const resolved = await resolveOrderItems(sb, [
+      { name: 'DIVIN 5 ANI BARDAR SILVER (0.5L)', qty: 1, unit_price: 10.35 },
+      { name: 'VIORICA ECO CRICOVA (0.75L)', qty: 1, unit_price: 13.24 },
+    ])
+
+    expect(resolved.items).toEqual([
+      { product_id: 'p-divin-1', name: '0.5L DIVIN 5 ANI BARDAR SILVER', qty: 1, unit_price: 10.35 },
+      { product_id: 'p-viorica-1', name: '0.75L VIORICA ECO CRICOVA DEMI', qty: 1, unit_price: 13.24 },
+    ])
+    expect(resolved.totalPrice).toBe(23.59)
   })
 })

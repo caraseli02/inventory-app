@@ -59,6 +59,14 @@ function normalizeProductText(value: string): string {
     .trim();
 }
 
+function sanitizeOrderItemName(rawName: string): string {
+  return rawName
+    .replace(/^\s*\d+\s*[x×]\s*/i, '')
+    .replace(/\s*\(([^)]*)\)\s*$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function scoreProductName(name: string, query: string): number {
   if (!name || !query) return 0;
   if (name === query) return 100;
@@ -94,37 +102,47 @@ export async function resolveProductByName(
   rawName: string,
   targetPrice?: number,
 ): Promise<ProductMatchResult> {
-  const productsTable = sb.from('products') as ProductsQuery;
-  const query = normalizeProductText(rawName);
+  const makeProductsQuery = () => (sb.from('products') as ProductsQuery)
+    .select('id, created_at, name, category, price, price_50, price_70, price_100, markup');
+  const sanitizedName = sanitizeOrderItemName(rawName);
+  const lookupCandidates = Array.from(new Set([rawName.trim(), sanitizedName].filter(Boolean)));
+  const query = normalizeProductText(sanitizedName || rawName);
   if (!query) return { type: 'not_found' };
 
-  const { data: exactRows } = await productsTable
-    .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
-    .ilike('name', rawName.trim())
-    .limit(10);
+  for (const lookupName of lookupCandidates) {
+    const { data: exactRows } = await makeProductsQuery()
+      .ilike('name', lookupName)
+      .limit(10);
 
-  const exact = (exactRows as ProductRow[] | null) ?? [];
-  if (exact.length === 1) return { type: 'match', product: exact[0] };
+    const exact = (exactRows as ProductRow[] | null) ?? [];
+    if (exact.length === 1) return { type: 'match', product: exact[0] };
 
-  if (exact.length > 1) {
-    if (targetPrice) {
-      const match = exact.find((product) => {
-        const prices = [product.price, product.price_50, product.price_70, product.price_100].filter((value) => value != null);
-        return prices.some((price) => Math.abs(price - targetPrice) < 0.01);
-      });
-      if (match) return { type: 'match', product: match };
+    if (exact.length > 1) {
+      if (targetPrice) {
+        const match = exact.find((product) => {
+          const prices = [product.price, product.price_50, product.price_70, product.price_100].filter((value) => value != null);
+          return prices.some((price) => Math.abs(price - targetPrice) < 0.01);
+        });
+        if (match) return { type: 'match', product: match };
+      }
+
+      const sorted = exact.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
+      return { type: 'match', product: sorted[0] };
     }
-
-    const sorted = exact.sort((left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime());
-    return { type: 'match', product: sorted[0] };
   }
 
-  const { data: fuzzyRows } = await productsTable
-    .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
-    .ilike('name', `%${rawName.trim()}%`)
-    .limit(12);
+  const candidateMap = new Map<string, ProductRow>();
+  for (const lookupName of lookupCandidates) {
+    const { data: fuzzyRows } = await makeProductsQuery()
+      .ilike('name', `%${lookupName}%`)
+      .limit(12);
 
-  const candidates = (fuzzyRows as ProductRow[] | null) ?? [];
+    for (const candidate of (fuzzyRows as ProductRow[] | null) ?? []) {
+      candidateMap.set(candidate.id, candidate);
+    }
+  }
+
+  const candidates = Array.from(candidateMap.values());
   if (!candidates.length) return { type: 'not_found' };
 
   const ranked = candidates
