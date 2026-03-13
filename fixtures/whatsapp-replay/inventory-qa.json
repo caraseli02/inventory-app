@@ -1,0 +1,18 @@
+{
+  "name": "Inventory Q&A replay",
+  "description": "Starter parity replay for stock and price questions through the real webhook route. Adjust product names to match your local dataset.",
+  "phone": "+40710000001",
+  "profileName": "Replay QA",
+  "resetConversation": true,
+  "steps": [
+    {
+      "body": "Aveti lapte?",
+      "note": "Basic stock question",
+      "expectTwimlIncludes": "proces"
+    },
+    {
+      "body": "Cat costa laptele?",
+      "note": "Follow-up price question against the same conversation"
+    }
+  ]
+}

@@ -121,7 +121,7 @@ export default function HomePage() {
               </div>
               <div className="space-y-1">
                 <h2 className="text-lg sm:text-xl font-bold text-stone-900">WhatsApp Simulator</h2>
-                <p className="text-sm text-[var(--color-lavender)] leading-snug">Test chat flow without Twilio phone roundtrip</p>
+                <p className="text-sm text-[var(--color-lavender)] leading-snug">Convenience-only chat sandbox. Use webhook replay for real parity.</p>
               </div>
             </div>
           </Card>

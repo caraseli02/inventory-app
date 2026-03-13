@@ -1,4 +1,5 @@
 import { getTwilioRestCredentials } from './config.js';
+import { appendReplayEvent, isReplayRequest } from './replay-context.js';
 
 export function twiml(message: string): string {
   const safe = message
@@ -9,6 +10,10 @@ export function twiml(message: string): string {
 }
 
 export async function sendTypingIndicator(messageSid: string): Promise<void> {
+  if (isReplayRequest()) {
+    await appendReplayEvent({ kind: 'typing', messageSid });
+  }
+
   const creds = getTwilioRestCredentials();
   if (!creds || !messageSid) return;
   try {
@@ -25,9 +30,15 @@ export async function sendTypingIndicator(messageSid: string): Promise<void> {
 }
 
 export async function sendRestMessage(to: string, body: string): Promise<void> {
+  if (isReplayRequest()) {
+    await appendReplayEvent({ kind: 'rest', to, body });
+  }
+
   const creds = getTwilioRestCredentials();
   if (!creds) {
-    console.warn('[whatsapp] REST send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    if (!isReplayRequest()) {
+      console.warn('[whatsapp] REST send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    }
     return;
   }
   const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
@@ -53,9 +64,15 @@ export async function sendTemplateMessage(
   contentSid: string,
   variables?: Record<string, string>
 ): Promise<void> {
+  if (isReplayRequest()) {
+    await appendReplayEvent({ kind: 'template', to, contentSid, variables });
+  }
+
   const creds = getTwilioRestCredentials();
   if (!creds) {
-    console.warn('[whatsapp] Template send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    if (!isReplayRequest()) {
+      console.warn('[whatsapp] Template send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
+    }
     return;
   }
   const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;

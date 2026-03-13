@@ -162,6 +162,9 @@ export default function WhatsAppSimulatorPage({ onBack }: WhatsAppSimulatorPageP
                 <p className="text-xs text-stone-500">
                   Tip: dacă nu ai OPENAI_API_KEY / ANTHROPIC_API_KEY local, trimite ORDER JSON (customer_name, customer_phone, items).
                 </p>
+                <p className="text-xs text-stone-500">
+                  Pentru paritate cu fluxul real de pe telefon, folosește `pnpm whatsapp:replay --fixture ...`.
+                </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">

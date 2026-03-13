@@ -65,6 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ok: true,
       reply: result.reply,
       provider: result.provider,
+      ...(result.transaction ? { transaction: result.transaction } : {}),
       ...(debug ? { debug: result.debug } : {}),
     });
   } catch (err) {

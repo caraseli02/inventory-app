@@ -1,5 +1,13 @@
 # WhatsApp Agent — Runbook (Vercel + Twilio)
 
+## Local parity check (authoritative)
+
+- Use `pnpm whatsapp:replay --list` to see available replay fixtures.
+- Use `pnpm whatsapp:replay --fixture <name>` to replay Twilio-shaped requests through local `POST /api/whatsapp`.
+- Replay output includes captured async REST/template sends for that request, not just immediate TwiML.
+- This replay flow is the authoritative local parity check for phone behavior.
+- Treat `/api/whatsapp-simulate` and the simulator UI as convenience-only tools, not proof that real phone behavior matches.
+
 ## Required env vars (Vercel Project → Settings → Environment Variables)
 
 ### Webhook: `POST /api/whatsapp`
@@ -31,6 +39,7 @@ Notes:
 - If both `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` are missing locally, simulator still works with direct order payload:
   - `ORDER:{"customer_name":"...","customer_phone":"+40...","items":[{"name":"...","qty":1}],"pickup_time":"18:30"}`
   - or raw JSON object with same fields (without `ORDER:` prefix).
+- The simulator is useful for convenience and debugging, but parity work should use `pnpm whatsapp:replay`.
 
 ### Store info (shown in replies)
 

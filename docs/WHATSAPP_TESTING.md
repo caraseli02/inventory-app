@@ -1,6 +1,6 @@
 # WhatsApp Agent Local Testing Guide
 
-**Goal**: Test all 6 features locally before deploying to Vercel preview.
+**Goal**: test real WhatsApp behavior locally before deploying to Vercel preview.
 
 ---
 
@@ -45,7 +45,27 @@ The simulator will be available at: `http://localhost:5173/api/whatsapp-simulate
 
 ## Testing Methods
 
-### Option 1: Interactive webhook simulator (Recommended)
+### Option 1: Fixture-backed webhook replay (Recommended)
+```bash
+pnpm whatsapp:replay --list
+pnpm whatsapp:replay --fixture inventory-qa
+pnpm whatsapp:replay --fixture order-creation
+pnpm whatsapp:replay --fixture confirm-cancel
+```
+
+This is the authoritative local parity path:
+- sends Twilio-shaped requests to local `/api/whatsapp`
+- signs them like real webhook traffic
+- replays multi-turn scenarios from saved fixtures
+- captures async REST/template transport events from the real webhook flow
+- exercises the real webhook logic instead of simulator-only branches
+
+**Pros**: closest local path to real phone behavior, reproducible, fixture-backed
+**Cons**: fixtures may need product-name edits to match your local inventory
+
+---
+
+### Option 2: Interactive real-webhook chat
 ```bash
 pnpm whatsapp:test
 ```
@@ -56,12 +76,12 @@ This talks to the real `/api/whatsapp` handler locally:
 - Exercise the async REST follow-up path
 - Simulate button-confirm / cancel flows through the real webhook logic
 
-**Pros**: Closest to real Twilio behavior
-**Cons**: Requires more env vars than simulator-only testing
+**Pros**: flexible for ad hoc exploration
+**Cons**: not fixture-backed, harder to compare runs
 
 ---
 
-### Option 2: Automated Integration Tests
+### Option 3: Automated Integration Tests
 ```bash
 pnpm whatsapp:test:all
 ```
@@ -77,7 +97,7 @@ Runs full test suite with vitest:
 
 ---
 
-### Option 3: Manual cURL Testing
+### Option 4: Simulator-only local testing
 ```bash
 # Single product query
 curl -X POST http://localhost:5173/api/whatsapp-simulate \
@@ -108,8 +128,8 @@ curl -X POST http://localhost:5173/api/whatsapp-simulate \
   }'
 ```
 
-**Pros**: Full control, good for debugging
-**Cons**: Manual, tedious
+**Pros**: convenient for local experimentation
+**Cons**: not the source of truth for phone parity
 
 ---
 
@@ -197,8 +217,8 @@ Test cases:
 
 ### View full debug info
 ```bash
+pnpm whatsapp:replay --fixture inventory-qa
 pnpm whatsapp:test
-# Or use the simulator endpoint directly with debug=true
 ```
 
 Or with curl + `"debug": true`:
@@ -243,12 +263,17 @@ curl https://your-project.supabase.co/rest/v1/orders?select=count -H "apikey: YO
 
 ## Common Issues & Fixes
 
-### "Simulator failed: 404"
-**Cause**: Dev server not running or wrong URL
+### "Replay failed: fetch failed"
+**Cause**: Dev server not running or wrong base URL
 **Fix**:
 ```bash
 pnpm dev  # Start dev server
 # Verify it's running on http://localhost:5173
+```
+
+If needed:
+```bash
+WHATSAPP_REPLAY_BASE_URL=http://localhost:4173 pnpm whatsapp:replay --fixture inventory-qa
 ```
 
 ### "Supabase not configured"
@@ -341,6 +366,7 @@ ANTHROPIC_API_KEY=sk-ant-v0-...
 - `api/whatsapp.ts` (1,631 lines) — Main agent
 
 **Testing**:
+- `scripts/whatsapp-replay.ts` — Fixture-backed real-webhook parity replay
 - `scripts/whatsapp-local-test.ts` — Interactive real-webhook local test
 - `scripts/test-whatsapp-webhook-local.ts` — One-shot webhook smoke test
 - `tests/integration/whatsapp-agent.test.ts` — Automated tests
