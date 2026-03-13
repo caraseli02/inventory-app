@@ -1,0 +1,27 @@
+{
+  "name": "Confirm cancel replay",
+  "description": "Starter parity replay for confirm/cancel text and button flows. Run after adapting the preceding order turn so it actually creates a pending order in your local dataset.",
+  "phone": "+40710000003",
+  "profileName": "Replay Confirm",
+  "resetConversation": true,
+  "steps": [
+    {
+      "body": "Vreau 1 lapte maine la 18:00",
+      "note": "First turn intended to create a pending order; adapt product name to your local dataset.",
+      "expectTwimlIncludes": "proces"
+    },
+    {
+      "body": "DA",
+      "note": "Typed confirm fallback path"
+    },
+    {
+      "body": "Vreau 1 lapte maine la 18:30",
+      "note": "Create another pending order before exercising button cancel"
+    },
+    {
+      "body": "Nu anuleaza",
+      "buttonPayload": "cancel",
+      "note": "Interactive cancel path with ButtonPayload"
+    }
+  ]
+}

@@ -27,10 +27,23 @@ export interface PendingOrder {
 
 export type WhatsAppSimulatorProvider = 'openai' | 'anthropic' | 'local';
 
+export interface WhatsAppSimulatorTransaction {
+  status:
+    | 'reply'
+    | 'pending_confirmation'
+    | 'confirmed'
+    | 'cancelled'
+    | 'expired'
+    | 'already_confirmed'
+    | 'already_exists_cannot_cancel';
+  orderNumber?: string;
+}
+
 export interface WhatsAppSimulatorResult {
   provider: WhatsAppSimulatorProvider;
   reply: string;
   pending?: PendingOrder;
+  transaction?: WhatsAppSimulatorTransaction;
   debug?: {
     intent: IncomingIntent;
     inventoryText?: string;

@@ -50,6 +50,7 @@ pnpm mcp:build        # Build MCP app bundle
 pnpm mcp:serve        # Run MCP app server
 pnpm mcp:stdio        # Run MCP server over stdio
 pnpm mcp:smoke        # Run MCP smoke test
+pnpm whatsapp:replay  # Replay fixture-backed Twilio-shaped requests through the real webhook
 pnpm whatsapp:eval    # Run WhatsApp simulator eval
 ```
 

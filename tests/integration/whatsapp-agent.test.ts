@@ -344,6 +344,10 @@ interface SimulateResponse {
   reply?: string;
   error?: string;
   provider?: string;
+  transaction?: {
+    status?: string;
+    orderNumber?: string;
+  };
   debug?: {
     intent?: string;
     searchCandidatesUsed?: string[];
@@ -562,21 +566,54 @@ describe('WhatsApp AI Agent', () => {
       const orderJson = JSON.stringify({
         customer_name: 'Test',
         customer_phone: PHONE,
-        items: [{ name: 'Lapte', qty: 2 }],
+        items: [{ name: '370G LAPTE CONDEN INTEG ICINEA', qty: 2 }],
         pickup_time: 'mâine 12:00',
       });
 
       const result = await simulateMessage(`ORDER: ${orderJson}`, { debug: true });
       expect(result.ok).toBe(true);
-      expect(result.reply).toBeDefined();
+      expect(result.transaction?.status).toBe('pending_confirmation');
+      expect(result.reply).toMatch(/Confirmi comanda\?|Răspunde \*DA\* sau \*NU\*/i);
     });
 
     it('should handle pending order storage flow', async () => {
-      // This is tested via the button flow in Vercel preview
-      // For now, verify that order creation works
-      const result = await simulateMessage('Vreau 1 branza maine 15:00');
-      expect(result.ok).toBe(true);
-      expect(result.reply?.match(/€/)).toBeDefined();
+      const orderJson = JSON.stringify({
+        customer_name: 'Test',
+        customer_phone: PHONE,
+        items: [{ name: '370G LAPTE CONDEN INTEG ICINEA', qty: 1 }],
+        pickup_time: 'mâine 10:30',
+      });
+
+      const firstTurn = await simulateMessage(`ORDER: ${orderJson}`);
+      expect(firstTurn.ok).toBe(true);
+      expect(firstTurn.transaction?.status).toBe('pending_confirmation');
+      expect(firstTurn.reply).toMatch(/Confirmi comanda\?|Răspunde \*DA\* sau \*NU\*/i);
+
+      const secondTurn = await simulateMessage('DA');
+      expect(secondTurn.ok).toBe(true);
+      expect(secondTurn.transaction?.status).toBe('confirmed');
+      expect(secondTurn.transaction?.orderNumber).toMatch(/^ORD-\d+$/);
+      expect(secondTurn.reply).toContain(secondTurn.transaction?.orderNumber);
+    });
+
+    it('should cancel pending order via NU', async () => {
+      await simulateMessage('', { reset: true });
+
+      const orderJson = JSON.stringify({
+        customer_name: 'Test',
+        customer_phone: PHONE,
+        items: [{ name: '370G LAPTE CONDEN FIERT IRISK', qty: 1 }],
+        pickup_time: 'mâine 11:00',
+      });
+
+      const firstTurn = await simulateMessage(`ORDER: ${orderJson}`);
+      expect(firstTurn.ok).toBe(true);
+      expect(firstTurn.transaction?.status).toBe('pending_confirmation');
+
+      const secondTurn = await simulateMessage('NU');
+      expect(secondTurn.ok).toBe(true);
+      expect(secondTurn.transaction?.status).toBe('cancelled');
+      expect(secondTurn.reply).toMatch(/anulat/i);
     });
   });
 

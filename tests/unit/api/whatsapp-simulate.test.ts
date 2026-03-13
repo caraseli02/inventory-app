@@ -154,6 +154,7 @@ describe('api/whatsapp-simulate', () => {
     buildSimulatorReplyMock.mockResolvedValue({
       reply: 'agent reply',
       provider: 'openai',
+      transaction: { status: 'reply' },
       debug: { intent: 'product_query', repairedOrder: false },
     });
 
@@ -173,6 +174,7 @@ describe('api/whatsapp-simulate', () => {
       ok: true,
       reply: 'agent reply',
       provider: 'openai',
+      transaction: { status: 'reply' },
       debug: { intent: 'product_query', repairedOrder: false },
     });
   });
