@@ -655,7 +655,7 @@ describe('WhatsApp AI Agent', () => {
       expect(result.debug?.searchCandidatesUsed?.some(c => c.toLowerCase().includes('lapte'))).toBeDefined();
     });
 
-    it('keeps the last listed products for "de cada" followups', async () => {
+    it('asks for clarification on "de cada" followups (multi-item path removed in PR 5a)', async () => {
       await simulateMessage('', { reset: true });
 
       const turn1 = await simulateMessage('Que vinos teneis?');
@@ -665,7 +665,8 @@ describe('WhatsApp AI Agent', () => {
       const turn2 = await simulateMessage('1 de cada para recoger a las 19:00');
       expect(turn2.ok).toBe(true);
       expect(turn2.reply).toBeDefined();
-      expect(turn2.reply).toMatch(/19:00|ORDER:|confirm/i);
+      // repeatedQty multi-item path removed — agent should ask which product, not create ORDER
+      expect(turn2.reply).not.toMatch(/ORDER:/i);
     });
 
     it('does not resurrect a previous pending item for a new browse query', async () => {
