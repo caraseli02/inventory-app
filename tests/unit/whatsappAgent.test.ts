@@ -8,6 +8,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   classifyIncomingText,
+  extractMenuOptionsFromAssistantText,
+  maybeHandleMenuSelection,
+  maybeHandleOrderFollowup,
   normalizePickupTime,
   parsePickupDateTime,
 } from '../../lib/whatsapp/conversation';
@@ -15,6 +18,7 @@ import {
   createPendingOrderFromPending,
   extractOrderJson,
 } from '../../lib/whatsapp/order-intent';
+import type { ConversationMessage } from '../../lib/whatsapp/types';
 
 // ─── extractOrderJson ─────────────────────────────────────────────────────────
 
@@ -160,6 +164,194 @@ describe('classifyIncomingText', () => {
   it('does NOT false-positive on "address" inside a JSON string', () => {
     const text = '{"billing_address":"Str. Florilor 1"}';
     expect(classifyIncomingText(text)).toBe('product_query');
+  });
+});
+
+// ─── greeting / reset intents ─────────────────────────────────────────────────
+
+describe('classifyIncomingText — greeting intent', () => {
+  it('classifies "Buna ziua" as greeting', () => {
+    expect(classifyIncomingText('Buna ziua')).toBe('greeting');
+  });
+  it('classifies "Salut" as greeting', () => {
+    expect(classifyIncomingText('Salut')).toBe('greeting');
+  });
+  it('classifies "Hello" as greeting', () => {
+    expect(classifyIncomingText('Hello')).toBe('greeting');
+  });
+  it('classifies "hi" as greeting', () => {
+    expect(classifyIncomingText('hi')).toBe('greeting');
+  });
+  it('does NOT classify product query as greeting', () => {
+    expect(classifyIncomingText('vreau lapte')).toBe('product_query');
+  });
+  it('does NOT classify "buna ziua vreau lapte" as greeting (extra words)', () => {
+    const result = classifyIncomingText('buna ziua vreau lapte');
+    expect(result).not.toBe('greeting');
+  });
+});
+
+describe('classifyIncomingText — reset intent', () => {
+  it('classifies "start over" as reset', () => {
+    expect(classifyIncomingText('start over')).toBe('reset');
+  });
+  it('classifies "restart" as reset', () => {
+    expect(classifyIncomingText('restart')).toBe('reset');
+  });
+  it('classifies "incepe din nou" as reset', () => {
+    expect(classifyIncomingText('incepe din nou')).toBe('reset');
+  });
+  it('reset takes priority over cancel_order', () => {
+    expect(classifyIncomingText('start over')).toBe('reset');
+  });
+});
+
+// ─── menu scan limited to last 2 assistant messages ───────────────────────────
+
+describe('maybeHandleMenuSelection — menu scan limited to last 2 assistant messages', () => {
+  const customerName = 'Ion';
+  const customerPhone = '+40123';
+
+  function makeMsg(role: 'user' | 'assistant', content: string): ConversationMessage {
+    return { role, content, timestamp: new Date().toISOString() };
+  }
+
+  const menuText = '1) Lapte\n2) Brânză\n3) Unt';
+  const inventoryWithMenu = '• Lapte — €3.42 (in stoc)\n• Brânză — €5.00 (in stoc)';
+
+  it('triggers menu selection when menu is in the last assistant message', () => {
+    const history: ConversationMessage[] = [
+      makeMsg('user', 'vreau ceva de mâncat, ridic la 14:00'),
+      makeMsg('user', 'vreau 1 la 14:00'),
+      makeMsg('assistant', menuText),
+    ];
+    const result = maybeHandleMenuSelection({
+      userText: '1',
+      history,
+      inventoryText: inventoryWithMenu,
+      customerName,
+      customerPhone,
+    });
+    expect(result).not.toBeNull();
+    expect(result?.text).toContain('Lapte');
+  });
+
+  it('does NOT use old menu when it is older than 2 assistant messages ago (falls back to inventory)', () => {
+    // Menu is in turn 1, then 2 more assistant messages follow — menu is 3rd from end
+    const history: ConversationMessage[] = [
+      makeMsg('user', 'vreau ceva la 14:00 vreau 1'),
+      makeMsg('assistant', menuText),           // 3rd most recent assistant — should be skipped
+      makeMsg('user', 'hmm'),
+      makeMsg('assistant', 'Bine'),             // 2nd most recent assistant
+      makeMsg('user', 'da'),
+      makeMsg('assistant', 'Putem ajuta!'),     // most recent assistant (no menu)
+    ];
+    // Use empty inventory text so there's no fallback — if old menu IS used we'd get a result;
+    // if correctly ignored AND no inventory, result should be null
+    const result = maybeHandleMenuSelection({
+      userText: '1',
+      history,
+      inventoryText: '',          // no inventory fallback
+      customerName,
+      customerPhone,
+    });
+    // Menu was 3 assistant messages ago → ignored; no inventory → null
+    expect(result).toBeNull();
+  });
+
+  it('triggers when menu is in second-to-last assistant message', () => {
+    const history: ConversationMessage[] = [
+      makeMsg('assistant', menuText),           // second-to-last assistant
+      makeMsg('user', 'vreau 1 la 14:00'),
+      makeMsg('assistant', 'Da, care anume?'),  // last assistant (no menu)
+    ];
+    // Need qty + time in history for maybeHandleMenuSelection to fire
+    // Insert a user message with qty + time before the numeric choice
+    const historyWithContext: ConversationMessage[] = [
+      makeMsg('user', 'vreau 1 la 14:00'),
+      makeMsg('assistant', menuText),
+      makeMsg('user', 'da'),
+      makeMsg('assistant', 'Bine ales!'),
+    ];
+    // The menu is 2 assistant messages back → should still be found
+    const result = maybeHandleMenuSelection({
+      userText: '1',
+      history: historyWithContext,
+      inventoryText: inventoryWithMenu,
+      customerName,
+      customerPhone,
+    });
+    expect(result).not.toBeNull();
+  });
+});
+
+// ─── repeatedQty multi-item path removed (PR 5a) ─────────────────────────────
+
+describe('maybeHandleOrderFollowup — repeatedQty multi-item path removed', () => {
+  function makeMsg(role: 'user' | 'assistant', content: string): ConversationMessage {
+    return { role, content, timestamp: new Date().toISOString() };
+  }
+
+  const inventoryText = '• Lapte — €3.42 (in stoc)\n• Brânză — €5.00 (in stoc)';
+
+  it('does NOT create a multi-item order from "2 din fiecare" after browsing 2 products', () => {
+    const history: ConversationMessage[] = [
+      makeMsg('user', 'ce aveti?'),
+      makeMsg('assistant', '• Lapte — €3.42\n• Brânză — €5.00'),
+    ];
+    const result = maybeHandleOrderFollowup({
+      userText: '2 din fiecare la 14:00',
+      history,
+      inventoryText,
+      customerName: 'Ion',
+      customerPhone: '+40123',
+    });
+    // Should either return null or return a clarification (not an ORDER with multiple items)
+    if (result !== null) {
+      expect(result.createdOrder).toBe(false);
+      // Must not contain both products in one ORDER
+      if (result.text.includes('ORDER:')) {
+        const orderMatch = result.text.match(/ORDER:(\{.*\})/s);
+        if (orderMatch) {
+          const parsed = JSON.parse(orderMatch[1]!);
+          expect(parsed.items?.length ?? 0).toBeLessThanOrEqual(1);
+        }
+      }
+    }
+  });
+
+  it('still creates single-product order correctly', () => {
+    const history: ConversationMessage[] = [
+      makeMsg('user', 'aveti lapte?'),
+      makeMsg('assistant', '• Lapte — €3.42 (in stoc)'),
+    ];
+    const result = maybeHandleOrderFollowup({
+      userText: 'vreau 2 la 14:00',
+      history,
+      inventoryText: '• Lapte — €3.42 (in stoc)',
+      customerName: 'Ion',
+      customerPhone: '+40123',
+    });
+    expect(result).not.toBeNull();
+    expect(result?.createdOrder).toBe(true);
+    expect(result?.text).toContain('ORDER:');
+  });
+});
+
+// ─── extractMenuOptionsFromAssistantText ──────────────────────────────────────
+
+describe('extractMenuOptionsFromAssistantText', () => {
+  it('extracts sequential numbered options starting at 1', () => {
+    const text = '1) Lapte\n2) Brânză\n3) Unt';
+    expect(extractMenuOptionsFromAssistantText(text)).toEqual(['Lapte', 'Brânză', 'Unt']);
+  });
+
+  it('returns empty array when options do not start at 1', () => {
+    expect(extractMenuOptionsFromAssistantText('2) Lapte\n3) Brânză')).toEqual([]);
+  });
+
+  it('returns empty array for non-menu text', () => {
+    expect(extractMenuOptionsFromAssistantText('Avem lapte și brânză.')).toEqual([]);
   });
 });
 

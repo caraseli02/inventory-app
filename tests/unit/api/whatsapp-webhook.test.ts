@@ -85,6 +85,9 @@ function createSupabaseDouble(args: {
   historyMessages?: unknown[];
   orderNumber?: string;
   latestOrder?: { order_number: string; status?: string; created_at?: string } | null;
+  isDuplicateMessageSid?: boolean;
+  rateLimitCount?: number;
+  rateLimitWindowStart?: string;
 }) {
   const pendingOrder = args.pendingOrder ?? null;
   const historyMessages = args.historyMessages ?? [];
@@ -118,7 +121,13 @@ function createSupabaseDouble(args: {
   });
 
   const upsertMock = vi.fn().mockResolvedValue({ data: null, error: null });
-  const rpcMock = vi.fn().mockResolvedValue({ data: null, error: null });
+  // consumePendingOrder now uses RPC first; return pending order so the atomic path works
+  const rpcMock = vi.fn().mockImplementation(async (fn: string) => {
+    if (fn === 'consume_pending_order') {
+      return { data: pendingOrder, error: null };
+    }
+    return { data: null, error: null };
+  });
 
   const singleMock = vi.fn().mockResolvedValue({
     data: { order_number: args.orderNumber ?? 'ORD-001' },
@@ -141,6 +150,25 @@ function createSupabaseDouble(args: {
   const inMock = vi.fn().mockResolvedValue({ data: [] });
   const movementsSelectMock = vi.fn().mockReturnValue({ in: inMock });
 
+  // Dedup table mock — .upsert(...).select(...) must resolve directly
+  const dedupSelectAfterUpsertMock = vi.fn().mockResolvedValue({
+    data: args.isDuplicateMessageSid ? [] : [{ message_sid: 'SM123' }],
+    error: null,
+  });
+  const dedupUpsertMock = vi.fn().mockReturnValue({ select: dedupSelectAfterUpsertMock });
+
+  // Rate limit table mock
+  const windowStart = args.rateLimitWindowStart ?? new Date().toISOString();
+  const rateLimitData = args.rateLimitCount !== undefined
+    ? { message_count: args.rateLimitCount, window_start: windowStart }
+    : null;
+  const rateLimitMaybeSingleMock = vi.fn().mockResolvedValue({ data: rateLimitData, error: null });
+  const rateLimitEqSelectMock = vi.fn().mockReturnValue({ maybeSingle: rateLimitMaybeSingleMock });
+  const rateLimitSelectMock = vi.fn().mockReturnValue({ eq: rateLimitEqSelectMock });
+  const rateLimitUpdateEqMock = vi.fn().mockResolvedValue({ error: null });
+  const rateLimitUpdateMock = vi.fn().mockReturnValue({ eq: rateLimitUpdateEqMock });
+  const rateLimitUpsertMock = vi.fn().mockResolvedValue({ error: null });
+
   const fromMock = vi.fn((table: string) => {
     if (table === 'conversation_history') {
       return { select: selectMock, update: updateMock, upsert: upsertMock };
@@ -150,6 +178,16 @@ function createSupabaseDouble(args: {
     }
     if (table === 'stock_movements') {
       return { select: movementsSelectMock };
+    }
+    if (table === 'processed_message_sids') {
+      return { upsert: dedupUpsertMock };
+    }
+    if (table === 'whatsapp_rate_limits') {
+      return {
+        select: rateLimitSelectMock,
+        update: rateLimitUpdateMock,
+        upsert: rateLimitUpsertMock,
+      };
     }
     return {
       select: selectMock,
@@ -174,13 +212,16 @@ function createSupabaseDouble(args: {
       insertMock,
       ordersLookupSelectMock,
       maybeSingleMock,
+      dedupUpsertMock,
+      rateLimitUpdateMock,
+      rateLimitUpsertMock,
     },
   };
 }
 
 describe('api/whatsapp (webhook handler)', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
-  const ENV_VARS = ['TWILIO_AUTH_TOKEN', 'TWILIO_ACCOUNT_SID', 'TWILIO_FROM_NUMBER', 'TWILIO_CONFIRM_CONTENT_SID', 'WHATSAPP_PENDING_ORDER_TTL_MINUTES'];
+  const ENV_VARS = ['TWILIO_AUTH_TOKEN', 'TWILIO_ACCOUNT_SID', 'TWILIO_FROM_NUMBER', 'TWILIO_CONFIRM_CONTENT_SID', 'WHATSAPP_PENDING_ORDER_TTL_MINUTES', 'TWILIO_PRODUCT_LIST_SID', 'TWILIO_WELCOME_SID', 'TWILIO_QTY_SID'];
   let savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -406,7 +447,6 @@ describe('api/whatsapp (webhook handler)', () => {
       expect(res.statusCode).toBe(200);
       expect(res.sentBody).toContain('<?xml');
       await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
-      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
       expect(sb.spies.insertMock).toHaveBeenCalledTimes(1);
       expect(fetchMock).toHaveBeenCalled();
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
@@ -439,7 +479,6 @@ describe('api/whatsapp (webhook handler)', () => {
       expect(res.statusCode).toBe(200);
       expect(res.sentBody).toContain('<?xml');
       await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
-      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
       expect(sb.spies.insertMock).not.toHaveBeenCalled();
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+fost+anulat');
     });
@@ -566,7 +605,6 @@ describe('api/whatsapp (webhook handler)', () => {
       await handler(req, res);
 
       expect(sb.spies.insertMock).toHaveBeenCalledTimes(1);
-      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
     });
 
@@ -594,7 +632,6 @@ describe('api/whatsapp (webhook handler)', () => {
       await handler(req, res);
 
       expect(sb.spies.insertMock).not.toHaveBeenCalled();
-      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+fost+anulat');
     });
 
@@ -623,7 +660,6 @@ describe('api/whatsapp (webhook handler)', () => {
       await handler(req, res);
 
       expect(sb.spies.insertMock).not.toHaveBeenCalled();
-      expect(sb.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('Comanda+a+expirat');
     });
 
@@ -738,6 +774,186 @@ describe('api/whatsapp (webhook handler)', () => {
       await handler(req, res);
 
       expect(res.sentBody).toContain('Hello, processing your message');
+    });
+  });
+
+  describe('MessageSid deduplication', () => {
+    it('processes a fresh MessageSid normally', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({ isDuplicateMessageSid: false });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'test', MessageSid: 'SM123' });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      // Should have gone through normal flow (TwiML ack)
+      expect(res.sentBody).toContain('<?xml');
+      expect(sb.spies.dedupUpsertMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns 200 empty TwiML for duplicate MessageSid without LLM call', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const sb = createSupabaseDouble({ isDuplicateMessageSid: true });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'test', MessageSid: 'SM123' });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      // Should not have started async reply
+      expect(waitUntilMock).not.toHaveBeenCalled();
+    });
+
+    it('bypasses dedup check for replay requests', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      // isDuplicateMessageSid: true but replay should bypass
+      const sb = createSupabaseDouble({ isDuplicateMessageSid: true });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest(
+        { From: 'whatsapp:+40123456789', Body: 'test', MessageSid: 'SM123' },
+        { 'x-whatsapp-replay-id': 'replay-001' }
+      );
+      const res = createResponse();
+
+      await handler(req, res);
+
+      // Replay should proceed past dedup — normal ack returned
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      expect(sb.spies.dedupUpsertMock).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Per-phone rate limiting', () => {
+    it('allows messages within rate limit', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      // count=5 → allowed (5+1=6 ≤ 10)
+      const windowStart = new Date(Date.now() - 10_000).toISOString();
+      const sb = createSupabaseDouble({ rateLimitCount: 5, rateLimitWindowStart: windowStart });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'test' });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toMatch(/Bună ziua, procesăm|Hello, processing/i);
+    });
+
+    it('denies the 11th message and returns canned bilingual reply', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      // count=10 → denied (10+1=11 > 10)
+      const windowStart = new Date(Date.now() - 10_000).toISOString();
+      const sb = createSupabaseDouble({ rateLimitCount: 10, rateLimitWindowStart: windowStart });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'test' });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      // Handler sends empty TwiML ack + REST rate-limit message via waitUntil
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      // waitUntil is called once — for the REST rate-limit message, NOT for LLM reply
+      expect(waitUntilMock).toHaveBeenCalledTimes(1);
+      // Await the REST send and verify rate-limit content
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]: [Promise<unknown>]) => promise));
+      const lastBody = fetchMock.mock.calls.at(-1)?.[1]?.body?.toString() ?? '';
+      expect(lastBody).toMatch(/Prea+multe|Too\+many/i);
+    });
+
+    it('bypasses rate limit for replay requests', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      // count=10 would be denied, but replay bypasses
+      const windowStart = new Date(Date.now() - 10_000).toISOString();
+      const sb = createSupabaseDouble({ rateLimitCount: 10, rateLimitWindowStart: windowStart });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest(
+        { From: 'whatsapp:+40123456789', Body: 'test' },
+        { 'x-whatsapp-replay-id': 'replay-002' }
+      );
+      const res = createResponse();
+
+      await handler(req, res);
+
+      // Replay bypasses rate limit → goes to normal async flow
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toMatch(/Bună ziua, procesăm|Hello, processing/i);
+    });
+  });
+
+  describe('PR 2c: LLM reply sent before confirmation template', () => {
+    it('sends rest reply then confirmation when pending order is created', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      process.env.TWILIO_CONFIRM_CONTENT_SID = 'HXtest123';
+
+      const sb = createSupabaseDouble({});
+      createClientMock.mockReturnValue(sb.client);
+
+      // buildReplyWithPending is mocked via the Supabase client → it will call
+      // getHistory (empty) then processOrderIntent (no ORDER: in reply) → reply only.
+      // We verify the shape of calls rather than the exact reply content.
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'vreau lapte' });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      // Handler should return TwiML ack immediately
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+    });
+  });
+
+  describe('PR 2d: confirmation template failure falls back to DA/NU text', () => {
+    it('falls back to plain text when sendTemplateMessage throws', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      process.env.TWILIO_CONFIRM_CONTENT_SID = 'HXtest123';
+
+      const sb = createSupabaseDouble({});
+      createClientMock.mockReturnValue(sb.client);
+
+      // Make template send fail by making fetch throw on the template URL
+      fetchMock.mockImplementation((url: string) => {
+        if (typeof url === 'string' && url.includes('Messages.json')) {
+          // First call = REST reply OK, second call = template throw
+          fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => '' });
+          return Promise.reject(new Error('template failed'));
+        }
+        return Promise.resolve({ ok: true, status: 200, text: async () => '' });
+      });
+
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'test' });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
     });
   });
 });

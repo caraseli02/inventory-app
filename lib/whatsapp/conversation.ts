@@ -57,6 +57,12 @@ export function buildOverloadedReply(text: string): string {
 export function classifyIncomingText(text: string): IncomingIntent {
   const stripped = text.replace(/\{[\s\S]*?\}/g, ' ');
   const t = normalizeFreeText(stripped);
+  if (/(start over|restart|incepe din nou|reset|sterge istoricul|sterg istoricul)/.test(t)) {
+    return 'reset';
+  }
+  if (/^(buna ziua|buna dimineata|buna seara|buna|salut|hello|hi|hey|buna\s*!?|salut\s*!?|hello\s*!?|hi\s*!?)$/.test(t.trim())) {
+    return 'greeting';
+  }
   if (/(anule[az]|anulez|anulati|anulați|cancel|revocare|stornez|nu mai vreau|nu mai vin)/.test(t)) {
     return 'cancel_order';
   }
@@ -120,7 +126,7 @@ function normalizeFreeText(value: string): string {
     .trim();
 }
 
-function extractInventoryNames(inventoryText: string): string[] {
+export function extractInventoryNames(inventoryText: string): string[] {
   return inventoryText
     .split('\n')
     .map((line) => line.trim())
@@ -225,9 +231,12 @@ export function extractMenuOptionsFromAssistantText(text: string): string[] {
 }
 
 function findLastMenuOptions(history: ConversationMessage[]): string[] {
+  let assistantMessagesSeen = 0;
   for (let index = history.length - 1; index >= 0; index -= 1) {
     const message = history[index];
     if (message.role !== 'assistant' || !message.content) continue;
+    assistantMessagesSeen += 1;
+    if (assistantMessagesSeen > 2) break;
     const options = extractMenuOptionsFromAssistantText(message.content);
     if (options.length >= 2) return options;
   }
@@ -319,20 +328,6 @@ export function maybeHandleOrderFollowup(args: {
 
   const normalizedUserText = normalizeFreeText(args.userText);
   const matches = candidateNames.filter((name) => normalizedUserText.includes(normalizeFreeText(name)));
-
-  if (repeatedQty && recentNames.length >= 2) {
-    const payload = {
-      customer_name: args.customerName,
-      customer_phone: args.customerPhone,
-      items: recentNames.map((name) => ({ name, qty: repeatedQty })),
-      pickup_time: pickupTime,
-    };
-    const itemsText = recentNames.map((name) => `${repeatedQty} × ${name}`).join(', ');
-    return {
-      text: `Perfect — confirm: ${itemsText}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`,
-      createdOrder: true,
-    };
-  }
 
   if (matches.length === 1 || candidateNames.length === 1) {
     const chosen = matches[0] ?? candidateNames[0]!;

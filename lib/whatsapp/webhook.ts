@@ -5,16 +5,19 @@ import { getTwilioAuthToken, getTwilioRestCredentials } from './config.js';
 import {
   hasConversationHistory,
   storePendingOrder,
+  storePendingProductSelection,
 } from './conversation-state.js';
 import { detectEnglish } from './conversation.js';
 import { createSupabaseClient } from './db.js';
+import { checkAndMarkMessageSid } from './dedup.js';
 import { buildReplyWithPending } from './llm.js';
 import {
   applyPendingOrderDecision,
   buildPendingConfirmationText,
   parsePendingTextDecision,
 } from './pending-order.js';
-import { sendRestMessage, sendTemplateMessage, sendTypingIndicator, twiml } from './transport.js';
+import { buildRateLimitReply, checkRateLimit } from './rate-limit.js';
+import { sendListPickerTemplate, sendRestMessage, sendTemplateMessage, sendTypingIndicator, twiml } from './transport.js';
 import type { PendingOrder, TwilioBody } from './types.js';
 import { getAbsoluteUrl } from './url.js';
 import { isReplayRequest, runWithReplayContext } from './replay-context.js';
@@ -115,18 +118,44 @@ async function sendPendingOrderConfirmation(args: {
       price: args.pending.total_price.toFixed(2),
       pickup_time: args.pending.pickup_time || 'la preluare',
     };
-    await sendTemplateMessage(args.from, contentSid, variables);
-    console.log('[whatsapp] sent confirmation template for pending order');
-    return;
+    try {
+      await sendTemplateMessage(args.from, contentSid, variables);
+      console.log('[whatsapp] sent confirmation template for pending order');
+      return;
+    } catch (err) {
+      console.warn('[whatsapp] template send failed, falling back to DA/NU text:', err);
+    }
+  } else {
+    console.warn('[whatsapp] TWILIO_CONFIRM_CONTENT_SID not set — using DA/NU text fallback');
   }
 
-  console.warn('[whatsapp] TWILIO_CONFIRM_CONTENT_SID not set — using DA/NU text fallback');
   await sendRestMessage(args.from, buildPendingConfirmationText(args.pending));
   console.log('[whatsapp] sent plain text DA/NU confirmation fallback');
 }
 
+function buildNumberedList(items: string[]): string {
+  return items.map((item, index) => `${index + 1}) ${item}`).join('\n');
+}
+
 async function handleButtonPayload(from: string, phone: string, buttonPayload: string) {
   const sb = createSupabaseClient();
+
+  // PR 4: product-selection button (payload is a product name, not confirm/cancel)
+  if (buttonPayload !== 'confirm' && buttonPayload !== 'cancel') {
+    await storePendingProductSelection(sb, phone, { product_name: buttonPayload });
+    const qtySid = process.env.TWILIO_QTY_SID ?? '';
+    const qtyPrompt = `Ce cantitate doriți din *${buttonPayload}*? / How many of *${buttonPayload}* would you like?`;
+    if (qtySid) {
+      try {
+        await sendTemplateMessage(from, qtySid, { product_name: buttonPayload });
+        return;
+      } catch {
+        // fall through to plain text
+      }
+    }
+    await sendRestMessage(from, qtyPrompt);
+    return;
+  }
 
   if (buttonPayload === 'confirm') {
     try {
@@ -183,7 +212,22 @@ async function handleRestConversation(args: {
   waitUntil(
     buildReplyWithPending(args.phone, args.name, args.text)
       .then(async (result) => {
+        // PR 4: list-picker for product disambiguation
+        if (result.listPicker) {
+          const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
+          if (sid) {
+            await sendListPickerTemplate(args.from, sid, 'Alegeți produsul / Choose product', result.listPicker);
+          } else {
+            await sendRestMessage(args.from, buildNumberedList(result.listPicker));
+          }
+          return;
+        }
+
         if (result.pending) {
+          // PR 2c: send LLM reply text first, then confirmation template
+          if (result.reply) {
+            await sendRestMessage(args.from, result.reply);
+          }
           await sendPendingOrderConfirmation({
             from: args.from,
             phone: args.phone,
@@ -252,6 +296,17 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
     const buttonPayload = body.ButtonPayload ?? '';
     const phone = from.replace('whatsapp:', '');
     const name = body.ProfileName ?? phone;
+    const messageSid = body.MessageSid ?? '';
+
+    // PR 1a: MessageSid deduplication — bypass for replay requests (replayId is non-null for replays)
+    if (!replayId && messageSid) {
+      const dedupClient = createSupabaseClient();
+      const isDuplicate = await checkAndMarkMessageSid(dedupClient, messageSid);
+      if (isDuplicate) {
+        console.log(`[whatsapp] duplicate MessageSid ${messageSid} — skipping`);
+        return res.status(200).send(twiml(''));
+      }
+    }
 
     if (buttonPayload) {
       console.log(`[whatsapp] button from ${phone}: ${buttonPayload}`);
@@ -274,6 +329,22 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
     const canUseRest = Boolean(getTwilioRestCredentials()) || isReplayRequest();
     if (!canUseRest) {
       console.log('[whatsapp] REST credentials not available — will use TwiML-only fallback');
+    }
+
+    // PR 1b: per-phone rate limiting — bypass for replay requests (replayId is non-null for replays)
+    if (!replayId) {
+      const rateLimitClient = createSupabaseClient();
+      const { allowed } = await checkRateLimit(rateLimitClient, phone);
+      if (!allowed) {
+        console.warn(`[whatsapp] rate limit exceeded for ${phone}`);
+        await replyViaAvailableChannel({
+          res,
+          from,
+          message: buildRateLimitReply(),
+          canUseRest,
+        });
+        return;
+      }
     }
 
     if (await handlePendingTextDecision({ res, from, phone, text, canUseRest })) {

@@ -1,12 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { appendHistory, getHistory } from './conversation-state.js';
+import { appendHistory, getHistory, getLanguage, resetConversationHistory, setLanguage } from './conversation-state.js';
 import {
   buildOverloadedReply,
   buildStoreInfoReply,
   classifyIncomingText,
   detectEnglish,
+  extractInventoryNames,
   extractSearchCandidates,
   extractSearchCandidatesFromHistory,
   handleCancellationRequest,
@@ -44,6 +45,43 @@ export async function runConversationTurn(args: {
 }): Promise<WhatsAppSimulatorResult> {
   const intent = classifyIncomingText(args.text);
 
+  // Greeting fast-path: canned bilingual reply, no LLM call, no inventory fetch
+  if (intent === 'greeting') {
+    const storedLang = await getLanguage(args.sb, args.phone).catch(() => 'ro');
+    const isEn = storedLang === 'en' || detectEnglish(args.text);
+    const reply = isEn
+      ? 'Hello! How can I help you today?'
+      : 'Bună ziua! Cu ce vă pot ajuta?';
+    try {
+      const history = await getHistory(args.sb, args.phone);
+      await appendHistory(args.sb, args.phone, history, [
+        { role: 'user', content: args.text, timestamp: nowIso() },
+        { role: 'assistant', content: reply, timestamp: nowIso() },
+      ]);
+    } catch (err) {
+      console.error('[whatsapp] history append failed:', err);
+    }
+    return {
+      provider: 'local',
+      reply,
+      ...(args.includeDebug ? { debug: { intent } } : {}),
+    };
+  }
+
+  // Reset fast-path: clear history, canned bilingual reply
+  if (intent === 'reset') {
+    await resetConversationHistory(args.phone);
+    const isEn = detectEnglish(args.text);
+    const reply = isEn
+      ? 'Conversation reset. How can I help you?'
+      : 'Conversația a fost resetată. Cu ce vă pot ajuta?';
+    return {
+      provider: 'local',
+      reply,
+      ...(args.includeDebug ? { debug: { intent } } : {}),
+    };
+  }
+
   if (intent === 'store_info' || intent === 'cancel_order') {
     const reply = intent === 'cancel_order'
       ? await handleCancellationRequest(args.sb, args.phone, args.text)
@@ -68,8 +106,28 @@ export async function runConversationTurn(args: {
   const history = await getHistory(args.sb, args.phone);
   const searchCandidatesCurrent = intent === 'product_query' ? extractSearchCandidates(args.text) : [];
   const searchCandidatesFromHistory = intent === 'product_query' ? extractSearchCandidatesFromHistory(history) : [];
-  const searchCandidatesUsed = Array.from(new Set([...searchCandidatesCurrent, ...searchCandidatesFromHistory])).slice(0, 5);
+  // Guard: only fall back to history candidates when current turn yields nothing
+  const searchCandidatesUsed = searchCandidatesCurrent.length > 0
+    ? searchCandidatesCurrent
+    : searchCandidatesFromHistory;
+
+  // Update stored language preference (non-blocking)
+  const currentLang = detectEnglish(args.text) ? 'en' : 'ro';
+  setLanguage(args.sb, args.phone, currentLang).catch(() => {});
   const inventoryText = await getInventorySummary(args.sb, { intent, text: args.text, candidatesOverride: searchCandidatesUsed });
+
+  // PR 4: list-picker for product disambiguation (feature-flagged via TWILIO_PRODUCT_LIST_SID)
+  if (intent === 'product_query' && process.env.TWILIO_PRODUCT_LIST_SID) {
+    const candidateNames = extractInventoryNames(inventoryText);
+    if (candidateNames.length >= 2 && candidateNames.length <= 10) {
+      return {
+        provider: 'local',
+        reply: '',
+        listPicker: candidateNames,
+        ...(args.includeDebug ? { debug: { intent, inventoryText, searchCandidatesCurrent, searchCandidatesFromHistory, searchCandidatesUsed, repairedOrder: false } } : {}),
+      };
+    }
+  }
 
   const menuSelection = maybeHandleMenuSelection({
     userText: args.text,

@@ -14,7 +14,7 @@ export interface ConversationMessage {
   timestamp: string;
 }
 
-export type IncomingIntent = 'store_info' | 'browse_inventory' | 'product_query' | 'cancel_order';
+export type IncomingIntent = 'store_info' | 'browse_inventory' | 'product_query' | 'cancel_order' | 'greeting' | 'reset';
 
 export interface PendingOrder {
   customer_name: string;
@@ -43,6 +43,7 @@ export interface WhatsAppSimulatorResult {
   provider: WhatsAppSimulatorProvider;
   reply: string;
   pending?: PendingOrder;
+  listPicker?: string[];
   transaction?: WhatsAppSimulatorTransaction;
   debug?: {
     intent: IncomingIntent;

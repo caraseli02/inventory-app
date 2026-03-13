@@ -14,10 +14,14 @@ import {
   clearPendingOrder,
   consumePendingOrder,
   getHistory,
+  getLanguage,
+  getPendingProductSelection,
   hasConversationHistory,
   peekPendingOrder,
   resetConversationHistory,
+  setLanguage,
   storePendingOrder,
+  storePendingProductSelection,
 } from '../../../lib/whatsapp/conversation-state';
 
 function createConversationStateDouble(args: {
@@ -149,7 +153,7 @@ describe('api/whatsapp/conversation-state', () => {
     expect(state.spies.updateMock).not.toHaveBeenCalled();
   });
 
-  it('consumes pending orders only when explicitly requested', async () => {
+  it('consumes pending orders only when explicitly requested (uses RPC atomic path)', async () => {
     const pendingOrder: PendingOrder = {
       customer_name: 'Ion',
       customer_phone: '+40123',
@@ -159,14 +163,17 @@ describe('api/whatsapp/conversation-state', () => {
       pending_order_created_at: new Date().toISOString(),
     };
     const state = createConversationStateDouble({ selectData: { pending_order: pendingOrder } });
+    // The atomic RPC path is tried first; configure it to return the pending order
+    state.spies.rpcMock.mockResolvedValue({ data: pendingOrder, error: null });
     const sb = state.client as never;
 
     await expect(consumePendingOrder(sb, '+40123')).resolves.toEqual({ status: 'fresh', order: pendingOrder });
-    expect(state.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
-    expect(state.spies.updateEqPromiseMock).toHaveBeenCalledWith('phone_number', '+40123');
+    expect(state.spies.rpcMock).toHaveBeenCalledWith('consume_pending_order', { p_phone: '+40123' });
+    // RPC handles the clear atomically — updateMock should NOT be called
+    expect(state.spies.updateMock).not.toHaveBeenCalled();
   });
 
-  it('clears expired pending orders before returning them', async () => {
+  it('clears expired pending orders before returning them (peekPendingOrder, non-atomic path)', async () => {
     process.env.WHATSAPP_PENDING_ORDER_TTL_MINUTES = '5';
     const pendingOrder: PendingOrder = {
       customer_name: 'Ion',
@@ -179,6 +186,7 @@ describe('api/whatsapp/conversation-state', () => {
     const state = createConversationStateDouble({ selectData: { pending_order: pendingOrder } });
     const sb = state.client as never;
 
+    // peekPendingOrder uses getPendingOrderState (SELECT path, not RPC), so updateMock IS called for expiry
     await expect(peekPendingOrder(sb, '+40123')).resolves.toBeNull();
     expect(state.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
     expect(state.spies.updateEqPromiseMock).toHaveBeenCalledWith('phone_number', '+40123');
@@ -279,5 +287,131 @@ describe('api/whatsapp/conversation-state', () => {
 
     expect(state.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
     expect(state.spies.updateEqPromiseMock).toHaveBeenCalledWith('phone_number', '+40123');
+  });
+
+  describe('consumePendingOrder — atomic RPC path (PR 5b)', () => {
+    it('uses RPC consume_pending_order and returns fresh state', async () => {
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion',
+        customer_phone: '+40123',
+        items: [{ product_id: 'p1', name: 'Lapte', qty: 1, unit_price: 3.42 }],
+        total_price: 3.42,
+        pickup_time: null,
+        pending_order_created_at: new Date().toISOString(),
+      };
+      const state = createConversationStateDouble({});
+      // Override rpcMock to return the pending order (as the RPC would)
+      state.spies.rpcMock.mockResolvedValue({ data: pendingOrder, error: null });
+      const sb = state.client as never;
+
+      const result = await consumePendingOrder(sb, '+40123');
+
+      expect(state.spies.rpcMock).toHaveBeenCalledWith('consume_pending_order', { p_phone: '+40123' });
+      expect(result).toEqual({ status: 'fresh', order: pendingOrder });
+      // Should NOT have called update directly (RPC handles it atomically)
+      expect(state.spies.updateMock).not.toHaveBeenCalled();
+    });
+
+    it('returns missing when RPC returns null (no pending order)', async () => {
+      const state = createConversationStateDouble({});
+      state.spies.rpcMock.mockResolvedValue({ data: null, error: null });
+      const sb = state.client as never;
+
+      const result = await consumePendingOrder(sb, '+40123');
+
+      expect(result).toEqual({ status: 'missing', order: null });
+      expect(state.spies.updateMock).not.toHaveBeenCalled();
+    });
+
+    it('falls back to non-atomic path when RPC returns an error', async () => {
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion',
+        customer_phone: '+40123',
+        items: [{ product_id: 'p1', name: 'Lapte', qty: 1, unit_price: 3.42 }],
+        total_price: 3.42,
+        pickup_time: null,
+        pending_order_created_at: new Date().toISOString(),
+      };
+      const state = createConversationStateDouble({ selectData: { pending_order: pendingOrder } });
+      // RPC returns an error → fallback to SELECT + UPDATE
+      state.spies.rpcMock.mockResolvedValue({ data: null, error: { message: 'function not found' } });
+      const sb = state.client as never;
+
+      const result = await consumePendingOrder(sb, '+40123');
+
+      expect(result.status).toBe('fresh');
+      // Fallback path should have called update
+      expect(state.spies.updateMock).toHaveBeenCalledWith({ pending_order: null });
+    });
+  });
+
+  describe('Language preference (PR 3b)', () => {
+    it('getLanguage returns "ro" when no record exists', async () => {
+      const state = createConversationStateDouble({ selectData: null });
+      const sb = state.client as never;
+      await expect(getLanguage(sb, '+40123')).resolves.toBe('ro');
+    });
+
+    it('getLanguage returns stored language when record exists', async () => {
+      const state = createConversationStateDouble({ selectData: { language: 'en' } });
+      const sb = state.client as never;
+      await expect(getLanguage(sb, '+40123')).resolves.toBe('en');
+    });
+
+    it('setLanguage upserts language into conversation_history', async () => {
+      const state = createConversationStateDouble({});
+      const sb = state.client as never;
+
+      await setLanguage(sb, '+40123', 'en');
+
+      expect(state.spies.upsertMock).toHaveBeenCalledWith(
+        expect.objectContaining({ phone_number: '+40123', language: 'en' }),
+        { onConflict: 'phone_number' }
+      );
+    });
+
+    it('getLanguage returns "ro" when DB throws', async () => {
+      const sb = {
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => { throw new Error('db down'); },
+            }),
+          }),
+        }),
+      } as never;
+      await expect(getLanguage(sb, '+40123')).resolves.toBe('ro');
+    });
+  });
+
+  describe('Pending product selection (PR 4)', () => {
+    it('storePendingProductSelection upserts into conversation_history', async () => {
+      const state = createConversationStateDouble({});
+      const sb = state.client as never;
+
+      await storePendingProductSelection(sb, '+40123', { product_name: 'Lapte' });
+
+      expect(state.spies.upsertMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phone_number: '+40123',
+          pending_selection: { product_name: 'Lapte' },
+        }),
+        { onConflict: 'phone_number' }
+      );
+    });
+
+    it('getPendingProductSelection returns null when no selection stored', async () => {
+      const state = createConversationStateDouble({ selectData: { pending_selection: null } });
+      const sb = state.client as never;
+      await expect(getPendingProductSelection(sb, '+40123')).resolves.toBeNull();
+    });
+
+    it('getPendingProductSelection returns stored selection', async () => {
+      const state = createConversationStateDouble({
+        selectData: { pending_selection: { product_name: 'Brânză' } },
+      });
+      const sb = state.client as never;
+      await expect(getPendingProductSelection(sb, '+40123')).resolves.toEqual({ product_name: 'Brânză' });
+    });
   });
 });
