@@ -144,26 +144,31 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
 
   // browse button → fetch categories → send category list-picker
   if (buttonPayload === 'browse') {
-    console.log('[whatsapp] browse button pressed');
+    console.log('[whatsapp] [BROWSE] browse button pressed, fetching categories for phone:', phone);
     try {
       const categories = await getDistinctCategories(sb);
+      console.log('[whatsapp] [BROWSE] fetched categories:', { count: categories.length, items: categories });
       const categorySid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
+      console.log('[whatsapp] [BROWSE] TWILIO_PRODUCT_LIST_SID set?', !!categorySid);
 
       if (categorySid && categories.length > 0) {
         // Store categories in pending_selection for mapping product_N back to category names
-        await storePendingProductSelection(sb, phone, {
+        const selectionPayload = {
           selection_type: 'category_list',
           items: categories,
-        });
-        console.log('[whatsapp] sending category list-picker:', { itemCount: categories.length });
+        };
+        await storePendingProductSelection(sb, phone, selectionPayload);
+        console.log('[whatsapp] [BROWSE] stored pending_selection:', selectionPayload);
+        console.log('[whatsapp] [BROWSE] sending category list-picker with', categories.length, 'items');
         await sendListPickerTemplate(from, categorySid, 'Selectează categoria / Choose category', categories);
+        console.log('[whatsapp] [BROWSE] category list-picker sent successfully');
       } else {
-        console.log('[whatsapp] no SID or no categories, falling back to text');
+        console.log('[whatsapp] [BROWSE] no SID or no categories, falling back to text');
         const categoriesText = categories.length > 0 ? `Categorii:\n${buildNumberedList(categories)}` : 'Nu sunt categorii disponibile.';
         await sendRestMessage(from, categoriesText);
       }
     } catch (err) {
-      console.error('[whatsapp] browse button error:', err);
+      console.error('[whatsapp] [BROWSE] browse button error:', err);
       await sendRestMessage(from, 'Ne pare rău, nu am putut încărca categoriile. Încearcă din nou.');
     }
     return;
@@ -196,54 +201,60 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
 
   // Handle product_N buttons → look up what was selected in pending_selection
   const productMatch = /^product_(\d+)$/.exec(buttonPayload);
-  console.log('[whatsapp] checking for product_N pattern:', {
+  console.log('[whatsapp] [PRODUCT_N] checking for product_N pattern:', {
     buttonPayload,
     matches: !!productMatch,
-    regex: '/^product_(\\d+)$/',
   });
 
   if (productMatch) {
     try {
       const index = parseInt(productMatch[1], 10) - 1;
-      const selection = await getPendingProductSelection(sb, phone);
+      console.log('[whatsapp] [PRODUCT_N] extracted index:', { rawIndex: productMatch[1], zeroBasedIndex: index });
 
-      console.log('[whatsapp] product button received:', {
-        payload: buttonPayload,
-        index,
+      const selection = await getPendingProductSelection(sb, phone);
+      console.log('[whatsapp] [PRODUCT_N] retrieved pending_selection:', {
         selectionType: selection?.selection_type,
         itemsLength: Array.isArray(selection?.items) ? selection.items.length : 0,
-        hasSelection: !!selection,
+        items: selection?.items,
+        phone,
       });
 
       if (selection?.selection_type === 'category_list' && Array.isArray(selection.items)) {
         // User selected a category → fetch products in that category
         const selectedCategory = selection.items[index];
+        console.log('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] user selected category:', { index, selectedCategory, allCategories: selection.items });
+
         if (!selectedCategory) {
-          console.warn('[whatsapp] category index out of range:', { index, itemCount: selection.items.length });
+          console.warn('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] category index out of range:', { index, itemCount: selection.items.length });
           await sendRestMessage(from, 'Nu am putut identifica categoria. Încearcă din nou.');
           return;
         }
 
         try {
+          console.log('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] fetching products for category:', selectedCategory);
           const products = await getProductsByCategory(sb, selectedCategory);
           const productSid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
 
-          console.log('[whatsapp] category selected:', { category: selectedCategory, productCount: products.length });
+          console.log('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] products fetched:', { category: selectedCategory, count: products.length, products, sidSet: !!productSid });
 
           if (productSid && products.length > 0) {
             // Store products in pending_selection for mapping product_N back to product names
-            await storePendingProductSelection(sb, phone, {
+            const productPayload = {
               selection_type: 'product_list',
               items: products,
-            });
+            };
+            await storePendingProductSelection(sb, phone, productPayload);
+            console.log('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] stored product list:', productPayload);
+            console.log('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] sending product list-picker');
             await sendListPickerTemplate(from, productSid, 'Selectează produsul / Choose product', products);
+            console.log('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] product list-picker sent successfully');
           } else {
-            console.log('[whatsapp] no products in category or no SID');
+            console.log('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] no products or no SID, using text fallback', { sidSet: !!productSid, productCount: products.length });
             const productsText = products.length > 0 ? `Produse:\n${buildNumberedList(products)}` : `Nu sunt produse disponibile în ${selectedCategory}.`;
             await sendRestMessage(from, productsText);
           }
         } catch (err) {
-          console.error('[whatsapp] error fetching products for category:', { category: selectedCategory, error: err });
+          console.error('[whatsapp] [PRODUCT_N] [CATEGORY_LIST] error fetching products:', { category: selectedCategory, error: String(err) });
           await sendRestMessage(from, 'Ne pare rău, nu am putut încărca produsele. Încearcă din nou.');
         }
         return;
@@ -252,42 +263,47 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
       if (selection?.selection_type === 'product_list' && Array.isArray(selection.items)) {
         // User selected a product → send qty template
         const selectedProduct = selection.items[index];
+        console.log('[whatsapp] [PRODUCT_N] [PRODUCT_LIST] user selected product:', { index, selectedProduct, allProducts: selection.items });
+
         if (!selectedProduct) {
-          console.warn('[whatsapp] product index out of range:', { index, itemCount: selection.items.length });
+          console.warn('[whatsapp] [PRODUCT_N] [PRODUCT_LIST] product index out of range:', { index, itemCount: selection.items.length });
           await sendRestMessage(from, 'Nu am putut identifica produsul. Încearcă din nou.');
           return;
         }
 
         const qtySid = process.env.TWILIO_QTY_SID ?? '';
-        console.log('[whatsapp] product selected:', { product: selectedProduct, qtySidSet: !!qtySid });
+        console.log('[whatsapp] [PRODUCT_N] [PRODUCT_LIST] product selected, sending qty template:', { product: selectedProduct, qtySidSet: !!qtySid });
 
         // Store for qty selection
-        await storePendingProductSelection(sb, phone, {
+        const qtyPayload = {
           selection_type: 'awaiting_qty',
           product_name: selectedProduct,
-        });
+        };
+        await storePendingProductSelection(sb, phone, qtyPayload);
+        console.log('[whatsapp] [PRODUCT_N] [PRODUCT_LIST] stored qty context:', qtyPayload);
 
         if (qtySid) {
           try {
-            console.log('[whatsapp] sending qty template');
+            console.log('[whatsapp] [PRODUCT_N] [PRODUCT_LIST] sending qty template');
             await sendTemplateMessage(from, qtySid, { product_name: selectedProduct });
-            console.log('[whatsapp] qty template sent successfully');
+            console.log('[whatsapp] [PRODUCT_N] [PRODUCT_LIST] qty template sent successfully');
             return;
           } catch (err) {
-            console.warn('[whatsapp] qty template send failed, falling back to text:', err);
+            console.warn('[whatsapp] [PRODUCT_N] [PRODUCT_LIST] qty template send failed:', String(err));
           }
         }
 
         const qtyPrompt = `Ce cantitate doriți din *${selectedProduct}*? / How many of *${selectedProduct}* would you like?`;
+        console.log('[whatsapp] [PRODUCT_N] [PRODUCT_LIST] sending qty text fallback');
         await sendRestMessage(from, qtyPrompt);
         return;
       }
 
       // Fallback if selection context is missing
-      console.warn('[whatsapp] no valid selection context for product button:', { payload: buttonPayload, selection });
+      console.warn('[whatsapp] [PRODUCT_N] no valid selection context for product button:', { payload: buttonPayload, selectionType: selection?.selection_type, hasItems: Array.isArray(selection?.items) });
       await sendRestMessage(from, 'Context pierdut. Încearcă din nou cu "Caut un produs".');
     } catch (err) {
-      console.error('[whatsapp] error handling product button:', { payload: buttonPayload, error: err });
+      console.error('[whatsapp] [PRODUCT_N] error handling product button:', { payload: buttonPayload, error: String(err) });
       await sendRestMessage(from, 'Ne pare rău, a apărut o eroare. Încearcă din nou.');
     }
     return;
@@ -453,10 +469,17 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
     // Handle Twilio list-picker responses: they come as Body text, not ButtonPayload
     // ListId field indicates this is from a list-picker template
     const isListPickerResponse = !!(body.ListId && text.match(/^product_\d+$/));
+    console.log('[whatsapp] [WEBHOOK] checking for list-picker response:', {
+      hasListId: !!body.ListId,
+      textValue: text,
+      textMatches: !!text.match(/^product_\d+$/),
+      isListPickerResponse,
+    });
+
     if (isListPickerResponse) {
       buttonPayload = text;  // Treat the product_N ID as a button payload
       text = '';  // Clear text so it's not processed as regular message
-      console.log('[whatsapp] detected list-picker response, treating as button payload:', buttonPayload);
+      console.log('[whatsapp] [WEBHOOK] detected list-picker response, treating as button payload:', buttonPayload);
     }
 
     const phone = from.replace('whatsapp:', '');
