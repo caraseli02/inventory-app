@@ -66,7 +66,7 @@ export async function sendListPickerTemplate(
   items: string[]
 ): Promise<void> {
   const variables: Record<string, string> = {};
-  items.forEach((item, index) => { variables[String(index + 1)] = item; });
+  items.forEach((item, index) => { variables[`product_${index + 1}`] = item; });
   return sendTemplateMessage(to, contentSid, variables);
 }
 
