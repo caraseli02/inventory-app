@@ -12,6 +12,7 @@ import { detectEnglish } from './conversation.js';
 import { createSupabaseClient } from './db.js';
 import { checkAndMarkMessageSid } from './dedup.js';
 import { buildReplyWithPending } from './llm.js';
+import { getDistinctCategories, getProductsByCategory } from './inventory.js';
 import {
   applyPendingOrderDecision,
   buildPendingConfirmationText,
@@ -144,22 +145,26 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   // browse button → fetch categories → send category list-picker
   if (buttonPayload === 'browse') {
     console.log('[whatsapp] browse button pressed');
-    const { getDistinctCategories } = await import('./inventory.js');
-    const categories = await getDistinctCategories(sb);
-    const categorySid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
+    try {
+      const categories = await getDistinctCategories(sb);
+      const categorySid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
 
-    if (categorySid && categories.length > 0) {
-      // Store categories in pending_selection for mapping product_N back to category names
-      await storePendingProductSelection(sb, phone, {
-        selection_type: 'category_list',
-        items: categories,
-      });
-      console.log('[whatsapp] sending category list-picker:', { itemCount: categories.length });
-      await sendListPickerTemplate(from, categorySid, 'Selectează categoria / Choose category', categories);
-    } else {
-      console.log('[whatsapp] no SID or no categories, falling back to text');
-      const categoriesText = categories.length > 0 ? `Categorii:\n${buildNumberedList(categories)}` : 'Nu sunt categorii disponibile.';
-      await sendRestMessage(from, categoriesText);
+      if (categorySid && categories.length > 0) {
+        // Store categories in pending_selection for mapping product_N back to category names
+        await storePendingProductSelection(sb, phone, {
+          selection_type: 'category_list',
+          items: categories,
+        });
+        console.log('[whatsapp] sending category list-picker:', { itemCount: categories.length });
+        await sendListPickerTemplate(from, categorySid, 'Selectează categoria / Choose category', categories);
+      } else {
+        console.log('[whatsapp] no SID or no categories, falling back to text');
+        const categoriesText = categories.length > 0 ? `Categorii:\n${buildNumberedList(categories)}` : 'Nu sunt categorii disponibile.';
+        await sendRestMessage(from, categoriesText);
+      }
+    } catch (err) {
+      console.error('[whatsapp] browse button error:', err);
+      await sendRestMessage(from, 'Ne pare rău, nu am putut încărca categoriile. Încearcă din nou.');
     }
     return;
   }
@@ -192,76 +197,87 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   // Handle product_N buttons → look up what was selected in pending_selection
   const productMatch = /^product_(\d+)$/.exec(buttonPayload);
   if (productMatch) {
-    const index = parseInt(productMatch[1], 10) - 1;
-    const selection = await getPendingProductSelection(sb, phone);
+    try {
+      const index = parseInt(productMatch[1], 10) - 1;
+      const selection = await getPendingProductSelection(sb, phone);
 
-    if (selection?.selection_type === 'category_list' && Array.isArray(selection.items)) {
-      // User selected a category → fetch products in that category
-      const selectedCategory = selection.items[index];
-      if (!selectedCategory) {
-        console.warn('[whatsapp] category index out of range:', { index, itemCount: selection.items.length });
-        await sendRestMessage(from, 'Nu am putut identifica categoria. Încearcă din nou.');
-        return;
-      }
+      console.log('[whatsapp] product button received:', { payload: buttonPayload, index, selectionType: selection?.selection_type });
 
-      const { getProductsByCategory } = await import('./inventory.js');
-      const products = await getProductsByCategory(sb, selectedCategory);
-      const productSid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
-
-      console.log('[whatsapp] category selected:', { category: selectedCategory, productCount: products.length });
-
-      if (productSid && products.length > 0) {
-        // Store products in pending_selection for mapping product_N back to product names
-        await storePendingProductSelection(sb, phone, {
-          selection_type: 'product_list',
-          items: products,
-        });
-        await sendListPickerTemplate(from, productSid, 'Selectează produsul / Choose product', products);
-      } else {
-        console.log('[whatsapp] no products in category or no SID');
-        const productsText = products.length > 0 ? `Produse:\n${buildNumberedList(products)}` : `Nu sunt produse disponibile în ${selectedCategory}.`;
-        await sendRestMessage(from, productsText);
-      }
-      return;
-    }
-
-    if (selection?.selection_type === 'product_list' && Array.isArray(selection.items)) {
-      // User selected a product → send qty template
-      const selectedProduct = selection.items[index];
-      if (!selectedProduct) {
-        console.warn('[whatsapp] product index out of range:', { index, itemCount: selection.items.length });
-        await sendRestMessage(from, 'Nu am putut identifica produsul. Încearcă din nou.');
-        return;
-      }
-
-      const qtySid = process.env.TWILIO_QTY_SID ?? '';
-      console.log('[whatsapp] product selected:', { product: selectedProduct, qtySidSet: !!qtySid });
-
-      // Store for qty selection
-      await storePendingProductSelection(sb, phone, {
-        selection_type: 'awaiting_qty',
-        product_name: selectedProduct,
-      });
-
-      if (qtySid) {
-        try {
-          console.log('[whatsapp] sending qty template');
-          await sendTemplateMessage(from, qtySid, { product_name: selectedProduct });
-          console.log('[whatsapp] qty template sent successfully');
+      if (selection?.selection_type === 'category_list' && Array.isArray(selection.items)) {
+        // User selected a category → fetch products in that category
+        const selectedCategory = selection.items[index];
+        if (!selectedCategory) {
+          console.warn('[whatsapp] category index out of range:', { index, itemCount: selection.items.length });
+          await sendRestMessage(from, 'Nu am putut identifica categoria. Încearcă din nou.');
           return;
-        } catch (err) {
-          console.warn('[whatsapp] qty template send failed, falling back to text:', err);
         }
+
+        try {
+          const products = await getProductsByCategory(sb, selectedCategory);
+          const productSid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
+
+          console.log('[whatsapp] category selected:', { category: selectedCategory, productCount: products.length });
+
+          if (productSid && products.length > 0) {
+            // Store products in pending_selection for mapping product_N back to product names
+            await storePendingProductSelection(sb, phone, {
+              selection_type: 'product_list',
+              items: products,
+            });
+            await sendListPickerTemplate(from, productSid, 'Selectează produsul / Choose product', products);
+          } else {
+            console.log('[whatsapp] no products in category or no SID');
+            const productsText = products.length > 0 ? `Produse:\n${buildNumberedList(products)}` : `Nu sunt produse disponibile în ${selectedCategory}.`;
+            await sendRestMessage(from, productsText);
+          }
+        } catch (err) {
+          console.error('[whatsapp] error fetching products for category:', { category: selectedCategory, error: err });
+          await sendRestMessage(from, 'Ne pare rău, nu am putut încărca produsele. Încearcă din nou.');
+        }
+        return;
       }
 
-      const qtyPrompt = `Ce cantitate doriți din *${selectedProduct}*? / How many of *${selectedProduct}* would you like?`;
-      await sendRestMessage(from, qtyPrompt);
-      return;
-    }
+      if (selection?.selection_type === 'product_list' && Array.isArray(selection.items)) {
+        // User selected a product → send qty template
+        const selectedProduct = selection.items[index];
+        if (!selectedProduct) {
+          console.warn('[whatsapp] product index out of range:', { index, itemCount: selection.items.length });
+          await sendRestMessage(from, 'Nu am putut identifica produsul. Încearcă din nou.');
+          return;
+        }
 
-    // Fallback if selection context is missing
-    console.warn('[whatsapp] no valid selection context for product button:', { payload: buttonPayload });
-    await sendRestMessage(from, 'Context pierdut. Încearcă din nou cu "Caut un produs".');
+        const qtySid = process.env.TWILIO_QTY_SID ?? '';
+        console.log('[whatsapp] product selected:', { product: selectedProduct, qtySidSet: !!qtySid });
+
+        // Store for qty selection
+        await storePendingProductSelection(sb, phone, {
+          selection_type: 'awaiting_qty',
+          product_name: selectedProduct,
+        });
+
+        if (qtySid) {
+          try {
+            console.log('[whatsapp] sending qty template');
+            await sendTemplateMessage(from, qtySid, { product_name: selectedProduct });
+            console.log('[whatsapp] qty template sent successfully');
+            return;
+          } catch (err) {
+            console.warn('[whatsapp] qty template send failed, falling back to text:', err);
+          }
+        }
+
+        const qtyPrompt = `Ce cantitate doriți din *${selectedProduct}*? / How many of *${selectedProduct}* would you like?`;
+        await sendRestMessage(from, qtyPrompt);
+        return;
+      }
+
+      // Fallback if selection context is missing
+      console.warn('[whatsapp] no valid selection context for product button:', { payload: buttonPayload, selection });
+      await sendRestMessage(from, 'Context pierdut. Încearcă din nou cu "Caut un produs".');
+    } catch (err) {
+      console.error('[whatsapp] error handling product button:', { payload: buttonPayload, error: err });
+      await sendRestMessage(from, 'Ne pare rău, a apărut o eroare. Încearcă din nou.');
+    }
     return;
   }
 
