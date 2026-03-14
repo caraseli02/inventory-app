@@ -123,8 +123,26 @@ export async function consumePendingOrder(
   phone: string
 ): Promise<PendingOrderState> {
   try {
-    // Read current value first — PostgREST .update().select() returns the
-    // post-update row (all NULLs after clearing), not the pre-update value.
+    // Prefer the atomic RPC path (prevents double-confirm race condition).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rpcResult = await (sb as any).rpc('consume_pending_order', { p_phone: phone });
+    const rpcError = rpcResult?.error;
+    const rpcData = rpcResult?.data;
+
+    if (!rpcError) {
+      if (rpcData === null || rpcData === undefined) return { status: 'missing', order: null };
+      const order = rpcData as PendingOrder;
+      return toPendingOrderState(order);
+    }
+
+    // RPC not available (e.g. local dev without migration) — fall back to non-atomic path.
+    console.warn('[whatsapp] consume_pending_order RPC unavailable, using fallback:', rpcError);
+  } catch {
+    // fall through to non-atomic fallback
+  }
+
+  try {
+    // Non-atomic fallback: read then clear (two round trips).
     const { data: peekData } = await sb
       .from('conversation_history')
       .select('pending_order')
@@ -134,7 +152,6 @@ export async function consumePendingOrder(
     const order = (peekData?.pending_order ?? null) as PendingOrder | null;
     const state = toPendingOrderState(order);
 
-    // Clear regardless of expired/fresh — both cases should consume the slot.
     if (order !== null) {
       await sb.from('conversation_history').update({ pending_order: null }).eq('phone_number', phone);
     }
@@ -164,6 +181,63 @@ export async function getHistory(
   if (isExpired) return [];
 
   return ((data?.messages ?? []) as ConversationMessage[]).slice(-20);
+}
+
+export async function getLanguage(sb: ServerSupabaseClient, phone: string): Promise<string> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (sb as any)
+      .from('conversation_history')
+      .select('language')
+      .eq('phone_number', phone)
+      .maybeSingle();
+    return (data?.language as string | null | undefined) ?? 'ro';
+  } catch {
+    return 'ro';
+  }
+}
+
+export async function setLanguage(sb: ServerSupabaseClient, phone: string, lang: string): Promise<void> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (sb as any)
+      .from('conversation_history')
+      .upsert({ phone_number: phone, language: lang }, { onConflict: 'phone_number' });
+  } catch (err) {
+    console.warn('[whatsapp] failed to set language preference:', err);
+  }
+}
+
+export async function storePendingProductSelection(
+  sb: ServerSupabaseClient,
+  phone: string,
+  selection: Record<string, unknown>
+): Promise<void> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (sb as any)
+      .from('conversation_history')
+      .upsert({ phone_number: phone, pending_selection: selection }, { onConflict: 'phone_number' });
+  } catch (err) {
+    console.warn('[whatsapp] failed to store pending selection:', err);
+  }
+}
+
+export async function getPendingProductSelection(
+  sb: ServerSupabaseClient,
+  phone: string
+): Promise<Record<string, unknown> | null> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (sb as any)
+      .from('conversation_history')
+      .select('pending_selection')
+      .eq('phone_number', phone)
+      .maybeSingle();
+    return (data?.pending_selection as Record<string, unknown> | null | undefined) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function appendHistory(

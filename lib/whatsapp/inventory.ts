@@ -252,6 +252,47 @@ export async function resolveOrderItems(
   return { items: resolvedItems, totalPrice: Number(totalPrice.toFixed(2)) };
 }
 
+export async function getDistinctCategories(sb: InventoryQueryableClient): Promise<string[]> {
+  const productsTable = sb.from('products') as ProductsQuery;
+  const { data } = await productsTable
+    .select('category')
+    .order('category', { ascending: true })
+    .limit(1000);
+
+  if (!data?.length) return [];
+  const unique = [...new Set(
+    (data as Array<{ category: string | null }>)
+      .map((r) => r.category)
+      .filter((cat) => cat != null) as string[]
+  )];
+  return unique;
+}
+
+export async function getProductsByCategory(sb: InventoryQueryableClient, category: string): Promise<string[]> {
+  const productsTable = sb.from('products') as ProductsQuery;
+  const { data } = await productsTable
+    .select('name, price, price_50, price_70, price_100, markup')
+    .eq('category', category)
+    .order('name', { ascending: true })
+    .limit(30);  // Fetch enough to survive duplicates; will filter to 6 distinct names
+
+  if (!data?.length) return [];
+
+  // Group by name, keep cheapest variant per name
+  const cheapestByName = new Map<string, { name: string; price: number }>();
+  for (const row of data as Array<{ name: string; price: number | null; price_50: number | null; price_70: number | null; price_100: number | null; markup: number | null }>) {
+    const storePrice = getStorePrice(row as ProductRow) ?? Infinity;
+    const existing = cheapestByName.get(row.name);
+    if (!existing || storePrice < existing.price) {
+      cheapestByName.set(row.name, { name: row.name, price: storePrice });
+    }
+  }
+
+  return [...cheapestByName.values()]
+    .slice(0, 6)
+    .map((entry) => entry.name.substring(0, 60));
+}
+
 export async function getInventorySummary(
   sb: InventoryQueryableClient,
   args: { intent: IncomingIntent; text: string; candidatesOverride?: string[] },

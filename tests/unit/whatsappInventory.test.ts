@@ -245,7 +245,7 @@ describe('WhatsApp inventory summary', () => {
     expect(selection?.text).toContain('18:30')
   })
 
-  it('creates a multi-item order for "de cada" using the last assistant list', () => {
+  it('does NOT create a multi-item order for "de cada" (repeatedQty path removed in PR 5a)', () => {
     const history = [
       {
         role: 'assistant',
@@ -267,11 +267,17 @@ describe('WhatsApp inventory summary', () => {
       customerPhone: '+40000000000',
     })
 
-    expect(followup?.createdOrder).toBe(true)
-    expect(followup?.text).toContain('BACIO DI BOLLE')
-    expect(followup?.text).toContain('VIORICA ECO CRICOVA DEMI')
-    expect(followup?.text).toContain('19:00')
-    expect(followup?.text).toContain('ORDER:')
+    // repeatedQty multi-item path was removed — should not create a multi-item ORDER
+    if (followup !== null) {
+      expect(followup.createdOrder).toBe(false)
+      if (followup.text.includes('ORDER:')) {
+        const orderMatch = followup.text.match(/ORDER:(\{.*\})/s)
+        if (orderMatch) {
+          const parsed = JSON.parse(orderMatch[1]!)
+          expect(parsed.items?.length ?? 0).toBeLessThanOrEqual(1)
+        }
+      }
+    }
   })
 
   it('resolves assistant-style packaging suffixes back to canonical inventory names', async () => {
