@@ -120,7 +120,9 @@ export async function runConversationTurn(args: {
   // PR 4: list-picker for product disambiguation (feature-flagged via TWILIO_PRODUCT_LIST_SID)
   if (intent === 'product_query' && process.env.TWILIO_PRODUCT_LIST_SID) {
     const candidateNames = extractInventoryNames(inventoryText);
+    console.log('[whatsapp] list-picker check:', { intent, hasSid: !!process.env.TWILIO_PRODUCT_LIST_SID, candidateCount: candidateNames.length, candidateNames });
     if (candidateNames.length >= 2 && candidateNames.length <= 10) {
+      console.log('[whatsapp] returning list-picker result with', candidateNames.length, 'items');
       return {
         provider: 'local',
         reply: '',
