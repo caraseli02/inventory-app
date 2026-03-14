@@ -271,20 +271,26 @@ export async function getDistinctCategories(sb: InventoryQueryableClient): Promi
 export async function getProductsByCategory(sb: InventoryQueryableClient, category: string): Promise<string[]> {
   const productsTable = sb.from('products') as ProductsQuery;
   const { data } = await productsTable
-    .select('name')
+    .select('name, price, price_50, price_70, price_100, markup')
     .eq('category', category)
     .order('name', { ascending: true })
-    .limit(6);
+    .limit(30);  // Fetch enough to survive duplicates; will filter to 6 distinct names
 
   if (!data?.length) return [];
 
-  // Remove duplicates and truncate long product names for Twilio (max ~30 chars per variable)
-  const uniqueProducts = [...new Set(
-    (data as Array<{ name: string }>)
-      .map((r) => r.name.substring(0, 60))  // Truncate to 60 chars for safety
-  )];
+  // Group by name, keep cheapest variant per name
+  const cheapestByName = new Map<string, { name: string; price: number }>();
+  for (const row of data as Array<{ name: string; price: number | null; price_50: number | null; price_70: number | null; price_100: number | null; markup: number | null }>) {
+    const storePrice = getStorePrice(row as ProductRow) ?? Infinity;
+    const existing = cheapestByName.get(row.name);
+    if (!existing || storePrice < existing.price) {
+      cheapestByName.set(row.name, { name: row.name, price: storePrice });
+    }
+  }
 
-  return uniqueProducts;
+  return [...cheapestByName.values()]
+    .slice(0, 6)
+    .map((entry) => entry.name.substring(0, 60));
 }
 
 export async function getInventorySummary(
