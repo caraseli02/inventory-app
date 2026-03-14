@@ -445,10 +445,20 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
       return res.status(403).end();
     }
 
-    const body = req.body as TwilioBody;
+    const body = req.body as TwilioBody & { ListId?: string; ListTitle?: string };
     const from = body.From ?? '';
-    const text = (body.Body ?? '').trim();
-    const buttonPayload = body.ButtonPayload ?? '';
+    let text = (body.Body ?? '').trim();
+    let buttonPayload = body.ButtonPayload ?? '';
+
+    // Handle Twilio list-picker responses: they come as Body text, not ButtonPayload
+    // ListId field indicates this is from a list-picker template
+    const isListPickerResponse = !!(body.ListId && text.match(/^product_\d+$/));
+    if (isListPickerResponse) {
+      buttonPayload = text;  // Treat the product_N ID as a button payload
+      text = '';  // Clear text so it's not processed as regular message
+      console.log('[whatsapp] detected list-picker response, treating as button payload:', buttonPayload);
+    }
+
     const phone = from.replace('whatsapp:', '');
     const name = body.ProfileName ?? phone;
     const messageSid = body.MessageSid ?? '';
@@ -457,9 +467,9 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
     console.log('[whatsapp] incoming request:', {
       hasButtonPayload: !!buttonPayload,
       hasBody: !!text,
+      isListPickerResponse,
       buttonPayload: buttonPayload || '(empty)',
       textPreview: text.slice(0, 50) || '(empty)',
-      allBodyKeys: Object.keys(body).filter(k => body[k as keyof TwilioBody]),
     });
 
     // PR 1a: MessageSid deduplication — bypass for replay requests (replayId is non-null for replays)
