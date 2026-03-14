@@ -252,6 +252,34 @@ export async function resolveOrderItems(
   return { items: resolvedItems, totalPrice: Number(totalPrice.toFixed(2)) };
 }
 
+export async function getDistinctCategories(sb: InventoryQueryableClient): Promise<string[]> {
+  const productsTable = sb.from('products') as ProductsQuery;
+  const { data } = await productsTable
+    .select('category')
+    .order('category', { ascending: true })
+    .limit(1000);
+
+  if (!data?.length) return [];
+  const unique = [...new Set(
+    (data as Array<{ category: string | null }>)
+      .map((r) => r.category)
+      .filter((cat) => cat != null) as string[]
+  )];
+  return unique;
+}
+
+export async function getProductsByCategory(sb: InventoryQueryableClient, category: string): Promise<string[]> {
+  const productsTable = sb.from('products') as ProductsQuery;
+  const { data } = await productsTable
+    .select('name')
+    .eq('category', category)
+    .order('name', { ascending: true })
+    .limit(6);
+
+  if (!data?.length) return [];
+  return (data as Array<{ name: string }>).map((r) => r.name);
+}
+
 export async function getInventorySummary(
   sb: InventoryQueryableClient,
   args: { intent: IncomingIntent; text: string; candidatesOverride?: string[] },
