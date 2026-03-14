@@ -277,7 +277,14 @@ export async function getProductsByCategory(sb: InventoryQueryableClient, catego
     .limit(6);
 
   if (!data?.length) return [];
-  return (data as Array<{ name: string }>).map((r) => r.name);
+
+  // Remove duplicates and truncate long product names for Twilio (max ~30 chars per variable)
+  const uniqueProducts = [...new Set(
+    (data as Array<{ name: string }>)
+      .map((r) => r.name.substring(0, 60))  // Truncate to 60 chars for safety
+  )];
+
+  return uniqueProducts;
 }
 
 export async function getInventorySummary(
