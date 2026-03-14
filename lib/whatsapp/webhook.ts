@@ -196,12 +196,24 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
 
   // Handle product_N buttons → look up what was selected in pending_selection
   const productMatch = /^product_(\d+)$/.exec(buttonPayload);
+  console.log('[whatsapp] checking for product_N pattern:', {
+    buttonPayload,
+    matches: !!productMatch,
+    regex: '/^product_(\\d+)$/',
+  });
+
   if (productMatch) {
     try {
       const index = parseInt(productMatch[1], 10) - 1;
       const selection = await getPendingProductSelection(sb, phone);
 
-      console.log('[whatsapp] product button received:', { payload: buttonPayload, index, selectionType: selection?.selection_type });
+      console.log('[whatsapp] product button received:', {
+        payload: buttonPayload,
+        index,
+        selectionType: selection?.selection_type,
+        itemsLength: Array.isArray(selection?.items) ? selection.items.length : 0,
+        hasSelection: !!selection,
+      });
 
       if (selection?.selection_type === 'category_list' && Array.isArray(selection.items)) {
         // User selected a category → fetch products in that category
@@ -441,6 +453,15 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
     const name = body.ProfileName ?? phone;
     const messageSid = body.MessageSid ?? '';
 
+    // Debug logging for incoming Twilio request
+    console.log('[whatsapp] incoming request:', {
+      hasButtonPayload: !!buttonPayload,
+      hasBody: !!text,
+      buttonPayload: buttonPayload || '(empty)',
+      textPreview: text.slice(0, 50) || '(empty)',
+      allBodyKeys: Object.keys(body).filter(k => body[k as keyof TwilioBody]),
+    });
+
     // PR 1a: MessageSid deduplication — bypass for replay requests (replayId is non-null for replays)
     if (!replayId && messageSid) {
       const dedupClient = createSupabaseClient();
@@ -464,6 +485,7 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
     }
 
     if (!from || !text) {
+      console.log('[whatsapp] skipping: missing from or text', { from: !!from, text: !!text });
       return res.status(200).send(twiml(''));
     }
 
