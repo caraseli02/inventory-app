@@ -64,6 +64,7 @@ export async function runConversationTurn(args: {
     return {
       provider: 'local',
       reply,
+      welcomeTemplate: true,
       ...(args.includeDebug ? { debug: { intent } } : {}),
     };
   }

@@ -44,6 +44,7 @@ export interface WhatsAppSimulatorResult {
   reply: string;
   pending?: PendingOrder;
   listPicker?: string[];
+  welcomeTemplate?: boolean;
   transaction?: WhatsAppSimulatorTransaction;
   debug?: {
     intent: IncomingIntent;

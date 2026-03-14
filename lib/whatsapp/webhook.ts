@@ -212,6 +212,21 @@ async function handleRestConversation(args: {
   waitUntil(
     buildReplyWithPending(args.phone, args.name, args.text)
       .then(async (result) => {
+        // Greeting template (welcome with intent buttons)
+        if (result.welcomeTemplate) {
+          const sid = process.env.TWILIO_WELCOME_SID ?? '';
+          if (sid) {
+            try {
+              await sendTemplateMessage(args.from, sid);
+              return;
+            } catch {
+              // fall through to plain text fallback
+            }
+          }
+          await sendRestMessage(args.from, result.reply);
+          return;
+        }
+
         // PR 4: list-picker for product disambiguation
         if (result.listPicker) {
           const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
