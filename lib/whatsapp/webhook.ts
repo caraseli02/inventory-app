@@ -147,23 +147,25 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
       : buttonPayload === 'previous'
         ? 'comanda anteriora'
         : 'informatii';
-    void buildReplyWithPending(phone, '', intentText)
-      .then(async (result) => {
-        if (result.listPicker) {
-          const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
-          if (sid) {
-            await sendListPickerTemplate(from, sid, 'Alegeți produsul / Choose product', result.listPicker);
+    waitUntil(
+      buildReplyWithPending(phone, '', intentText)
+        .then(async (result) => {
+          if (result.listPicker) {
+            const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
+            if (sid) {
+              await sendListPickerTemplate(from, sid, 'Alegeți produsul / Choose product', result.listPicker);
+            } else {
+              await sendRestMessage(from, buildNumberedList(result.listPicker));
+            }
           } else {
-            await sendRestMessage(from, buildNumberedList(result.listPicker));
+            await sendRestMessage(from, result.reply);
           }
-        } else {
-          await sendRestMessage(from, result.reply);
-        }
-      })
-      .catch(() => {
-        const fallback = 'Ne pare rău, nu am putut procesa cererea. Încearcă din nou.';
-        return sendRestMessage(from, fallback);
-      });
+        })
+        .catch(() => {
+          const fallback = 'Ne pare rău, nu am putut procesa cererea. Încearcă din nou.';
+          return sendRestMessage(from, fallback);
+        })
+    );
     return;
   }
 
