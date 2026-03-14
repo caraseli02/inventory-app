@@ -174,12 +174,15 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
     await storePendingProductSelection(sb, phone, { product_name: buttonPayload });
     const qtySid = process.env.TWILIO_QTY_SID ?? '';
     const qtyPrompt = `Ce cantitate doriți din *${buttonPayload}*? / How many of *${buttonPayload}* would you like?`;
+    console.log('[whatsapp] product-selection button:', { payload: buttonPayload, qtySidSet: !!qtySid });
     if (qtySid) {
       try {
+        console.log('[whatsapp] attempting to send qty template');
         await sendTemplateMessage(from, qtySid, { product_name: buttonPayload });
+        console.log('[whatsapp] qty template sent successfully');
         return;
-      } catch {
-        // fall through to plain text
+      } catch (err) {
+        console.warn('[whatsapp] qty template send failed, falling back to text:', err);
       }
     }
     await sendRestMessage(from, qtyPrompt);
@@ -259,9 +262,12 @@ async function handleRestConversation(args: {
         // PR 4: list-picker for product disambiguation
         if (result.listPicker) {
           const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
+          console.log('[whatsapp] list-picker detected:', { hasListPicker: true, sidSet: !!sid, itemCount: result.listPicker.length });
           if (sid) {
+            console.log('[whatsapp] attempting to send list-picker template');
             await sendListPickerTemplate(args.from, sid, 'Alegeți produsul / Choose product', result.listPicker);
           } else {
+            console.log('[whatsapp] no list-picker SID, using plain text');
             await sendRestMessage(args.from, buildNumberedList(result.listPicker));
           }
           return;
