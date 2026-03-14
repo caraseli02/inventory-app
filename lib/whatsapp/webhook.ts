@@ -140,6 +140,33 @@ function buildNumberedList(items: string[]): string {
 async function handleButtonPayload(from: string, phone: string, buttonPayload: string) {
   const sb = createSupabaseClient();
 
+  // Welcome template navigation buttons — treat as text intents, not product selection
+  if (['browse', 'previous', 'info'].includes(buttonPayload)) {
+    const intentText = buttonPayload === 'browse'
+      ? 'caut produse'
+      : buttonPayload === 'previous'
+        ? 'comanda anteriora'
+        : 'informatii';
+    void buildReplyWithPending(phone, '', intentText)
+      .then(async (result) => {
+        if (result.listPicker) {
+          const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
+          if (sid) {
+            await sendListPickerTemplate(from, sid, 'Alegeți produsul / Choose product', result.listPicker);
+          } else {
+            await sendRestMessage(from, buildNumberedList(result.listPicker));
+          }
+        } else {
+          await sendRestMessage(from, result.reply);
+        }
+      })
+      .catch(() => {
+        const fallback = 'Ne pare rău, nu am putut procesa cererea. Încearcă din nou.';
+        return sendRestMessage(from, fallback);
+      });
+    return;
+  }
+
   // PR 4: product-selection button (payload is a product name, not confirm/cancel)
   if (buttonPayload !== 'confirm' && buttonPayload !== 'cancel') {
     await storePendingProductSelection(sb, phone, { product_name: buttonPayload });
