@@ -62,11 +62,11 @@ export async function sendRestMessage(to: string, body: string): Promise<void> {
 export async function sendListPickerTemplate(
   to: string,
   contentSid: string,
-  title: string,
+  _title: string,
   items: string[]
 ): Promise<void> {
-  const variables: Record<string, string> = { title };
-  items.forEach((item, index) => { variables[`item_${index + 1}`] = item; });
+  const variables: Record<string, string> = {};
+  items.forEach((item, index) => { variables[String(index + 1)] = item; });
   return sendTemplateMessage(to, contentSid, variables);
 }
 
