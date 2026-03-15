@@ -198,21 +198,31 @@ describe('sendCategoryPicker', () => {
     expect(sentMessages[0].body).toContain('1) Dairy');
   });
 
-  it('sends list-picker template when SID set', async () => {
+  it('sends text fallback when SID set but fewer than 6 categories', async () => {
     process.env.TWILIO_PRODUCT_LIST_SID = 'HX_test_sid';
+    // mockCategories has 4 items — below the 6-slot template requirement
+    const result = await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
+    expect(result).toBe(true);
+    expect(sentListPickers).toHaveLength(0);
+    expect(sentMessages).toHaveLength(1);
+    expect(sentMessages[0].body).toContain('1) Dairy');
+  });
+
+  it('sends list-picker template when SID set and exactly 6 categories', async () => {
+    process.env.TWILIO_PRODUCT_LIST_SID = 'HX_test_sid';
+    mockCategories = ['Dairy', 'Bakery', 'Wine', 'Pantry', 'Meat', 'Produce'];
     const result = await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
     expect(result).toBe(true);
     expect(sentListPickers).toHaveLength(1);
-    expect(sentListPickers[0].items).toEqual(['Dairy', 'Bakery', 'Wine', 'Pantry']);
+    expect(sentListPickers[0].items).toEqual(['Dairy', 'Bakery', 'Wine', 'Pantry', 'Meat', 'Produce']);
   });
 
-  it('caps categories at 6 (matching template slots)', async () => {
+  it('caps categories at 6 and uses template (matching template slots)', async () => {
     mockCategories = Array.from({ length: 15 }, (_, i) => `Cat${i + 1}`);
+    process.env.TWILIO_PRODUCT_LIST_SID = 'HX_test_sid';
     await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
-    expect(sentMessages).toHaveLength(1);
-    // Only 6 items in the numbered list (matching template product_1..product_6)
-    const lines = sentMessages[0].body.split('\n').filter(l => /^\d+\)/.test(l));
-    expect(lines).toHaveLength(6);
+    expect(sentListPickers).toHaveLength(1);
+    expect(sentListPickers[0].items).toHaveLength(6);
   });
 
   it('stores pending_selection with category_list type and created_at', async () => {

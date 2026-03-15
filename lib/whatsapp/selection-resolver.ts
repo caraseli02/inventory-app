@@ -92,7 +92,8 @@ export async function handleCategorySelected(args: {
     const payload = withTimestamp({ selection_type: 'product_list', items: products });
     await storePendingProductSelection(args.sb, args.phone, payload);
 
-    if (productSid) {
+    if (productSid && products.length >= MAX_LIST_PICKER_ITEMS) {
+      // Template requires exactly 6 filled slots — use it only when we have enough items
       await sendListPickerTemplate(args.from, productSid, 'Selectează produsul / Choose product', products);
     } else {
       await sendRestMessage(args.from, `Produse din ${args.category}:\n${buildNumberedList(products)}`);
@@ -155,7 +156,8 @@ export async function sendCategoryPicker(args: {
   const payload = withTimestamp({ selection_type: 'category_list', items: capped });
   await storePendingProductSelection(args.sb, args.phone, payload);
 
-  if (categorySid) {
+  if (categorySid && capped.length >= MAX_LIST_PICKER_ITEMS) {
+    // Template requires exactly 6 filled slots — use it only when we have enough items
     await sendListPickerTemplate(args.from, categorySid, 'Selectează categoria / Choose category', capped);
   } else {
     await sendRestMessage(args.from, `Categorii disponibile:\n${buildNumberedList(capped)}`);
