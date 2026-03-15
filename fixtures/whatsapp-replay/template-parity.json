@@ -1,0 +1,41 @@
+{
+  "name": "Template parity: text and button flows",
+  "description": "Tests that browse button, browse text, category name, and numeric input all trigger template sends via the selection resolver. Requires dev server running with TWILIO_PRODUCT_LIST_SID set.",
+  "phone": "+40710000003",
+  "profileName": "Replay Template",
+  "resetConversation": true,
+  "steps": [
+    {
+      "body": "Buna ziua",
+      "note": "Greeting — should trigger welcome template or ack",
+      "pauseMs": 2000
+    },
+    {
+      "body": "🔍 Caut un produs",
+      "buttonPayload": "browse",
+      "note": "Browse button click — should send category list-picker template with exactly 6 variables",
+      "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
+      "expectTemplateVariableCount": 6,
+      "pauseMs": 2000
+    },
+    {
+      "body": "ce aveti?",
+      "note": "Browse text — should also send category list-picker template (text parity)",
+      "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
+      "expectTemplateVariableCount": 6,
+      "pauseMs": 2000
+    },
+    {
+      "body": "Dairy",
+      "note": "Category name text — should send product list-picker for that category",
+      "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
+      "expectTemplateVariableCount": 6,
+      "pauseMs": 2000
+    },
+    {
+      "body": "1",
+      "note": "Numeric input with active pending_selection (product_list) — should resolve to first product",
+      "pauseMs": 2000
+    }
+  ]
+}
