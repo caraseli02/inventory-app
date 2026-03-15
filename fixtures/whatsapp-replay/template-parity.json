@@ -23,19 +23,19 @@
       "note": "Browse text — should also send category list-picker template (text parity)",
       "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
       "expectTemplateVariableCount": 6,
-      "pauseMs": 2000
+      "pauseMs": 5000
     },
     {
       "body": "Dairy",
       "note": "Category name text — should send product list-picker for that category",
       "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
       "expectTemplateVariableCount": 6,
-      "pauseMs": 2000
+      "pauseMs": 5000
     },
     {
       "body": "1",
       "note": "Numeric input with active pending_selection (product_list) — should resolve to first product",
-      "pauseMs": 2000
+      "pauseMs": 5000
     }
   ]
 }

@@ -75,7 +75,8 @@ function localWhatsappSimulatorPlugin(): PluginOption {
             method: req.method,
             headers: req.headers,
             body,
-            url: req.url,
+            // Vite middleware strips the mount path — restore it so getAbsoluteUrl() reconstructs the correct URL
+            url: '/api/whatsapp',
           };
           const fakeRes = {
             _statusCode: 200,

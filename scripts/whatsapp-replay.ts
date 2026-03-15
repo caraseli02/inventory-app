@@ -239,9 +239,12 @@ async function maybeResetConversation(phone: string, resetConversation: boolean 
 
 async function waitForReplayEvents(replayId: string, timeoutMs: number): Promise<ReplayTransportEvent[]> {
   const deadline = Date.now() + timeoutMs;
+  let lastEvents: ReplayTransportEvent[] = [];
   for (;;) {
-    const events = await readReplayCapture(replayId);
-    if (events.length > 0 || Date.now() >= deadline) return events;
+    lastEvents = await readReplayCapture(replayId);
+    // Only return early if we have a substantive event (rest or template), not just typing
+    const hasSubstantive = lastEvents.some((e) => e.kind === 'rest' || e.kind === 'template');
+    if (hasSubstantive || Date.now() >= deadline) return lastEvents;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
