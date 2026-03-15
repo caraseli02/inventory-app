@@ -1,7 +1,7 @@
 ---
 title: "feat: WhatsApp template parity — make templates work for both text and button input"
 type: feat
-status: active
+status: completed
 date: 2026-03-15
 origin: docs/brainstorms/2026-03-11-whatsapp-template-led-assistant-brainstorm.md
 ---
@@ -141,10 +141,10 @@ Both `handleButtonPayload` and the text path call this. No code duplication.
 
 ### Non-Functional
 
-- [ ] All 4 template SIDs remain optional — full plain text fallback works
-- [ ] `pnpm typecheck` passes
-- [ ] `pnpm vitest run tests/unit/whatsappAgent.test.ts tests/integration/whatsapp-agent.test.ts` passes
-- [ ] New tests cover text→template parity for browse, category, and numeric flows
+- [x] All 4 template SIDs remain optional — full plain text fallback works
+- [x] `pnpm typecheck` passes
+- [x] `pnpm vitest run tests/unit/whatsappAgent.test.ts tests/integration/whatsapp-agent.test.ts` passes
+- [x] New tests cover text→template parity for browse, category, and numeric flows
 
 ## Implementation Phases
 
