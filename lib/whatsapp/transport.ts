@@ -60,6 +60,9 @@ export async function sendRestMessage(to: string, body: string): Promise<void> {
   }
 }
 
+/** WhatsApp list-picker item titles are limited to 24 characters */
+const MAX_LIST_ITEM_TITLE_LEN = 24;
+
 export async function sendListPickerTemplate(
   to: string,
   contentSid: string,
@@ -79,7 +82,11 @@ export async function sendListPickerTemplate(
   const variables: Record<string, string> = {};
   const slotCount = count === 6 || !sid || sid === contentSid ? 6 : count;
   for (let i = 0; i < slotCount; i++) {
-    variables[String(i + 1)] = items[i] || '-';
+    const raw = items[i] || '-';
+    // Truncate to WhatsApp's 24-char list item title limit
+    variables[String(i + 1)] = raw.length > MAX_LIST_ITEM_TITLE_LEN
+      ? raw.slice(0, MAX_LIST_ITEM_TITLE_LEN - 1) + '…'
+      : raw;
   }
 
   return sendTemplateMessage(to, sid, variables);
