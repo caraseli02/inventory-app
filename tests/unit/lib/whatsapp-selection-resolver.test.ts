@@ -198,23 +198,13 @@ describe('sendCategoryPicker', () => {
     expect(sentMessages[0].body).toContain('1) Dairy');
   });
 
-  it('sends text fallback when SID set but fewer than 6 categories', async () => {
+  it('sends list-picker template when SID set (any item count)', async () => {
     process.env.TWILIO_PRODUCT_LIST_SID = 'HX_test_sid';
-    // mockCategories has 4 items — below the 6-slot template requirement
-    const result = await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
-    expect(result).toBe(true);
-    expect(sentListPickers).toHaveLength(0);
-    expect(sentMessages).toHaveLength(1);
-    expect(sentMessages[0].body).toContain('1) Dairy');
-  });
-
-  it('sends list-picker template when SID set and exactly 6 categories', async () => {
-    process.env.TWILIO_PRODUCT_LIST_SID = 'HX_test_sid';
-    mockCategories = ['Dairy', 'Bakery', 'Wine', 'Pantry', 'Meat', 'Produce'];
+    // mockCategories has 4 items — dynamic content handles any count
     const result = await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
     expect(result).toBe(true);
     expect(sentListPickers).toHaveLength(1);
-    expect(sentListPickers[0].items).toEqual(['Dairy', 'Bakery', 'Wine', 'Pantry', 'Meat', 'Produce']);
+    expect(sentListPickers[0].items).toEqual(['Dairy', 'Bakery', 'Wine', 'Pantry']);
   });
 
   it('caps categories at 6 and uses template (matching template slots)', async () => {

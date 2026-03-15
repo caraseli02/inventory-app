@@ -1,4 +1,5 @@
 import { getTwilioRestCredentials } from './config.js';
+import { getListPickerContentSid } from './content-templates.js';
 import { appendReplayEvent, isReplayRequest } from './replay-context.js';
 
 export function twiml(message: string): string {
@@ -59,21 +60,29 @@ export async function sendRestMessage(to: string, body: string): Promise<void> {
   }
 }
 
-/** Number of variable slots in the Twilio list-picker template ({{1}}..{{6}}) */
-const LIST_PICKER_SLOT_COUNT = 6;
-
 export async function sendListPickerTemplate(
   to: string,
   contentSid: string,
   _title: string,
   items: string[]
 ): Promise<void> {
+  const count = items.length;
+
+  // If items exactly match the static template's 6 slots, use the pre-built SID.
+  // Otherwise, dynamically create a Content resource with the exact item count.
+  let sid = count === 6 ? contentSid : await getListPickerContentSid(count);
+  if (!sid) {
+    // Fallback to static template if dynamic creation fails
+    sid = contentSid;
+  }
+
   const variables: Record<string, string> = {};
-  // Template uses {{1}}..{{6}} placeholders — keys must be "1".."6", always fill all 6 slots
-  for (let i = 0; i < LIST_PICKER_SLOT_COUNT; i++) {
+  const slotCount = count === 6 || !sid || sid === contentSid ? 6 : count;
+  for (let i = 0; i < slotCount; i++) {
     variables[String(i + 1)] = items[i] || '-';
   }
-  return sendTemplateMessage(to, contentSid, variables);
+
+  return sendTemplateMessage(to, sid, variables);
 }
 
 export async function sendTemplateMessage(
