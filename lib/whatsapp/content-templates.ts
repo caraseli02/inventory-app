@@ -18,19 +18,24 @@ interface ContentApiResponse {
 }
 
 function buildListPickerPayload(itemCount: number) {
+  // Match the working template format:
+  // - trailing space in item text: "{{1}} "
+  // - empty description
+  // - empty variables object
   const items = Array.from({ length: itemCount }, (_, i) => ({
-    item: `{{${i + 1}}}`,
+    item: `{{${i + 1}}} `,
     id: `product_${i + 1}`,
-    description: ' ',
+    description: '',
   }));
 
   return {
     friendly_name: `dynamic_list_picker_${itemCount}_${Date.now()}`,
     language: 'ro',
+    variables: {},
     types: {
       'twilio/list-picker': {
-        body: 'Selectează o opțiune:',
-        button: 'Opțiuni',
+        body: 'Am găsit mai multe produse. Care anume?',
+        button: 'Selectează o opțiune',
         items,
       },
     },
