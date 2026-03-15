@@ -190,7 +190,7 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   }
 
   // Handle product_N buttons → look up what was selected in pending_selection
-  const productMatch = /^product_(\d+)$/.exec(buttonPayload);
+  const productMatch = /^\s*product_(\d+)\s*$/.exec(buttonPayload);
   console.log('[whatsapp] [PRODUCT_N] checking for product_N pattern:', {
     buttonPayload,
     matches: !!productMatch,
@@ -472,7 +472,7 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
 
     // Handle Twilio list-picker responses: they come as Body text, not ButtonPayload
     // ListId field indicates this is from a list-picker template
-    const isListPickerResponse = !!(body.ListId && text.match(/^product_\d+$/));
+    const isListPickerResponse = !!(body.ListId && text.trim().match(/^product_\d+$/));
     console.log('[whatsapp] [WEBHOOK] checking for list-picker response:', {
       hasListId: !!body.ListId,
       textValue: text,
