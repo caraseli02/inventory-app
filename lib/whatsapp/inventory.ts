@@ -265,7 +265,7 @@ export async function getDistinctCategories(sb: InventoryQueryableClient): Promi
       .map((r) => r.category)
       .filter((cat) => cat != null) as string[]
   )];
-  return unique;
+  return unique.slice(0, 10); // Cap for list-picker template (max ~10 variable slots)
 }
 
 export async function getProductsByCategory(sb: InventoryQueryableClient, category: string): Promise<string[]> {

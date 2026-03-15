@@ -6,8 +6,8 @@ import {
   hasConversationHistory,
   storePendingOrder,
 } from './conversation-state.js';
-import { detectEnglish } from './conversation.js';
-import { createSupabaseClient } from './db.js';
+import { classifyIncomingText, detectEnglish } from './conversation.js';
+import { createSupabaseClient, type ServerSupabaseClient } from './db.js';
 import { checkAndMarkMessageSid } from './dedup.js';
 import { buildReplyWithPending } from './llm.js';
 import {
@@ -18,6 +18,7 @@ import {
 import { buildRateLimitReply, checkRateLimit } from './rate-limit.js';
 import {
   clearPendingSelection,
+  findMatchingCategory,
   handleCategorySelected,
   handleProductSelected,
   resolveSelectionByIndex,
@@ -270,6 +271,76 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   await sendRestMessage(from, 'Nu am înțeles selecția. Încearcă din nou sau trimite un mesaj text.');
 }
 
+/** Parse a single digit (1-9) from user text, e.g. "1", "2)", "3." */
+function parseNumericChoice(text: string): number | null {
+  const match = text.trim().match(/^([1-9])\s*[).]?\s*$/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value >= 1 && value <= 9 ? value : null;
+}
+
+/**
+ * Try to intercept text input for template-driven flows before falling through to LLM.
+ * Returns true if intercepted (template sent), false if should continue to LLM.
+ */
+async function tryTextTemplateInterception(args: {
+  sb: ServerSupabaseClient;
+  from: string;
+  phone: string;
+  text: string;
+}): Promise<boolean> {
+  const intent = classifyIncomingText(args.text);
+
+  // 1. browse_inventory → category list-picker
+  if (intent === 'browse_inventory') {
+    console.log('[whatsapp] [TEXT_INTERCEPT] browse_inventory detected, sending category picker');
+    try {
+      await sendCategoryPicker({ sb: args.sb, from: args.from, phone: args.phone });
+      return true;
+    } catch (err) {
+      console.error('[whatsapp] [TEXT_INTERCEPT] category picker failed:', err);
+      return false; // fall through to LLM
+    }
+  }
+
+  // 2. Numeric input ("1", "2") → resolve against pending_selection
+  const numericChoice = parseNumericChoice(args.text);
+  if (numericChoice !== null) {
+    const result = await resolveSelectionByIndex(args.sb, args.phone, numericChoice - 1);
+    console.log('[whatsapp] [TEXT_INTERCEPT] numeric choice:', { choice: numericChoice, outcome: result.outcome });
+
+    if (result.outcome === 'category_selected') {
+      await handleCategorySelected({ sb: args.sb, from: args.from, phone: args.phone, category: result.category });
+      return true;
+    }
+    if (result.outcome === 'product_selected') {
+      await handleProductSelected({ sb: args.sb, from: args.from, phone: args.phone, product: result.product });
+      return true;
+    }
+    if (result.outcome === 'expired') {
+      // Don't intercept — let LLM handle it (might be "1 bucata" etc.)
+      console.log('[whatsapp] [TEXT_INTERCEPT] selection expired, falling through to LLM');
+    }
+    // no_context or index_out_of_range: fall through to LLM
+  }
+
+  // 3. Category-name text (e.g. "Carne") → product list-picker
+  if (intent === 'product_query') {
+    try {
+      const matchedCategory = await findMatchingCategory(args.sb, args.text);
+      if (matchedCategory) {
+        console.log('[whatsapp] [TEXT_INTERCEPT] category name matched:', matchedCategory);
+        await handleCategorySelected({ sb: args.sb, from: args.from, phone: args.phone, category: matchedCategory });
+        return true;
+      }
+    } catch (err) {
+      console.error('[whatsapp] [TEXT_INTERCEPT] category match failed:', err);
+    }
+  }
+
+  return false;
+}
+
 async function handleRestConversation(args: {
   res: VercelResponse;
   from: string;
@@ -291,8 +362,18 @@ async function handleRestConversation(args: {
   console.log('[whatsapp] starting async reply...');
 
   waitUntil(
-    buildReplyWithPending(args.phone, args.name, args.text)
+    // Try template interception first (browse, numeric, category-name)
+    tryTextTemplateInterception({ sb, from: args.from, phone: args.phone, text: args.text })
+      .then(async (intercepted) => {
+        if (intercepted) {
+          console.log('[whatsapp] text intercepted for template flow');
+          return undefined;
+        }
+        return buildReplyWithPending(args.phone, args.name, args.text);
+      })
       .then(async (result) => {
+        if (!result) return; // already handled by interception
+
         // Greeting template (welcome with intent buttons)
         if (result.welcomeTemplate) {
           const sid = process.env.TWILIO_WELCOME_SID ?? '';
@@ -308,22 +389,18 @@ async function handleRestConversation(args: {
           return;
         }
 
-        // PR 4: list-picker for product disambiguation
+        // List-picker for product disambiguation
         if (result.listPicker) {
           const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
-          console.log('[whatsapp] list-picker detected:', { hasListPicker: true, sidSet: !!sid, itemCount: result.listPicker.length });
           if (sid) {
-            console.log('[whatsapp] attempting to send list-picker template');
             await sendListPickerTemplate(args.from, sid, 'Alegeți produsul / Choose product', result.listPicker);
           } else {
-            console.log('[whatsapp] no list-picker SID, using plain text');
             await sendRestMessage(args.from, buildNumberedList(result.listPicker));
           }
           return;
         }
 
         if (result.pending) {
-          // PR 2c: send LLM reply text first, then confirmation template
           if (result.reply) {
             await sendRestMessage(args.from, result.reply);
           }
@@ -336,7 +413,6 @@ async function handleRestConversation(args: {
         }
 
         await sendRestMessage(args.from, result.reply);
-        console.log('[whatsapp] REST reply sent');
       })
       .catch((err) => {
         console.error('[whatsapp] error building reply:', err);
