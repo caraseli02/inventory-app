@@ -71,7 +71,7 @@ export async function sendListPickerTemplate(
   const variables: Record<string, string> = {};
   // Template uses {{1}}..{{6}} placeholders — keys must be "1".."6", always fill all 6 slots
   for (let i = 0; i < LIST_PICKER_SLOT_COUNT; i++) {
-    variables[String(i + 1)] = items[i] ?? '—';
+    variables[String(i + 1)] = items[i] || '-';
   }
   return sendTemplateMessage(to, contentSid, variables);
 }
@@ -99,6 +99,12 @@ export async function sendTemplateMessage(
     From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
     ContentSid: contentSid,
     ...(variables && { ContentVariables: JSON.stringify(variables) }),
+  });
+  console.log('[whatsapp] [TEMPLATE_DEBUG] sending template:', {
+    contentSid,
+    variableKeys: variables ? Object.keys(variables) : [],
+    variableValues: variables ? Object.values(variables).map(v => v.slice(0, 40)) : [],
+    contentVariablesJson: variables ? JSON.stringify(variables) : '(none)',
   });
   const resp = await fetch(url, {
     method: 'POST',
