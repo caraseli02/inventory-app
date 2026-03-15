@@ -206,13 +206,13 @@ describe('sendCategoryPicker', () => {
     expect(sentListPickers[0].items).toEqual(['Dairy', 'Bakery', 'Wine', 'Pantry']);
   });
 
-  it('caps categories at 10', async () => {
+  it('caps categories at 6 (matching template slots)', async () => {
     mockCategories = Array.from({ length: 15 }, (_, i) => `Cat${i + 1}`);
     await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
     expect(sentMessages).toHaveLength(1);
-    // Only 10 items in the numbered list
+    // Only 6 items in the numbered list (matching template product_1..product_6)
     const lines = sentMessages[0].body.split('\n').filter(l => /^\d+\)/.test(l));
-    expect(lines).toHaveLength(10);
+    expect(lines).toHaveLength(6);
   });
 
   it('stores pending_selection with category_list type and created_at', async () => {

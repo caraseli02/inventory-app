@@ -15,8 +15,8 @@ import type { ServerSupabaseClient } from './db.js';
 import { getDistinctCategories, getProductsByCategory } from './inventory.js';
 import { sendListPickerTemplate, sendRestMessage, sendTemplateMessage } from './transport.js';
 
-/** Max items for list-picker template (Twilio variable slots product_1..product_N) */
-const MAX_LIST_PICKER_ITEMS = 10;
+/** Max items for list-picker template (Twilio template has product_1..product_6) */
+const MAX_LIST_PICKER_ITEMS = 6;
 
 /** Pending selection TTL in milliseconds (30 minutes) */
 const PENDING_SELECTION_TTL_MS = 30 * 60 * 1000;

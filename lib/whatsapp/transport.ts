@@ -59,6 +59,9 @@ export async function sendRestMessage(to: string, body: string): Promise<void> {
   }
 }
 
+/** Number of variable slots in the Twilio list-picker template (product_1..product_6) */
+const LIST_PICKER_SLOT_COUNT = 6;
+
 export async function sendListPickerTemplate(
   to: string,
   contentSid: string,
@@ -66,7 +69,10 @@ export async function sendListPickerTemplate(
   items: string[]
 ): Promise<void> {
   const variables: Record<string, string> = {};
-  items.forEach((item, index) => { variables[`product_${index + 1}`] = item; });
+  // Always fill exactly LIST_PICKER_SLOT_COUNT slots — Twilio rejects mismatched variable counts (error 21656)
+  for (let i = 0; i < LIST_PICKER_SLOT_COUNT; i++) {
+    variables[`product_${i + 1}`] = items[i] ?? '—';
+  }
   return sendTemplateMessage(to, contentSid, variables);
 }
 
