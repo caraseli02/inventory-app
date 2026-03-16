@@ -278,6 +278,13 @@ describe('handleProductSelected', () => {
     expect(sentTemplates[0].variables).toEqual({ product_name: 'Lapte' });
   });
 
+  it('appends synthetic history even when template succeeds', async () => {
+    process.env.TWILIO_QTY_SID = 'HX_qty_sid';
+    await handleProductSelected({ sb: fakeSb, from: testFrom, phone: testPhone, product: 'Lapte' });
+    expect(appendedHistory).toHaveLength(1);
+    expect(appendedHistory[0].content).toContain('Lapte');
+  });
+
   it('stores awaiting_qty pending_selection', async () => {
     await handleProductSelected({ sb: fakeSb, from: testFrom, phone: testPhone, product: 'Lapte' });
     expect(storedPendingPayload!.selection_type).toBe('awaiting_qty');

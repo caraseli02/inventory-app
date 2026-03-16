@@ -9,12 +9,33 @@ import { getTwilioRestCredentials } from './config.js';
 
 const CONTENT_API_BASE = 'https://content.twilio.com/v1/Content';
 
-/** In-memory cache: item count → Content SID */
+/**
+ * In-memory cache: item count → Content SID.
+ * NOTE: This cache is lost on process restart (serverless cold starts). On a cache miss,
+ * we first search the Content API by deterministic friendly_name before creating a new resource,
+ * so each item count has at most one Content resource per Twilio account.
+ */
 const sidCache = new Map<number, string>();
+
+/** Dedup inflight requests for the same item count to avoid duplicate Content creation */
+const inflight = new Map<number, Promise<string | null>>();
+
+interface ContentResource {
+  sid: string;
+  friendly_name: string;
+}
+
+interface ContentListResponse {
+  contents?: ContentResource[];
+}
 
 interface ContentApiResponse {
   sid?: string;
-  status?: string;
+}
+
+/** Deterministic name keyed only by item count — ensures at most one resource per count */
+function friendlyName(itemCount: number): string {
+  return `dynamic_list_picker_${itemCount}`;
 }
 
 function buildListPickerPayload(itemCount: number) {
@@ -29,7 +50,7 @@ function buildListPickerPayload(itemCount: number) {
   }));
 
   return {
-    friendly_name: `dynamic_list_picker_${itemCount}_${Date.now()}`,
+    friendly_name: friendlyName(itemCount),
     language: 'ro',
     variables: {},
     types: {
@@ -42,20 +63,35 @@ function buildListPickerPayload(itemCount: number) {
   };
 }
 
-/**
- * Get or create a list-picker Content resource with the given number of items.
- * Returns the Content SID, or null if creation fails.
- */
-export async function getListPickerContentSid(itemCount: number): Promise<string | null> {
-  if (itemCount < 1 || itemCount > 10) return null;
+/** Search Content API for an existing resource with the deterministic friendly_name */
+async function findExistingContentSid(auth: string, itemCount: number): Promise<string | null> {
+  try {
+    const url = `${CONTENT_API_BASE}?PageSize=50`;
+    const resp = await fetch(url, { headers: { Authorization: `Basic ${auth}` } });
+    if (!resp.ok) return null;
+    const data = (await resp.json()) as ContentListResponse;
+    const name = friendlyName(itemCount);
+    const match = data.contents?.find((c) => c.friendly_name === name);
+    return match?.sid ?? null;
+  } catch {
+    return null;
+  }
+}
 
-  const cached = sidCache.get(itemCount);
-  if (cached) return cached;
-
+async function resolveContentSid(itemCount: number): Promise<string | null> {
   const creds = getTwilioRestCredentials();
   if (!creds) return null;
 
   const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
+
+  // Look up existing resource before creating a new one (prevents accumulation on cold starts)
+  const existing = await findExistingContentSid(auth, itemCount);
+  if (existing) {
+    sidCache.set(itemCount, existing);
+    console.log('[whatsapp] Reusing list-picker content: %s (%d items)', existing, itemCount);
+    return existing;
+  }
+
   const payload = buildListPickerPayload(itemCount);
 
   try {
@@ -86,6 +122,28 @@ export async function getListPickerContentSid(itemCount: number): Promise<string
     console.error('[whatsapp] Content API error:', err);
     return null;
   }
+}
+
+/**
+ * Get or create a list-picker Content resource with the given number of items.
+ * Returns the Content SID, or null if creation fails.
+ * Deduplicates concurrent requests for the same count to avoid duplicate resources.
+ */
+export function getListPickerContentSid(itemCount: number): Promise<string | null> {
+  if (itemCount < 1 || itemCount > 10) return Promise.resolve(null);
+
+  const cached = sidCache.get(itemCount);
+  if (cached) return Promise.resolve(cached);
+
+  // Dedup: return the same inflight promise for concurrent requests
+  const existing = inflight.get(itemCount);
+  if (existing) return existing;
+
+  const promise = resolveContentSid(itemCount).finally(() => {
+    inflight.delete(itemCount);
+  });
+  inflight.set(itemCount, promise);
+  return promise;
 }
 
 /** Clear the SID cache (useful for testing) */

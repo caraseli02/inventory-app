@@ -119,18 +119,22 @@ export async function handleProductSelected(args: {
   await storePendingProductSelection(args.sb, args.phone, payload);
 
   const qtySid = process.env.TWILIO_QTY_SID ?? '';
+  let templateSent = false;
   if (qtySid) {
     try {
       await sendTemplateMessage(args.from, qtySid, { product_name: args.product });
-      return;
+      templateSent = true;
     } catch (err) {
       console.warn('[whatsapp] qty template send failed, using text fallback:', String(err));
     }
   }
 
-  await sendRestMessage(args.from,
-    `Ce cantitate doriți din *${args.product}*? / How many of *${args.product}* would you like?`);
+  if (!templateSent) {
+    await sendRestMessage(args.from,
+      `Ce cantitate doriți din *${args.product}*? / How many of *${args.product}* would you like?`);
+  }
 
+  // Always append synthetic history so LLM knows which product was selected
   await appendSyntheticHistory(args.sb, args.phone,
     `Am selectat produsul ${args.product}. Câte bucăți doriți?`);
 }

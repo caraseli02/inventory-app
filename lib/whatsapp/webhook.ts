@@ -440,7 +440,11 @@ async function handleTwimlConversation(args: {
 }
 
 export default async function webhookHandler(req: VercelRequest, res: VercelResponse) {
-  const replayId = String(req.headers['x-whatsapp-replay-id'] ?? '').trim() || null;
+  // Replay mode is only allowed outside production to prevent dedup/rate-limit bypass
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+  const replayId = !isProduction
+    ? String(req.headers['x-whatsapp-replay-id'] ?? '').trim() || null
+    : null;
 
   return runWithReplayContext(replayId, async () => {
     if (req.method !== 'POST') {

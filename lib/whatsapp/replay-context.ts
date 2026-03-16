@@ -17,8 +17,20 @@ function getReplayDir(): string {
   return path.resolve(process.cwd(), '.tmp/whatsapp-replay');
 }
 
+function sanitizeReplayId(replayId: string): string {
+  // Allow only alphanumeric, hyphens, underscores, and dots — prevents path traversal
+  return replayId.replace(/[^a-zA-Z0-9_.-]/g, '');
+}
+
 function getReplayFile(replayId: string): string {
-  return path.join(getReplayDir(), `${replayId}.jsonl`);
+  const safe = sanitizeReplayId(replayId);
+  const filePath = path.join(getReplayDir(), `${safe}.jsonl`);
+  // Containment check: ensure resolved path stays inside replay dir
+  const replayDir = getReplayDir();
+  if (!filePath.startsWith(replayDir + path.sep) && filePath !== replayDir) {
+    throw new Error(`Invalid replay ID: path escapes replay directory`);
+  }
+  return filePath;
 }
 
 export function getReplayId(): string | null {
