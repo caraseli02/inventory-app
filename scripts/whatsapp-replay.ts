@@ -23,6 +23,8 @@ type ReplayStep = {
   expectTwimlIncludes?: string | string[];
   expectAsyncBodyIncludes?: string | string[];
   expectAsyncTemplateSid?: string;
+  /** Expected number of ContentVariables keys — catches Twilio error 21656 locally */
+  expectTemplateVariableCount?: number;
 };
 
 type ReplayFixture = {
@@ -149,9 +151,30 @@ function assertStep(args: {
   }
 
   if (args.step.expectAsyncTemplateSid) {
-    const matched = args.replayEvents.some((event) => event.kind === 'template' && event.contentSid === args.step.expectAsyncTemplateSid);
-    if (!matched) {
-      throw new Error(`Expected async template send with ContentSid "${args.step.expectAsyncTemplateSid}"`);
+    // Support "env:VAR_NAME" syntax to resolve SID from environment
+    let expectedSid = args.step.expectAsyncTemplateSid;
+    if (expectedSid.startsWith('env:')) {
+      const envVar = expectedSid.slice(4);
+      expectedSid = process.env[envVar] ?? '';
+      if (!expectedSid) {
+        throw new Error(`expectAsyncTemplateSid references env var "${envVar}" but it is not set`);
+      }
+    }
+
+    const templateEvent = args.replayEvents.find((event) => event.kind === 'template' && event.contentSid === expectedSid);
+    if (!templateEvent) {
+      const actualSids = args.replayEvents
+        .filter((e): e is ReplayTransportEvent & { kind: 'template' } => e.kind === 'template')
+        .map((e) => e.contentSid);
+      throw new Error(`Expected async template send with ContentSid "${expectedSid}"${actualSids.length ? `, got: ${actualSids.join(', ')}` : ', but no template events captured'}`);
+    }
+
+    // Validate template variable count matches expected slots (catches Twilio error 21656)
+    if (args.step.expectTemplateVariableCount && templateEvent.kind === 'template' && templateEvent.variables) {
+      const actualCount = Object.keys(templateEvent.variables).length;
+      if (actualCount !== args.step.expectTemplateVariableCount) {
+        throw new Error(`Expected ${args.step.expectTemplateVariableCount} template variables, got ${actualCount}: ${JSON.stringify(templateEvent.variables)}`);
+      }
     }
   }
 }
@@ -216,9 +239,12 @@ async function maybeResetConversation(phone: string, resetConversation: boolean 
 
 async function waitForReplayEvents(replayId: string, timeoutMs: number): Promise<ReplayTransportEvent[]> {
   const deadline = Date.now() + timeoutMs;
+  let lastEvents: ReplayTransportEvent[] = [];
   for (;;) {
-    const events = await readReplayCapture(replayId);
-    if (events.length > 0 || Date.now() >= deadline) return events;
+    lastEvents = await readReplayCapture(replayId);
+    // Only return early if we have a substantive event (rest or template), not just typing
+    const hasSubstantive = lastEvents.some((e) => e.kind === 'rest' || e.kind === 'template');
+    if (hasSubstantive || Date.now() >= deadline) return lastEvents;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
@@ -289,7 +315,13 @@ async function runFixture(fixture: ReplayFixture): Promise<void> {
           continue;
         }
         if (event.kind === 'template') {
-          console.log(`- template: ${event.contentSid} -> ${event.to}`);
+          const varCount = event.variables ? Object.keys(event.variables).length : 0;
+          console.log(`- template: ${event.contentSid} -> ${event.to} (${varCount} variables)`);
+          if (event.variables) {
+            for (const [key, value] of Object.entries(event.variables)) {
+              console.log(`    ${key}: ${value}`);
+            }
+          }
           continue;
         }
         console.log(`- rest: ${event.body}`);

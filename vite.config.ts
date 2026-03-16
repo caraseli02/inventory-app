@@ -39,11 +39,70 @@ function sendJson(res: ServerResponse, statusCode: number, payload: Record<strin
   res.end(JSON.stringify(payload));
 }
 
+function parseUrlEncodedBody(req: IncomingMessage): Promise<Record<string, string>> {
+  return new Promise((resolve) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+    req.on('end', () => {
+      if (chunks.length === 0) { resolve({}); return; }
+      const params = new URLSearchParams(Buffer.concat(chunks).toString('utf8'));
+      resolve(Object.fromEntries(params.entries()));
+    });
+  });
+}
+
 function localWhatsappSimulatorPlugin(): PluginOption {
   return {
     name: 'local-whatsapp-simulator',
     apply: 'serve',
     configureServer(server) {
+      // Mount the real webhook handler so `pnpm whatsapp:replay` works locally
+      server.middlewares.use('/api/whatsapp', async (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end();
+          return;
+        }
+
+        try {
+          const body = (req.headers['content-type'] ?? '').includes('json')
+            ? await parseJsonBody(req)
+            : await parseUrlEncodedBody(req);
+
+          // Adapt Node req/res to the shape the webhook handler expects (VercelRequest/VercelResponse)
+          const webhookModule = await server.ssrLoadModule('/lib/whatsapp/webhook.ts');
+          const fakeReq = {
+            method: req.method,
+            headers: req.headers,
+            body,
+            // Vite middleware strips the mount path — restore it so getAbsoluteUrl() reconstructs the correct URL
+            url: '/api/whatsapp',
+          };
+          const fakeRes = {
+            _statusCode: 200,
+            _headers: {} as Record<string, string>,
+            _body: '',
+            status(code: number) { fakeRes._statusCode = code; return fakeRes; },
+            setHeader(key: string, value: string) { fakeRes._headers[key] = value; return fakeRes; },
+            json(data: unknown) { fakeRes._body = JSON.stringify(data); return fakeRes; },
+            send(data: string) { fakeRes._body = data; return fakeRes; },
+            end() { return fakeRes; },
+          };
+
+          await webhookModule.default(fakeReq, fakeRes);
+
+          res.statusCode = fakeRes._statusCode;
+          for (const [key, value] of Object.entries(fakeRes._headers)) {
+            res.setHeader(key, value);
+          }
+          res.end(fakeRes._body);
+        } catch (error) {
+          console.error('[local-whatsapp-webhook] failed:', error);
+          res.statusCode = 500;
+          res.end(JSON.stringify({ error: 'Webhook handler failed' }));
+        }
+      });
+
       server.middlewares.use('/api/whatsapp-simulate', async (req, res) => {
         if (req.method !== 'POST') {
           sendJson(res, 405, { error: 'Method Not Allowed' });

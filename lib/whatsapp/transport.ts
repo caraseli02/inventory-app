@@ -1,4 +1,5 @@
 import { getTwilioRestCredentials } from './config.js';
+import { getListPickerContentSid } from './content-templates.js';
 import { appendReplayEvent, isReplayRequest } from './replay-context.js';
 
 export function twiml(message: string): string {
@@ -59,15 +60,36 @@ export async function sendRestMessage(to: string, body: string): Promise<void> {
   }
 }
 
+/** WhatsApp list-picker item titles are limited to 24 characters */
+const MAX_LIST_ITEM_TITLE_LEN = 24;
+
 export async function sendListPickerTemplate(
   to: string,
   contentSid: string,
   _title: string,
   items: string[]
 ): Promise<void> {
+  const count = items.length;
+
+  // If items exactly match the static template's 6 slots, use the pre-built SID.
+  // Otherwise, dynamically create a Content resource with the exact item count.
+  let sid = count === 6 ? contentSid : await getListPickerContentSid(count);
+  if (!sid) {
+    // Fallback to static template if dynamic creation fails
+    sid = contentSid;
+  }
+
   const variables: Record<string, string> = {};
-  items.forEach((item, index) => { variables[`product_${index + 1}`] = item; });
-  return sendTemplateMessage(to, contentSid, variables);
+  const slotCount = count === 6 || !sid || sid === contentSid ? 6 : count;
+  for (let i = 0; i < slotCount; i++) {
+    const raw = items[i] || '-';
+    // Truncate to WhatsApp's 24-char list item title limit
+    variables[String(i + 1)] = raw.length > MAX_LIST_ITEM_TITLE_LEN
+      ? raw.slice(0, MAX_LIST_ITEM_TITLE_LEN - 1) + '…'
+      : raw;
+  }
+
+  return sendTemplateMessage(to, sid, variables);
 }
 
 export async function sendTemplateMessage(
@@ -93,6 +115,12 @@ export async function sendTemplateMessage(
     From: creds.from.startsWith('whatsapp:') ? creds.from : `whatsapp:${creds.from}`,
     ContentSid: contentSid,
     ...(variables && { ContentVariables: JSON.stringify(variables) }),
+  });
+  console.log('[whatsapp] [TEMPLATE_DEBUG] sending template:', {
+    contentSid,
+    variableKeys: variables ? Object.keys(variables) : [],
+    variableValues: variables ? Object.values(variables).map(v => v.slice(0, 40)) : [],
+    contentVariablesJson: variables ? JSON.stringify(variables) : '(none)',
   });
   const resp = await fetch(url, {
     method: 'POST',
