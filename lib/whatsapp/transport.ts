@@ -116,12 +116,14 @@ export async function sendTemplateMessage(
     ContentSid: contentSid,
     ...(variables && { ContentVariables: JSON.stringify(variables) }),
   });
-  console.log('[whatsapp] [TEMPLATE_DEBUG] sending template:', {
-    contentSid,
-    variableKeys: variables ? Object.keys(variables) : [],
-    variableValues: variables ? Object.values(variables).map(v => v.slice(0, 40)) : [],
-    contentVariablesJson: variables ? JSON.stringify(variables) : '(none)',
-  });
+  if (process.env.WHATSAPP_TEMPLATE_DEBUG) {
+    console.log('[whatsapp] [TEMPLATE_DEBUG] sending template:', {
+      contentSid,
+      variableKeys: variables ? Object.keys(variables) : [],
+      variableValues: variables ? Object.values(variables).map(v => v.slice(0, 40)) : [],
+      contentVariablesJson: variables ? JSON.stringify(variables) : '(none)',
+    });
+  }
   const resp = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },

@@ -67,21 +67,19 @@ export async function storePendingOrder(
   phone: string,
   order: PendingOrder
 ): Promise<void> {
-  try {
-    const pendingOrder: PendingOrder = {
-      ...order,
-      pending_order_created_at: order.pending_order_created_at ?? nowIso(),
-    };
-    await sb.from('conversation_history').upsert(
-      {
-        phone_number: phone,
-        pending_order: pendingOrder as unknown,
-      },
-      { onConflict: 'phone_number' }
-    );
-  } catch (err) {
-    console.error('[whatsapp] failed to store pending order:', err);
-  }
+  // Intentionally not catching errors — callers must handle failure so they
+  // don't clear the cart (pending_selection) when the order write fails.
+  const pendingOrder: PendingOrder = {
+    ...order,
+    pending_order_created_at: order.pending_order_created_at ?? nowIso(),
+  };
+  await sb.from('conversation_history').upsert(
+    {
+      phone_number: phone,
+      pending_order: pendingOrder as unknown,
+    },
+    { onConflict: 'phone_number' }
+  );
 }
 
 // Pending orders are transactional state. Callers should peek first and only

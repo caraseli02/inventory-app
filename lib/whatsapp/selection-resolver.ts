@@ -25,7 +25,7 @@ const MAX_LIST_PICKER_ITEMS = 6;
 /** Pending selection TTL in milliseconds (30 minutes) */
 const PENDING_SELECTION_TTL_MS = 30 * 60 * 1000;
 
-function buildNumberedList(items: string[]): string {
+export function buildNumberedList(items: string[]): string {
   return items.map((item, index) => `${index + 1}) ${item}`).join('\n');
 }
 
@@ -36,7 +36,7 @@ function nowIso(): string {
 function isSelectionExpired(selection: Record<string, unknown> | null): boolean {
   if (!selection?.created_at) return false; // no timestamp = legacy, treat as valid
   const createdAt = new Date(String(selection.created_at)).getTime();
-  if (!Number.isFinite(createdAt) || createdAt <= 0) return false;
+  if (!Number.isFinite(createdAt) || createdAt <= 0) return true; // corrupt timestamp → treat as expired
   return Date.now() - createdAt > PENDING_SELECTION_TTL_MS;
 }
 
@@ -265,11 +265,20 @@ export async function handleCartPickupTime(args: {
     resolved = await resolveOrderItems(args.sb, cart);
   } catch (err) {
     const msg = String(err instanceof Error ? err.message : err);
+    // Roll back to building_order so the user can modify their cart and retry.
+    const rollback = () =>
+      storePendingProductSelection(args.sb, args.phone, withTimestamp({ selection_type: 'building_order', cart }));
     if (msg.startsWith('OUT_OF_STOCK_ITEM:')) {
       const name = msg.slice('OUT_OF_STOCK_ITEM:'.length);
       await sendRestMessage(args.from, `⚠️ *${name}* nu mai este în stoc în cantitatea cerută. Modificați cantitatea sau eliminați produsul.`);
+      await rollback();
     } else if (msg.startsWith('NOT_FOUND_ITEM:')) {
       await sendRestMessage(args.from, 'Un produs din coș nu a putut fi găsit. Încearcă din nou cu "Caut un produs".');
+      await rollback();
+    } else if (msg.startsWith('AMBIGUOUS_ITEM:')) {
+      const name = msg.slice('AMBIGUOUS_ITEM:'.length).split('|')[0];
+      await sendRestMessage(args.from, `⚠️ *${name}* corespunde mai multor produse. Contactați magazinul pentru clarificare.`);
+      await rollback();
     } else {
       throw err; // let outer error handler deal with it
     }

@@ -19,6 +19,8 @@ import {
 } from './pending-order.js';
 import { buildRateLimitReply, checkRateLimit } from './rate-limit.js';
 import {
+  buildNumberedList,
+  CartItem,
   clearPendingSelection,
   findMatchingCategory,
   handleCartPickupTime,
@@ -144,9 +146,6 @@ async function sendPendingOrderConfirmation(args: {
   console.log('[whatsapp] sent plain text DA/NU confirmation fallback');
 }
 
-function buildNumberedList(items: string[]): string {
-  return items.map((item, index) => `${index + 1}) ${item}`).join('\n');
-}
 
 async function handleButtonPayload(from: string, phone: string, buttonPayload: string) {
   const sb = createSupabaseClient();
@@ -279,12 +278,16 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   // confirm_cart → ask for pickup time
   if (buttonPayload === 'confirm_cart') {
     const selection = await getPendingProductSelection(sb, phone);
-    const cart = (selection?.cart as import('./selection-resolver.js').CartItem[] | undefined) ?? [];
+    if (selection?.selection_type !== 'building_order') {
+      await sendRestMessage(from, 'Coșul nu mai este activ. Încearcă din nou.');
+      return;
+    }
+    const cart = (selection.cart as CartItem[] | undefined) ?? [];
     if (!cart.length) {
       await sendRestMessage(from, 'Coșul este gol. Încearcă din nou.');
       return;
     }
-    await storePendingProductSelection(sb, phone, { ...selection, selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
+    await storePendingProductSelection(sb, phone, { selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
     await sendRestMessage(from, '🕐 La ce oră doriți să ridicați comanda? (ex: 18:30)');
     return;
   }
@@ -342,7 +345,8 @@ async function tryTextTemplateInterception(args: {
       return true;
     }
     if (choice === 2) {
-      await storePendingProductSelection(args.sb, args.phone, { ...currentSelection, selection_type: 'awaiting_pickup_time', created_at: new Date().toISOString() });
+      const cart = (currentSelection.cart as CartItem[] | undefined) ?? [];
+      await storePendingProductSelection(args.sb, args.phone, { selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
       await sendRestMessage(args.from, '🕐 La ce oră doriți să ridicați comanda? (ex: 18:30)');
       return true;
     }
@@ -505,11 +509,16 @@ async function handleTwimlConversation(args: {
 }
 
 export default async function webhookHandler(req: VercelRequest, res: VercelResponse) {
-  // Replay mode is only allowed outside production to prevent dedup/rate-limit bypass
+  // Replay mode is only allowed outside production to prevent dedup/rate-limit bypass.
+  // When WHATSAPP_REPLAY_SECRET is set, the caller must also provide a matching
+  // x-whatsapp-replay-secret header — this prevents accidental activation in staging.
   const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-  const replayId = !isProduction
-    ? String(req.headers['x-whatsapp-replay-id'] ?? '').trim() || null
-    : null;
+  const replaySecret = process.env.WHATSAPP_REPLAY_SECRET;
+  const replayId = (() => {
+    if (isProduction) return null;
+    if (replaySecret && req.headers['x-whatsapp-replay-secret'] !== replaySecret) return null;
+    return String(req.headers['x-whatsapp-replay-id'] ?? '').trim() || null;
+  })();
 
   return runWithReplayContext(replayId, async () => {
     if (req.method !== 'POST') {
