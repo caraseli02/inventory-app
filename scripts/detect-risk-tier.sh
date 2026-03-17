@@ -67,12 +67,12 @@ while IFS= read -r file; do
       ;;
 
     # Critical runtime and integration domains
-    src/lib/invoice*|src/lib/supabase*|src/lib/api-provider.ts|src/lib/api.ts|src/lib/airtable.ts|src/lib/imageUpload.ts|api/*|supabase/functions/*)
+    src/lib/invoice*|src/lib/supabase*|src/lib/api-provider.ts|src/lib/api.ts|src/lib/airtable.ts|src/lib/imageUpload.ts|api/*|supabase/functions/*|lib/whatsapp/*|mcp/*)
       promote_high
       ;;
 
     # Typical app logic and feature paths
-    src/lib/*|src/hooks/*|src/pages/*|src/components/*|tests/*)
+    src/lib/*|src/hooks/*|src/pages/*|src/components/*|tests/*|lib/*)
       promote_medium
       ;;
 

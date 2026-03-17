@@ -38,12 +38,15 @@ required_fields:
     values:
       - react_component      # React functional components
       - custom_hook          # useXxx hooks
-      - api_client           # lib/api-provider, supabase-api
+      - api_client           # lib/api-provider, supabase-api, airtable
+      - webhook_handler      # api/*.ts serverless route handlers (Vercel functions)
+      - server_component     # lib/whatsapp/*, mcp/*, supabase/functions/* server-side logic
       - scanner              # Scanner component (html5-qrcode)
       - form_component       # shadcn form elements
       - dialog_component     # Modal dialogs, sheets
       - page_component       # Top-level page components
-      - utility              # lib/utils, helpers
+      - utility              # lib/utils, helpers, scripts
+      - tooling              # Build/CI/DX scripts (eslint config, vite plugins, etc.)
       - type_definition      # TypeScript types
       - pwa_config           # Service worker, manifest
       - build_config         # Vite, ESLint, Tailwind config
@@ -74,6 +77,9 @@ required_fields:
       - missing_cleanup      # useEffect cleanup missing
       - stale_closure        # Stale React closure issues
       - csp_violation        # Content Security Policy issues
+      - idempotency_violation # Duplicate processing, missing dedup/retry guard
+      - llm_nondeterminism   # LLM/AI output inconsistency or hallucination
+      - webhook_replay       # Twilio/webhook retry causing duplicate execution
     description: "Fundamental cause of the problem"
 
   resolution_type:

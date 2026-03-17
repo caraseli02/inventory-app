@@ -19,6 +19,13 @@
 - [ ] Relevant unit/integration tests
 - [ ] Relevant e2e tests (if applicable)
 
+## Security Review (required for api/, lib/whatsapp/, mcp/ changes)
+If this PR touches any of the following, check the relevant boxes:
+- [ ] Twilio signature validation unchanged or intentionally modified (with justification)
+- [ ] No secrets added to `VITE_` env vars (would be bundled client-side)
+- [ ] Auth / CORS headers reviewed for `api/*.ts` changes
+- [ ] MCP tool definitions reviewed for unintended data exposure
+
 ## High-Risk Requirements
 Use these checkboxes for high-risk PRs (deploy-critical, auth/invoice/api-core, config/workflow, broad refactors).
 

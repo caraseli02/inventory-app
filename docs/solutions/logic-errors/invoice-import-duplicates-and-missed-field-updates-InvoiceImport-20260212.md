@@ -2,7 +2,7 @@
 module: Invoice Import
 date: 2026-02-12
 problem_type: logic_error
-component: tooling
+component: utility
 symptoms:
   - "Invoice import created duplicate products instead of updating matched ones"
   - "Category suggestions showed in preview but existing products stayed as General after import"

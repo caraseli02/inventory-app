@@ -113,7 +113,7 @@ problem_type: scanner_issue       # ← Valid enum (12 options)
 component: scanner                # ← Valid enum (11 options)
 symptoms:                         # ← Array (1-5 items)
   - "Scanner fails to initialize"
-root_cause: missing_dependency    # ← Valid enum (12 options)
+root_cause: missing_validation    # ← Valid enum (see schema.yaml for full list)
 resolution_type: dependency_fix   # ← Valid enum (7 options)
 severity: high                    # ← Lowercase (critical|high|medium|low)
 tags: [html5-qrcode, initialization]  # ← Max 8 tags

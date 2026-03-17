@@ -57,6 +57,7 @@ function calculateScore(doc, query) {
   const rootCause = (doc.frontmatter.root_cause || '').toLowerCase();
   const body = doc.body.toLowerCase();
   const tags = (doc.frontmatter.tags || []).map(t => t.toLowerCase());
+  const filename = doc.filename.toLowerCase();
 
   qTerms.forEach(term => {
     // Exact tag match (+10)
@@ -64,6 +65,9 @@ function calculateScore(doc, query) {
 
     // Module name match (+8)
     if (moduleName.includes(term)) score += 8;
+
+    // Filename match (+6) — filenames encode module+date and are well-structured
+    if (filename.includes(term)) score += 6;
 
     // Component match (+5)
     if (component === term || component.includes(term)) score += 5;
@@ -74,21 +78,21 @@ function calculateScore(doc, query) {
     // Root cause match (+5)
     if (rootCause === term || rootCause.includes(term)) score += 5;
 
-    // Keyword in body (+3 per occurrence)
+    // Keyword in body (+3 per occurrence, capped at 15 to prevent long-doc inflation)
     const matches = (body.match(new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
-    score += matches * 3;
-
-    // Recent date
-    if (doc.frontmatter.date) {
-      const date = new Date(doc.frontmatter.date);
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-      if (date > sixMonthsAgo) score += 2;
-    }
+    score += Math.min(matches * 3, 15);
 
     // Severity
     if (term === (doc.frontmatter.severity || '').toLowerCase()) score += 3;
   });
+
+  // Recency bonus applied once per document, not per query term
+  if (doc.frontmatter.date) {
+    const date = new Date(doc.frontmatter.date);
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    if (date > sixMonthsAgo) score += 2;
+  }
 
   return score;
 }
@@ -133,7 +137,10 @@ function main() {
     problem_type: r.doc.frontmatter.problem_type,
     component: r.doc.frontmatter.component,
     severity: r.doc.frontmatter.severity,
-    summary: r.doc.body.trim().split('\n').slice(0, 2).join(' ').replace(/[#*]/g, '').trim()
+    summary: r.doc.body.split('\n')
+      .map(l => l.trim())
+      .filter(l => l && !l.startsWith('#') && !l.startsWith('```'))
+      .slice(0, 2).join(' ').replace(/[*_]/g, '').trim()
   }));
 
   console.log(JSON.stringify(output, null, 2));

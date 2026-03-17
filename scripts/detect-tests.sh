@@ -114,13 +114,27 @@ while IFS= read -r file; do
       RUN_ALL_TESTS=true
       ;;
 
-    # Test files themselves
-    tests/unit/*.test.ts|tests/unit/*.test.tsx)
+    # WhatsApp agent — always run both unit and integration suites
+    lib/whatsapp/*)
+      echo "📝 lib/whatsapp changed → WhatsApp unit + integration tests"
+      SPECIFIC_TESTS="$SPECIFIC_TESTS tests/unit/whatsappAgent.test.ts tests/integration/whatsapp-agent.test.ts"
+      RUN_UNIT_TESTS=true
+      RUN_INTEGRATION_TESTS=true
+      ;;
+
+    # MCP server
+    mcp/*)
+      echo "📝 mcp/ changed → running unit tests"
+      RUN_UNIT_TESTS=true
+      ;;
+
+    # Test files themselves (support nested paths with **/*)
+    tests/unit/*.test.ts|tests/unit/*.test.tsx|tests/unit/**/*.test.ts|tests/unit/**/*.test.tsx)
       echo "📝 Unit test changed → running that test"
       SPECIFIC_TESTS="$SPECIFIC_TESTS $file"
       RUN_UNIT_TESTS=true
       ;;
-    tests/integration/*.test.ts)
+    tests/integration/*.test.ts|tests/integration/**/*.test.ts)
       echo "📝 Integration test changed → running integration tests"
       RUN_INTEGRATION_TESTS=true
       ;;
@@ -143,8 +157,8 @@ elif [ -n "$SPECIFIC_TESTS" ]; then
   echo "specific" > /tmp/test-strategy.txt
   echo "$SPECIFIC_TESTS" > /tmp/test-files.txt
 else
-  # Default: run unit and integration if source code changed
-  if echo "$CHANGED_FILES" | grep -qE "src/"; then
+  # Default: run unit and integration if source code changed in any primary source tree
+  if echo "$CHANGED_FILES" | grep -qE "(src/|lib/|api/|mcp/)"; then
     echo "  ✅ Source code changed → running unit + integration"
     RUN_UNIT_TESTS=true
     RUN_INTEGRATION_TESTS=true

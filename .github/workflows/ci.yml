@@ -29,8 +29,14 @@ jobs:
       - name: Check TypeScript
         run: pnpm typecheck
 
+      - name: Check MCP server TypeScript
+        run: pnpm mcp:typecheck
+
       - name: Run linter
         run: pnpm lint
+
+      - name: Validate solution docs schema
+        run: node scripts/validate-docs.js --all
 
   build:
     name: Build Application
@@ -76,6 +82,7 @@ jobs:
       run_unit_tests: ${{ steps.detect.outputs.run_unit_tests }}
       run_integration_tests: ${{ steps.detect.outputs.run_integration_tests }}
       run_e2e_tests: ${{ steps.detect.outputs.run_e2e_tests }}
+      specific_tests: ${{ steps.detect.outputs.specific_tests }}
     steps:
       - uses: actions/checkout@v4
         with:
