@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-16
 problem_type: logic_error
-component: api_client
+component: webhook_handler
 symptoms:
   - "x-whatsapp-replay-id header bypasses per-phone rate limiting and MessageSid deduplication in production"
   - "Any caller can inject arbitrary replay session IDs into production webhook"

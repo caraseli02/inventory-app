@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-16
 problem_type: integration_issue
-component: api_client
+component: server_component
 symptoms:
   - "Twilio error 21656 (ContentVariables parameter is invalid) when category/product list has fewer than 6 items"
   - "Padding empty slots with '-' or '—' triggers ContentVariables rejection"

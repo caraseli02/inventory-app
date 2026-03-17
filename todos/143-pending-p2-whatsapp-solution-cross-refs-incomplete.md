@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p2
 issue_id: "143"
 tags: [code-review, documentation, whatsapp]
@@ -46,10 +46,10 @@ The WhatsApp solution knowledge base has grown to 13+ files but cross-referencin
   - `handle-product-selected-missing-history-append-WhatsAppAgent-20260316.md`
 
 ## Acceptance Criteria
-- [ ] All open prevention checkboxes in `stale-history-revives-old-order` are either closed (linked to resolution) or tracked as open issues
-- [ ] March 17 solution backlinked from at least 2 prior solutions
-- [ ] GitHub issue or todo created for multi-path send function audit
-- [ ] Path traversal solution cross-references security solution in `integration-issues/`
+- [x] All open prevention checkboxes in `stale-history-revives-old-order` closed: expiry → atomic-consume doc, ButtonPayload → PRs #170-#171
+- [x] March 17 solution backlinked from atomic-pending-order-consume and whatsapp-ga-hardening
+- [x] todos/148-pending-p2-multi-path-send-audit.md created for multi-path send audit; checkbox linked
+- [x] Path traversal solution already cross-references security solution (was already present)
 
 ## Work Log
 - 2026-03-17: Identified by data-integrity-guardian agent in ce-review

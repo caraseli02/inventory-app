@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-16
 problem_type: logic_error
-component: api_client
+component: server_component
 symptoms:
   - "LLM ignores selected product after qty prompt template is sent and restarts product search"
   - "User selects product via list-picker, receives qty prompt, provides quantity — bot responds with disambiguation list instead of creating order"
@@ -107,7 +107,7 @@ await appendSyntheticHistory(...);  // always runs
 Use this as the canonical model when adding new multi-path send functions.
 
 - [x] Added unit test: `handleProductSelected > appends synthetic history even when template succeeds`
-- [ ] Audit other multi-path send functions for the same early-return pattern
+- [ ] Audit other multi-path send functions for the same early-return pattern — tracked in [todos/148-pending-p2-multi-path-send-audit.md](../../../todos/148-pending-p2-multi-path-send-audit.md)
 
 ## Related Solutions
 

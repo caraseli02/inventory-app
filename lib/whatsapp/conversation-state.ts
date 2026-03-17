@@ -210,14 +210,16 @@ export async function storePendingProductSelection(
   sb: ServerSupabaseClient,
   phone: string,
   selection: Record<string, unknown>
-): Promise<void> {
+): Promise<boolean> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (sb as any)
       .from('conversation_history')
       .upsert({ phone_number: phone, pending_selection: selection }, { onConflict: 'phone_number' });
+    return true;
   } catch (err) {
     console.warn('[whatsapp] failed to store pending selection:', err);
+    return false;
   }
 }
 

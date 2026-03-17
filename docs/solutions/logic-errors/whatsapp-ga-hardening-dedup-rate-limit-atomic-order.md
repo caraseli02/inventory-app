@@ -3,7 +3,7 @@ title: WhatsApp GA Hardening — Dedup, Rate Limiting, Atomic Order Confirmation
 module: WhatsAppAgent
 date: 2026-03-14
 problem_type: logic_error
-component: api_client
+component: server_component
 symptoms:
   - "Twilio retries create duplicate pending orders from single customer request"
   - "Order confirmation race condition allows double-confirm from concurrent requests"
@@ -395,6 +395,7 @@ These send Twilio-shaped requests through the real webhook, capturing dedup, rat
 - [quick-reply-followup-and-simulator-auth-WhatsAppAgent-20260311.md](quick-reply-followup-and-simulator-auth-WhatsAppAgent-20260311.md) — Multi-turn conversation drift prevention
 - [followup-shows-unrelated-inventory-WhatsAppAgent-20260305.md](followup-shows-unrelated-inventory-WhatsAppAgent-20260305.md) — Restrict history search to user messages only
 - [twilio-webhook-forged-requests-whatsapp-webhook-20260304.md](../integration-issues/twilio-webhook-forged-requests-whatsapp-webhook-20260304.md) — Twilio signature validation (HMAC-SHA1)
+- [silent-store-failure-wipes-selection-state-WhatsAppAgent-20260317.md](silent-store-failure-wipes-selection-state-WhatsAppAgent-20260317.md) — storePendingProductSelection changed to return boolean; callers abort on failure
 
 ### Architecture & Planning
 - [docs/specs/whatsapp_agent.md](../../specs/whatsapp_agent.md) — WhatsApp AI agent feature spec

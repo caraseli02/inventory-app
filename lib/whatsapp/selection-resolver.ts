@@ -98,7 +98,11 @@ export async function handleCategorySelected(args: {
 
   if (products.length > 0) {
     const payload = withTimestamp({ selection_type: 'product_list', items: products, cart });
-    await storePendingProductSelection(args.sb, args.phone, payload);
+    const stored = await storePendingProductSelection(args.sb, args.phone, payload);
+    if (!stored) {
+      await sendRestMessage(args.from, 'A apărut o eroare. Încearcă din nou.');
+      return;
+    }
 
     if (productSid) {
       await sendListPickerTemplate(args.from, productSid, 'Selectează produsul / Choose product', products);
@@ -126,7 +130,11 @@ export async function handleProductSelected(args: {
 }): Promise<void> {
   const cart = args.cart ?? [];
   const payload = withTimestamp({ selection_type: 'awaiting_qty', product_name: args.product, cart });
-  await storePendingProductSelection(args.sb, args.phone, payload);
+  const stored = await storePendingProductSelection(args.sb, args.phone, payload);
+  if (!stored) {
+    await sendRestMessage(args.from, 'A apărut o eroare. Încearcă din nou.');
+    return;
+  }
 
   const qtySid = process.env.TWILIO_QTY_SID ?? '';
   let templateSent = false;
@@ -173,7 +181,11 @@ export async function sendCategoryPicker(args: {
   }
 
   const payload = withTimestamp({ selection_type: 'category_list', items: capped, cart });
-  await storePendingProductSelection(args.sb, args.phone, payload);
+  const stored = await storePendingProductSelection(args.sb, args.phone, payload);
+  if (!stored) {
+    await sendRestMessage(args.from, 'A apărut o eroare. Încearcă din nou.');
+    return false;
+  }
 
   if (categorySid) {
     await sendListPickerTemplate(args.from, categorySid, 'Selectează categoria / Choose category', capped);
@@ -229,7 +241,11 @@ export async function handleQtyInput(args: {
   const existingCart: CartItem[] = (selection.cart as CartItem[] | undefined) ?? [];
   const cart: CartItem[] = [...existingCart, { name: product, qty }];
 
-  await storePendingProductSelection(args.sb, args.phone, withTimestamp({ selection_type: 'building_order', cart }));
+  const stored = await storePendingProductSelection(args.sb, args.phone, withTimestamp({ selection_type: 'building_order', cart }));
+  if (!stored) {
+    await sendRestMessage(args.from, 'A apărut o eroare. Încearcă din nou.');
+    return true; // intercepted — we handled the message
+  }
 
   const summary = cart.map((item) => `• ${item.qty}x ${item.name}`).join('\n');
   await sendRestMessage(args.from,

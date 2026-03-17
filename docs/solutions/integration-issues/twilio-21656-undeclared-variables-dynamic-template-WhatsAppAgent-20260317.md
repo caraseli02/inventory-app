@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-17
 problem_type: integration_issue
-component: api_client
+component: server_component
 symptoms:
   - "Twilio error 21656 at send time even after switching to dynamic Content API template creation"
   - "Dynamic list-picker templates created successfully (200 OK from Content API) but rejected at send time"

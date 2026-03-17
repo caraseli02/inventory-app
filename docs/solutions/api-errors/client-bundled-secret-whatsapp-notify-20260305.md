@@ -2,7 +2,7 @@
 module: WhatsAppNotify
 date: 2026-03-05
 problem_type: api_error
-component: api_client
+component: webhook_handler
 symptoms:
   - "Serverless notify endpoint relied on a client-shipped VITE_ shared secret for authorization"
   - "Authorization boundary was weaker than expected because VITE_ values can be exposed in the bundle"

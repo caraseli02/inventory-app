@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p2
 issue_id: "138"
 tags: [code-review, documentation, schema, whatsapp]
@@ -40,10 +40,11 @@ Then update the ~20 WhatsApp solutions to use `webhook_handler` or `server_compo
 - `node scripts/search-solutions.js --query "whatsapp"` to identify all affected files
 
 ## Acceptance Criteria
-- [ ] `webhook_handler` and `server_component` added to component enum
-- [ ] `idempotency_violation` added to root_cause enum
-- [ ] All WhatsApp solutions updated to use precise component values
-- [ ] `pnpm validate-docs` passes with zero errors after update
+- [x] `webhook_handler` and `server_component` added to component enum (PR #172)
+- [x] `idempotency_violation` added to root_cause enum (PR #172)
+- [x] All WhatsApp solutions updated to use precise component values (17 files reclassified)
+- [x] `pnpm validate-docs` passes with zero errors after update (55/55)
 
 ## Work Log
 - 2026-03-17: Identified by architecture-strategist and agent-native-reviewer agents in ce-review
+- 2026-03-17: Fixed — 12 files set to server_component, 5 files set to webhook_handler; 55/55 validation passes

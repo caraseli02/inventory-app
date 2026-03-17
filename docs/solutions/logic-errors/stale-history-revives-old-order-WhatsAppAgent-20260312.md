@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-12
 problem_type: logic_error
-component: api_client
+component: server_component
 symptoms:
   - "Fresh browse messages could trigger confirmation text for an older pending order"
   - "Product search candidates leaked from prior assistant confirmations into new turns"
@@ -94,8 +94,8 @@ History can still help with product continuity, but it can no longer supply the 
 - [x] Keep assistant text out of default history-search fallback
 - [x] Block history-only order repair
 - [x] Document chat-state isolation in repo instructions
-- [ ] Add `pending_order` expiry metadata and enforce it at confirmation time
-- [ ] Prefer Twilio button payloads / reply context over free-form `DA` / `NU`
+- [x] Add `pending_order` expiry metadata and enforce it at confirmation time — see [atomic-pending-order-consume-whatsappagent-20260312.md](./atomic-pending-order-consume-whatsappagent-20260312.md)
+- [x] Prefer Twilio button payloads / reply context over free-form `DA` / `NU` — addressed in PRs #170-#171 (list-picker template parity)
 
 ## Related Documentation
 

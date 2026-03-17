@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-11
 problem_type: developer_experience
-component: api_client
+component: server_component
 symptoms:
   - "`api/whatsapp.ts` still contained prompt-building, provider orchestration, and simulator-specific logic after the phase 3 domain extraction"
   - "The local simulator and Vite dev middleware still depended on the main webhook module instead of an explicit simulator boundary"

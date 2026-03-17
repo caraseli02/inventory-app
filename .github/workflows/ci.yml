@@ -35,6 +35,9 @@ jobs:
       - name: Run linter
         run: pnpm lint
 
+      - name: Audit dependencies
+        run: node scripts/audit-check.js
+
       - name: Validate solution docs schema
         run: node scripts/validate-docs.js --all
 

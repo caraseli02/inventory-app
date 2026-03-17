@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-05
 problem_type: logic_error
-component: api_client
+component: server_component
 symptoms:
   - "Follow-up message returns unrelated inventory items (e.g. milk → meat)"
   - "Menu choice reply (\"1\") doesn't create an order"

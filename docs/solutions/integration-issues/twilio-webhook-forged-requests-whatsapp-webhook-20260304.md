@@ -2,7 +2,7 @@
 module: WhatsAppWebhook
 date: 2026-03-04
 problem_type: integration_issue
-component: api_client
+component: webhook_handler
 symptoms:
   - "POST /api/whatsapp accepted requests without Twilio signature verification"
   - "Webhook could be forged to trigger Anthropic + Supabase work"

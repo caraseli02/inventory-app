@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p1
 issue_id: "134"
 tags: [code-review, documentation, whatsapp, spec]
@@ -46,12 +46,13 @@ Extract state machine into its own spec file, link from `whatsapp_agent.md`.
 - Also fix: architecture diagram still references Meta/Edge Functions
 
 ## Acceptance Criteria
-- [ ] State machine diagram covers all 7+ states with transitions
-- [ ] `pending_selection` column documented in DB schema
-- [ ] At least 1 BDD scenario per state transition (category → product → qty → cart → pickup → confirm)
-- [ ] Cart-flow code path documented as separate from LLM path
-- [ ] Architecture section updated to Twilio/Vercel (not Meta/Edge Functions)
-- [ ] Changelog updated for all March changes
+- [x] State machine diagram covers all 9 states with transitions (idle → category_list → product_list → awaiting_qty → building_order → awaiting_pickup_time → confirmed|cancelled|expired)
+- [x] `pending_selection` column documented in DB schema block with TTL and selection_type enum
+- [x] 9 BDD scenarios cover all state transitions including error path and expiry
+- [x] Cart-flow path documented: handleCartPickupTime, invariants, storePendingOrder error propagation
+- [x] Architecture section updated to Twilio Content API / Vercel serverless (with ADR-0007 link)
+- [x] Changelog 0.4.0 (2026-03-17) entry added
 
 ## Work Log
 - 2026-03-17: Identified by architecture-strategist and data-integrity-guardian agents in ce-review
+- 2026-03-17: Fixed — spec updated to v0.4.0 with state machine, BDD scenarios, pending_selection schema, cart-flow doc, Twilio/Vercel architecture
