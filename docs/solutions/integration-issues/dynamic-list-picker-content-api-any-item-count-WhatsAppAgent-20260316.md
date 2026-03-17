@@ -153,3 +153,6 @@ export async function sendListPickerTemplate(
 ## Related Solutions
 
 - [`docs/solutions/logic-errors/whatsapp-ga-hardening-dedup-rate-limit-atomic-order.md`](../logic-errors/whatsapp-ga-hardening-dedup-rate-limit-atomic-order.md) — previous error 21656 fix (numeric vs `product_N` key naming)
+
+## See Also
+- [twilio-21656-undeclared-variables-dynamic-template-WhatsAppAgent-20260317.md](./twilio-21656-undeclared-variables-dynamic-template-WhatsAppAgent-20260317.md) — follow-up: dynamic templates created with `variables: {}` also trigger 21656; must declare each `{{N}}` in the variables object at creation time

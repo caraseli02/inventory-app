@@ -89,14 +89,14 @@ export async function sendListPickerTemplate(
       : raw;
   }
 
-  return sendTemplateMessage(to, sid, variables);
+  await sendTemplateMessage(to, sid, variables);
 }
 
 export async function sendTemplateMessage(
   to: string,
   contentSid: string,
   variables?: Record<string, string>
-): Promise<void> {
+): Promise<boolean> {
   if (isReplayRequest()) {
     await appendReplayEvent({ kind: 'template', to, contentSid, variables });
   }
@@ -106,7 +106,7 @@ export async function sendTemplateMessage(
     if (!isReplayRequest()) {
       console.warn('[whatsapp] Template send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
     }
-    return;
+    return false;
   }
   const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
   const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
@@ -116,12 +116,14 @@ export async function sendTemplateMessage(
     ContentSid: contentSid,
     ...(variables && { ContentVariables: JSON.stringify(variables) }),
   });
-  console.log('[whatsapp] [TEMPLATE_DEBUG] sending template:', {
-    contentSid,
-    variableKeys: variables ? Object.keys(variables) : [],
-    variableValues: variables ? Object.values(variables).map(v => v.slice(0, 40)) : [],
-    contentVariablesJson: variables ? JSON.stringify(variables) : '(none)',
-  });
+  if (process.env.WHATSAPP_TEMPLATE_DEBUG) {
+    console.log('[whatsapp] [TEMPLATE_DEBUG] sending template:', {
+      contentSid,
+      variableKeys: variables ? Object.keys(variables) : [],
+      variableValues: variables ? Object.values(variables).map(v => v.slice(0, 40)) : [],
+      contentVariablesJson: variables ? JSON.stringify(variables) : '(none)',
+    });
+  }
   const resp = await fetch(url, {
     method: 'POST',
     headers: { Authorization: `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -130,5 +132,7 @@ export async function sendTemplateMessage(
   if (!resp.ok) {
     const text = await resp.text().catch(() => '');
     console.error('[whatsapp] Template send failed: %s %s', resp.status, text.slice(0, 200));
+    return false;
   }
+  return true;
 }

@@ -33,26 +33,29 @@ interface ContentApiResponse {
   sid?: string;
 }
 
-/** Deterministic name keyed only by item count — ensures at most one resource per count */
+/** Deterministic name keyed only by item count — ensures at most one resource per count.
+ * v2: variables object must declare all {{N}} placeholders used in items. */
 function friendlyName(itemCount: number): string {
-  return `dynamic_list_picker_${itemCount}`;
+  return `dynamic_list_picker_v2_${itemCount}`;
 }
 
 function buildListPickerPayload(itemCount: number) {
-  // Match the working template format:
-  // - trailing space in item text: "{{1}} "
-  // - empty description
-  // - empty variables object
   const items = Array.from({ length: itemCount }, (_, i) => ({
-    item: `{{${i + 1}}} `,
+    item: `{{${i + 1}}}`,
     id: `product_${i + 1}`,
     description: '',
   }));
 
+  // Variables must be declared so Twilio accepts ContentVariables when sending
+  const variables: Record<string, string> = {};
+  for (let i = 1; i <= itemCount; i++) {
+    variables[String(i)] = `Product ${i}`;
+  }
+
   return {
     friendly_name: friendlyName(itemCount),
     language: 'ro',
-    variables: {},
+    variables,
     types: {
       'twilio/list-picker': {
         body: 'Am găsit mai multe produse. Care anume?',

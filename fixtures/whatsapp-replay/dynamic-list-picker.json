@@ -1,0 +1,22 @@
+{
+  "name": "Dynamic list-picker: <6 item disambiguation",
+  "description": "Tests that a product query returning fewer than 6 results uses a dynamically created Content resource with declared variables (fix for Twilio 21656). Sends 'bunetto' which matches exactly 2 products.",
+  "phone": "+40710000099",
+  "profileName": "Replay Dynamic",
+  "resetConversation": true,
+  "steps": [
+    {
+      "body": "Vreau bunetto",
+      "note": "Query matching 2 products — must send dynamic list-picker template with exactly 2 variables (no 21656 error)",
+      "expectTemplateVariableCount": 2,
+      "pauseMs": 8000
+    },
+    {
+      "body": "1",
+      "buttonPayload": "product_1",
+      "note": "Select first product via button — must send qty template (product_name variable)",
+      "expectTemplateVariableCount": 1,
+      "pauseMs": 5000
+    }
+  ]
+}
