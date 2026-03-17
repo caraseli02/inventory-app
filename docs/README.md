@@ -1,6 +1,6 @@
 # Documentation Home
 
-Central index for the Grocery Inventory App documentation. Start here to find authoritative specs, onboarding instructions, and historical references. Specs under `docs/specs/` are the single source of truth; archival planning notes live in `docs/archive/`. Last validated: 2025-12-05.
+Central index for the Grocery Inventory App documentation. Start here to find authoritative specs, onboarding instructions, and historical references. Specs under `docs/specs/` are the single source of truth; archival planning notes live in `docs/archive/`. Last validated: 2026-03-17.
 
 ## Quick Start
 - [Project README](../README.md) — onboarding, setup, and run commands.
@@ -35,7 +35,10 @@ Central index for the Grocery Inventory App documentation. Start here to find au
 | [Observability](specs/observability.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Console logging sufficient for MVP |
 | [PWA Offline](specs/pwa_offline.md) | 0.1.0 (draft) | POST_MVP | TBD | 2025-12-05 | Online-only for MVP validation |
 | [**xlsx Integration**](specs/xlsx_integration.md) | **1.0.0** | **IN_PROGRESS** | TBD | 2025-12-12 | **Phase 1 - Import/Export with SheetJS** |
-| [**WhatsApp AI Agent**](specs/whatsapp_agent.md) | **0.1.0** | **NOT_STARTED** | TBD | 2026-02-20 | Customer Q&A + pickup orders via WhatsApp + MCP |
+| [**WhatsApp AI Agent**](specs/whatsapp_agent.md) | **0.3.0** | **IN_PROGRESS** | TBD | 2026-03-12 | Customer Q&A + pickup orders via WhatsApp + MCP (Twilio/Vercel) |
+| [**Checkout Flow**](specs/checkout_flow.md) | 0.1.0 | IN_PROGRESS | TBD | 2026-02-01 | Multi-item checkout with pricing tiers |
+| [**Invoice Import API Contract**](specs/invoice-import-api-contract.md) | 0.1.0 | IN_PROGRESS | TBD | 2026-02-12 | FastAPI OCR service API contract |
+| [**Duplicate Prevention Strategy**](specs/duplicate-prevention-strategy.md) | 0.1.0 | IN_PROGRESS | TBD | 2026-03-01 | Dedup strategy for WhatsApp orders and invoice imports |
 
 Versioning uses semantic versions for specs: `0.x` indicates drafts or partial implementations; `1.0.0` will mark fully implemented, validated specs.
 
@@ -48,6 +51,12 @@ Versioning uses semantic versions for specs: `0.x` indicates drafts or partial i
 ## Architecture Decisions
 - ADR index and template: [adrs/README.md](adrs/README.md)
 - ADR-0001 — Airtable access via backend proxy: [adrs/ADR-0001-airtable-proxy.md](adrs/ADR-0001-airtable-proxy.md)
+- ADR-0002 — Product field nullability: [adrs/ADR-0002-product-nullability.md](adrs/ADR-0002-product-nullability.md)
+- ADR-0003 — Code splitting strategy: [adrs/ADR-0003-code-splitting-strategy.md](adrs/ADR-0003-code-splitting-strategy.md)
+- ADR-0004 — Git hook strategy: [adrs/ADR-0004-git-hook-strategy.md](adrs/ADR-0004-git-hook-strategy.md)
+- ADR-0005 — Invoice OCR architecture evolution: [adrs/ADR-0005-invoice-ocr-architecture-evolution.md](adrs/ADR-0005-invoice-ocr-architecture-evolution.md)
+- ADR-0006 — EDA event-store pattern: [adrs/ADR-0006-eda-event-store.md](adrs/ADR-0006-eda-event-store.md)
+- ADR-0007 — Twilio over Meta WhatsApp Cloud API: [adrs/ADR-0007-twilio-over-meta.md](adrs/ADR-0007-twilio-over-meta.md)
 
 ## Planning & Historical References
 | Document | Status | Notes |

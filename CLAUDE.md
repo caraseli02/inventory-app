@@ -117,8 +117,17 @@ src/
   - current-turn structured order fields
 - A fresh browse query must not resurrect an older pending order
 
+**Cart-flow state (`pending_selection`) is also transactional — not just conversational:**
+
+- `pending_selection` drives the state machine: `category_list → product_list → awaiting_qty → building_order → awaiting_pickup_time`
+- The cart-flow code path (`handleCartPickupTime` in `lib/whatsapp/selection-resolver.ts`) creates `pending_order` **outside** the LLM path — same TTL/atomicity rules apply
+- **Never clear cart state (`pending_selection`) before `storePendingOrder` write completes without error**
+- `storePendingProductSelection` swallows errors by design (best-effort write) — callers must not assume selection was persisted if the DB is degraded
+- If you add a new state transition, update `docs/specs/whatsapp_agent.md` with the new BDD scenario
+
 Required reading before WhatsApp/chat refactors:
 - `docs/solutions/logic-errors/stale-history-revives-old-order-WhatsAppAgent-20260312.md`
+- `docs/solutions/logic-errors/silent-store-failure-wipes-selection-state-WhatsAppAgent-20260317.md`
 - `docs/plans/2026-03-12-refactor-whatsapp-chat-state-plan.md`
 - `docs/runbooks/whatsapp_agent.md`
 
@@ -301,6 +310,10 @@ This project follows a **spec-driven development** approach. All features and cr
 
 ### Bug Fix Workflow
 
+0.  **Search first**: Check for existing solutions before starting. If a matching solution exists, link to it rather than creating a duplicate.
+    ```bash
+    node scripts/search-solutions.js --query "symptom keywords here"
+    ```
 1.  **Report**: Create a GitHub Issue with clear reproduction steps.
 2.  **Fix**: Implement the fix in a branch.
 3.  **Document**: Create a solution entry in `docs/solutions/` using `_template.md` and following `docs/solutions/schema.yaml`.
@@ -313,14 +326,17 @@ This project follows a **spec-driven development** approach. All features and cr
 
 **Quick Reference**:
 ```bash
+# Search existing solutions (Step 0 — always do this first)
+node scripts/search-solutions.js --query "your search terms"
+
 # Use template
 cp docs/solutions/_template.md docs/solutions/[category]/[name].md
 
-# Validate before commit (automatic via git hooks)
+# Validate a specific file interactively
 node scripts/validate-docs.js docs/solutions/[category]/[name].md
 
-# Search existing solutions
-node scripts/search-solutions.js --query "your search terms"
+# Validate all solution files (used by CI)
+node scripts/validate-docs.js --all
 ```
 
 ### Spec Structure

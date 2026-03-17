@@ -19,3 +19,8 @@ ADRs capture key technical decisions with their context, options, and consequenc
 ## Index
 - [ADR-0001: Airtable access via backend proxy](ADR-0001-airtable-proxy.md)
 - [ADR-0002: Product field nullability from Airtable](ADR-0002-product-nullability.md)
+- [ADR-0003: Code splitting strategy](ADR-0003-code-splitting-strategy.md)
+- [ADR-0004: Git hook strategy](ADR-0004-git-hook-strategy.md)
+- [ADR-0005: Invoice OCR architecture evolution](ADR-0005-invoice-ocr-architecture-evolution.md)
+- [ADR-0006: EDA event-store pattern adoption](ADR-0006-eda-event-store.md)
+- [ADR-0007: Twilio over Meta WhatsApp Cloud API](ADR-0007-twilio-over-meta.md)

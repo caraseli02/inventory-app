@@ -45,6 +45,27 @@ function getStagedFiles() {
   }
 }
 
+function getAllSolutionFiles() {
+  const results = [];
+  function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name !== '_archive' && entry.name !== 'patterns') walk(full);
+      } else if (
+        entry.name.endsWith('.md') &&
+        entry.name !== 'README.md' &&
+        entry.name !== '_template.md' &&
+        entry.name !== 'MAINTENANCE.md'
+      ) {
+        results.push(path.relative(path.resolve(__dirname, '..'), full));
+      }
+    }
+  }
+  walk(SOLUTIONS_DIR);
+  return results;
+}
+
 async function validateFile(filePath, projectRoot) {
   const fullPath = path.join(projectRoot, filePath);
 
@@ -67,7 +88,7 @@ async function validateFile(filePath, projectRoot) {
 
   // 2. Validate Required Fields
   for (const field of REQUIRED_FIELDS) {
-    if (frontmatter[field] === undefined || frontmatter[field] === null) {
+    if (frontmatter[field] === undefined || frontmatter[field] === null || frontmatter[field] === '') {
       return { valid: false, error: `Missing required field: '${field}'` };
     }
   }
@@ -132,7 +153,7 @@ async function validateFile(filePath, projectRoot) {
   }
 
   // 8. Validate GitHub Issue (Optional)
-  if (frontmatter.related_github_issue) {
+  if (frontmatter.related_github_issue != null && frontmatter.related_github_issue !== '') {
     try {
       await execPromise(`gh issue view ${frontmatter.related_github_issue} --json state`, { timeout: 5000 });
     } catch (error) {
@@ -149,28 +170,37 @@ async function validateFile(filePath, projectRoot) {
 
 async function main() {
   const projectRoot = path.resolve(__dirname, '..');
+  const args = process.argv.slice(2);
+  const allMode = args.includes('--all');
+  const filePaths = args.filter(a => !a.startsWith('--') && a.endsWith('.md'));
 
-  let files = [];
-  try {
-    const output = execSync('git diff --cached --name-only --diff-filter=ACMR', { encoding: 'utf-8' });
-    files = output.split('\n').filter(Boolean);
-  } catch (error) {
-    // If not in git repo or error, maybe just scan all files if passed arg?
-    // For now, adhere to pre-commit style
-    console.error('Failed to get staged files:', error.message);
-    process.exit(1);
+  let solutionFiles = [];
+
+  if (filePaths.length > 0) {
+    // Direct file path mode: validate specific files passed as arguments
+    solutionFiles = filePaths;
+  } else if (allMode) {
+    // --all mode: validate every solution file (for CI)
+    solutionFiles = getAllSolutionFiles();
+  } else {
+    // Default: staged files only (pre-commit hook)
+    let files = [];
+    try {
+      files = getStagedFiles();
+    } catch (error) {
+      console.error('Failed to get staged files:', error.message);
+      process.exit(1);
+    }
+    solutionFiles = files.filter(f =>
+      f.startsWith('docs/solutions/') &&
+      f.endsWith('.md') &&
+      !f.endsWith('README.md') &&
+      !f.endsWith('_template.md') &&
+      !f.endsWith('MAINTENANCE.md') &&
+      !f.includes('/patterns/') &&
+      !f.includes('/_archive/')
+    );
   }
-
-  // Filter for docs/solutions/
-  const solutionFiles = files.filter(f =>
-    f.startsWith('docs/solutions/') &&
-    f.endsWith('.md') &&
-    !f.endsWith('README.md') &&
-    !f.endsWith('_template.md') &&
-    !f.endsWith('MAINTENANCE.md') &&
-    !f.includes('/patterns/') && // patterns are documentation, not solutions
-    !f.includes('/_archive/') // archived solutions don't need validation
-  );
 
   if (solutionFiles.length === 0) {
     console.log(`${colors.green}✔ No docs/solutions changes to validate.${colors.reset}`);
