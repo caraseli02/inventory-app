@@ -89,14 +89,14 @@ export async function sendListPickerTemplate(
       : raw;
   }
 
-  return sendTemplateMessage(to, sid, variables);
+  await sendTemplateMessage(to, sid, variables);
 }
 
 export async function sendTemplateMessage(
   to: string,
   contentSid: string,
   variables?: Record<string, string>
-): Promise<void> {
+): Promise<boolean> {
   if (isReplayRequest()) {
     await appendReplayEvent({ kind: 'template', to, contentSid, variables });
   }
@@ -106,7 +106,7 @@ export async function sendTemplateMessage(
     if (!isReplayRequest()) {
       console.warn('[whatsapp] Template send skipped — TWILIO_ACCOUNT_SID/FROM_NUMBER not configured');
     }
-    return;
+    return false;
   }
   const url = `https://api.twilio.com/2010-04-01/Accounts/${creds.accountSid}/Messages.json`;
   const auth = Buffer.from(`${creds.accountSid}:${creds.authToken}`).toString('base64');
@@ -130,5 +130,7 @@ export async function sendTemplateMessage(
   if (!resp.ok) {
     const text = await resp.text().catch(() => '');
     console.error('[whatsapp] Template send failed: %s %s', resp.status, text.slice(0, 200));
+    return false;
   }
+  return true;
 }

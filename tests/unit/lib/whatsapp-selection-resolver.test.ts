@@ -103,7 +103,7 @@ describe('resolveSelectionByIndex', () => {
       created_at: new Date().toISOString(),
     };
     const result = await resolveSelectionByIndex(fakeSb, testPhone, 1);
-    expect(result).toEqual({ outcome: 'category_selected', category: 'Bakery' });
+    expect(result).toEqual({ outcome: 'category_selected', category: 'Bakery', cart: [] });
   });
 
   it('resolves product from product_list', async () => {
@@ -113,7 +113,7 @@ describe('resolveSelectionByIndex', () => {
       created_at: new Date().toISOString(),
     };
     const result = await resolveSelectionByIndex(fakeSb, testPhone, 2);
-    expect(result).toEqual({ outcome: 'product_selected', product: 'Unt' });
+    expect(result).toEqual({ outcome: 'product_selected', product: 'Unt', cart: [] });
   });
 
   it('returns index_out_of_range for invalid index', async () => {
@@ -143,7 +143,7 @@ describe('resolveSelectionByIndex', () => {
       items: ['Lapte'],
     };
     const result = await resolveSelectionByIndex(fakeSb, testPhone, 0);
-    expect(result).toEqual({ outcome: 'product_selected', product: 'Lapte' });
+    expect(result).toEqual({ outcome: 'product_selected', product: 'Lapte', cart: [] });
   });
 
   it('returns no_context for unknown selection_type', async () => {

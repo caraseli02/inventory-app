@@ -1,0 +1,73 @@
+{
+  "name": "Full cart flow: browse → product → qty → add more → confirm → pickup time",
+  "description": "End-to-end multi-item order flow. Browses Meat, selects a product, enters qty, adds another product from Dairy, enters qty, confirms cart, provides pickup time, and verifies order confirmation template is sent.",
+  "phone": "+40710000098",
+  "profileName": "Replay Cart",
+  "resetConversation": true,
+  "steps": [
+    {
+      "body": "Caut un produs",
+      "buttonPayload": "browse",
+      "note": "Browse button — must send category list-picker with 6 variables",
+      "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
+      "expectTemplateVariableCount": 6,
+      "pauseMs": 4000
+    },
+    {
+      "body": "5",
+      "buttonPayload": "product_5",
+      "note": "Select 5th category (Meat) — must send a product list-picker template",
+      "pauseMs": 4000
+    },
+    {
+      "body": "1",
+      "buttonPayload": "product_1",
+      "note": "Select first Meat product — must send qty template",
+      "expectTemplateVariableCount": 1,
+      "pauseMs": 4000
+    },
+    {
+      "body": "2",
+      "note": "Enter qty 2 — must show cart summary with add-more/confirm options",
+      "expectAsyncBodyIncludes": "Coș curent",
+      "pauseMs": 3000
+    },
+    {
+      "body": "1",
+      "note": "Choose add more (1) — must send category list-picker again",
+      "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
+      "expectTemplateVariableCount": 6,
+      "pauseMs": 4000
+    },
+    {
+      "body": "3",
+      "buttonPayload": "product_3",
+      "note": "Select 3rd category (Dairy) — must send a product list-picker template",
+      "pauseMs": 4000
+    },
+    {
+      "body": "1",
+      "buttonPayload": "product_1",
+      "note": "Select first Dairy product — must send qty template",
+      "expectTemplateVariableCount": 1,
+      "pauseMs": 4000
+    },
+    {
+      "body": "3",
+      "note": "Enter qty 3 — cart now has 2 items, must show add-more/confirm",
+      "expectAsyncBodyIncludes": "Coș curent",
+      "pauseMs": 3000
+    },
+    {
+      "body": "2",
+      "note": "Choose confirm cart (2) — must ask for pickup time",
+      "expectAsyncBodyIncludes": "oră",
+      "pauseMs": 3000
+    },
+    {
+      "body": "18:30",
+      "note": "Provide pickup time — must send order confirmation template or confirmation text",
+      "pauseMs": 5000
+    }
+  ]
+}

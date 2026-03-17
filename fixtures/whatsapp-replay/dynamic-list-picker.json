@@ -14,7 +14,8 @@
     {
       "body": "1",
       "buttonPayload": "product_1",
-      "note": "Select first product via button — should proceed to qty or confirm step",
+      "note": "Select first product via button — must send qty template (product_name variable)",
+      "expectTemplateVariableCount": 1,
       "pauseMs": 5000
     }
   ]

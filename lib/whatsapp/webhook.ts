@@ -3,8 +3,10 @@ import { waitUntil } from '@vercel/functions';
 import { validateTwilioSignature } from '../../api/lib/twilio-signature.js';
 import { getTwilioAuthToken, getTwilioRestCredentials } from './config.js';
 import {
+  getPendingProductSelection,
   hasConversationHistory,
   storePendingOrder,
+  storePendingProductSelection,
 } from './conversation-state.js';
 import { classifyIncomingText, detectEnglish } from './conversation.js';
 import { createSupabaseClient, type ServerSupabaseClient } from './db.js';
@@ -19,8 +21,10 @@ import { buildRateLimitReply, checkRateLimit } from './rate-limit.js';
 import {
   clearPendingSelection,
   findMatchingCategory,
+  handleCartPickupTime,
   handleCategorySelected,
   handleProductSelected,
+  handleQtyInput,
   resolveSelectionByIndex,
   sendCategoryPicker,
 } from './selection-resolver.js';
@@ -205,11 +209,11 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
       console.log('[whatsapp] [PRODUCT_N] resolution:', { outcome: result.outcome, buttonPayload });
 
       if (result.outcome === 'category_selected') {
-        await handleCategorySelected({ sb, from, phone, category: result.category });
+        await handleCategorySelected({ sb, from, phone, category: result.category, cart: result.cart });
         return;
       }
       if (result.outcome === 'product_selected') {
-        await handleProductSelected({ sb, from, phone, product: result.product });
+        await handleProductSelected({ sb, from, phone, product: result.product, cart: result.cart });
         return;
       }
       if (result.outcome === 'index_out_of_range') {
@@ -266,6 +270,25 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
     return;
   }
 
+  // add_more → send category picker, preserving existing cart
+  if (buttonPayload === 'add_more') {
+    await sendCategoryPicker({ sb, from, phone, preserveCart: true });
+    return;
+  }
+
+  // confirm_cart → ask for pickup time
+  if (buttonPayload === 'confirm_cart') {
+    const selection = await getPendingProductSelection(sb, phone);
+    const cart = (selection?.cart as import('./selection-resolver.js').CartItem[] | undefined) ?? [];
+    if (!cart.length) {
+      await sendRestMessage(from, 'Coșul este gol. Încearcă din nou.');
+      return;
+    }
+    await storePendingProductSelection(sb, phone, { ...selection, selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
+    await sendRestMessage(from, '🕐 La ce oră doriți să ridicați comanda? (ex: 18:30)');
+    return;
+  }
+
   // Catch-all: unrecognized button payload — log and send fallback
   console.warn('[whatsapp] [BUTTON] unrecognized payload, no handler matched:', { buttonPayload, phone });
   await sendRestMessage(from, 'Nu am înțeles selecția. Încearcă din nou sau trimite un mesaj text.');
@@ -288,8 +311,43 @@ async function tryTextTemplateInterception(args: {
   from: string;
   phone: string;
   text: string;
+  customerName: string;
+  customerPhone: string;
 }): Promise<boolean> {
   const intent = classifyIncomingText(args.text);
+
+  // 0a. awaiting_qty state → structured qty handler (before numeric choice so "1" is treated as qty not menu)
+  const qtyIntercepted = await handleQtyInput({ sb: args.sb, from: args.from, phone: args.phone, text: args.text });
+  if (qtyIntercepted) {
+    console.log('[whatsapp] [TEXT_INTERCEPT] awaiting_qty: qty captured, showing add-more/confirm menu');
+    return true;
+  }
+
+  // 0b. awaiting_pickup_time state → parse time and create order
+  const pickupIntercepted = await handleCartPickupTime({
+    sb: args.sb, from: args.from, phone: args.phone, text: args.text,
+    customerName: args.customerName, customerPhone: args.customerPhone,
+  });
+  if (pickupIntercepted) {
+    console.log('[whatsapp] [TEXT_INTERCEPT] awaiting_pickup_time: order created from cart');
+    return true;
+  }
+
+  // 0c. building_order state: "1" = add more, "2" = confirm cart
+  const currentSelection = await getPendingProductSelection(args.sb, args.phone);
+  if (currentSelection?.selection_type === 'building_order') {
+    const choice = parseNumericChoice(args.text);
+    if (choice === 1) {
+      await sendCategoryPicker({ sb: args.sb, from: args.from, phone: args.phone, preserveCart: true });
+      return true;
+    }
+    if (choice === 2) {
+      await storePendingProductSelection(args.sb, args.phone, { ...currentSelection, selection_type: 'awaiting_pickup_time', created_at: new Date().toISOString() });
+      await sendRestMessage(args.from, '🕐 La ce oră doriți să ridicați comanda? (ex: 18:30)');
+      return true;
+    }
+    // Any other text while building_order: fall through to LLM
+  }
 
   // 1. browse_inventory → category list-picker
   if (intent === 'browse_inventory') {
@@ -310,11 +368,11 @@ async function tryTextTemplateInterception(args: {
     console.log('[whatsapp] [TEXT_INTERCEPT] numeric choice:', { choice: numericChoice, outcome: result.outcome });
 
     if (result.outcome === 'category_selected') {
-      await handleCategorySelected({ sb: args.sb, from: args.from, phone: args.phone, category: result.category });
+      await handleCategorySelected({ sb: args.sb, from: args.from, phone: args.phone, category: result.category, cart: result.cart });
       return true;
     }
     if (result.outcome === 'product_selected') {
-      await handleProductSelected({ sb: args.sb, from: args.from, phone: args.phone, product: result.product });
+      await handleProductSelected({ sb: args.sb, from: args.from, phone: args.phone, product: result.product, cart: result.cart });
       return true;
     }
     if (result.outcome === 'expired') {
@@ -362,8 +420,8 @@ async function handleRestConversation(args: {
   console.log('[whatsapp] starting async reply...');
 
   waitUntil(
-    // Try template interception first (browse, numeric, category-name)
-    tryTextTemplateInterception({ sb, from: args.from, phone: args.phone, text: args.text })
+    // Try template interception first (browse, numeric, category-name, cart flows)
+    tryTextTemplateInterception({ sb, from: args.from, phone: args.phone, text: args.text, customerName: args.name, customerPhone: args.phone })
       .then(async (intercepted) => {
         if (intercepted) {
           console.log('[whatsapp] text intercepted for template flow');
@@ -391,6 +449,13 @@ async function handleRestConversation(args: {
 
         // List-picker for product disambiguation
         if (result.listPicker) {
+          // Store selection so product_N button clicks resolve correctly
+          await storePendingProductSelection(sb, args.phone, {
+            selection_type: 'product_list',
+            items: result.listPicker,
+            cart: [],
+            created_at: new Date().toISOString(),
+          });
           const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
           if (sid) {
             await sendListPickerTemplate(args.from, sid, 'Alegeți produsul / Choose product', result.listPicker);
