@@ -153,6 +153,9 @@ visual-regression-screenshots/
 *.png
 *.jpg
 *.jpeg
+!docs/assets/screenshots/*.png
+!docs/assets/screenshots/*.jpg
+!docs/assets/screenshots/*.jpeg
 
 # Hero video assets are required for builds and MUST be tracked
 # Exceptions for public/videos/hero directory
