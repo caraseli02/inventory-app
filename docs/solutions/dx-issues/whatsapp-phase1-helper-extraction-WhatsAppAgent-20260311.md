@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-11
 problem_type: developer_experience
-component: api_client
+component: server_component
 symptoms:
   - "`api/whatsapp.ts` had grown to 1,871 lines and mixed webhook, transport, simulator, state, and LLM concerns"
   - "Simple helper tests had to import the main webhook file instead of focused modules"

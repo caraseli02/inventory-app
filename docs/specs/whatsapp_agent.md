@@ -1,9 +1,9 @@
 # Feature: WhatsApp AI Agent for Customer Q&A & Pickup Orders
 
-**Version**: 0.2.1
+**Version**: 0.4.0
 **Status**: IN_PROGRESS
 **Owner**: TBD
-**Last Updated**: 2026-03-12
+**Last Updated**: 2026-03-17
 **Dependencies**: [stock_management.md], [product_management.md], [checkout_flow.md]
 
 ---
@@ -176,24 +176,28 @@ When a product is out of stock, agent suggests similar products from the same ca
 
 ### Components
 
+> **Architecture as of 0.3.0+** (see [ADR-0007](../adrs/ADR-0007-twilio-over-meta.md)):
+> Switched from Meta WhatsApp Cloud API + Supabase Edge Functions → **Twilio Content API + Vercel serverless**.
+
 ```
-WhatsApp Cloud API (Meta)
-        ↓ webhook POST
-Supabase Edge Function: whatsapp-webhook
-        ↓ message + conversation history
-Claude API (Haiku model)
-  + System prompt (store config)
-  + MCP Tools ──────────────────────────────────────────┐
-        ↓ tool calls                                     │
-Supabase Edge Functions (MCP Server):                   │
-  - search_products(query: string)                      │
-  - get_product_details(product_id: string)             │
-  - create_pickup_order(items, name, pickup_time)       │
-  - get_store_info()                                    │
-        ↓ data                                          │
-Supabase PostgreSQL (existing tables + new orders table)│
-        ↑                                               │
-React App (new Orders page) ─────────────────────────── ┘
+Twilio WhatsApp API (Content API for templates)
+        ↓ webhook POST (HMAC-SHA1 validated)
+Vercel serverless function: api/whatsapp.ts
+        ↓ message + conversation history + pending_selection state
+lib/whatsapp/ (server components):
+  - webhook.ts        — request routing & state machine orchestration
+  - conversation.ts   — intent classification, LLM call
+  - selection-resolver.ts — cart-flow state transitions
+  - conversation-state.ts — DB read/write (history, pending_order, pending_selection)
+  - transport.ts      — Twilio send (REST + Content templates)
+  - inventory.ts      — product search, category listing
+  - llm.ts            — Claude API integration
+  - dedup.ts          — message deduplication (SID-based)
+  - rate-limit.ts     — per-phone rate limiting
+        ↓ tool calls / DB queries
+Supabase PostgreSQL (products, stock_movements, orders, conversation_history)
+        ↑
+React App (OrdersPage: list orders, confirm/cancel → stock deduction)
 ```
 
 ### New Supabase Tables
@@ -212,13 +216,19 @@ created_at    timestamptz DEFAULT now()
 notes         text
 ```
 
-**`conversation_history`** (for multi-turn context)
+**`conversation_history`** (for multi-turn context + cart state machine)
 ```sql
-id            uuid PRIMARY KEY
-phone_number  text NOT NULL
-messages      jsonb NOT NULL       -- [{role, content, timestamp}]
-pending_order jsonb                -- transactional state with embedded created-at metadata
-updated_at    timestamptz DEFAULT now()
+id                 uuid PRIMARY KEY
+phone_number       text NOT NULL
+messages           jsonb NOT NULL         -- [{role, content, timestamp}], last 20 messages
+pending_order      jsonb                  -- transactional order state; contains pending_order_created_at for TTL
+pending_selection  jsonb                  -- cart-flow state machine: {selection_type, items, cart, created_at}
+                                          --   selection_type: 'category_list' | 'product_list' |
+                                          --                   'awaiting_qty' | 'building_order' |
+                                          --                   'awaiting_pickup_time' | {} (cleared)
+                                          --   TTL: 30 minutes (PENDING_SELECTION_TTL_MS)
+language           text                   -- preferred language, e.g. 'ro' or 'en'
+updated_at         timestamptz DEFAULT now()
 ```
 
 ### MCP Tool Definitions
@@ -263,6 +273,141 @@ Rules:
 - For orders, always confirm: items, quantities, customer name, pickup time before creating
 - Be friendly, brief, and natural — like a helpful shop assistant
 - If a product is unavailable, apologize and offer to check similar items
+```
+
+---
+
+## Cart-Flow State Machine
+
+The cart-flow is a parallel path to the LLM order-creation path. It uses `pending_selection` in `conversation_history` as its persistent state store.
+
+### States & Transitions
+
+```
+idle
+  │  (browse intent detected by LLM or button tap)
+  ▼
+category_list        pending_selection.selection_type = 'category_list'
+  │                  items = [list of categories], cart = []
+  │  (user selects category via list-picker button or numeric text)
+  ▼
+product_list         pending_selection.selection_type = 'product_list'
+  │                  items = [product names for selected category], cart = []|[...]
+  │  (user selects product)
+  ▼
+awaiting_qty         pending_selection.selection_type = 'awaiting_qty'
+  │                  product_name = <selected product>, cart = [...]
+  │  (user sends a numeric quantity, e.g. "2")
+  ▼
+building_order       pending_selection.selection_type = 'building_order'
+  │                  cart = [{name, qty}, ...]
+  │  "1" / add more ──────────────────────► category_list (preserveCart=true)
+  │  "2" / confirm cart
+  ▼
+awaiting_pickup_time pending_selection.selection_type = 'awaiting_pickup_time'
+  │                  cart = [{name, qty}, ...]
+  │  (user sends pickup time text, e.g. "mâine 10:30")
+  ▼  handleCartPickupTime() — resolves cart items against inventory, writes pending_order
+pending_order set    (LLM path takes over)
+  │  DA / button confirm ──────────────────► confirmed (order created in DB)
+  │  NU / button cancel ───────────────────► cancelled (pending_order cleared)
+  │  TTL expired (120 min default) ─────────► expired (pending_order cleared on next read)
+```
+
+**Key invariant**: `pending_selection` must NEVER be cleared before the dependent state write succeeds.
+- `storePendingOrder` propagates errors (never swallows) — cart is preserved if order write fails.
+- `storePendingProductSelection` returns `Promise<boolean>` — state-advancing callers abort on `false`.
+
+### handleCartPickupTime (parallel path to LLM)
+
+`handleCartPickupTime` in `lib/whatsapp/selection-resolver.ts` is the cart-flow equivalent of the LLM order-creation path. It:
+1. Reads `pending_selection` (must be `awaiting_pickup_time`)
+2. Resolves cart items against live inventory (throws on out-of-stock or ambiguous)
+3. Writes `pending_order` (propagates errors — does NOT clear cart on failure)
+4. Clears `pending_selection` (best-effort, only after `storePendingOrder` succeeds)
+5. Sends confirmation summary + DA/NU prompt
+
+### BDD Scenarios
+
+```
+Scenario: Browse intent triggers category list
+    Given a customer sends "Caut un produs" (browse text)
+    When the webhook classifies intent as browse_inventory
+    Then sendCategoryPicker() is called
+    And pending_selection.selection_type = 'category_list' is persisted
+    And a category list-picker template (or numbered text) is sent to the customer
+
+Scenario: Category selection advances to product list
+    Given pending_selection.selection_type = 'category_list'
+    And items = ['Lactate', 'Carne', 'Legume']
+    When the customer sends "1" or taps the 'Lactate' button
+    Then resolveSelectionByIndex() returns {outcome: 'category_selected', category: 'Lactate'}
+    And handleCategorySelected() is called
+    And pending_selection.selection_type = 'product_list' is persisted before the message is sent
+    And a product list for 'Lactate' is sent to the customer
+
+Scenario: Product selection advances to quantity prompt
+    Given pending_selection.selection_type = 'product_list'
+    And items = ['Lapte 1L', 'Smântână 20%']
+    When the customer sends "1" or taps 'Lapte 1L'
+    Then handleProductSelected() is called
+    And pending_selection.selection_type = 'awaiting_qty' is persisted before the prompt is sent
+    And the customer receives a quantity prompt
+
+Scenario: Quantity input advances to building_order
+    Given pending_selection.selection_type = 'awaiting_qty'
+    And product_name = 'Lapte 1L', cart = []
+    When the customer sends "2"
+    Then handleQtyInput() returns true (intercepted)
+    And pending_selection.selection_type = 'building_order', cart = [{name:'Lapte 1L', qty:2}]
+    And the customer receives a cart summary with add-more / confirm options
+
+Scenario: Add more items loops back to category list
+    Given pending_selection.selection_type = 'building_order'
+    And cart = [{name:'Lapte 1L', qty:2}]
+    When the customer sends "1" (add more)
+    Then sendCategoryPicker(preserveCart=true) is called
+    And pending_selection.selection_type = 'category_list', cart = [{name:'Lapte 1L', qty:2}]
+    And the category list is sent again with the existing cart preserved
+
+Scenario: Cart confirmation advances to awaiting_pickup_time
+    Given pending_selection.selection_type = 'building_order'
+    And cart = [{name:'Lapte 1L', qty:2}]
+    When the customer sends "2" (confirm cart)
+    Then pending_selection.selection_type = 'awaiting_pickup_time' is persisted
+    And the customer is prompted for a pickup time
+
+Scenario: Pickup time creates pending_order
+    Given pending_selection.selection_type = 'awaiting_pickup_time'
+    And cart = [{name:'Lapte 1L', qty:2}]
+    When the customer sends "mâine la 10:30"
+    Then handleCartPickupTime() is called
+    And resolveOrderItems() validates inventory (stock levels, no duplicates)
+    And storePendingOrder() writes the order (propagates errors)
+    And pending_selection is cleared to {} (best-effort, only after order write succeeds)
+    And the customer receives an order summary with DA/NU confirmation
+
+Scenario: Store failure during cart state write aborts the flow
+    Given pending_selection.selection_type = 'awaiting_qty'
+    And the Supabase write fails (transient error)
+    When the customer sends "2"
+    And storePendingProductSelection() returns false
+    Then the customer receives "A apărut o eroare. Încearcă din nou."
+    And no state is advanced (selection remains 'awaiting_qty' or stale)
+    And the customer can retry
+
+Scenario: Pending order expiry prevents stale confirmation
+    Given pending_order was created more than 120 minutes ago
+    When the customer sends "DA"
+    Then getPendingOrderState() returns {status: 'expired'}
+    And clearPendingOrder() is called
+    And the customer receives an expiry message (not a confirmation)
+
+Scenario: Fresh browse query does not resurrect a prior pending order
+    Given a pending_order exists from a prior session
+    When the customer sends a fresh browse query (no quantity, no pickup time)
+    Then the LLM path does not produce an ORDER: payload
+    And the prior pending_order is not confirmed or modified
 ```
 
 ---
@@ -343,6 +488,14 @@ Rules:
 ---
 
 ## Changelog
+
+### 0.4.0 (2026-03-17)
+- Added state machine section with all cart-flow states and transitions
+- Added `pending_selection` column to DB schema block
+- Added BDD scenarios for all 9 state transitions
+- Documented `handleCartPickupTime` as parallel cart-flow path (separate from LLM order path)
+- Updated Architecture section: Meta WhatsApp Cloud API + Supabase Edge Functions → Twilio Content API + Vercel serverless (ADR-0007)
+- Hardening since 0.3.0: cart-flow templates (list-picker parity for text + button), atomic `consume_pending_order` RPC, message deduplication, per-phone rate limiting, security hardening (`HMAC-SHA1`, path traversal guard), `storePendingProductSelection` → `Promise<boolean>` to prevent silent cart loss
 
 ### 0.3.0 (2026-02-23)
 - Switched from Meta to Twilio (phone validation issues with Meta)

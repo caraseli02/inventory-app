@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-11
 problem_type: logic_error
-component: api_client
+component: webhook_handler
 symptoms:
   - "WhatsApp follow-up orders like '1 de cada' could drift to unrelated products"
   - "Local WhatsApp integration tests failed with 401 Unauthorized from /api/whatsapp-simulate"

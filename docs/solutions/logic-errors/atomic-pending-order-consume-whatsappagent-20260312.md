@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-12
 problem_type: logic_error
-component: api_client
+component: server_component
 symptoms:
   - "Concurrent or duplicate WhatsApp confirms could create the same pending order twice"
   - "Bare DA / NU messages without pending state returned an incorrect expired-order reply"
@@ -133,4 +133,5 @@ That preserves user-facing accuracy without weakening stale-order protection.
 
 - [stale-history-revives-old-order-WhatsAppAgent-20260312.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/logic-errors/stale-history-revives-old-order-WhatsAppAgent-20260312.md)
 - [button-confirm-skipped-pending-status-WhatsAppAgent-20260310.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/logic-errors/button-confirm-skipped-pending-status-WhatsAppAgent-20260310.md)
+- [silent-store-failure-wipes-selection-state-WhatsAppAgent-20260317.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/logic-errors/silent-store-failure-wipes-selection-state-WhatsAppAgent-20260317.md)
 - [docs/plans/2026-03-12-refactor-whatsapp-chat-state-plan.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/plans/2026-03-12-refactor-whatsapp-chat-state-plan.md)

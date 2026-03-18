@@ -21,6 +21,7 @@ vi.mock('../../../lib/whatsapp/conversation-state.js', () => ({
   getPendingProductSelection: vi.fn(async () => mockPendingSelection),
   storePendingProductSelection: vi.fn(async (_sb: unknown, _phone: string, payload: Record<string, unknown>) => {
     storedPendingPayload = payload;
+    return true;
   }),
   getHistory: vi.fn(async () => []),
   appendHistory: vi.fn(async (_sb: unknown, _phone: string, _history: unknown[], entries: Array<{ role: string; content: string }>) => {

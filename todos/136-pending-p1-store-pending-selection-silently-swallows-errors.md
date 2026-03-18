@@ -1,5 +1,5 @@
 ---
-status: pending
+status: done
 priority: p1
 issue_id: "136"
 tags: [code-review, whatsapp, error-handling, state-management]
@@ -58,10 +58,11 @@ Add explicit comment, update CLAUDE.md guardrails to note this is best-effort.
 - Callers to audit: `lib/whatsapp/selection-resolver.ts` (all calls to `storePendingProductSelection`)
 
 ## Acceptance Criteria
-- [ ] `storePendingProductSelection` failure is surfaced to callers (either throw or boolean)
-- [ ] All callers handle the failure case explicitly
-- [ ] OR: documented as intentionally best-effort with comment explaining why
-- [ ] Open checkbox in March 17 solution doc closed (linked to this issue)
+- [x] `storePendingProductSelection` failure is surfaced to callers (Option B: returns Promise<boolean>)
+- [x] All state-advancing callers (handleCategorySelected, handleProductSelected, sendCategoryList, handleQtyInput) handle false return explicitly
+- [x] Clearing callers (clearPendingSelection, handleCartPickupTime clear-step) remain best-effort by ignoring return value
+- [x] Open checkbox in March 17 solution doc closed
 
 ## Work Log
 - 2026-03-17: Identified by data-integrity-guardian agent in ce-review; originally flagged in solution doc 20260317
+- 2026-03-17: Fixed — Option B implemented; storePendingProductSelection now returns Promise<boolean>; 4 state-advancing callers updated to abort on false

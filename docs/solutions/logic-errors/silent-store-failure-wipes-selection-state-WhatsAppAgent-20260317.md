@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-17
 problem_type: logic_error
-component: api_client
+component: server_component
 symptoms:
   - "Customer's cart silently disappears after providing pickup time on Supabase transient error"
   - "User sees order confirmation summary text but no pending_order exists in DB"
@@ -93,7 +93,7 @@ await storePendingProductSelection(args.sb, args.phone, {}); // only if above su
 
 - [ ] Rule: **Never clear transactional state (cart, selection) before confirming the write of dependent state (order) succeeded.** The dependent write must either propagate errors or return a success boolean.
 - [ ] Pattern: any function that writes transactional state and is followed by a cleanup step must propagate errors, not swallow them.
-- [ ] The same pattern applied here: `storePendingProductSelection` also swallows errors — if the cart write fails but selection is cleared, state is also corrupted. Consider the same fix there.
+- [x] The same pattern applied here: `storePendingProductSelection` changed to return `Promise<boolean>`; state-advancing callers (handleCategorySelected, handleProductSelected, sendCategoryList, handleQtyInput) now abort with user-facing error on `false`. See todo #136.
 
 ## See Also
 

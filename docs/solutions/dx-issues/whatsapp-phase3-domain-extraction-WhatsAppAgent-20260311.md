@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-11
 problem_type: developer_experience
-component: api_client
+component: server_component
 symptoms:
   - "`api/whatsapp.ts` still contained deterministic conversation, inventory, and order-intent logic after the phase 1 helper split"
   - "Unit tests for follow-up parsing and order extraction still depended on `api/whatsapp.ts` internals instead of stable module seams"

@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-11
 problem_type: developer_experience
-component: api_client
+component: server_component
 symptoms:
   - "`api/whatsapp.ts` still mixed Supabase client creation, conversation history access, pending-order persistence, and route orchestration after Phase 1"
   - "State behavior for WhatsApp conversations had no focused module boundary, making the planned Phase 3 split riskier"

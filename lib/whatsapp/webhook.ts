@@ -287,7 +287,11 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
       await sendRestMessage(from, 'Coșul este gol. Încearcă din nou.');
       return;
     }
-    await storePendingProductSelection(sb, phone, { selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
+    const stored = await storePendingProductSelection(sb, phone, { selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
+    if (!stored) {
+      await sendRestMessage(from, 'A apărut o eroare. Încearcă din nou.');
+      return;
+    }
     await sendRestMessage(from, '🕐 La ce oră doriți să ridicați comanda? (ex: 18:30)');
     return;
   }
@@ -346,7 +350,11 @@ async function tryTextTemplateInterception(args: {
     }
     if (choice === 2) {
       const cart = (currentSelection.cart as CartItem[] | undefined) ?? [];
-      await storePendingProductSelection(args.sb, args.phone, { selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
+      const stored = await storePendingProductSelection(args.sb, args.phone, { selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
+      if (!stored) {
+        await sendRestMessage(args.from, 'A apărut o eroare. Încearcă din nou.');
+        return true;
+      }
       await sendRestMessage(args.from, '🕐 La ce oră doriți să ridicați comanda? (ex: 18:30)');
       return true;
     }
@@ -454,12 +462,16 @@ async function handleRestConversation(args: {
         // List-picker for product disambiguation
         if (result.listPicker) {
           // Store selection so product_N button clicks resolve correctly
-          await storePendingProductSelection(sb, args.phone, {
+          const stored = await storePendingProductSelection(sb, args.phone, {
             selection_type: 'product_list',
             items: result.listPicker,
             cart: [],
             created_at: new Date().toISOString(),
           });
+          if (!stored) {
+            await sendRestMessage(args.from, 'A apărut o eroare. Încearcă din nou.');
+            return;
+          }
           const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
           if (sid) {
             await sendListPickerTemplate(args.from, sid, 'Alegeți produsul / Choose product', result.listPicker);

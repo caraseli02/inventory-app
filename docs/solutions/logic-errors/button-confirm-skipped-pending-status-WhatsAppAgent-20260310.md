@@ -2,7 +2,7 @@
 module: WhatsAppAgent
 date: 2026-03-10
 problem_type: logic_error
-component: api_client
+component: webhook_handler
 symptoms:
   - "Customer button-confirm flow created orders with status confirmed immediately"
   - "WhatsApp order state no longer matched the owner-side confirm workflow"
