@@ -16,6 +16,21 @@ Apply throughout all interactions: plans, explanations, code reviews, feedback. 
 
 ---
 
+## 📁 Directory & Root Organization
+
+### Root Directory Policy
+- **NO CLUTTER**: Never add screenshots, temporary `.md` files, or scripts directly to the root.
+- **Allowed root files**: `README.md`, `CLAUDE.md`, `AGENTS.md`, `claude-progress.md`, `package.json`, and config files (`vite.config.ts`, `tsconfig.json`, etc.).
+- **Automatic Enforcement**: `pnpm check-root-files` runs on pre-commit. Use `node scripts/check-root-files.js --all` to check the entire repo.
+
+### Standards
+- **Screenshots**: Always place in `docs/assets/screenshots/`.
+- **Documentation**: New guides or specs belong in `docs/` or `docs/specs/`.
+- **Scripts**: All utility scripts belong in `scripts/`.
+- **Backend/API**: Vercel functions in `api/`, shared logic in root `lib/` (AI agent logic) or `src/lib/`.
+
+---
+
 ## Commands
 
 ### Development
@@ -493,7 +508,7 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
 - **Project management files** (root directory):
   - `feature_list.json` - Complete feature tracking with testing status
   - `docs/project/claude-progress.md` - Project completeness and sprint tracking
-  - `init.sh` - Initialization script for server startup and testing
+  - `scripts/init.sh` - Initialization script for server startup and testing
 
 ### MVP Scope (from `docs/specs/mvp_scope_lean.md`)
 **CURRENT STATUS**: All 15 MVP-critical features implemented ✅

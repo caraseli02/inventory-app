@@ -804,7 +804,9 @@ Located at: `public/magazin.xlsx`
 
 #### Testing Phase Complete ✅ (Afternoon Session)
 - ✅ Created `feature_list.json` with all 20 features tracked
-- ✅ Created `init.sh` script for server startup and testing guide
+#### 3. init.sh
+**Location**: `/scripts/init.sh` (executable)
+**Purpose**: Automated initialization and testing guide
 - ✅ Created `claude-progress.md` for project tracking
 - ✅ Updated `CLAUDE.md` with comprehensive testing workflow
 - ✅ Completed comprehensive Playwright MCP testing session

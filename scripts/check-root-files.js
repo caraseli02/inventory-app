@@ -8,6 +8,8 @@
  */
 
 import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
 const colors = {
   reset: '\x1b[0m',
@@ -16,8 +18,9 @@ const colors = {
   yellow: '\x1b[33m',
 };
 
-// Only these files are permitted in the repo root.
+// Only these files are permitted in the repo root with blocked extensions.
 const ALLOWED_ROOT_FILES = new Set([
+  'README.md',
   'AGENTS.md',
   'CLAUDE.md',
   'claude-progress.md',
@@ -30,7 +33,24 @@ const BLOCKED_EXTENSIONS = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
 ]);
 
-function getStagedAddedFiles() {
+const checkAll = process.argv.includes('--all');
+
+function getFilesToCheck() {
+  if (checkAll) {
+    try {
+      const output = execSync('git ls-files', { encoding: 'utf8' });
+      return output.trim().split('\n').filter(Boolean);
+    } catch {
+      return fs.readdirSync('.').filter(f => {
+        try {
+          return fs.statSync(f).isFile();
+        } catch {
+          return false;
+        }
+      });
+    }
+  }
+
   try {
     const output = execSync('git diff --cached --name-only --diff-filter=A', {
       encoding: 'utf8',
@@ -46,12 +66,12 @@ function isRootLevel(filePath) {
 }
 
 function isBlockedType(filePath) {
-  const ext = filePath.slice(filePath.lastIndexOf('.')).toLowerCase();
+  const ext = path.extname(filePath).toLowerCase();
   return BLOCKED_EXTENSIONS.has(ext);
 }
 
-const stagedFiles = getStagedAddedFiles();
-const violations = stagedFiles.filter(
+const filesToCheck = getFilesToCheck();
+const violations = filesToCheck.filter(
   (f) => isRootLevel(f) && isBlockedType(f) && !ALLOWED_ROOT_FILES.has(f)
 );
 
@@ -62,7 +82,7 @@ if (violations.length === 0) {
 
 console.error(`\n${colors.red}✗ Root file check failed${colors.reset}`);
 console.error(
-  `${colors.yellow}The following files must not be added to the repository root:${colors.reset}`
+  `${colors.yellow}The following files must not be in the repository root:${colors.reset}`
 );
 violations.forEach((f) => console.error(`  • ${f}`));
 console.error(`
@@ -72,7 +92,7 @@ ${colors.yellow}Only these files are allowed in root:${colors.reset}
 Move the file to an appropriate directory:
   • Docs / guides   → docs/
   • Planning docs   → docs/plans/
-  • Test screenshots → tests/screenshots/ or docs/tests/
+  • Test screenshots → docs/assets/screenshots/
   • Test fixtures    → tests/fixtures/
   • PR templates    → .github/
 `);
