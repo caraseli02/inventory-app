@@ -150,6 +150,12 @@ jobs:
             echo -n "alias_domain_spaced="
             echo -n "${alias_domain}" | sed 's/./& /g'
             echo
+            if [ "${status}" -eq 400 ] && echo "${body}" | jq -e '.error.code == "invalid_alias"' >/dev/null 2>&1; then
+              if [[ "${alias_domain}" == *.vercel.app ]]; then
+                echo "Warning: Vercel API rejected a .vercel.app alias (likely unsupported via API). Skipping without failing CI."
+                exit 0
+              fi
+            fi
             exit 1
           fi
 
