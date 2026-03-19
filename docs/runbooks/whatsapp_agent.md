@@ -8,6 +8,26 @@
 - This replay flow is the authoritative local parity check for phone behavior.
 - Treat `/api/whatsapp-simulate` and the simulator UI as convenience-only tools, not proof that real phone behavior matches.
 
+## Preview Phone Testing Without Manual Twilio Edits (Vercel Alias)
+
+Preview URLs change on every deploy, but Twilio webhook signatures depend on the exact URL string. The stable workaround is to configure Twilio once to a stable alias domain and automatically repoint the alias to the latest PR deploy.
+
+This repo includes a GitHub Action: [whatsapp-preview-alias.yml](/Users/vladislavcaraseli/Documents/inventory-app/.github/workflows/whatsapp-preview-alias.yml)
+
+How it works:
+- Add a `whatsapp-preview` label to a PR to opt in.
+- The workflow finds the newest READY Vercel deployment for that PR branch and repoints a stable alias (`WHATSAPP_PREVIEW_ALIAS`) to it.
+- On PR close, it resets the alias back to the latest READY `main` deployment.
+
+Required GitHub secrets:
+- `VERCEL_TOKEN`
+- `VERCEL_PROJECT_ID`
+- `VERCEL_TEAM_ID` (optional, if you’re using a team scope)
+- `WHATSAPP_PREVIEW_ALIAS` (example: `inventory-app-whatsapp-preview.vercel.app`)
+
+Twilio config:
+- Set “When a message comes in” once to `https://<WHATSAPP_PREVIEW_ALIAS>/api/whatsapp`
+
 ## Required env vars (Vercel Project → Settings → Environment Variables)
 
 ### Webhook: `POST /api/whatsapp`
