@@ -455,7 +455,10 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
   // Replay mode is only allowed outside production to prevent dedup/rate-limit bypass.
   // When WHATSAPP_REPLAY_SECRET is set, the caller must also provide a matching
   // x-whatsapp-replay-secret header — this prevents accidental activation in staging.
-  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+  // On Vercel, NODE_ENV is typically "production" even for Preview deployments.
+  // Treat only VERCEL_ENV=production as production when VERCEL_ENV is present.
+  const vercelEnv = process.env.VERCEL_ENV;
+  const isProduction = vercelEnv ? vercelEnv === 'production' : process.env.NODE_ENV === 'production';
   // Only enforce Twilio signature validation in production by default.
   // Preview deployments change URLs frequently, and Twilio signs against the exact URL string.
   const shouldValidateSignature = isProduction || process.env.WHATSAPP_VALIDATE_TWILIO_SIGNATURE === 'true';
