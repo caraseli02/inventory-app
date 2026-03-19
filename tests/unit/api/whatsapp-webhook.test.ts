@@ -253,6 +253,8 @@ describe('api/whatsapp (webhook handler)', () => {
       if (v === undefined) delete process.env[k];
       else process.env[k] = v;
     }
+    delete process.env.VERCEL_ENV;
+    delete process.env.WHATSAPP_VALIDATE_TWILIO_SIGNATURE;
 
     // Restore global fetch
     vi.unstubAllGlobals();
@@ -271,6 +273,7 @@ describe('api/whatsapp (webhook handler)', () => {
     });
 
     it('returns 500 when TWILIO_AUTH_TOKEN is not set', async () => {
+      process.env.VERCEL_ENV = 'production';
       delete process.env.TWILIO_AUTH_TOKEN;
       const { default: handler } = await import('../../../api/whatsapp');
       const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'hello' });
@@ -283,6 +286,7 @@ describe('api/whatsapp (webhook handler)', () => {
     });
 
     it('returns 403 for missing Twilio signature', async () => {
+      process.env.VERCEL_ENV = 'production';
       const { default: handler } = await import('../../../api/whatsapp');
       const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'hello' });
       req.headers['x-twilio-signature'] = '';
@@ -294,7 +298,21 @@ describe('api/whatsapp (webhook handler)', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it('allows missing Twilio signature in preview mode (validation disabled by default)', async () => {
+      process.env.VERCEL_ENV = 'preview';
+      delete process.env.TWILIO_AUTH_TOKEN;
+      const { default: handler } = await import('../../../api/whatsapp');
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'hello' });
+      req.headers['x-twilio-signature'] = '';
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).not.toBe(403);
+    });
+
     it('returns 403 for invalid Twilio signature', async () => {
+      process.env.VERCEL_ENV = 'production';
       const { default: handler } = await import('../../../api/whatsapp');
       const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'hello' });
       req.headers['x-twilio-signature'] = 'invalid-signature';
@@ -307,6 +325,7 @@ describe('api/whatsapp (webhook handler)', () => {
     });
 
     it('returns 200 for valid Twilio signature', async () => {
+      process.env.VERCEL_ENV = 'production';
       const { default: handler } = await import('../../../api/whatsapp');
       const req = createRequest({ From: 'whatsapp:+40123456789', Body: '' });
       const res = createResponse();

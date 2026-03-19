@@ -456,6 +456,9 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
   // When WHATSAPP_REPLAY_SECRET is set, the caller must also provide a matching
   // x-whatsapp-replay-secret header — this prevents accidental activation in staging.
   const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+  // Only enforce Twilio signature validation in production by default.
+  // Preview deployments change URLs frequently, and Twilio signs against the exact URL string.
+  const shouldValidateSignature = isProduction || process.env.WHATSAPP_VALIDATE_TWILIO_SIGNATURE === 'true';
   const replaySecret = process.env.WHATSAPP_REPLAY_SECRET;
   const replayId = (() => {
     if (isProduction) return null;
@@ -468,22 +471,24 @@ export default async function webhookHandler(req: VercelRequest, res: VercelResp
       return res.status(405).end();
     }
 
-    const authToken = getTwilioAuthToken();
-    if (!authToken) {
-      console.error('[whatsapp] Missing TWILIO_AUTH_TOKEN (required for signature validation)');
-      return res.status(500).json({ error: 'Twilio not configured' });
-    }
+    if (shouldValidateSignature) {
+      const authToken = getTwilioAuthToken();
+      if (!authToken) {
+        console.error('[whatsapp] Missing TWILIO_AUTH_TOKEN (required for signature validation)');
+        return res.status(500).json({ error: 'Twilio not configured' });
+      }
 
-    const isValid = validateTwilioSignature({
-      authToken,
-      url: getAbsoluteUrl(req),
-      params: normalizeTwilioParams(req.body),
-      signature: String(req.headers['x-twilio-signature'] ?? ''),
-    });
+      const isValid = validateTwilioSignature({
+        authToken,
+        url: getAbsoluteUrl(req),
+        params: normalizeTwilioParams(req.body),
+        signature: String(req.headers['x-twilio-signature'] ?? ''),
+      });
 
-    if (!isValid) {
-      console.warn('[whatsapp] Invalid or missing Twilio signature');
-      return res.status(403).end();
+      if (!isValid) {
+        console.warn('[whatsapp] Invalid or missing Twilio signature');
+        return res.status(403).end();
+      }
     }
 
     const body = req.body as TwilioBody & { ListId?: string; ListTitle?: string };
