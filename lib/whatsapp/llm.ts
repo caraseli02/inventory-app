@@ -64,7 +64,6 @@ export async function runConversationTurn(args: {
     return {
       provider: 'local',
       reply,
-      welcomeTemplate: true,
       ...(args.includeDebug ? { debug: { intent } } : {}),
     };
   }
@@ -117,10 +116,9 @@ export async function runConversationTurn(args: {
   setLanguage(args.sb, args.phone, currentLang).catch(() => {});
   const inventoryText = await getInventorySummary(args.sb, { intent, text: args.text, candidatesOverride: searchCandidatesUsed });
 
-  // PR 4: list-picker for product disambiguation (feature-flagged via TWILIO_PRODUCT_LIST_SID)
-  if (intent === 'product_query' && process.env.TWILIO_PRODUCT_LIST_SID) {
+  // Text-only numbered disambiguation when the inventory lookup yields a small candidate set.
+  if (intent === 'product_query') {
     const candidateNames = extractInventoryNames(inventoryText);
-    console.log('[whatsapp] list-picker check:', { intent, hasSid: !!process.env.TWILIO_PRODUCT_LIST_SID, candidateCount: candidateNames.length, candidateNames });
     if (candidateNames.length >= 2 && candidateNames.length <= 10) {
       console.log('[whatsapp] returning list-picker result with', candidateNames.length, 'items');
       return {

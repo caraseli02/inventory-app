@@ -137,6 +137,22 @@ describe('api/whatsapp/conversation-state', () => {
     });
   });
 
+  it('throws when Supabase returns an upsert error for storePendingOrder', async () => {
+    const pendingOrder: PendingOrder = {
+      customer_name: 'Ion',
+      customer_phone: '+40123',
+      items: [{ product_id: 'p1', name: 'Lapte', qty: 2, unit_price: 3.42 }],
+      total_price: 6.84,
+      pickup_time: 'mâine 12:00',
+    };
+
+    const sb = createConversationStateDouble({}).client as never;
+    const upsertSpy = (sb.from('conversation_history') as { upsert: ReturnType<typeof vi.fn> }).upsert;
+    upsertSpy.mockResolvedValueOnce({ error: { message: 'boom' } });
+
+    await expect(storePendingOrder(sb, '+40123', pendingOrder)).rejects.toThrow(/storePendingOrder failed/i);
+  });
+
   it('peeks pending orders without clearing them', async () => {
     const pendingOrder: PendingOrder = {
       customer_name: 'Ion',

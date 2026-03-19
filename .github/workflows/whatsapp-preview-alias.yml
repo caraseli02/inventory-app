@@ -1,0 +1,230 @@
+name: WhatsApp Preview Alias
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: whatsapp-preview-alias-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  set_alias:
+    if: github.event.action != 'closed' && contains(github.event.pull_request.labels.*.name, 'whatsapp-preview')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert secrets
+        shell: bash
+        run: |
+          test -n "${{ secrets.VERCEL_TOKEN }}" || (echo "Missing VERCEL_TOKEN secret" && exit 1)
+          test -n "${{ secrets.VERCEL_PROJECT_ID }}" || (echo "Missing VERCEL_PROJECT_ID secret" && exit 1)
+          test -n "${{ secrets.WHATSAPP_PREVIEW_ALIAS }}" || (echo "Missing WHATSAPP_PREVIEW_ALIAS secret" && exit 1)
+
+      - name: Point alias to latest READY preview deployment for this PR branch
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          WHATSAPP_PREVIEW_ALIAS: ${{ secrets.WHATSAPP_PREVIEW_ALIAS }}
+          BRANCH: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          qs="projectId=${VERCEL_PROJECT_ID}&limit=50"
+          # Some Vercel API calls require teamId; when not configured via secret,
+          # infer it from the deployments API response.
+          configured_team_id="${VERCEL_TEAM_ID:-}"
+          if [ -n "${configured_team_id}" ]; then
+            qs="${qs}&teamId=${configured_team_id}"
+          fi
+
+          # Fetch deployments and pick the newest READY one for this PR.
+          # Notes:
+          # - Vercel gitSource.ref is not guaranteed to equal github.head_ref (PR merge refs differ).
+          # - READY can appear a few seconds after the PR event fires (race with Vercel build completion).
+          # Prefer matching by SHA when possible; fall back to ref.
+          find_ready() {
+            local deployments="$1"
+            echo "${deployments}" | jq -r --arg ref "${BRANCH}" --arg sha "${HEAD_SHA}" '
+              .deployments
+              | map(select(.state == "READY"))
+              | map(select(
+                  ((.gitSource.sha // "") == $sha) or
+                  ((.meta.githubCommitSha // "") == $sha) or
+                  ((.gitSource.ref // "") == $ref)
+                ))
+              | sort_by(.createdAt) | reverse
+              | (.[0] // {})
+              | "\(.uid // "")\n\(.url // "")"
+            '
+          }
+
+          deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
+          inferred_team_id="$(echo "${deployments}" | jq -r '.deployments[0].teamId // .deployments[0].ownerId // ""')"
+          effective_team_id="${configured_team_id:-${inferred_team_id}}"
+          if [ -n "${effective_team_id}" ]; then
+            echo "Using Vercel teamId=${effective_team_id}"
+          fi
+          mapfile -t found < <(find_ready "${deployments}")
+          deployment_id="${found[0]:-}"
+          url="${found[1]:-}"
+
+          # Retry for a short window to avoid flaking on Vercel readiness races.
+          for i in {1..15}; do
+            if [ -n "${deployment_id}" ] && [ "${deployment_id}" != "null" ]; then
+              break
+            fi
+            echo "No READY deployment found yet for branch=${BRANCH} sha=${HEAD_SHA} (attempt ${i}/15). Waiting 5s..."
+            sleep 5
+            deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
+            mapfile -t found < <(find_ready "${deployments}")
+            deployment_id="${found[0]:-}"
+            url="${found[1]:-}"
+          done
+
+          if [ -z "${deployment_id}" ] || [ "${deployment_id}" = "null" ]; then
+            echo "No READY deployment found for branch: ${BRANCH}"
+            echo "Debug: newest deployments (state/ref/sha/url):"
+            echo "${deployments}" | jq -r --arg ref "${BRANCH}" --arg sha "${HEAD_SHA}" '
+              .deployments
+              | sort_by(.createdAt) | reverse
+              | .[0:10]
+              | map({
+                  state,
+                  ref: (.gitSource.ref // ""),
+                  sha: (.gitSource.sha // ""),
+                  metaSha: (.meta.githubCommitSha // ""),
+                  url,
+                  createdAt
+                })
+              | .[]
+              | "\(.state)\tref=\(.ref)\tsha=\(.sha)\tmetaSha=\(.metaSha)\turl=\(.url)\tcreatedAt=\(.createdAt)"
+            '
+            exit 1
+          fi
+
+          # Vercel alias API expects a bare domain, not a full URL.
+          alias_domain="${WHATSAPP_PREVIEW_ALIAS#https://}"
+          alias_domain="${alias_domain#http://}"
+          alias_domain="${alias_domain%%/*}"
+          # Trim whitespace/newlines and strip accidental surrounding quotes.
+          alias_domain="$(echo -n "${alias_domain}" | tr -d $'\r\n\t ' )"
+          alias_domain="${alias_domain#\"}"
+          alias_domain="${alias_domain%\"}"
+          alias_domain="$(echo -n "${alias_domain}" | tr '[:upper:]' '[:lower:]')"
+          # Strip anything that can't appear in a hostname. If your secret includes
+          # a full URL/path/query, the earlier steps + this filter should reduce it
+          # to a safe hostname.
+          alias_domain="$(echo -n "${alias_domain}" | tr -cd 'a-z0-9.-')"
+          alias_domain="${alias_domain#.}"
+          alias_domain="${alias_domain%.}"
+          # Strict-ish hostname validation: at least one dot, segments are [a-z0-9-] and not empty.
+          if ! [[ "${alias_domain}" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]]; then
+            echo "Invalid WHATSAPP_PREVIEW_ALIAS after normalization."
+            echo "alias_domain_b64=$(echo -n \"${alias_domain}\" | base64)"
+            exit 1
+          fi
+
+          echo "Setting alias ${alias_domain} -> ${url} (${deployment_id})"
+          payload="$(jq -n --arg alias "${alias_domain}" --arg deploymentId "${deployment_id}" '{alias: $alias, deploymentId: $deploymentId}')"
+          # Prefer deployment-scoped alias endpoint; some accounts/projects require it.
+          alias_endpoint="https://api.vercel.com/v2/deployments/${deployment_id}/aliases"
+          if [ -n "${effective_team_id}" ]; then
+            alias_endpoint="${alias_endpoint}?teamId=${effective_team_id}"
+          fi
+          response="$(curl -sS -w $'\n%{http_code}' \
+            -X POST \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "${alias_endpoint}" \
+            -d "$(jq -n --arg alias \"${alias_domain}\" '{alias: $alias}')")"
+          status="${response##*$'\n'}"
+          body="${response%$'\n'*}"
+          if [ "${status}" -ge 400 ]; then
+            echo "Alias API failed (${status}): ${body}"
+            # Avoid GitHub secret masking by spacing characters out.
+            echo -n "alias_domain_spaced="
+            echo -n "${alias_domain}" | sed 's/./& /g'
+            echo
+            if [ "${status}" -eq 400 ] && echo "${body}" | jq -e '.error.code == "invalid_alias"' >/dev/null 2>&1; then
+              if [[ "${alias_domain}" == *.vercel.app ]]; then
+                echo "Warning: Vercel API rejected a .vercel.app alias (likely unsupported via API). Skipping without failing CI."
+                exit 0
+              fi
+            fi
+            exit 1
+          fi
+
+  reset_alias:
+    if: github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'whatsapp-preview')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assert secrets
+        shell: bash
+        run: |
+          test -n "${{ secrets.VERCEL_TOKEN }}" || (echo "Missing VERCEL_TOKEN secret" && exit 1)
+          test -n "${{ secrets.VERCEL_PROJECT_ID }}" || (echo "Missing VERCEL_PROJECT_ID secret" && exit 1)
+          test -n "${{ secrets.WHATSAPP_PREVIEW_ALIAS }}" || (echo "Missing WHATSAPP_PREVIEW_ALIAS secret" && exit 1)
+
+      - name: Reset alias back to latest READY deployment on main
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          WHATSAPP_PREVIEW_ALIAS: ${{ secrets.WHATSAPP_PREVIEW_ALIAS }}
+        run: |
+          set -euo pipefail
+          qs="projectId=${VERCEL_PROJECT_ID}&limit=50"
+          configured_team_id="${VERCEL_TEAM_ID:-}"
+          if [ -n "${configured_team_id}" ]; then
+            qs="${qs}&teamId=${configured_team_id}"
+          fi
+
+          deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
+          inferred_team_id="$(echo "${deployments}" | jq -r '.deployments[0].teamId // .deployments[0].ownerId // ""')"
+          effective_team_id="${configured_team_id:-${inferred_team_id}}"
+          if [ -n "${effective_team_id}" ]; then
+            echo "Using Vercel teamId=${effective_team_id}"
+          fi
+          deployment_id="$(echo "${deployments}" | jq -r '
+            .deployments
+            | map(select(.state == "READY"))
+            | map(select((.gitSource.ref // "") == "main"))
+            | sort_by(.createdAt) | reverse
+            | (.[0].uid // "")
+          ')"
+          url="$(echo "${deployments}" | jq -r '
+            .deployments
+            | map(select(.state == "READY"))
+            | map(select((.gitSource.ref // "") == "main"))
+            | sort_by(.createdAt) | reverse
+            | (.[0].url // "")
+          ')"
+
+          if [ -z "${deployment_id}" ] || [ "${deployment_id}" = "null" ]; then
+            echo "No READY deployment found for main"
+            exit 1
+          fi
+
+          echo "Resetting alias ${WHATSAPP_PREVIEW_ALIAS} -> ${url} (${deployment_id})"
+          alias_endpoint="https://api.vercel.com/v2/deployments/${deployment_id}/aliases"
+          if [ -n "${effective_team_id}" ]; then
+            alias_endpoint="${alias_endpoint}?teamId=${effective_team_id}"
+          fi
+          response="$(curl -sS -w $'\n%{http_code}' \
+            -X POST \
+            -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "${alias_endpoint}" \
+            -d "$(jq -n --arg alias \"${WHATSAPP_PREVIEW_ALIAS#https://}\" '{alias: $alias}')")"
+          status="${response##*$'\n'}"
+          body="${response%$'\n'*}"
+          if [ "${status}" -ge 400 ]; then
+            echo "Alias API failed (${status}): ${body}"
+            exit 1
+          fi

@@ -352,12 +352,22 @@ export async function getInventorySummary(
 
   let products: unknown[] | null | undefined;
   if (candidates.length) {
+    let best: { rows: unknown[]; count: number } | null = null;
     for (const term of candidates) {
       const { data } = await makeProductsQuery().ilike('name', `%${term}%`).limit(20);
       if (data?.length) {
-        products = data as unknown[];
-        break;
+        // Prefer the most selective term (ideally a single unique hit).
+        if (data.length === 1) {
+          products = data as unknown[];
+          break;
+        }
+        if (!best || data.length < best.count) {
+          best = { rows: data as unknown[], count: data.length };
+        }
       }
+    }
+    if (!products && best) {
+      products = best.rows;
     }
   }
 

@@ -82,6 +82,7 @@ type PendingOrder = {
 
 function createSupabaseDouble(args: {
   pendingOrder?: PendingOrder | null;
+  pendingSelection?: Record<string, unknown> | null;
   historyMessages?: unknown[];
   orderNumber?: string;
   latestOrder?: { order_number: string; status?: string; created_at?: string } | null;
@@ -92,11 +93,12 @@ function createSupabaseDouble(args: {
   const pendingOrder = args.pendingOrder ?? null;
   const historyMessages = args.historyMessages ?? [];
   const latestOrder = args.latestOrder ?? null;
+  const pendingSelection = args.pendingSelection ?? null;
 
   const maybeSingleMock = vi.fn().mockResolvedValue({
     data: pendingOrder != null
-      ? { pending_order: pendingOrder, messages: historyMessages }
-      : { pending_order: null, messages: historyMessages },
+      ? { pending_order: pendingOrder, pending_selection: pendingSelection, messages: historyMessages }
+      : { pending_order: null, pending_selection: pendingSelection, messages: historyMessages },
   });
   const selectEqMock = vi.fn().mockReturnValue({ maybeSingle: maybeSingleMock });
   const selectMock = vi.fn().mockReturnValue({ eq: selectEqMock });
@@ -221,7 +223,15 @@ function createSupabaseDouble(args: {
 
 describe('api/whatsapp (webhook handler)', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
-  const ENV_VARS = ['TWILIO_AUTH_TOKEN', 'TWILIO_ACCOUNT_SID', 'TWILIO_FROM_NUMBER', 'TWILIO_CONFIRM_CONTENT_SID', 'WHATSAPP_PENDING_ORDER_TTL_MINUTES', 'TWILIO_PRODUCT_LIST_SID', 'TWILIO_WELCOME_SID', 'TWILIO_QTY_SID'];
+  const ENV_VARS = [
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_FROM_NUMBER',
+    'TWILIO_WELCOME_CONTENT_SID',
+    'TWILIO_WELCOME_SID',
+    'TWILIO_CONFIRM_CONTENT_SID',
+    'WHATSAPP_PENDING_ORDER_TTL_MINUTES',
+  ];
   let savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -251,6 +261,8 @@ describe('api/whatsapp (webhook handler)', () => {
       if (v === undefined) delete process.env[k];
       else process.env[k] = v;
     }
+    delete process.env.VERCEL_ENV;
+    delete process.env.WHATSAPP_VALIDATE_TWILIO_SIGNATURE;
 
     // Restore global fetch
     vi.unstubAllGlobals();
@@ -269,6 +281,7 @@ describe('api/whatsapp (webhook handler)', () => {
     });
 
     it('returns 500 when TWILIO_AUTH_TOKEN is not set', async () => {
+      process.env.VERCEL_ENV = 'production';
       delete process.env.TWILIO_AUTH_TOKEN;
       const { default: handler } = await import('../../../api/whatsapp');
       const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'hello' });
@@ -281,6 +294,7 @@ describe('api/whatsapp (webhook handler)', () => {
     });
 
     it('returns 403 for missing Twilio signature', async () => {
+      process.env.VERCEL_ENV = 'production';
       const { default: handler } = await import('../../../api/whatsapp');
       const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'hello' });
       req.headers['x-twilio-signature'] = '';
@@ -292,7 +306,21 @@ describe('api/whatsapp (webhook handler)', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it('allows missing Twilio signature in preview mode (validation disabled by default)', async () => {
+      process.env.VERCEL_ENV = 'preview';
+      delete process.env.TWILIO_AUTH_TOKEN;
+      const { default: handler } = await import('../../../api/whatsapp');
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'hello' });
+      req.headers['x-twilio-signature'] = '';
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).not.toBe(403);
+    });
+
     it('returns 403 for invalid Twilio signature', async () => {
+      process.env.VERCEL_ENV = 'production';
       const { default: handler } = await import('../../../api/whatsapp');
       const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'hello' });
       req.headers['x-twilio-signature'] = 'invalid-signature';
@@ -305,6 +333,7 @@ describe('api/whatsapp (webhook handler)', () => {
     });
 
     it('returns 200 for valid Twilio signature', async () => {
+      process.env.VERCEL_ENV = 'production';
       const { default: handler } = await import('../../../api/whatsapp');
       const req = createRequest({ From: 'whatsapp:+40123456789', Body: '' });
       const res = createResponse();
@@ -450,6 +479,45 @@ describe('api/whatsapp (webhook handler)', () => {
       expect(sb.spies.insertMock).toHaveBeenCalledTimes(1);
       expect(fetchMock).toHaveBeenCalled();
       expect(fetchMock.mock.calls.at(-1)?.[1]?.body?.toString()).toContain('ORD-025');
+    });
+
+    it('button payload confirm does not clear a newer pending_selection (new cart flow)', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      const pendingOrder: PendingOrder = {
+        customer_name: 'Ion Popescu',
+        customer_phone: '+40123456789',
+        items: [{ product_id: 'p1', name: 'Lapte', qty: 2, unit_price: 3.42 }],
+        total_price: 6.84,
+        pickup_time: 'mâine 12:00',
+        pending_order_created_at: new Date(Date.now() - 60 * 60 * 1000).toISOString(), // 1h ago
+      };
+      const sb = createSupabaseDouble({
+        pendingOrder,
+        orderNumber: 'ORD-025',
+        pendingSelection: {
+          selection_type: 'building_order',
+          cart: [{ name: 'Brânză', qty: 1 }],
+          created_at: new Date().toISOString(), // newer than pending order
+        },
+      });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({
+        From: 'whatsapp:+40123456789',
+        ButtonPayload: 'confirm',
+        Body: '',
+      });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.sentBody).toContain('<?xml');
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]) => promise));
+      expect(sb.spies.insertMock).toHaveBeenCalledTimes(1);
+      expect(sb.spies.upsertMock).not.toHaveBeenCalled();
     });
 
     it('button payload cancel returns TwiML (not REST) for immediate response', async () => {
@@ -904,6 +972,34 @@ describe('api/whatsapp (webhook handler)', () => {
     });
   });
 
+  describe('Welcome template', () => {
+    it('sends welcome content template on first contact (no history) and returns empty TwiML', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      process.env.TWILIO_WELCOME_CONTENT_SID = 'HX_welcome_123';
+
+      // No history by default in the Supabase double → should trigger welcome.
+      const sb = createSupabaseDouble({ historyMessages: [] });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'salut', MessageSid: 'SM_welcome' });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      // Welcome is sent via REST template, so TwiML should be empty (no "procesăm" ack).
+      expect(res.sentBody).toContain('<?xml');
+      expect(res.sentBody).not.toMatch(/Bună ziua, procesăm|Hello, processing/i);
+
+      // Await all waitUntil promises (welcome + async reply) to inspect REST calls.
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]: [Promise<unknown>]) => promise));
+      const bodies = fetchMock.mock.calls.map((call) => String(call?.[1]?.body ?? ''));
+      expect(bodies.some((body) => body.includes('ContentSid=HX_welcome_123'))).toBe(true);
+    });
+  });
+
   describe('PR 2c: LLM reply sent before confirmation template', () => {
     it('sends rest reply then confirmation when pending order is created', async () => {
       const { default: handler } = await import('../../../api/whatsapp');
@@ -955,5 +1051,7 @@ describe('api/whatsapp (webhook handler)', () => {
 
       expect(res.statusCode).toBe(200);
     });
+
+    // Note: boolean-false fallback is covered in unit tests for lib/whatsapp/confirm-prompt.ts.
   });
 });

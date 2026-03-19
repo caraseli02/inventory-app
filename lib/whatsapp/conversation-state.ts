@@ -52,9 +52,16 @@ export async function hasConversationHistory(
   try {
     const { data } = await sb
       .from('conversation_history')
-      .select('messages')
+      .select('messages, updated_at')
       .eq('phone_number', phone)
       .maybeSingle();
+
+    const ttlDays = Number(process.env.CONVERSATION_TTL_DAYS ?? '7');
+    const effectiveTtlDays = Number.isFinite(ttlDays) && ttlDays > 0 ? ttlDays : 7;
+
+    const updatedAt = data?.updated_at ? new Date(String(data.updated_at)).getTime() : 0;
+    const isExpired = updatedAt > 0 && Date.now() - updatedAt > effectiveTtlDays * 24 * 60 * 60 * 1000;
+    if (isExpired) return false;
 
     return ((data?.messages as unknown[])?.length ?? 0) > 0;
   } catch {
@@ -73,13 +80,17 @@ export async function storePendingOrder(
     ...order,
     pending_order_created_at: order.pending_order_created_at ?? nowIso(),
   };
-  await sb.from('conversation_history').upsert(
+  // Supabase clients typically return `{ error }` instead of throwing, so treat errors as exceptions.
+  const { error } = await sb.from('conversation_history').upsert(
     {
       phone_number: phone,
       pending_order: pendingOrder as unknown,
     },
     { onConflict: 'phone_number' }
   );
+  if (error) {
+    throw new Error(`storePendingOrder failed: ${error.message ?? String(error)}`);
+  }
 }
 
 // Pending orders are transactional state. Callers should peek first and only

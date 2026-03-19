@@ -22,7 +22,7 @@ type ReplayStep = {
   expectStatus?: number;
   expectTwimlIncludes?: string | string[];
   expectAsyncBodyIncludes?: string | string[];
-  expectAsyncTemplateSid?: string;
+  expectAsyncTemplateSid?: string | string[];
   /** Expected number of ContentVariables keys — catches Twilio error 21656 locally */
   expectTemplateVariableCount?: number;
 };
@@ -150,31 +150,38 @@ function assertStep(args: {
     }
   }
 
-  if (args.step.expectAsyncTemplateSid) {
-    // Support "env:VAR_NAME" syntax to resolve SID from environment
-    let expectedSid = args.step.expectAsyncTemplateSid;
-    if (expectedSid.startsWith('env:')) {
-      const envVar = expectedSid.slice(4);
-      expectedSid = process.env[envVar] ?? '';
-      if (!expectedSid) {
-        throw new Error(`expectAsyncTemplateSid references env var "${envVar}" but it is not set`);
-      }
-    }
+  const expectedTemplateSidRaw = args.step.expectAsyncTemplateSid;
+  if (!expectedTemplateSidRaw) return;
 
-    const templateEvent = args.replayEvents.find((event) => event.kind === 'template' && event.contentSid === expectedSid);
-    if (!templateEvent) {
-      const actualSids = args.replayEvents
-        .filter((e): e is ReplayTransportEvent & { kind: 'template' } => e.kind === 'template')
-        .map((e) => e.contentSid);
-      throw new Error(`Expected async template send with ContentSid "${expectedSid}"${actualSids.length ? `, got: ${actualSids.join(', ')}` : ', but no template events captured'}`);
-    }
+  const expectedSidCandidates = Array.isArray(expectedTemplateSidRaw)
+    ? expectedTemplateSidRaw
+    : [expectedTemplateSidRaw];
 
-    // Validate template variable count matches expected slots (catches Twilio error 21656)
-    if (args.step.expectTemplateVariableCount && templateEvent.kind === 'template' && templateEvent.variables) {
-      const actualCount = Object.keys(templateEvent.variables).length;
-      if (actualCount !== args.step.expectTemplateVariableCount) {
-        throw new Error(`Expected ${args.step.expectTemplateVariableCount} template variables, got ${actualCount}: ${JSON.stringify(templateEvent.variables)}`);
-      }
+  const resolvedExpectedSids: string[] = expectedSidCandidates.map((candidate) => {
+    if (!candidate.startsWith('env:')) return candidate;
+    const envVar = candidate.slice(4);
+    return process.env[envVar] ?? '';
+  }).filter(Boolean);
+
+  if (resolvedExpectedSids.length === 0) {
+    throw new Error('expectAsyncTemplateSid did not resolve to any SIDs (missing env vars?)');
+  }
+
+  const templateEvent = args.replayEvents.find((event) =>
+    event.kind === 'template' && resolvedExpectedSids.includes(event.contentSid)
+  );
+  if (!templateEvent) {
+    const actualSids = args.replayEvents
+      .filter((e): e is ReplayTransportEvent & { kind: 'template' } => e.kind === 'template')
+      .map((e) => e.contentSid);
+    throw new Error(`Expected async template send with ContentSid in [${resolvedExpectedSids.join(', ')}]${actualSids.length ? `, got: ${actualSids.join(', ')}` : ', but no template events captured'}`);
+  }
+
+  // Validate template variable count matches expected slots (catches Twilio error 21656)
+  if (args.step.expectTemplateVariableCount && templateEvent.kind === 'template' && templateEvent.variables) {
+    const actualCount = Object.keys(templateEvent.variables).length;
+    if (actualCount !== args.step.expectTemplateVariableCount) {
+      throw new Error(`Expected ${args.step.expectTemplateVariableCount} template variables, got ${actualCount}: ${JSON.stringify(templateEvent.variables)}`);
     }
   }
 }
@@ -237,14 +244,43 @@ async function maybeResetConversation(phone: string, resetConversation: boolean 
   await resetConversationHistory(phone);
 }
 
-async function waitForReplayEvents(replayId: string, timeoutMs: number): Promise<ReplayTransportEvent[]> {
+function resolveExpectedTemplateSids(value: ReplayStep['expectAsyncTemplateSid']): string[] {
+  if (!value) return [];
+  const candidates = Array.isArray(value) ? value : [value];
+  return candidates.map((candidate) => {
+    if (!candidate.startsWith('env:')) return candidate;
+    const envVar = candidate.slice(4);
+    return process.env[envVar] ?? '';
+  }).filter(Boolean);
+}
+
+function expectationsSatisfied(step: ReplayStep, events: ReplayTransportEvent[]): boolean {
+  const expectedRestIncludes = getExpectationList(step.expectAsyncBodyIncludes);
+  const expectedTemplateSids = resolveExpectedTemplateSids(step.expectAsyncTemplateSid);
+
+  const restOk = expectedRestIncludes.length === 0 || expectedRestIncludes.every((expectedText) =>
+    events.some((event) => event.kind === 'rest' && event.body.includes(expectedText))
+  );
+
+  const templateOk = expectedTemplateSids.length === 0 || events.some((event) =>
+    event.kind === 'template' && expectedTemplateSids.includes(event.contentSid)
+  );
+
+  // If the step has explicit expectations (rest/template), only return early when they're satisfied.
+  if (expectedRestIncludes.length > 0 || expectedTemplateSids.length > 0) {
+    return restOk && templateOk;
+  }
+
+  // Otherwise, any substantive event is enough.
+  return events.some((e) => e.kind === 'rest' || e.kind === 'template');
+}
+
+async function waitForReplayEvents(replayId: string, timeoutMs: number, step: ReplayStep): Promise<ReplayTransportEvent[]> {
   const deadline = Date.now() + timeoutMs;
   let lastEvents: ReplayTransportEvent[] = [];
   for (;;) {
     lastEvents = await readReplayCapture(replayId);
-    // Only return early if we have a substantive event (rest or template), not just typing
-    const hasSubstantive = lastEvents.some((e) => e.kind === 'rest' || e.kind === 'template');
-    if (hasSubstantive || Date.now() >= deadline) return lastEvents;
+    if (expectationsSatisfied(step, lastEvents) || Date.now() >= deadline) return lastEvents;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
@@ -293,7 +329,7 @@ async function runFixture(fixture: ReplayFixture): Promise<void> {
     });
 
     const twimlMessage = extractTwimlMessage(result.body);
-    const replayEvents = await waitForReplayEvents(replayId, step.pauseMs ?? 1200);
+    const replayEvents = await waitForReplayEvents(replayId, step.pauseMs ?? 1200, step);
     assertStep({
       step,
       status: result.status,
