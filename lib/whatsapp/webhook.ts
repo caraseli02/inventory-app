@@ -168,6 +168,12 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   const sb = createSupabaseClient();
   console.log('[whatsapp] [BUTTON] handling payload:', { buttonPayload, phone });
 
+  // Welcome template quick replies
+  if (buttonPayload === 'browse') {
+    await sendCategoryPicker({ sb, from, phone });
+    return;
+  }
+
   // Legacy list-picker callbacks (from old interactive messages): product_N
   const legacyPick = /^\s*product_(\d+)\s*$/.exec(buttonPayload);
   if (legacyPick) {

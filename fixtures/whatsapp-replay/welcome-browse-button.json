@@ -1,0 +1,23 @@
+{
+  "name": "Welcome quick reply: browse button routes to category picker",
+  "description": "Simulates clicking the welcome template quick reply with ButtonPayload=browse and expects the category picker text response.",
+  "phone": "+40710000005",
+  "profileName": "Replay Welcome Browse",
+  "resetConversation": true,
+  "steps": [
+    {
+      "body": "Buna ziua",
+      "note": "First contact greeting — welcome template should be sent",
+      "expectAsyncTemplateSid": ["env:TWILIO_WELCOME_CONTENT_SID", "env:TWILIO_WELCOME_SID"],
+      "pauseMs": 2000
+    },
+    {
+      "body": "🔍 Caut un produs",
+      "buttonPayload": "browse",
+      "note": "Welcome quick reply browse — should send category picker",
+      "expectAsyncBodyIncludes": ["Categorii disponibile"],
+      "pauseMs": 4000
+    }
+  ]
+}
+
