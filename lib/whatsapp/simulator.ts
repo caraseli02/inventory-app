@@ -18,6 +18,11 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+function buildTextListPicker(items: string[]): string {
+  const list = items.map((item, idx) => `${idx + 1}) ${item}`).join('\n');
+  return `Care anume?\n${list}`;
+}
+
 function toSimulationOrderReply(phone: string, name: string, text: string): string | null {
   const trimmed = text.trim();
 
@@ -77,6 +82,14 @@ async function finalizeSimulatorResult(
   phone: string,
   result: WhatsAppSimulatorResult
 ): Promise<WhatsAppSimulatorResult> {
+  if (result.listPicker && (!result.reply || result.reply.trim() === '')) {
+    return {
+      ...result,
+      reply: buildTextListPicker(result.listPicker),
+      transaction: result.transaction ?? { status: 'reply' },
+    };
+  }
+
   if (!result.pending) {
     return {
       ...result,
