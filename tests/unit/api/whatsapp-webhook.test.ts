@@ -223,7 +223,15 @@ function createSupabaseDouble(args: {
 
 describe('api/whatsapp (webhook handler)', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
-  const ENV_VARS = ['TWILIO_AUTH_TOKEN', 'TWILIO_ACCOUNT_SID', 'TWILIO_FROM_NUMBER', 'TWILIO_CONFIRM_CONTENT_SID', 'WHATSAPP_PENDING_ORDER_TTL_MINUTES'];
+  const ENV_VARS = [
+    'TWILIO_AUTH_TOKEN',
+    'TWILIO_ACCOUNT_SID',
+    'TWILIO_FROM_NUMBER',
+    'TWILIO_WELCOME_CONTENT_SID',
+    'TWILIO_WELCOME_SID',
+    'TWILIO_CONFIRM_CONTENT_SID',
+    'WHATSAPP_PENDING_ORDER_TTL_MINUTES',
+  ];
   let savedEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -961,6 +969,34 @@ describe('api/whatsapp (webhook handler)', () => {
       // Replay bypasses rate limit → goes to normal async flow
       expect(res.statusCode).toBe(200);
       expect(res.sentBody).toMatch(/Bună ziua, procesăm|Hello, processing/i);
+    });
+  });
+
+  describe('Welcome template', () => {
+    it('sends welcome content template on first contact (no history) and returns empty TwiML', async () => {
+      const { default: handler } = await import('../../../api/whatsapp');
+      process.env.TWILIO_ACCOUNT_SID = 'AC123456789';
+      process.env.TWILIO_FROM_NUMBER = 'whatsapp:+123456789';
+      process.env.TWILIO_WELCOME_CONTENT_SID = 'HX_welcome_123';
+
+      // No history by default in the Supabase double → should trigger welcome.
+      const sb = createSupabaseDouble({ historyMessages: [] });
+      createClientMock.mockReturnValue(sb.client);
+
+      const req = createRequest({ From: 'whatsapp:+40123456789', Body: 'salut', MessageSid: 'SM_welcome' });
+      const res = createResponse();
+
+      await handler(req, res);
+
+      expect(res.statusCode).toBe(200);
+      // Welcome is sent via REST template, so TwiML should be empty (no "procesăm" ack).
+      expect(res.sentBody).toContain('<?xml');
+      expect(res.sentBody).not.toMatch(/Bună ziua, procesăm|Hello, processing/i);
+
+      // Await all waitUntil promises (welcome + async reply) to inspect REST calls.
+      await Promise.all(waitUntilMock.mock.calls.map(async ([promise]: [Promise<unknown>]) => promise));
+      const bodies = fetchMock.mock.calls.map((call) => String(call?.[1]?.body ?? ''));
+      expect(bodies.some((body) => body.includes('ContentSid=HX_welcome_123'))).toBe(true);
     });
   });
 

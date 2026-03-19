@@ -32,6 +32,7 @@ import {
   sendCategoryPicker,
 } from './selection-resolver.js';
 import { sendConfirmPrompt } from './confirm-prompt.js';
+import { buildWelcomeTextFallback, sendWelcomePrompt } from './welcome-prompt.js';
 import { sendRestMessage, sendTypingIndicator, twiml } from './transport.js';
 import type { PendingOrder, TwilioBody } from './types.js';
 import { getAbsoluteUrl } from './url.js';
@@ -376,8 +377,22 @@ async function handleRestConversation(args: {
     ? 'Hello, processing your message...'
     : 'Bună ziua, procesăm...';
 
-  if (!hasHistory) sendTwiml(args.res, ack);
-  else sendTwiml(args.res, '');
+  const welcomeSid = (process.env.TWILIO_WELCOME_CONTENT_SID ?? process.env.TWILIO_WELCOME_SID ?? '').trim();
+  const shouldSendWelcome = !hasHistory && Boolean(welcomeSid);
+
+  // If a welcome template is configured, use it for immediate feedback (quick replies),
+  // and avoid sending a redundant TwiML ack.
+  if (shouldSendWelcome) {
+    sendTwiml(args.res, '');
+    waitUntil(sendWelcomePrompt({
+      to: args.from,
+      textFallback: buildWelcomeTextFallback({ isEnglish: detectEnglish(args.text) }),
+    }));
+  } else if (!hasHistory) {
+    sendTwiml(args.res, ack);
+  } else {
+    sendTwiml(args.res, '');
+  }
 
   void sendTypingIndicator(args.messageSid);
   console.log('[whatsapp] starting async reply...');
