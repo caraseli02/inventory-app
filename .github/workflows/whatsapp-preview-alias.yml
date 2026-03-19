@@ -116,8 +116,16 @@ jobs:
           alias_domain="${alias_domain#\"}"
           alias_domain="${alias_domain%\"}"
           alias_domain="$(echo -n "${alias_domain}" | tr '[:upper:]' '[:lower:]')"
-          if [[ "${alias_domain}" != *.* ]] || [[ "${alias_domain}" == *"/"* ]] || [[ "${alias_domain}" == *":"* ]]; then
-            echo "Invalid WHATSAPP_PREVIEW_ALIAS after normalization: '${alias_domain}'"
+          # Strip anything that can't appear in a hostname. If your secret includes
+          # a full URL/path/query, the earlier steps + this filter should reduce it
+          # to a safe hostname.
+          alias_domain="$(echo -n "${alias_domain}" | tr -cd 'a-z0-9.-')"
+          alias_domain="${alias_domain#.}"
+          alias_domain="${alias_domain%.}"
+          # Strict-ish hostname validation: at least one dot, segments are [a-z0-9-] and not empty.
+          if ! [[ "${alias_domain}" =~ ^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$ ]]; then
+            echo "Invalid WHATSAPP_PREVIEW_ALIAS after normalization."
+            echo "alias_domain_b64=$(echo -n \"${alias_domain}\" | base64)"
             exit 1
           fi
 
