@@ -31,6 +31,7 @@ jobs:
           VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
           WHATSAPP_PREVIEW_ALIAS: ${{ secrets.WHATSAPP_PREVIEW_ALIAS }}
           BRANCH: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
           qs="projectId=${VERCEL_PROJECT_ID}&limit=50"
@@ -38,26 +39,59 @@ jobs:
             qs="${qs}&teamId=${VERCEL_TEAM_ID}"
           fi
 
-          # Fetch deployments and pick the newest READY one for this branch.
+          # Fetch deployments and pick the newest READY one for this PR.
+          # Notes:
+          # - Vercel gitSource.ref is not guaranteed to equal github.head_ref (PR merge refs differ).
+          # - READY can appear a few seconds after the PR event fires (race with Vercel build completion).
+          # Prefer matching by SHA when possible; fall back to ref.
+          find_ready() {
+            local deployments="$1"
+            echo "${deployments}" | jq -r --arg ref "${BRANCH}" --arg sha "${HEAD_SHA}" '
+              .deployments
+              | map(select(.state == "READY"))
+              | map(select(
+                  ((.gitSource.sha // "") == $sha) or
+                  ((.meta.githubCommitSha // "") == $sha) or
+                  ((.gitSource.ref // "") == $ref)
+                ))
+              | sort_by(.createdAt) | reverse
+              | (.[0] // {})
+              | "\(.uid // "")\n\(.url // "")"
+            '
+          }
+
           deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
-          deployment_id="$(echo "${deployments}" | jq -r --arg ref "${BRANCH}" '
-            .deployments
-            | map(select(.state == "READY"))
-            | map(select((.gitSource.ref // "") == $ref))
-            | sort_by(.createdAt) | reverse
-            | (.[0].uid // "")
-          ')"
-          url="$(echo "${deployments}" | jq -r --arg ref "${BRANCH}" '
-            .deployments
-            | map(select(.state == "READY"))
-            | map(select((.gitSource.ref // "") == $ref))
-            | sort_by(.createdAt) | reverse
-            | (.[0].url // "")
-          ')"
+          read -r deployment_id url < <(find_ready "${deployments}")
+
+          # Retry for a short window to avoid flaking on Vercel readiness races.
+          for i in {1..15}; do
+            if [ -n "${deployment_id}" ] && [ "${deployment_id}" != "null" ]; then
+              break
+            fi
+            echo "No READY deployment found yet for branch=${BRANCH} sha=${HEAD_SHA} (attempt ${i}/15). Waiting 5s..."
+            sleep 5
+            deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
+            read -r deployment_id url < <(find_ready "${deployments}")
+          done
 
           if [ -z "${deployment_id}" ] || [ "${deployment_id}" = "null" ]; then
             echo "No READY deployment found for branch: ${BRANCH}"
-            echo "Tip: wait for Vercel to finish the deployment, then re-run the workflow."
+            echo "Debug: newest deployments (state/ref/sha/url):"
+            echo "${deployments}" | jq -r --arg ref "${BRANCH}" --arg sha "${HEAD_SHA}" '
+              .deployments
+              | sort_by(.createdAt) | reverse
+              | .[0:10]
+              | map({
+                  state,
+                  ref: (.gitSource.ref // ""),
+                  sha: (.gitSource.sha // ""),
+                  metaSha: (.meta.githubCommitSha // ""),
+                  url,
+                  createdAt
+                })
+              | .[]
+              | "\(.state)\tref=\(.ref)\tsha=\(.sha)\tmetaSha=\(.metaSha)\turl=\(.url)\tcreatedAt=\(.createdAt)"
+            '
             exit 1
           fi
 
