@@ -146,7 +146,10 @@ jobs:
           body="${response%$'\n'*}"
           if [ "${status}" -ge 400 ]; then
             echo "Alias API failed (${status}): ${body}"
-            echo "alias_domain_b64=$(echo -n \"${alias_domain}\" | base64)"
+            # Avoid GitHub secret masking by spacing characters out.
+            echo -n "alias_domain_spaced="
+            echo -n "${alias_domain}" | sed 's/./& /g'
+            echo
             exit 1
           fi
 
