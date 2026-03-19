@@ -146,6 +146,7 @@ jobs:
           body="${response%$'\n'*}"
           if [ "${status}" -ge 400 ]; then
             echo "Alias API failed (${status}): ${body}"
+            echo "alias_domain_b64=$(echo -n \"${alias_domain}\" | base64)"
             exit 1
           fi
 
