@@ -373,15 +373,45 @@ async function handleRestConversation(args: {
 }) {
   const sb = createSupabaseClient();
   const hasHistory = await hasConversationHistory(sb, args.phone);
+  const intent = classifyIncomingText(args.text);
   const ack = detectEnglish(args.text)
     ? 'Hello, processing your message...'
     : 'Bună ziua, procesăm...';
 
   const welcomeSid = getWelcomeContentSidForWebhook();
   const shouldSendWelcome = !hasHistory && Boolean(welcomeSid);
+  const isGreeting = intent === 'greeting';
 
   // If a welcome template is configured, use it for immediate feedback (quick replies),
   // and avoid sending a redundant TwiML ack.
+  if (Boolean(welcomeSid) && isGreeting) {
+    sendTwiml(args.res, '');
+    const welcomeText = buildWelcomeTextFallback({ isEnglish: detectEnglish(args.text) });
+    waitUntil(sendWelcomePrompt({ to: args.from, textFallback: welcomeText }));
+
+    // Prevent a double-message UX on first contact: welcome template replaces the canned greeting.
+    // Still persist minimal history so future turns don't keep resending the welcome template.
+    waitUntil((async () => {
+      try {
+        // Supabase returns { error } rather than throwing in many cases; best-effort write only.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const result = await (sb as any).from('conversation_history').upsert({
+          phone_number: args.phone,
+          messages: [
+            { role: 'user', content: args.text, timestamp: new Date().toISOString() },
+            { role: 'assistant', content: welcomeText, timestamp: new Date().toISOString() },
+          ],
+        }, { onConflict: 'phone_number' });
+        if (result?.error) {
+          console.warn('[whatsapp] failed to persist welcome history:', result.error);
+        }
+      } catch {
+        // non-critical
+      }
+    })());
+    return;
+  }
+
   if (shouldSendWelcome) {
     sendTwiml(args.res, '');
     waitUntil(sendWelcomePrompt({
