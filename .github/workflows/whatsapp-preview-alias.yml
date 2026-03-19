@@ -35,8 +35,11 @@ jobs:
         run: |
           set -euo pipefail
           qs="projectId=${VERCEL_PROJECT_ID}&limit=50"
-          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
-            qs="${qs}&teamId=${VERCEL_TEAM_ID}"
+          # Some Vercel API calls require teamId; when not configured via secret,
+          # infer it from the deployments API response.
+          configured_team_id="${VERCEL_TEAM_ID:-}"
+          if [ -n "${configured_team_id}" ]; then
+            qs="${qs}&teamId=${configured_team_id}"
           fi
 
           # Fetch deployments and pick the newest READY one for this PR.
@@ -61,6 +64,11 @@ jobs:
           }
 
           deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
+          inferred_team_id="$(echo "${deployments}" | jq -r '.deployments[0].teamId // ""')"
+          effective_team_id="${configured_team_id:-${inferred_team_id}}"
+          if [ -n "${effective_team_id}" ]; then
+            echo "Using Vercel teamId=${effective_team_id}"
+          fi
           mapfile -t found < <(find_ready "${deployments}")
           deployment_id="${found[0]:-}"
           url="${found[1]:-}"
@@ -106,11 +114,15 @@ jobs:
 
           echo "Setting alias ${alias_domain} -> ${url} (${deployment_id})"
           payload="$(jq -n --arg alias "${alias_domain}" --arg deploymentId "${deployment_id}" '{alias: $alias, deploymentId: $deploymentId}')"
+          alias_endpoint="https://api.vercel.com/v2/aliases"
+          if [ -n "${effective_team_id}" ]; then
+            alias_endpoint="${alias_endpoint}?teamId=${effective_team_id}"
+          fi
           response="$(curl -sS -w $'\n%{http_code}' \
             -X POST \
             -H "Authorization: Bearer ${VERCEL_TOKEN}" \
             -H "Content-Type: application/json" \
-            "https://api.vercel.com/v2/aliases${VERCEL_TEAM_ID:+?teamId=${VERCEL_TEAM_ID}}" \
+            "${alias_endpoint}" \
             -d "${payload}")"
           status="${response##*$'\n'}"
           body="${response%$'\n'*}"
@@ -140,11 +152,17 @@ jobs:
         run: |
           set -euo pipefail
           qs="projectId=${VERCEL_PROJECT_ID}&limit=50"
-          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
-            qs="${qs}&teamId=${VERCEL_TEAM_ID}"
+          configured_team_id="${VERCEL_TEAM_ID:-}"
+          if [ -n "${configured_team_id}" ]; then
+            qs="${qs}&teamId=${configured_team_id}"
           fi
 
           deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
+          inferred_team_id="$(echo "${deployments}" | jq -r '.deployments[0].teamId // ""')"
+          effective_team_id="${configured_team_id:-${inferred_team_id}}"
+          if [ -n "${effective_team_id}" ]; then
+            echo "Using Vercel teamId=${effective_team_id}"
+          fi
           deployment_id="$(echo "${deployments}" | jq -r '
             .deployments
             | map(select(.state == "READY"))
@@ -167,9 +185,19 @@ jobs:
 
           echo "Resetting alias ${WHATSAPP_PREVIEW_ALIAS} -> ${url} (${deployment_id})"
           payload="$(jq -n --arg alias "${WHATSAPP_PREVIEW_ALIAS}" --arg deploymentId "${deployment_id}" '{alias: $alias, deploymentId: $deploymentId}')"
-          curl -fsSL \
+          alias_endpoint="https://api.vercel.com/v2/aliases"
+          if [ -n "${effective_team_id}" ]; then
+            alias_endpoint="${alias_endpoint}?teamId=${effective_team_id}"
+          fi
+          response="$(curl -sS -w $'\n%{http_code}' \
             -X POST \
             -H "Authorization: Bearer ${VERCEL_TOKEN}" \
             -H "Content-Type: application/json" \
-            "https://api.vercel.com/v2/aliases${VERCEL_TEAM_ID:+?teamId=${VERCEL_TEAM_ID}}" \
-            -d "${payload}" >/dev/null
+            "${alias_endpoint}" \
+            -d "${payload}")"
+          status="${response##*$'\n'}"
+          body="${response%$'\n'*}"
+          if [ "${status}" -ge 400 ]; then
+            echo "Alias API failed (${status}): ${body}"
+            exit 1
+          fi
