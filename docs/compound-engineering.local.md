@@ -12,7 +12,7 @@ review_agents:
 TypeScript/Node.js WhatsApp ordering bot built on:
 - **Runtime**: Node.js with TypeScript (ESM)
 - **Backend**: Supabase (PostgreSQL)
-- **Messaging**: Twilio WhatsApp API + Content Templates
+- **Messaging**: Twilio WhatsApp API (confirmation uses a Content Template for DA/NU buttons)
 - **Framework**: Next.js API routes (Vercel serverless)
 
 ### Key domains to watch
@@ -20,7 +20,6 @@ TypeScript/Node.js WhatsApp ordering bot built on:
 - `lib/whatsapp/conversation-state.ts` — Supabase-backed state (pending_order, pending_selection, history)
 - `lib/whatsapp/selection-resolver.ts` — list-picker flow logic, cart accumulation
 - `lib/whatsapp/webhook.ts` — entry point: button payloads, text interception, LLM fallback
-- `lib/whatsapp/content-templates.ts` — dynamic Twilio Content API template creation
 
 ### Critical invariants
 - `pending_selection` is a state machine: category_list → product_list → awaiting_qty → building_order → awaiting_pickup_time

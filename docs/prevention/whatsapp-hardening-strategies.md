@@ -560,7 +560,7 @@ fields @timestamp, phone_number, status, @message
 
 **Template Send Failure (< 95% success)**:
 1. Check Twilio API status page
-2. Verify TWILIO_CONFIRM_CONTENT_SID, TWILIO_PRODUCT_LIST_SID, TWILIO_WELCOME_SID set
+2. Verify `TWILIO_CONFIRM_CONTENT_SID` is set
 3. Check if variables format changed (look for Twilio error 21656)
 4. Fallback text is working; UX degraded but functional
 
@@ -578,4 +578,3 @@ grep 'phone=+40123456789' /var/log/app.log | tail -50
 # Track single order confirmation flow
 grep 'orderNumber=ON-2026-003' /var/log/app.log
 ```
-

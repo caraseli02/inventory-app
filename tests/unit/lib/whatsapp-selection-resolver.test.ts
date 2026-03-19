@@ -6,7 +6,7 @@
  * - findMatchingCategory: exact match, diacritics, case-insensitive, no match
  * - sendCategoryPicker: caps at 10, stores pending_selection, text fallback
  * - handleCategorySelected: stores product_list, sends picker
- * - handleProductSelected: stores awaiting_qty, sends qty prompt
+ * - handleProductSelected: stores awaiting_qty, sends qty prompt (text-only)
  * - clearPendingSelection: resets state
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -16,12 +16,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 let mockPendingSelection: Record<string, unknown> | null = null;
 let storedPendingPayload: Record<string, unknown> | null = null;
 let appendedHistory: Array<{ role: string; content: string }> = [];
+let shouldStorePendingOrderThrow = false;
 
 vi.mock('../../../lib/whatsapp/conversation-state.js', () => ({
   getPendingProductSelection: vi.fn(async () => mockPendingSelection),
   storePendingProductSelection: vi.fn(async (_sb: unknown, _phone: string, payload: Record<string, unknown>) => {
     storedPendingPayload = payload;
     return true;
+  }),
+  storePendingOrder: vi.fn(async () => {
+    if (shouldStorePendingOrderThrow) throw new Error('storePendingOrder failed');
   }),
   getHistory: vi.fn(async () => []),
   appendHistory: vi.fn(async (_sb: unknown, _phone: string, _history: unknown[], entries: Array<{ role: string; content: string }>) => {
@@ -37,13 +41,16 @@ let mockProducts: string[] = ['Lapte', 'Branza'];
 vi.mock('../../../lib/whatsapp/inventory.js', () => ({
   getDistinctCategories: vi.fn(async () => mockCategories),
   getProductsByCategory: vi.fn(async () => mockProducts),
+  resolveOrderItems: vi.fn(async () => ({
+    items: [{ product_id: 'p1', name: 'Lapte', qty: 2, unit_price: 3.42 }],
+    totalPrice: 6.84,
+  })),
 }));
 
 // ── Mock transport ───────────────────────────────────────────────────────────
 
 const sentMessages: Array<{ to: string; body: string }> = [];
 const sentTemplates: Array<{ to: string; contentSid: string; variables?: Record<string, string> }> = [];
-const sentListPickers: Array<{ to: string; contentSid: string; items: string[] }> = [];
 
 vi.mock('../../../lib/whatsapp/transport.js', () => ({
   sendRestMessage: vi.fn(async (to: string, body: string) => {
@@ -51,9 +58,7 @@ vi.mock('../../../lib/whatsapp/transport.js', () => ({
   }),
   sendTemplateMessage: vi.fn(async (to: string, contentSid: string, variables?: Record<string, string>) => {
     sentTemplates.push({ to, contentSid, variables });
-  }),
-  sendListPickerTemplate: vi.fn(async (to: string, contentSid: string, _title: string, items: string[]) => {
-    sentListPickers.push({ to, contentSid, items });
+    return true;
   }),
 }));
 
@@ -66,6 +71,7 @@ import {
   handleCategorySelected,
   handleProductSelected,
   clearPendingSelection,
+  handleCartPickupTime,
 } from '../../../lib/whatsapp/selection-resolver.js';
 
 const fakeSb = {} as Parameters<typeof resolveSelectionByIndex>[0];
@@ -78,11 +84,12 @@ beforeEach(() => {
   appendedHistory = [];
   sentMessages.length = 0;
   sentTemplates.length = 0;
-  sentListPickers.length = 0;
   mockCategories = ['Dairy', 'Bakery', 'Wine', 'Pantry'];
   mockProducts = ['Lapte', 'Branza'];
   delete process.env.TWILIO_PRODUCT_LIST_SID;
   delete process.env.TWILIO_QTY_SID;
+  delete process.env.TWILIO_CONFIRM_CONTENT_SID;
+  shouldStorePendingOrderThrow = false;
 });
 
 afterEach(() => {
@@ -191,7 +198,7 @@ describe('findMatchingCategory', () => {
 // ─── sendCategoryPicker ──────────────────────────────────────────────────────
 
 describe('sendCategoryPicker', () => {
-  it('sends text fallback when no SID set', async () => {
+  it('sends text picker', async () => {
     const result = await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
     expect(result).toBe(true);
     expect(sentMessages).toHaveLength(1);
@@ -199,21 +206,12 @@ describe('sendCategoryPicker', () => {
     expect(sentMessages[0].body).toContain('1) Dairy');
   });
 
-  it('sends list-picker template when SID set (any item count)', async () => {
+  it('stays text-only even if legacy template SID env var is set', async () => {
     process.env.TWILIO_PRODUCT_LIST_SID = 'HX_test_sid';
-    // mockCategories has 4 items — dynamic content handles any count
     const result = await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
     expect(result).toBe(true);
-    expect(sentListPickers).toHaveLength(1);
-    expect(sentListPickers[0].items).toEqual(['Dairy', 'Bakery', 'Wine', 'Pantry']);
-  });
-
-  it('caps categories at 6 and uses template (matching template slots)', async () => {
-    mockCategories = Array.from({ length: 15 }, (_, i) => `Cat${i + 1}`);
-    process.env.TWILIO_PRODUCT_LIST_SID = 'HX_test_sid';
-    await sendCategoryPicker({ sb: fakeSb, from: testFrom, phone: testPhone });
-    expect(sentListPickers).toHaveLength(1);
-    expect(sentListPickers[0].items).toHaveLength(6);
+    expect(sentMessages).toHaveLength(1);
+    expect(sentMessages[0].body).toContain('Categorii disponibile');
   });
 
   it('stores pending_selection with category_list type and created_at', async () => {
@@ -265,25 +263,18 @@ describe('handleCategorySelected', () => {
 // ─── handleProductSelected ───────────────────────────────────────────────────
 
 describe('handleProductSelected', () => {
-  it('sends qty text prompt when no SID set', async () => {
+  it('sends qty text prompt', async () => {
     await handleProductSelected({ sb: fakeSb, from: testFrom, phone: testPhone, product: 'Lapte' });
     expect(sentMessages).toHaveLength(1);
     expect(sentMessages[0].body).toContain('Lapte');
     expect(sentMessages[0].body).toContain('cantitate');
   });
 
-  it('sends qty template when SID set', async () => {
+  it('stays text-only even if legacy qty SID env var is set', async () => {
     process.env.TWILIO_QTY_SID = 'HX_qty_sid';
     await handleProductSelected({ sb: fakeSb, from: testFrom, phone: testPhone, product: 'Lapte' });
-    expect(sentTemplates).toHaveLength(1);
-    expect(sentTemplates[0].variables).toEqual({ product_name: 'Lapte' });
-  });
-
-  it('appends synthetic history even when template succeeds', async () => {
-    process.env.TWILIO_QTY_SID = 'HX_qty_sid';
-    await handleProductSelected({ sb: fakeSb, from: testFrom, phone: testPhone, product: 'Lapte' });
-    expect(appendedHistory).toHaveLength(1);
-    expect(appendedHistory[0].content).toContain('Lapte');
+    expect(sentMessages).toHaveLength(1);
+    expect(sentTemplates).toHaveLength(0);
   });
 
   it('stores awaiting_qty pending_selection', async () => {
@@ -299,5 +290,56 @@ describe('clearPendingSelection', () => {
   it('stores empty object to clear state', async () => {
     await clearPendingSelection(fakeSb, testPhone);
     expect(storedPendingPayload).toEqual({});
+  });
+});
+
+// ─── handleCartPickupTime ───────────────────────────────────────────────────
+
+describe('handleCartPickupTime', () => {
+  it('falls back to text confirmation when confirm template send returns false', async () => {
+    process.env.TWILIO_CONFIRM_CONTENT_SID = 'HX_confirm';
+
+    mockPendingSelection = {
+      selection_type: 'awaiting_pickup_time',
+      cart: [{ name: 'Lapte', qty: 2 }],
+      created_at: new Date().toISOString(),
+    };
+
+    const transport = await import('../../../lib/whatsapp/transport.js');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (transport.sendTemplateMessage as any).mockResolvedValueOnce(false);
+
+    await expect(handleCartPickupTime({
+      sb: fakeSb,
+      from: testFrom,
+      phone: testPhone,
+      text: '18:30',
+      customerName: 'Ion',
+      customerPhone: testPhone,
+    })).resolves.toBe(true);
+
+    expect(sentMessages.length).toBeGreaterThan(0);
+    expect(sentMessages.at(-1)?.body).toContain('Confirmați');
+  });
+
+  it('does not clear pending_selection when storePendingOrder throws', async () => {
+    mockPendingSelection = {
+      selection_type: 'awaiting_pickup_time',
+      cart: [{ name: 'Lapte', qty: 2 }],
+      created_at: new Date().toISOString(),
+    };
+    shouldStorePendingOrderThrow = true;
+
+    await expect(handleCartPickupTime({
+      sb: fakeSb,
+      from: testFrom,
+      phone: testPhone,
+      text: '18:30',
+      customerName: 'Ion',
+      customerPhone: testPhone,
+    })).rejects.toThrow(/storePendingOrder failed/);
+
+    // Ensure we did NOT clear selection on error (storePendingProductSelection({}) would set storedPendingPayload to {})
+    expect(storedPendingPayload).not.toEqual({});
   });
 });

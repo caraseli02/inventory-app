@@ -1,5 +1,4 @@
 import { getTwilioRestCredentials } from './config.js';
-import { getListPickerContentSid } from './content-templates.js';
 import { appendReplayEvent, isReplayRequest } from './replay-context.js';
 
 export function twiml(message: string): string {
@@ -58,38 +57,6 @@ export async function sendRestMessage(to: string, body: string): Promise<void> {
     const text = await resp.text().catch(() => '');
     console.error('[whatsapp] REST send failed: %s %s', resp.status, text.slice(0, 200));
   }
-}
-
-/** WhatsApp list-picker item titles are limited to 24 characters */
-const MAX_LIST_ITEM_TITLE_LEN = 24;
-
-export async function sendListPickerTemplate(
-  to: string,
-  contentSid: string,
-  _title: string,
-  items: string[]
-): Promise<void> {
-  const count = items.length;
-
-  // If items exactly match the static template's 6 slots, use the pre-built SID.
-  // Otherwise, dynamically create a Content resource with the exact item count.
-  let sid = count === 6 ? contentSid : await getListPickerContentSid(count);
-  if (!sid) {
-    // Fallback to static template if dynamic creation fails
-    sid = contentSid;
-  }
-
-  const variables: Record<string, string> = {};
-  const slotCount = count === 6 || !sid || sid === contentSid ? 6 : count;
-  for (let i = 0; i < slotCount; i++) {
-    const raw = items[i] || '-';
-    // Truncate to WhatsApp's 24-char list item title limit
-    variables[String(i + 1)] = raw.length > MAX_LIST_ITEM_TITLE_LEN
-      ? raw.slice(0, MAX_LIST_ITEM_TITLE_LEN - 1) + '…'
-      : raw;
-  }
-
-  await sendTemplateMessage(to, sid, variables);
 }
 
 export async function sendTemplateMessage(

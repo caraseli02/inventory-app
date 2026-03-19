@@ -73,13 +73,17 @@ export async function storePendingOrder(
     ...order,
     pending_order_created_at: order.pending_order_created_at ?? nowIso(),
   };
-  await sb.from('conversation_history').upsert(
+  // Supabase clients typically return `{ error }` instead of throwing, so treat errors as exceptions.
+  const { error } = await sb.from('conversation_history').upsert(
     {
       phone_number: phone,
       pending_order: pendingOrder as unknown,
     },
     { onConflict: 'phone_number' }
   );
+  if (error) {
+    throw new Error(`storePendingOrder failed: ${error.message ?? String(error)}`);
+  }
 }
 
 // Pending orders are transactional state. Callers should peek first and only

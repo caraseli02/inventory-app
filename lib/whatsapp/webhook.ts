@@ -5,6 +5,7 @@ import { getTwilioAuthToken, getTwilioRestCredentials } from './config.js';
 import {
   getPendingProductSelection,
   hasConversationHistory,
+  peekPendingOrder,
   storePendingOrder,
   storePendingProductSelection,
 } from './conversation-state.js';
@@ -30,7 +31,8 @@ import {
   resolveSelectionByIndex,
   sendCategoryPicker,
 } from './selection-resolver.js';
-import { sendListPickerTemplate, sendRestMessage, sendTemplateMessage, sendTypingIndicator, twiml } from './transport.js';
+import { sendConfirmPrompt } from './confirm-prompt.js';
+import { sendRestMessage, sendTypingIndicator, twiml } from './transport.js';
 import type { PendingOrder, TwilioBody } from './types.js';
 import { getAbsoluteUrl } from './url.js';
 import { isReplayRequest, runWithReplayContext } from './replay-context.js';
@@ -53,6 +55,36 @@ function normalizeTwilioParams(body: unknown): Record<string, string> {
 
 function sendTwiml(res: VercelResponse, body: string) {
   return res.status(200).setHeader('Content-Type', 'text/xml').send(twiml(body));
+}
+
+function isSuccessfulPendingOrderDecision(outcome: Awaited<ReturnType<typeof applyPendingOrderDecision>>): boolean {
+  return outcome.status === 'confirmed' || outcome.status === 'cancelled';
+}
+
+function parseIsoMs(value: unknown): number | null {
+  const ms = new Date(String(value ?? '')).getTime();
+  return Number.isFinite(ms) && ms > 0 ? ms : null;
+}
+
+async function maybeClearSelectionForPendingOrderDecision(args: {
+  sb: ServerSupabaseClient;
+  phone: string;
+  pendingOrderCreatedAt: string | null;
+}) {
+  const pendingMs = parseIsoMs(args.pendingOrderCreatedAt);
+  if (pendingMs === null) return;
+
+  const selection = await getPendingProductSelection(args.sb, args.phone);
+  if (!selection || Object.keys(selection).length === 0) return;
+
+  const selectionMs = parseIsoMs((selection as Record<string, unknown>).created_at);
+  // If we can't confidently prove the selection predates the pending order,
+  // preserve it (avoid wiping a newer cart flow).
+  if (selectionMs === null) return;
+
+  if (selectionMs <= pendingMs) {
+    await clearPendingSelection(args.sb, args.phone);
+  }
 }
 
 async function replyViaAvailableChannel(args: {
@@ -123,27 +155,11 @@ async function sendPendingOrderConfirmation(args: {
 }) {
   const sb = createSupabaseClient();
   await storePendingOrder(sb, args.phone, args.pending);
-
-  const contentSid = process.env.TWILIO_CONFIRM_CONTENT_SID ?? '';
-  if (contentSid) {
-    const variables = {
-      product_name: args.pending.items.map((item) => `${item.qty}x ${item.name}`).join(', '),
-      price: args.pending.total_price.toFixed(2),
-      pickup_time: args.pending.pickup_time || 'la preluare',
-    };
-    try {
-      await sendTemplateMessage(args.from, contentSid, variables);
-      console.log('[whatsapp] sent confirmation template for pending order');
-      return;
-    } catch (err) {
-      console.warn('[whatsapp] template send failed, falling back to DA/NU text:', err);
-    }
-  } else {
-    console.warn('[whatsapp] TWILIO_CONFIRM_CONTENT_SID not set — using DA/NU text fallback');
-  }
-
-  await sendRestMessage(args.from, buildPendingConfirmationText(args.pending));
-  console.log('[whatsapp] sent plain text DA/NU confirmation fallback');
+  await sendConfirmPrompt({
+    to: args.from,
+    pending: args.pending,
+    textFallback: buildPendingConfirmationText(args.pending),
+  });
 }
 
 
@@ -151,94 +167,45 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   const sb = createSupabaseClient();
   console.log('[whatsapp] [BUTTON] handling payload:', { buttonPayload, phone });
 
-  // browse button → fetch categories → send category list-picker
-  // Accept multiple payload variants: 'browse', 'Caut un produs', etc.
-  const isBrowse = buttonPayload === 'browse'
-    || /caut\s*(un\s*)?produs/i.test(buttonPayload)
-    || /search|browse_products/i.test(buttonPayload);
-  if (isBrowse) {
-    console.log('[whatsapp] [BROWSE] browse button pressed for phone:', phone);
-    try {
-      await sendCategoryPicker({ sb, from, phone });
-    } catch (err) {
-      console.error('[whatsapp] [BROWSE] browse button error:', err);
-      await sendRestMessage(from, 'Ne pare rău, nu am putut încărca categoriile. Încearcă din nou.');
+  // Legacy list-picker callbacks (from old interactive messages): product_N
+  const legacyPick = /^\s*product_(\d+)\s*$/.exec(buttonPayload);
+  if (legacyPick) {
+    const index = Math.max(0, parseInt(legacyPick[1], 10) - 1);
+    const result = await resolveSelectionByIndex(sb, phone, index);
+
+    if (result.outcome === 'category_selected') {
+      await handleCategorySelected({ sb, from, phone, category: result.category, cart: result.cart });
+      return;
     }
-    return;
-  }
-
-  // Handle other welcome buttons
-  if (['previous', 'info'].includes(buttonPayload)) {
-    const intentText = buttonPayload === 'previous' ? 'comanda anteriora' : 'informatii';
-    waitUntil(
-      buildReplyWithPending(phone, '', intentText)
-        .then(async (result) => {
-          if (result.listPicker) {
-            const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
-            if (sid) {
-              await sendListPickerTemplate(from, sid, 'Alegeți / Choose', result.listPicker);
-            } else {
-              await sendRestMessage(from, buildNumberedList(result.listPicker));
-            }
-          } else {
-            await sendRestMessage(from, result.reply);
-          }
-        })
-        .catch(() => {
-          const fallback = 'Ne pare rău, nu am putut procesa cererea. Încearcă din nou.';
-          return sendRestMessage(from, fallback);
-        })
-    );
-    return;
-  }
-
-  // Handle product_N buttons → look up what was selected in pending_selection
-  const productMatch = /^\s*product_(\d+)\s*$/.exec(buttonPayload);
-  console.log('[whatsapp] [PRODUCT_N] checking for product_N pattern:', {
-    buttonPayload,
-    matches: !!productMatch,
-  });
-
-  if (productMatch) {
-    try {
-      const index = parseInt(productMatch[1], 10) - 1;
-      console.log('[whatsapp] [PRODUCT_N] extracted index:', { rawIndex: productMatch[1], zeroBasedIndex: index });
-
-      const result = await resolveSelectionByIndex(sb, phone, index);
-      console.log('[whatsapp] [PRODUCT_N] resolution:', { outcome: result.outcome, buttonPayload });
-
-      if (result.outcome === 'category_selected') {
-        await handleCategorySelected({ sb, from, phone, category: result.category, cart: result.cart });
-        return;
-      }
-      if (result.outcome === 'product_selected') {
-        await handleProductSelected({ sb, from, phone, product: result.product, cart: result.cart });
-        return;
-      }
-      if (result.outcome === 'index_out_of_range') {
-        await sendRestMessage(from, 'Selecția nu este validă. Încearcă din nou.');
-        return;
-      }
-      if (result.outcome === 'expired') {
-        await sendRestMessage(from, 'Selecția a expirat. Încearcă din nou cu "Caut un produs".');
-        return;
-      }
-
-      // no_context fallback
-      console.warn('[whatsapp] [PRODUCT_N] no selection context:', { buttonPayload });
-      await sendRestMessage(from, 'Context pierdut. Încearcă din nou cu "Caut un produs".');
-    } catch (err) {
-      console.error('[whatsapp] [PRODUCT_N] error:', { payload: buttonPayload, error: String(err) });
-      await sendRestMessage(from, 'Ne pare rău, a apărut o eroare. Încearcă din nou.');
+    if (result.outcome === 'product_selected') {
+      await handleProductSelected({ sb, from, phone, product: result.product, cart: result.cart });
+      return;
     }
+    if (result.outcome === 'index_out_of_range') {
+      await sendRestMessage(from, 'Selecția nu este validă. Încearcă din nou.');
+      return;
+    }
+    if (result.outcome === 'expired') {
+      await sendRestMessage(from, 'Selecția a expirat. Încearcă din nou cu "Caut un produs".');
+      return;
+    }
+
+    await sendRestMessage(from, 'Context pierdut. Încearcă din nou cu "Caut un produs".');
     return;
   }
 
-  // confirm/cancel buttons
+  // confirm/cancel buttons (DA/NU)
   if (buttonPayload === 'confirm') {
     try {
+      const pendingBefore = await peekPendingOrder(sb, phone);
       const outcome = await applyPendingOrderDecision(sb, phone, 'confirm');
-      await clearPendingSelection(sb, phone);
+      if (isSuccessfulPendingOrderDecision(outcome)) {
+        await maybeClearSelectionForPendingOrderDecision({
+          sb,
+          phone,
+          pendingOrderCreatedAt: pendingBefore?.pending_order_created_at ?? null,
+        });
+      }
       if (outcome.status === 'confirmed') {
         await sendRestMessage(from, `✅ Cererea ${outcome.orderNumber} a fost înregistrată și așteaptă confirmarea magazinului.`);
         return;
@@ -255,44 +222,28 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
   }
 
   if (buttonPayload === 'cancel') {
-    const outcome = await applyPendingOrderDecision(sb, phone, 'cancel');
-    await clearPendingSelection(sb, phone);
-    if (outcome.status === 'cancelled') {
-      await sendRestMessage(from, '❌ Comanda a fost anulată.');
-      return;
+    try {
+      const pendingBefore = await peekPendingOrder(sb, phone);
+      const outcome = await applyPendingOrderDecision(sb, phone, 'cancel');
+      if (isSuccessfulPendingOrderDecision(outcome)) {
+        await maybeClearSelectionForPendingOrderDecision({
+          sb,
+          phone,
+          pendingOrderCreatedAt: pendingBefore?.pending_order_created_at ?? null,
+        });
+      }
+      if (outcome.status === 'cancelled') {
+        await sendRestMessage(from, '❌ Comanda a fost anulată.');
+        return;
+      }
+      if (outcome.status === 'already_exists_cannot_cancel') {
+        await sendRestMessage(from, `ℹ️ Cererea ${outcome.orderNumber} este deja înregistrată și nu mai poate fi anulată din acest mesaj.`);
+        return;
+      }
+      await sendRestMessage(from, '⚠️ Comanda a expirat. Te rog trimite din nou.');
+    } catch {
+      await sendRestMessage(from, 'Ne pare rău, nu am putut anula comanda. Încearcă din nou.');
     }
-    if (outcome.status === 'already_exists_cannot_cancel') {
-      await sendRestMessage(from, `ℹ️ Cererea ${outcome.orderNumber} este deja înregistrată și nu mai poate fi anulată din acest mesaj.`);
-      return;
-    }
-    await sendRestMessage(from, '⚠️ Comanda a expirat. Te rog trimite din nou.');
-    return;
-  }
-
-  // add_more → send category picker, preserving existing cart
-  if (buttonPayload === 'add_more') {
-    await sendCategoryPicker({ sb, from, phone, preserveCart: true });
-    return;
-  }
-
-  // confirm_cart → ask for pickup time
-  if (buttonPayload === 'confirm_cart') {
-    const selection = await getPendingProductSelection(sb, phone);
-    if (selection?.selection_type !== 'building_order') {
-      await sendRestMessage(from, 'Coșul nu mai este activ. Încearcă din nou.');
-      return;
-    }
-    const cart = (selection.cart as CartItem[] | undefined) ?? [];
-    if (!cart.length) {
-      await sendRestMessage(from, 'Coșul este gol. Încearcă din nou.');
-      return;
-    }
-    const stored = await storePendingProductSelection(sb, phone, { selection_type: 'awaiting_pickup_time', cart, created_at: new Date().toISOString() });
-    if (!stored) {
-      await sendRestMessage(from, 'A apărut o eroare. Încearcă din nou.');
-      return;
-    }
-    await sendRestMessage(from, '🕐 La ce oră doriți să ridicați comanda? (ex: 18:30)');
     return;
   }
 
@@ -303,17 +254,17 @@ async function handleButtonPayload(from: string, phone: string, buttonPayload: s
 
 /** Parse a single digit (1-9) from user text, e.g. "1", "2)", "3." */
 function parseNumericChoice(text: string): number | null {
-  const match = text.trim().match(/^([1-9])\s*[).]?\s*$/);
+  const match = text.trim().match(/^([1-9]|10)\s*[).]?\s*$/);
   if (!match) return null;
   const value = Number(match[1]);
-  return Number.isFinite(value) && value >= 1 && value <= 9 ? value : null;
+  return Number.isFinite(value) && value >= 1 && value <= 10 ? value : null;
 }
 
 /**
- * Try to intercept text input for template-driven flows before falling through to LLM.
- * Returns true if intercepted (template sent), false if should continue to LLM.
+ * Try to intercept text input for deterministic state-machine flows before falling through to LLM.
+ * Returns true if intercepted (handled), false if should continue to LLM.
  */
-async function tryTextTemplateInterception(args: {
+async function tryTextStateInterception(args: {
   sb: ServerSupabaseClient;
   from: string;
   phone: string;
@@ -432,11 +383,11 @@ async function handleRestConversation(args: {
   console.log('[whatsapp] starting async reply...');
 
   waitUntil(
-    // Try template interception first (browse, numeric, category-name, cart flows)
-    tryTextTemplateInterception({ sb, from: args.from, phone: args.phone, text: args.text, customerName: args.name, customerPhone: args.phone })
+    // Try deterministic state interception first (browse, numeric, category-name, cart flows)
+    tryTextStateInterception({ sb, from: args.from, phone: args.phone, text: args.text, customerName: args.name, customerPhone: args.phone })
       .then(async (intercepted) => {
         if (intercepted) {
-          console.log('[whatsapp] text intercepted for template flow');
+          console.log('[whatsapp] text intercepted by state machine');
           return undefined;
         }
         return buildReplyWithPending(args.phone, args.name, args.text);
@@ -444,22 +395,7 @@ async function handleRestConversation(args: {
       .then(async (result) => {
         if (!result) return; // already handled by interception
 
-        // Greeting template (welcome with intent buttons)
-        if (result.welcomeTemplate) {
-          const sid = process.env.TWILIO_WELCOME_SID ?? '';
-          if (sid) {
-            try {
-              await sendTemplateMessage(args.from, sid);
-              return;
-            } catch {
-              // fall through to plain text fallback
-            }
-          }
-          await sendRestMessage(args.from, result.reply);
-          return;
-        }
-
-        // List-picker for product disambiguation
+        // Text-only product disambiguation (numbered list)
         if (result.listPicker) {
           // Store selection so product_N button clicks resolve correctly
           const stored = await storePendingProductSelection(sb, args.phone, {
@@ -472,12 +408,7 @@ async function handleRestConversation(args: {
             await sendRestMessage(args.from, 'A apărut o eroare. Încearcă din nou.');
             return;
           }
-          const sid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
-          if (sid) {
-            await sendListPickerTemplate(args.from, sid, 'Alegeți produsul / Choose product', result.listPicker);
-          } else {
-            await sendRestMessage(args.from, buildNumberedList(result.listPicker));
-          }
+          await sendRestMessage(args.from, buildNumberedList(result.listPicker));
           return;
         }
 

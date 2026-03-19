@@ -1,40 +1,19 @@
 {
-  "name": "Full order flow: browse templates + direct order + confirm",
-  "description": "End-to-end flow testing both template browsing (category/product list-pickers, qty prompt) AND order creation with confirm button. Steps 1-3 validate template rendering, step 4 creates order, step 5 confirms.",
+  "name": "Full order flow: direct order + confirm",
+  "description": "End-to-end flow creating a pending order from a direct text request, then confirming via DA/NU buttons (confirmation template when available).",
   "phone": "+40710000010",
   "profileName": "Replay FullOrder",
   "resetConversation": true,
   "steps": [
     {
-      "body": "🔍 Caut un produs",
-      "buttonPayload": "browse",
-      "note": "Step 1: Browse → category list-picker template (6 categories)",
-      "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
-      "pauseMs": 3000
-    },
-    {
-      "body": "Dairy",
-      "buttonPayload": "product_3",
-      "note": "Step 2: Select Dairy → product list-picker template (6 products)",
-      "expectAsyncTemplateSid": "env:TWILIO_PRODUCT_LIST_SID",
-      "pauseMs": 3000
-    },
-    {
-      "body": "First product",
-      "buttonPayload": "product_1",
-      "note": "Step 3: Select 1st product → qty prompt template",
-      "expectAsyncTemplateSid": "env:TWILIO_QTY_SID",
-      "pauseMs": 4000
-    },
-    {
       "body": "Vreau sa comand 2 bucati de 190G SPROT IN ULEI MC, ridicare la 14:00",
-      "note": "Step 4: Direct order with exact product name + qty + time → pending order + confirm template",
+      "note": "Step 1: Direct order with exact product name + qty + time → pending order + confirm prompt",
       "pauseMs": 15000
     },
     {
       "body": "✅ Da, confirmă",
       "buttonPayload": "confirm",
-      "note": "Step 5: Confirm → order registered",
+      "note": "Step 2: Confirm → order registered",
       "expectAsyncBodyIncludes": ["Cererea"],
       "pauseMs": 5000
     }

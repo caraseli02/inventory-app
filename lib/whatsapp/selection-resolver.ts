@@ -15,12 +15,13 @@ import {
 import type { ServerSupabaseClient } from './db.js';
 import { getDistinctCategories, getProductsByCategory, resolveOrderItems } from './inventory.js';
 import { normalizePickupTime } from './conversation.js';
-import { sendListPickerTemplate, sendRestMessage, sendTemplateMessage } from './transport.js';
+import { sendRestMessage } from './transport.js';
+import { sendConfirmPrompt } from './confirm-prompt.js';
 
 export interface CartItem { name: string; qty: number; }
 
 /** Max items for list-picker template (Twilio template has product_1..product_6) */
-const MAX_LIST_PICKER_ITEMS = 6;
+const MAX_LIST_PICKER_ITEMS = 10;
 
 /** Pending selection TTL in milliseconds (30 minutes) */
 const PENDING_SELECTION_TTL_MS = 30 * 60 * 1000;
@@ -93,7 +94,6 @@ export async function handleCategorySelected(args: {
   cart?: CartItem[];
 }): Promise<void> {
   const products = await getProductsByCategory(args.sb, args.category);
-  const productSid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
   const cart = args.cart ?? [];
 
   if (products.length > 0) {
@@ -104,11 +104,7 @@ export async function handleCategorySelected(args: {
       return;
     }
 
-    if (productSid) {
-      await sendListPickerTemplate(args.from, productSid, 'Selectează produsul / Choose product', products);
-    } else {
-      await sendRestMessage(args.from, `Produse din ${args.category}:\n${buildNumberedList(products)}`);
-    }
+    await sendRestMessage(args.from, `Produse din ${args.category}:\n${buildNumberedList(products)}`);
 
     // Append synthetic history so LLM has context for subsequent text
     await appendSyntheticHistory(args.sb, args.phone,
@@ -136,19 +132,8 @@ export async function handleProductSelected(args: {
     return;
   }
 
-  const qtySid = process.env.TWILIO_QTY_SID ?? '';
-  let templateSent = false;
-  if (qtySid) {
-    templateSent = await sendTemplateMessage(args.from, qtySid, { product_name: args.product });
-    if (!templateSent) {
-      console.warn('[whatsapp] qty template send failed, using text fallback');
-    }
-  }
-
-  if (!templateSent) {
-    await sendRestMessage(args.from,
-      `Ce cantitate doriți din *${args.product}*? (Trimiteți un număr, ex: 2)`);
-  }
+  await sendRestMessage(args.from,
+    `Ce cantitate doriți din *${args.product}*? (Trimiteți un număr, ex: 2)`);
 
   // Always append synthetic history so LLM knows which product was selected
   await appendSyntheticHistory(args.sb, args.phone,
@@ -156,7 +141,7 @@ export async function handleProductSelected(args: {
 }
 
 /**
- * Send the category list-picker (used by both browse button and browse text).
+ * Send the category picker (text-only; store pending_selection so numeric replies work).
  */
 export async function sendCategoryPicker(args: {
   sb: ServerSupabaseClient;
@@ -172,7 +157,6 @@ export async function sendCategoryPicker(args: {
   }
 
   const capped = categories.slice(0, MAX_LIST_PICKER_ITEMS);
-  const categorySid = process.env.TWILIO_PRODUCT_LIST_SID ?? '';
 
   let cart: CartItem[] = [];
   if (args.preserveCart) {
@@ -187,11 +171,7 @@ export async function sendCategoryPicker(args: {
     return false;
   }
 
-  if (categorySid) {
-    await sendListPickerTemplate(args.from, categorySid, 'Selectează categoria / Choose category', capped);
-  } else {
-    await sendRestMessage(args.from, `Categorii disponibile:\n${buildNumberedList(capped)}`);
-  }
+  await sendRestMessage(args.from, `Categorii disponibile:\n${buildNumberedList(capped)}`);
 
   await appendSyntheticHistory(args.sb, args.phone,
     `Categorii disponibile: ${capped.join(', ')}`);
@@ -307,20 +287,19 @@ export async function handleCartPickupTime(args: {
     items: resolved.items,
     total_price: resolved.totalPrice,
     pickup_time: pickupTime || null,
+    pending_order_created_at: nowIso(),
   };
 
   await storePendingOrder(args.sb, args.phone, pending);
   await storePendingProductSelection(args.sb, args.phone, {});
 
   const summary = resolved.items.map((item) => `${item.qty}x ${item.name} — €${(item.unit_price * item.qty).toFixed(2)}`).join('\n');
-  const confirmSid = process.env.TWILIO_CONFIRM_CONTENT_SID ?? '';
-  if (confirmSid) {
-    await sendTemplateMessage(args.from, confirmSid);
-  } else {
-    await sendRestMessage(args.from,
-      `📋 Rezumat comandă:\n${summary}\n💶 Total: €${resolved.totalPrice.toFixed(2)}\n🕐 Ridicare: ${pickupTime || 'la preluare'}\n\nConfirmați? (DA / NU)`);
-  }
-
+  await sendConfirmPrompt({
+    to: args.from,
+    pending,
+    textFallback:
+      `📋 Rezumat comandă:\n${summary}\n💶 Total: €${resolved.totalPrice.toFixed(2)}\n🕐 Ridicare: ${pickupTime || 'la preluare'}\n\nConfirmați? (DA / NU)`,
+  });
   return true;
 }
 
