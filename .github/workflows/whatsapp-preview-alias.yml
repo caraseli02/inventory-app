@@ -111,6 +111,15 @@ jobs:
           alias_domain="${WHATSAPP_PREVIEW_ALIAS#https://}"
           alias_domain="${alias_domain#http://}"
           alias_domain="${alias_domain%%/*}"
+          # Trim whitespace/newlines and strip accidental surrounding quotes.
+          alias_domain="$(echo -n "${alias_domain}" | tr -d $'\r\n\t ' )"
+          alias_domain="${alias_domain#\"}"
+          alias_domain="${alias_domain%\"}"
+          alias_domain="$(echo -n "${alias_domain}" | tr '[:upper:]' '[:lower:]')"
+          if [[ "${alias_domain}" != *.* ]] || [[ "${alias_domain}" == *"/"* ]] || [[ "${alias_domain}" == *":"* ]]; then
+            echo "Invalid WHATSAPP_PREVIEW_ALIAS after normalization: '${alias_domain}'"
+            exit 1
+          fi
 
           echo "Setting alias ${alias_domain} -> ${url} (${deployment_id})"
           payload="$(jq -n --arg alias "${alias_domain}" --arg deploymentId "${deployment_id}" '{alias: $alias, deploymentId: $deploymentId}')"
@@ -194,7 +203,7 @@ jobs:
             -H "Authorization: Bearer ${VERCEL_TOKEN}" \
             -H "Content-Type: application/json" \
             "${alias_endpoint}" \
-            -d "$(jq -n --arg alias \"${WHATSAPP_PREVIEW_ALIAS}\" '{alias: $alias}')")"
+            -d "$(jq -n --arg alias \"${WHATSAPP_PREVIEW_ALIAS#https://}\" '{alias: $alias}')")"
           status="${response##*$'\n'}"
           body="${response%$'\n'*}"
           if [ "${status}" -ge 400 ]; then
