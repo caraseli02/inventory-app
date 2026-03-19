@@ -12,7 +12,7 @@ review_agents:
 TypeScript/Node.js WhatsApp ordering bot built on:
 - **Runtime**: Node.js with TypeScript (ESM)
 - **Backend**: Supabase (PostgreSQL)
-- **Messaging**: Twilio WhatsApp API (confirmation uses a Content Template for DA/NU buttons)
+- **Messaging**: Twilio WhatsApp API (welcome + confirmation use Content Templates; middle is text-only)
 - **Framework**: Next.js API routes (Vercel serverless)
 
 ### Key domains to watch

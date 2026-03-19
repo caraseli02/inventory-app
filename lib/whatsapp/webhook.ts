@@ -32,7 +32,7 @@ import {
   sendCategoryPicker,
 } from './selection-resolver.js';
 import { sendConfirmPrompt } from './confirm-prompt.js';
-import { buildWelcomeTextFallback, sendWelcomePrompt } from './welcome-prompt.js';
+import { buildWelcomeTextFallback, getWelcomeContentSidForWebhook, sendWelcomePrompt } from './welcome-prompt.js';
 import { sendRestMessage, sendTypingIndicator, twiml } from './transport.js';
 import type { PendingOrder, TwilioBody } from './types.js';
 import { getAbsoluteUrl } from './url.js';
@@ -377,7 +377,7 @@ async function handleRestConversation(args: {
     ? 'Hello, processing your message...'
     : 'Bună ziua, procesăm...';
 
-  const welcomeSid = (process.env.TWILIO_WELCOME_CONTENT_SID ?? process.env.TWILIO_WELCOME_SID ?? '').trim();
+  const welcomeSid = getWelcomeContentSidForWebhook();
   const shouldSendWelcome = !hasHistory && Boolean(welcomeSid);
 
   // If a welcome template is configured, use it for immediate feedback (quick replies),

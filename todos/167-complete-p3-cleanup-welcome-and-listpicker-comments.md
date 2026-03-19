@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p3
 issue_id: "167"
 tags: [code-review, whatsapp, cleanup]
@@ -39,13 +39,13 @@ Some comments and small bits of logic still reflect the old “template list-pic
 
 ## Recommended Action
 
-To be filled during triage.
+Implemented.
 
 ## Acceptance Criteria
 
-- [ ] Comments no longer mention `product_1..product_6` in text-only paths.
-- [ ] Webhook welcome SID detection uses a single helper source of truth.
-- [ ] `pnpm lint` and `pnpm typecheck` pass.
+- [x] Comments no longer mention `product_1..product_6` in text-only paths.
+- [x] Webhook welcome SID detection uses a single helper source of truth.
+- [x] `pnpm lint` and `pnpm typecheck` pass.
 
 ## Work Log
 
@@ -56,3 +56,11 @@ To be filled during triage.
 **Actions:**
 - Noted doc/comment drift after template rollback + reintroducing welcome template.
 
+### 2026-03-19 - Completed
+
+**By:** Codex
+
+**Actions:**
+- Updated MAX list cap comment in lib/whatsapp/selection-resolver.ts.
+- Reused a single helper for welcome SID detection between lib/whatsapp/webhook.ts and lib/whatsapp/welcome-prompt.ts.
+- Ran: pnpm lint, pnpm typecheck, pnpm test:unit, pnpm test:integration

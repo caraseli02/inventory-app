@@ -5,6 +5,10 @@ function getWelcomeContentSid(): string {
   return (process.env.TWILIO_WELCOME_CONTENT_SID ?? process.env.TWILIO_WELCOME_SID ?? '').trim();
 }
 
+export function getWelcomeContentSidForWebhook(): string {
+  return getWelcomeContentSid();
+}
+
 export function buildWelcomeTextFallback(args: { isEnglish: boolean }): string {
   if (args.isEnglish) {
     return [
@@ -44,4 +48,3 @@ export async function sendWelcomePrompt(args: {
   await sendRestMessage(args.to, args.textFallback);
   return 'text';
 }
-

@@ -33,6 +33,8 @@ Twilio config:
 ### Webhook: `POST /api/whatsapp`
 
 - `TWILIO_AUTH_TOKEN`
+- `TWILIO_ACCOUNT_SID` (required for welcome/confirmation templates + REST replies; TwiML-only fallback works without it)
+- `TWILIO_FROM_NUMBER` (required for welcome/confirmation templates + REST replies; TwiML-only fallback works without it)
 - `ANTHROPIC_API_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`

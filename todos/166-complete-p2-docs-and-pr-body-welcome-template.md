@@ -1,5 +1,5 @@
 ---
-status: pending
+status: complete
 priority: p2
 issue_id: "166"
 tags: [code-review, whatsapp, docs]
@@ -45,13 +45,13 @@ This creates confusion during setup/debug, and can lead to misconfigured env var
 
 ## Recommended Action
 
-To be filled during triage.
+Implemented.
 
 ## Acceptance Criteria
 
-- [ ] PR body (or PR comment) matches current behavior: welcome + confirm templates are interactive; middle is text-only.
-- [ ] Runbook lists webhook requirements for REST/template sends (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`).
-- [ ] Prevention/architecture docs mention welcome template env var(s) when describing template send checks.
+- [x] PR body matches current behavior: welcome + confirm templates are interactive; middle is text-only.
+- [x] Runbook lists webhook requirements for REST/template sends (`TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`).
+- [x] Prevention/architecture docs mention welcome template env var(s) when describing template send checks.
 
 ## Work Log
 
@@ -62,3 +62,14 @@ To be filled during triage.
 **Actions:**
 - Reviewed PR #175 file list and confirmed welcome template behavior is implemented in the webhook.
 
+### 2026-03-19 - Completed
+
+**By:** Codex
+
+**Actions:**
+- Updated PR #175 body “Notes” section to reflect welcome + confirmation templates.
+- Updated docs:
+  - docs/compound-engineering.local.md
+  - docs/prevention/whatsapp-hardening-strategies.md
+  - docs/runbooks/whatsapp_agent.md
+- Ran: pnpm lint, pnpm typecheck, pnpm test:unit, pnpm test:integration

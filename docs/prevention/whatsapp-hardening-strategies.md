@@ -560,7 +560,7 @@ fields @timestamp, phone_number, status, @message
 
 **Template Send Failure (< 95% success)**:
 1. Check Twilio API status page
-2. Verify `TWILIO_CONFIRM_CONTENT_SID` is set
+2. Verify `TWILIO_CONFIRM_CONTENT_SID` (confirmation) and `TWILIO_WELCOME_CONTENT_SID`/`TWILIO_WELCOME_SID` (welcome) are set
 3. Check if variables format changed (look for Twilio error 21656)
 4. Fallback text is working; UX degraded but functional
 

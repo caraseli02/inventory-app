@@ -20,7 +20,7 @@ import { sendConfirmPrompt } from './confirm-prompt.js';
 
 export interface CartItem { name: string; qty: number; }
 
-/** Max items for list-picker template (Twilio template has product_1..product_6) */
+/** Max items included in numbered-list prompts (keeps replies readable). */
 const MAX_LIST_PICKER_ITEMS = 10;
 
 /** Pending selection TTL in milliseconds (30 minutes) */
