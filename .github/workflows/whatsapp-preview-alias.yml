@@ -64,7 +64,7 @@ jobs:
           }
 
           deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
-          inferred_team_id="$(echo "${deployments}" | jq -r '.deployments[0].teamId // ""')"
+          inferred_team_id="$(echo "${deployments}" | jq -r '.deployments[0].teamId // .deployments[0].ownerId // ""')"
           effective_team_id="${configured_team_id:-${inferred_team_id}}"
           if [ -n "${effective_team_id}" ]; then
             echo "Using Vercel teamId=${effective_team_id}"
@@ -114,7 +114,8 @@ jobs:
 
           echo "Setting alias ${alias_domain} -> ${url} (${deployment_id})"
           payload="$(jq -n --arg alias "${alias_domain}" --arg deploymentId "${deployment_id}" '{alias: $alias, deploymentId: $deploymentId}')"
-          alias_endpoint="https://api.vercel.com/v2/aliases"
+          # Prefer deployment-scoped alias endpoint; some accounts/projects require it.
+          alias_endpoint="https://api.vercel.com/v2/deployments/${deployment_id}/aliases"
           if [ -n "${effective_team_id}" ]; then
             alias_endpoint="${alias_endpoint}?teamId=${effective_team_id}"
           fi
@@ -123,7 +124,7 @@ jobs:
             -H "Authorization: Bearer ${VERCEL_TOKEN}" \
             -H "Content-Type: application/json" \
             "${alias_endpoint}" \
-            -d "${payload}")"
+            -d "$(jq -n --arg alias \"${alias_domain}\" '{alias: $alias}')")"
           status="${response##*$'\n'}"
           body="${response%$'\n'*}"
           if [ "${status}" -ge 400 ]; then
@@ -158,7 +159,7 @@ jobs:
           fi
 
           deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
-          inferred_team_id="$(echo "${deployments}" | jq -r '.deployments[0].teamId // ""')"
+          inferred_team_id="$(echo "${deployments}" | jq -r '.deployments[0].teamId // .deployments[0].ownerId // ""')"
           effective_team_id="${configured_team_id:-${inferred_team_id}}"
           if [ -n "${effective_team_id}" ]; then
             echo "Using Vercel teamId=${effective_team_id}"
@@ -184,8 +185,7 @@ jobs:
           fi
 
           echo "Resetting alias ${WHATSAPP_PREVIEW_ALIAS} -> ${url} (${deployment_id})"
-          payload="$(jq -n --arg alias "${WHATSAPP_PREVIEW_ALIAS}" --arg deploymentId "${deployment_id}" '{alias: $alias, deploymentId: $deploymentId}')"
-          alias_endpoint="https://api.vercel.com/v2/aliases"
+          alias_endpoint="https://api.vercel.com/v2/deployments/${deployment_id}/aliases"
           if [ -n "${effective_team_id}" ]; then
             alias_endpoint="${alias_endpoint}?teamId=${effective_team_id}"
           fi
@@ -194,7 +194,7 @@ jobs:
             -H "Authorization: Bearer ${VERCEL_TOKEN}" \
             -H "Content-Type: application/json" \
             "${alias_endpoint}" \
-            -d "${payload}")"
+            -d "$(jq -n --arg alias \"${WHATSAPP_PREVIEW_ALIAS}\" '{alias: $alias}')")"
           status="${response##*$'\n'}"
           body="${response%$'\n'*}"
           if [ "${status}" -ge 400 ]; then
