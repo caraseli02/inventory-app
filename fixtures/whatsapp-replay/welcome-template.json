@@ -1,0 +1,15 @@
+{
+  "name": "Welcome template: first contact quick replies",
+  "description": "Asserts that a first-contact greeting triggers a Twilio Content Template send when TWILIO_WELCOME_SID is configured.",
+  "phone": "+40710000004",
+  "profileName": "Replay Welcome",
+  "resetConversation": true,
+  "steps": [
+    {
+      "body": "Buna ziua",
+      "note": "First contact greeting — should send welcome content template (quick replies)",
+      "expectAsyncTemplateSid": ["env:TWILIO_WELCOME_CONTENT_SID", "env:TWILIO_WELCOME_SID"],
+      "pauseMs": 2000
+    }
+  ]
+}

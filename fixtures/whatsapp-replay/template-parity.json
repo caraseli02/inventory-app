@@ -6,12 +6,6 @@
   "resetConversation": true,
   "steps": [
     {
-      "body": "Buna ziua",
-      "note": "Greeting — should get a greeting reply",
-      "expectAsyncBodyIncludes": ["Bună", "Buna", "Hello"],
-      "pauseMs": 2000
-    },
-    {
       "body": "ce aveti?",
       "note": "Browse text — should send category picker as numbered list",
       "expectAsyncBodyIncludes": ["Categorii disponibile"],
