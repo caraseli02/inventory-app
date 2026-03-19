@@ -61,7 +61,9 @@ jobs:
           }
 
           deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
-          read -r deployment_id url < <(find_ready "${deployments}")
+          mapfile -t found < <(find_ready "${deployments}")
+          deployment_id="${found[0]:-}"
+          url="${found[1]:-}"
 
           # Retry for a short window to avoid flaking on Vercel readiness races.
           for i in {1..15}; do
@@ -71,7 +73,9 @@ jobs:
             echo "No READY deployment found yet for branch=${BRANCH} sha=${HEAD_SHA} (attempt ${i}/15). Waiting 5s..."
             sleep 5
             deployments="$(curl -fsSL -H "Authorization: Bearer ${VERCEL_TOKEN}" "https://api.vercel.com/v6/deployments?${qs}")"
-            read -r deployment_id url < <(find_ready "${deployments}")
+            mapfile -t found < <(find_ready "${deployments}")
+            deployment_id="${found[0]:-}"
+            url="${found[1]:-}"
           done
 
           if [ -z "${deployment_id}" ] || [ "${deployment_id}" = "null" ]; then
@@ -95,14 +99,25 @@ jobs:
             exit 1
           fi
 
-          echo "Setting alias ${WHATSAPP_PREVIEW_ALIAS} -> ${url} (${deployment_id})"
-          payload="$(jq -n --arg alias "${WHATSAPP_PREVIEW_ALIAS}" --arg deploymentId "${deployment_id}" '{alias: $alias, deploymentId: $deploymentId}')"
-          curl -fsSL \
+          # Vercel alias API expects a bare domain, not a full URL.
+          alias_domain="${WHATSAPP_PREVIEW_ALIAS#https://}"
+          alias_domain="${alias_domain#http://}"
+          alias_domain="${alias_domain%%/*}"
+
+          echo "Setting alias ${alias_domain} -> ${url} (${deployment_id})"
+          payload="$(jq -n --arg alias "${alias_domain}" --arg deploymentId "${deployment_id}" '{alias: $alias, deploymentId: $deploymentId}')"
+          response="$(curl -sS -w $'\n%{http_code}' \
             -X POST \
             -H "Authorization: Bearer ${VERCEL_TOKEN}" \
             -H "Content-Type: application/json" \
             "https://api.vercel.com/v2/aliases${VERCEL_TEAM_ID:+?teamId=${VERCEL_TEAM_ID}}" \
-            -d "${payload}" >/dev/null
+            -d "${payload}")"
+          status="${response##*$'\n'}"
+          body="${response%$'\n'*}"
+          if [ "${status}" -ge 400 ]; then
+            echo "Alias API failed (${status}): ${body}"
+            exit 1
+          fi
 
   reset_alias:
     if: github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'whatsapp-preview')
