@@ -6,10 +6,30 @@
  */
 
 import '@testing-library/jest-dom'
-import '../i18n'
 import { afterEach, beforeEach, beforeAll, afterAll, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import { resetIdCounter } from './factories'
+
+function setupLocalStorage() {
+  const store = new Map<string, string>();
+  const localStorageShim: Storage = {
+    get length() { return store.size; },
+    clear: () => { store.clear(); },
+    getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
+    removeItem: (key: string) => { store.delete(key); },
+    setItem: (key: string, value: string) => { store.set(key, String(value)); },
+  };
+
+  Object.defineProperty(window, 'localStorage', { value: localStorageShim, configurable: true });
+  Object.defineProperty(globalThis, 'localStorage', { value: localStorageShim, configurable: true });
+}
+
+beforeAll(async () => {
+  setupLocalStorage();
+  window.localStorage.setItem('preferredLanguage', 'en');
+  await import('../i18n');
+});
 
 // Reset ID counter before each test to ensure deterministic IDs
 beforeEach(() => {
