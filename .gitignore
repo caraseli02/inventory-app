@@ -172,6 +172,9 @@ visual-regression-*.mjs
 
 .worktrees
 
+# Codex / local agent scratch
+.context/
+
 # Debug files
 debug-*.txt
 debug-*.json

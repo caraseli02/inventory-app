@@ -333,8 +333,10 @@ describe('maybeHandleOrderFollowup — repeatedQty multi-item path removed', () 
       customerPhone: '+40123',
     });
     expect(result).not.toBeNull();
-    expect(result?.createdOrder).toBe(true);
-    expect(result?.text).toContain('ORDER:');
+    expect(result?.createdOrder).toBe(false);
+    expect(result?.text).toContain('Care anume?');
+    expect(result?.text).toContain('1) Lapte');
+    expect(result?.text).not.toContain('ORDER:');
   });
 });
 
@@ -379,5 +381,26 @@ describe('createPendingOrderFromPending', () => {
     });
 
     expect(orderNumber).toBe('ORD-123');
+  });
+});
+
+describe('WhatsApp follow-up safety (tool-first prompts)', () => {
+  it('does not create ORDER from assistant-only single product mention', () => {
+    const history: ConversationMessage[] = [
+      { role: 'assistant', content: 'Avem: • Branza Cheddar — €4.50, stoc: 8', timestamp: 't1' },
+    ];
+
+    const followup = maybeHandleOrderFollowup({
+      userText: 'da 2 maine 12:00',
+      history,
+      inventoryText: '',
+      customerName: 'Test',
+      customerPhone: '+40000000000',
+    });
+
+    expect(followup).not.toBeNull();
+    expect(followup?.createdOrder).toBe(false);
+    expect(followup?.text).toContain('Care anume?');
+    expect(followup?.text).not.toContain('ORDER:');
   });
 });

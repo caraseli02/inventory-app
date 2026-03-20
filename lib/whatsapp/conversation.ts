@@ -142,6 +142,10 @@ function extractProductNamesFromAssistantText(text: string): string[] {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
+    .map((line) => {
+      const inlineBullet = line.indexOf('•');
+      return inlineBullet > 0 ? line.slice(inlineBullet) : line;
+    })
     .filter((line) => /^([*•-]\s+|\d+\)\s+)/.test(line))
     .map((line) => line.replace(/^([*•-]\s+|\d+\)\s+)/, ''))
     .map((line) => line.split(' — ')[0] ?? '')
@@ -249,10 +253,10 @@ function findRecentAssistantProductMentions(history: ConversationMessage[]): str
     if (message.role !== 'assistant' || !message.content) continue;
 
     const menuOptions = extractMenuOptionsFromAssistantText(message.content);
-    if (menuOptions.length >= 2) return menuOptions;
+    if (menuOptions.length >= 1) return menuOptions;
 
     const listedProducts = extractProductNamesFromAssistantText(message.content);
-    if (listedProducts.length >= 2) return listedProducts;
+    if (listedProducts.length >= 1) return listedProducts;
   }
   return [];
 }
@@ -314,23 +318,44 @@ export function maybeHandleOrderFollowup(args: {
   customerPhone: string;
 }): { text: string; createdOrder: boolean } | null {
   if (!looksLikeOrderRequest(args.userText)) return null;
-  if (!args.inventoryText || args.inventoryText.trim() === 'Inventar indisponibil.') return null;
 
   const pickupTime = parsePickupTime(args.userText);
   const qty = parseSingleQuantity(args.userText);
   const repeatedQty = parseRepeatedQuantity(args.userText);
   if (!pickupTime || (!qty && !repeatedQty)) return null;
 
-  const inventoryNames = extractInventoryNames(args.inventoryText);
   const recentNames = findRecentAssistantProductMentions(args.history);
+  const hasAssistantContext = recentNames.length > 0;
+  const inventoryNames = recentNames.length
+    ? []
+    : (!args.inventoryText || args.inventoryText.trim() === 'Inventar indisponibil.')
+      ? []
+      : extractInventoryNames(args.inventoryText);
   const candidateNames = recentNames.length ? recentNames : inventoryNames;
   if (!candidateNames.length) return null;
 
   const normalizedUserText = normalizeFreeText(args.userText);
   const matches = candidateNames.filter((name) => normalizedUserText.includes(normalizeFreeText(name)));
 
-  if (matches.length === 1 || candidateNames.length === 1) {
-    const chosen = matches[0] ?? candidateNames[0]!;
+  // Safety: if the only context is from assistant mentions (and the user didn't repeat the name),
+  // do not create an ORDER automatically — require explicit selection/mention.
+  if (matches.length === 1) {
+    const chosen = matches[0]!;
+    const quantity = qty ?? repeatedQty ?? 1;
+    const payload = {
+      customer_name: args.customerName,
+      customer_phone: args.customerPhone,
+      items: [{ name: chosen, qty: quantity }],
+      pickup_time: pickupTime,
+    };
+    return {
+      text: `Perfect — confirm: ${quantity} × ${chosen}, ridicare la ${pickupTime}.\nORDER:${JSON.stringify(payload)}`,
+      createdOrder: true,
+    };
+  }
+
+  if (candidateNames.length === 1 && !hasAssistantContext) {
+    const chosen = candidateNames[0]!;
     const quantity = qty ?? repeatedQty ?? 1;
     const payload = {
       customer_name: args.customerName,

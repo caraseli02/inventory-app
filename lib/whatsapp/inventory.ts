@@ -37,6 +37,14 @@ interface MovementRow {
   quantity: number;
 }
 
+export interface ProductSearchResult {
+  id: string;
+  name: string;
+  category: string | null;
+  price: number | null;
+  currentStock: number;
+}
+
 type ProductMatchResult =
   | { type: 'match'; product: ProductRow }
   | { type: 'not_found' }
@@ -112,6 +120,88 @@ function scoreProductName(name: string, query: string): number {
   }
 
   return overlap > 0 ? 40 + overlap * 10 : 0;
+}
+
+function clampLimit(raw: unknown, fallback: number, max: number): number {
+  const num = raw == null ? NaN : Number(raw);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.min(max, Math.max(1, Math.floor(num)));
+}
+
+function sanitizeSearchQuery(raw: unknown): string {
+  const query = String(raw ?? '')
+    .replace(/[%_]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!query) return '';
+  return query.length > 200 ? query.slice(0, 200) : query;
+}
+
+export async function searchProducts(
+  sb: InventoryQueryableClient,
+  args: { query: string; limit?: number },
+): Promise<ProductSearchResult[]> {
+  const limit = clampLimit(args.limit, 10, 25);
+  const rawQuery = sanitizeSearchQuery(args.query);
+  const normalizedQuery = normalizeProductText(rawQuery);
+  if (!normalizedQuery) return [];
+
+  const stockMovementsTable = sb.from('stock_movements') as StockMovementsQuery;
+
+  const searchTerms = new Set<string>([rawQuery]);
+  const tokens = normalizedQuery.split(' ').filter(Boolean);
+  if (tokens.includes('milk')) searchTerms.add('lapte');
+  const scoringQuery = normalizeProductText([...searchTerms].join(' ')) || normalizedQuery;
+
+  const candidateMap = new Map<string, ProductRow>();
+  for (const term of [...searchTerms].map((value) => value.trim()).filter(Boolean)) {
+    const productsTable = sb.from('products') as ProductsQuery;
+    const { data: rows } = await productsTable
+      .select('id, created_at, name, category, price, price_50, price_70, price_100, markup')
+      .ilike('name', `%${term}%`)
+      .limit(80);
+    for (const row of (rows as ProductRow[] | null) ?? []) {
+      candidateMap.set(row.id, row);
+    }
+  }
+
+  const products = [...candidateMap.values()]
+    .map((product) => ({
+      product,
+      score: scoreProductName(normalizeProductText(product.name), scoringQuery),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) return right.score - left.score;
+      return new Date(right.product.created_at).getTime() - new Date(left.product.created_at).getTime();
+    });
+
+  const deduped: ProductRow[] = [];
+  const seenNames = new Set<string>();
+  for (const entry of products) {
+    if (seenNames.has(entry.product.name)) continue;
+    seenNames.add(entry.product.name);
+    deduped.push(entry.product);
+    if (deduped.length >= limit) break;
+  }
+
+  if (!deduped.length) return [];
+
+  const ids = deduped.map((product) => product.id);
+  const { data: movements } = await stockMovementsTable.select('product_id, quantity').in('product_id', ids);
+
+  const stockMap: Record<string, number> = {};
+  for (const movement of (movements ?? []) as MovementRow[]) {
+    stockMap[movement.product_id] = (stockMap[movement.product_id] ?? 0) + movement.quantity;
+  }
+
+  return deduped.map((product) => ({
+    id: product.id,
+    name: product.name,
+    category: product.category ?? null,
+    price: getStorePrice(product),
+    currentStock: stockMap[product.id] ?? 0,
+  }));
 }
 
 export async function resolveProductById(
@@ -291,6 +381,56 @@ export async function getProductsByCategory(sb: InventoryQueryableClient, catego
   return [...cheapestByName.values()]
     .slice(0, 6)
     .map((entry) => entry.name.substring(0, 60));
+}
+
+export async function searchProductNames(
+  sb: InventoryQueryableClient,
+  args: { candidates: string[]; limit?: number },
+): Promise<string[]> {
+  const limit = clampLimit(args.limit, 10, 12);
+  const makeProductsQuery = () => (sb.from('products') as ProductsQuery)
+    .select('name, created_at')
+    .order('created_at', { ascending: false });
+
+  let rows: Array<{ name: string; created_at: string }> = [];
+
+  if (args.candidates.length) {
+    let best: { rows: Array<{ name: string; created_at: string }>; count: number } | null = null;
+    for (const term of args.candidates) {
+      const safeTerm = sanitizeSearchQuery(term);
+      if (!safeTerm) continue;
+      const { data } = await makeProductsQuery().ilike('name', `%${safeTerm}%`).limit(25);
+      const hit = ((data as Array<{ name: string; created_at: string }> | null) ?? []);
+      if (hit.length === 1) {
+        rows = hit;
+        break;
+      }
+      if (hit.length > 1 && (!best || hit.length < best.count)) {
+        best = { rows: hit, count: hit.length };
+      }
+    }
+    if (!rows.length && best) rows = best.rows;
+  }
+
+  if (!rows.length) {
+    const { data } = await (sb.from('products') as ProductsQuery)
+      .select('name, created_at')
+      .order('name', { ascending: true })
+      .limit(30);
+    rows = ((data as Array<{ name: string; created_at: string }> | null) ?? []);
+  }
+
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const name = String(row.name ?? '').trim();
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    names.push(name.substring(0, 60));
+    if (names.length >= limit) break;
+  }
+
+  return names;
 }
 
 export async function getInventorySummary(

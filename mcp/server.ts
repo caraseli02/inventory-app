@@ -194,6 +194,66 @@ export function createServer(): McpServer {
     },
   );
 
+  // ── search_products (alias for WhatsApp spec) ────────────────────────────
+  registerAppTool(
+    server,
+    'search_products',
+    {
+      title: 'Search Products',
+      description:
+        'Search inventory by product name (case-insensitive substring match). Fields: id, name, barcode, category, price (EUR), supplier, minStock, currentStock. Intended for WhatsApp agent usage.',
+      inputSchema: {
+        query: z
+          .string()
+          .min(1)
+          .max(200)
+          .describe('Search term to match against product names (e.g. "milk")'),
+        limit: z
+          .number()
+          .int()
+          .min(1)
+          .max(50)
+          .optional()
+          .describe('Max number of results (default 10)'),
+      },
+      _meta: { ui: { resourceUri: PRODUCT_CARD_URI } },
+    },
+    async ({ query, limit }) => {
+      const rawLimit = typeof limit === 'number' ? limit : Number(limit);
+      const max = Number.isFinite(rawLimit) ? Math.min(50, Math.max(1, Math.floor(rawLimit))) : 10;
+      const safeQuery = String(query ?? '')
+        .replace(/[%_]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 200);
+      if (!safeQuery) return jsonContent({ tool: 'search_products', query: safeQuery, products: [] });
+
+      const { data, error } = await supabase
+        .from('products')
+        .select(PRODUCT_SELECT)
+        .ilike('name', `%${safeQuery}%`)
+        .limit(max);
+      if (error) throw new Error(`Name search failed: ${error.message}`);
+
+      const rows = (data ?? []) as ProductRow[];
+      if (!rows.length) {
+        return jsonContent({ tool: 'search_products', query: safeQuery, products: [] });
+      }
+      const ids = rows.map((r) => r.id);
+      const { data: mvData, error: mvError } = await supabase
+        .from('stock_movements')
+        .select('product_id, quantity')
+        .in('product_id', ids);
+      if (mvError) throw new Error(`Stock fetch failed: ${mvError.message}`);
+
+      return jsonContent({
+        tool: 'search_products',
+        query,
+        products: calcStock(rows, (mvData ?? []) as MovementRow[]).map(mapRow),
+      });
+    },
+  );
+
   // ── find_product_by_barcode ──────────────────────────────────────────────
   registerAppTool(
     server,
