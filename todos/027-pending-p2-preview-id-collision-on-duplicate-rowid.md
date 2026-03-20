@@ -14,15 +14,15 @@ Invoice preview row identity now depends on `rowId` when present. If OCR yields 
 
 ## Findings
 
-- `getPreviewId` returns `row:${rowId}` directly when `rowId` exists, without uniqueness guard by index.
+- Before fix: `getPreviewId` returned `row:${rowId}` directly when `rowId` exists, without uniqueness guard by index.
 - `importActions` and `removedPreviewIds` are keyed by this `previewId`, so collisions merge state across rows.
 - `TableRow` key also uses `previewId`, so duplicate keys can cause unstable React reconciliation.
 - Evidence:
-- `src/components/invoice/InvoiceUploadDialog.tsx:68`
-- `src/components/invoice/InvoiceUploadDialog.tsx:70`
-- `src/components/invoice/InvoiceUploadDialog.tsx:366`
-- `src/components/invoice/InvoiceUploadDialog.tsx:442`
-- `src/components/invoice/InvoiceUploadDialog.tsx:886`
+- `src/hooks/useInvoiceImport.helpers.ts:51`
+- `src/hooks/useInvoiceImport.ts:36`
+- `src/hooks/useInvoiceImport.ts:43`
+- `src/hooks/useInvoiceImport.ts:192`
+- `src/components/invoice/InvoicePreviewTable.tsx:118`
 
 ## Proposed Solutions
 
@@ -54,15 +54,22 @@ Invoice preview row identity now depends on `rowId` when present. If OCR yields 
 
 ## Recommended Action
 
+Implement Option 1 (unique tiebreaker): `row:${rowId}:idx:${index}` and add a regression test for duplicate-rowId removal isolation.
+
 
 ## Technical Details
 
 **Affected files:**
-- `src/components/invoice/InvoiceUploadDialog.tsx`
+- `src/hooks/useInvoiceImport.helpers.ts`
+- `tests/unit/components/invoice/InvoiceUploadDialog.flow.test.tsx`
 
 ## Resources
 
 - PR #110
+- `docs/solutions/state-issues/invoice-preview-row-state-drift-InvoiceUploadDialog-20260216.md` (precedent; original `previewId` intro)
+- `todos/013-complete-p2-import-action-index-shift.md` (state drift precedent)
+- `todos/014-complete-p2-removed-items-return-on-fx-change.md` (FX recompute + removals precedent)
+- `docs/specs/invoice-import-api-contract.md` (server contract implies `row_id` uniqueness)
 
 ## Acceptance Criteria
 
@@ -83,6 +90,20 @@ Invoice preview row identity now depends on `rowId` when present. If OCR yields 
 
 **Learnings:**
 - Stable IDs also need uniqueness guarantees; a trusted external row ID is insufficient without deduping.
+
+### 2026-03-20 - Implemented fix + regression test
+
+**By:** Codex
+
+**Actions:**
+- Updated `getPreviewId` to include an index tiebreaker for `rowId` rows.
+- Added unit test covering duplicate `rowId` + remove + FX recompute.
+- Added Playwright E2E test covering duplicate `row_id` + remove + FX recompute.
+- Verified: `pnpm vitest run tests/unit/components/invoice/InvoiceUploadDialog.flow.test.tsx` and `pnpm typecheck`.
+  - Verified: `pnpm test:e2e -- tests/e2e/invoice-duplicate-rowid.spec.ts`
+
+**Learnings:**
+- Index tiebreaker is sufficient as long as the index is derived from the raw OCR row list (not the filtered preview list).
 
 ## Notes
 

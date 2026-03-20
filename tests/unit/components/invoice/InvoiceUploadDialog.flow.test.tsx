@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { InvoiceUploadDialog } from '@/components/invoice/InvoiceUploadDialog';
+import i18n from '@/i18n';
 import type { ImportedProduct } from '@/lib/xlsx';
 import type { Product } from '@/types';
 
@@ -25,6 +26,10 @@ import { extractInvoiceData } from '@/lib/invoiceOCR';
 import { previewInvoicePricing } from '@/lib/invoiceImportApi';
 
 describe('InvoiceUploadDialog flow', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('en');
+  });
+
   it('runs upload -> preview -> import -> complete and calls onImport', async () => {
     vi.mocked(extractInvoiceData).mockResolvedValue({
       success: true,
@@ -191,6 +196,74 @@ describe('InvoiceUploadDialog flow', () => {
     await waitFor(() => {
       expect(screen.queryByText('Invoice Test Product A')).not.toBeInTheDocument();
       expect(screen.getByText('Invoice Test Product B')).toBeInTheDocument();
+    });
+  });
+
+  it('does not remove sibling rows when OCR returns duplicate rowId values', async () => {
+    vi.mocked(extractInvoiceData).mockResolvedValue({
+      success: true,
+      data: {
+        products: [
+          {
+            rowId: 'row-dup',
+            name: 'Invoice Duplicate A',
+            quantity: 1,
+            unitPrice: 10,
+            totalPrice: 10,
+            barcode: '1234567890123',
+            weightKgCandidate: 0.5,
+          },
+          {
+            rowId: 'row-dup',
+            name: 'Invoice Duplicate B',
+            quantity: 1,
+            unitPrice: 10,
+            totalPrice: 10,
+            barcode: '1234567890124',
+            weightKgCandidate: 0.5,
+          },
+        ],
+        supplier: 'Test Supplier',
+        invoiceNumber: 'INV-102',
+        invoiceDate: '2026-02-17',
+        totalAmount: 20,
+      },
+    });
+
+    render(
+      <InvoiceUploadDialog
+        open
+        onOpenChange={vi.fn()}
+        onImport={vi.fn()}
+        products={[] as Product[]}
+      />
+    );
+
+    const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
+    const file = new File([new Blob(['%PDF-1.4'])], 'invoice.pdf', { type: 'application/pdf' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Successfully extracted 2 products/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Invoice Duplicate A')).toBeInTheDocument();
+    expect(screen.getByText('Invoice Duplicate B')).toBeInTheDocument();
+
+    const removeButtons = screen.getAllByTitle(/Remove product/i);
+    fireEvent.click(removeButtons[0]!);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Invoice Duplicate A')).not.toBeInTheDocument();
+      expect(screen.getByText('Invoice Duplicate B')).toBeInTheDocument();
+    });
+
+    const fxInput = screen.getByPlaceholderText(/Enter rate/i);
+    fireEvent.change(fxInput, { target: { value: '20' } });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Invoice Duplicate A')).not.toBeInTheDocument();
+      expect(screen.getByText('Invoice Duplicate B')).toBeInTheDocument();
     });
   });
 });

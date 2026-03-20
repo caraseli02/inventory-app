@@ -50,7 +50,7 @@ export const inferCategoryFromName = (name: string): string => {
 
 export const getPreviewId = (product: InvoiceProduct, index: number): string => {
   const rowId = product.rowId?.trim();
-  if (rowId) return `row:${rowId}`;
+  if (rowId) return `row:${rowId}:idx:${index}`;
   return `idx:${index}`;
 };
 
