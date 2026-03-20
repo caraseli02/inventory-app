@@ -1,13 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { generateText } from 'ai';
+import { generateText, stepCountIs, tool } from 'ai';
 import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
 import { appendHistory, getHistory, getLanguage, resetConversationHistory, setLanguage } from './conversation-state.js';
 import {
   buildOverloadedReply,
   buildStoreInfoReply,
   classifyIncomingText,
   detectEnglish,
-  extractInventoryNames,
   extractSearchCandidates,
   extractSearchCandidatesFromHistory,
   handleCancellationRequest,
@@ -17,7 +17,7 @@ import {
   maybeRepairOrderReply,
 } from './conversation.js';
 import { createSupabaseClient, type ServerSupabaseClient } from './db.js';
-import { getInventorySummary } from './inventory.js';
+import { getInventorySummary, searchProducts, searchProductNames } from './inventory.js';
 import { processOrderIntent } from './order-intent.js';
 import { buildSystemPrompt } from './prompts.js';
 import type {
@@ -31,6 +31,154 @@ type GenerateLlmReply = (args: { system: string; messages: LlmMessage[] }) => Pr
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function sanitizeToolQuery(raw: unknown): string {
+  const query = String(raw ?? '')
+    .replace(/[%_]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return query.length > 200 ? query.slice(0, 200) : query;
+}
+
+function parseFiniteInt(value: unknown): number | null {
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(num)) return null;
+  return Math.floor(num);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function buildListPickerHistoryText(items: string[]): string {
+  const list = items.map((item, idx) => `${idx + 1}) ${item}`).join('\n');
+  return `Care anume?\n${list}`;
+}
+
+function mapSearchToolResult(rows: Awaited<ReturnType<typeof searchProducts>>) {
+  return {
+    products: rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      category: row.category ?? undefined,
+      price: row.price != null ? Number(row.price.toFixed(2)) : undefined,
+      currentStock: row.currentStock,
+      outOfStock: row.currentStock <= 0,
+    })),
+  };
+}
+
+const SEARCH_PRODUCTS_INPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    query: { type: 'string', description: 'Product name or partial match (e.g. "milk")' },
+    limit: { type: 'integer', description: 'Max results (default 10, max 25)' },
+  },
+  required: ['query'],
+} as const;
+
+async function generateAnthropicReplyWithTools(args: {
+  anthropic: Anthropic;
+  system: string;
+  messages: LlmMessage[];
+  sb: ServerSupabaseClient;
+  userTextForOverload: string;
+}): Promise<string> {
+  // Keep tool typing loose here — Anthropic SDK tool types have shifted between versions.
+  const toolDefs = [{
+    name: 'search_products',
+    description: 'Search live inventory by product name or partial match. Returns name, price (EUR), and current stock.',
+    input_schema: SEARCH_PRODUCTS_INPUT_SCHEMA,
+  }] as unknown as NonNullable<Anthropic.MessageCreateParams['tools']>;
+
+  const thread: Anthropic.MessageParam[] = args.messages.map((message) => ({
+    role: message.role,
+    content: message.content,
+  }));
+
+  for (let step = 0; step < 4; step += 1) {
+    try {
+      const response = await createAnthropicMessageWithRetry(args.anthropic, {
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        system: args.system,
+        messages: thread,
+        tools: toolDefs,
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const toolUses = (response.content.filter((block: any) => block.type === 'tool_use') as any[]) ?? [];
+      const text = response.content
+        .filter((block) => block.type === 'text')
+        .map((block) => (block.type === 'text' ? block.text : ''))
+        .join('');
+
+      if (!toolUses.length) return text;
+
+      thread.push({ role: 'assistant', content: response.content });
+
+      for (const use of toolUses) {
+        const input = (use.input ?? {}) as { query?: unknown; limit?: unknown };
+        if (use.name !== 'search_products') {
+          thread.push({
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: use.id,
+              content: JSON.stringify({ error: 'Unsupported tool' }),
+              is_error: true,
+            }],
+          });
+          continue;
+        }
+
+        const query = sanitizeToolQuery(input.query);
+        const parsedLimit = parseFiniteInt(input.limit);
+        const limit = parsedLimit == null ? undefined : clamp(parsedLimit, 1, 25);
+
+        if (!query) {
+          thread.push({
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: use.id,
+              content: JSON.stringify({ products: [] }),
+            }],
+          });
+          continue;
+        }
+
+        try {
+          const rows = await searchProducts(args.sb, { query, limit });
+          thread.push({
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: use.id,
+              content: JSON.stringify(mapSearchToolResult(rows)),
+            }],
+          });
+        } catch (err) {
+          console.error('[whatsapp] search_products tool failed:', err);
+          thread.push({
+            role: 'user',
+            content: [{
+              type: 'tool_result',
+              tool_use_id: use.id,
+              content: JSON.stringify({ error: 'Inventar indisponibil.' }),
+              is_error: true,
+            }],
+          });
+        }
+      }
+    } catch (err) {
+      if (isAnthropicOverloaded(err)) return buildOverloadedReply(args.userTextForOverload);
+      throw err;
+    }
+  }
+
+  return '';
 }
 
 export async function runConversationTurn(args: {
@@ -114,19 +262,32 @@ export async function runConversationTurn(args: {
   // Update stored language preference (non-blocking)
   const currentLang = detectEnglish(args.text) ? 'en' : 'ro';
   setLanguage(args.sb, args.phone, currentLang).catch(() => {});
-  const inventoryText = await getInventorySummary(args.sb, { intent, text: args.text, candidatesOverride: searchCandidatesUsed });
+  const shouldIncludeInventory = args.llmProvider === 'local' || intent === 'browse_inventory';
+  const inventoryText = shouldIncludeInventory
+    ? await getInventorySummary(args.sb, { intent, text: args.text, candidatesOverride: searchCandidatesUsed })
+    : '';
 
-  // Text-only numbered disambiguation when the inventory lookup yields a small candidate set.
+  // Text-only numbered disambiguation when the name lookup yields a small candidate set.
   if (intent === 'product_query') {
-    const candidateNames = extractInventoryNames(inventoryText);
-    if (candidateNames.length >= 2 && candidateNames.length <= 10) {
+    if (searchCandidatesUsed.length > 0) {
+      const candidateNames = await searchProductNames(args.sb, { candidates: searchCandidatesUsed, limit: 10 });
+      if (candidateNames.length >= 2 && candidateNames.length <= 9) {
       console.log('[whatsapp] returning list-picker result with', candidateNames.length, 'items');
+      try {
+        await appendHistory(args.sb, args.phone, history, [
+          { role: 'user', content: args.text, timestamp: nowIso() },
+          { role: 'assistant', content: buildListPickerHistoryText(candidateNames), timestamp: nowIso() },
+        ]);
+      } catch (err) {
+        console.error('[whatsapp] history append failed:', err);
+      }
       return {
         provider: 'local',
         reply: '',
         listPicker: candidateNames,
         ...(args.includeDebug ? { debug: { intent, inventoryText, searchCandidatesCurrent, searchCandidatesFromHistory, searchCandidatesUsed, repairedOrder: false } } : {}),
       };
+    }
     }
   }
 
@@ -163,20 +324,64 @@ export async function runConversationTurn(args: {
         { role: 'user', content: args.text },
       ];
 
-      const system = buildSystemPrompt(args.name, args.phone, inventoryText);
+      const system = buildSystemPrompt(
+        args.name,
+        args.phone,
+        shouldIncludeInventory ? inventoryText : '',
+      );
       replyTextRaw = await args.generateLlmReply({ system, messages });
 
       if (args.repairOrder) {
+        if (/ORDER:\s*\{[\s\S]*\}/i.test(replyTextRaw)) {
+          // Already has ORDER payload; do not waste a DB hit trying to repair.
+          const orderResult = await processOrderIntent(args.sb, replyTextRaw);
+          replyTextRaw = orderResult.reply;
+          const { reply, pending } = orderResult;
+          try {
+            await appendHistory(args.sb, args.phone, history, [
+              { role: 'user', content: args.text, timestamp: nowIso() },
+              { role: 'assistant', content: reply, timestamp: nowIso() },
+            ]);
+          } catch (err) {
+            console.error('[whatsapp] history append failed:', err);
+          }
+          return {
+            provider,
+            reply,
+            ...(pending ? { pending } : {}),
+            ...(args.includeDebug ? {
+              debug: {
+                intent,
+                inventoryText,
+                searchCandidatesCurrent,
+                searchCandidatesFromHistory,
+                searchCandidatesUsed,
+                repairedOrder: false,
+              },
+            } : {}),
+          };
+        }
+
         const recentUserMessages = history
           .filter((message) => message.role === 'user')
           .slice(-3)
           .map((message) => message.content)
           .join(' ');
+        const hasTime = /\b([01]?\d|2[0-3])[.:][0-5]\d\b/.test(args.text);
+        const hasQty = /\b([1-9]\d?)\b/.test(args.text);
+        const shouldAttemptRepair = hasTime && hasQty && looksLikeOrderRequest(`${recentUserMessages} ${args.text}`);
+        const repairInventoryText = inventoryText || (shouldAttemptRepair
+          ? await getInventorySummary(args.sb, {
+            intent,
+            text: args.text,
+            candidatesOverride: searchCandidatesUsed,
+          })
+          : '');
         const repaired = maybeRepairOrderReply({
           replyText: replyTextRaw,
           userText: args.text,
           historyContext: recentUserMessages,
-          inventoryText,
+          inventoryText: repairInventoryText,
           customerName: args.name,
           customerPhone: args.phone,
         });
@@ -232,24 +437,13 @@ export async function buildReplyWithPending(
     repairOrder: true,
     includeDebug: false,
     generateLlmReply: async ({ system, messages }) => {
-      const typedMessages: Anthropic.MessageParam[] = messages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      }));
-
-      try {
-        const response = await createAnthropicMessageWithRetry(anthropic, {
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 512,
-          system,
-          messages: typedMessages,
-        });
-
-        return response.content[0].type === 'text' ? response.content[0].text : '';
-      } catch (err) {
-        if (isAnthropicOverloaded(err)) return buildOverloadedReply(text);
-        throw err;
-      }
+      return generateAnthropicReplyWithTools({
+        anthropic,
+        system,
+        messages,
+        sb,
+        userTextForOverload: text,
+      });
     },
   });
 }
@@ -364,19 +558,35 @@ export async function buildOpenAiSimulatorReply(
     llmProvider: 'openai',
     repairOrder: true,
     includeDebug: true,
-    generateLlmReply: async ({ system, messages }) => {
-      const model = String(process.env.WHATSAPP_OPENAI_MODEL ?? 'gpt-4.1-nano');
-      const result = await generateText({
-        model: openai(model),
-        system,
-        messages,
-        maxOutputTokens: 512,
-        temperature: 0.2,
-      });
-      return result.text ?? '';
-    },
-  });
-}
+	    generateLlmReply: async ({ system, messages }) => {
+	      const model = String(process.env.WHATSAPP_OPENAI_MODEL ?? 'gpt-4.1-nano');
+	      const result = await generateText({
+	        model: openai(model),
+	        system,
+	        messages,
+	        tools: {
+	          search_products: tool({
+	            description: 'Search live inventory by product name or partial match. Returns name, price (EUR), and current stock.',
+	            inputSchema: z.object({
+	              query: z.string().min(1).max(200),
+	              limit: z.number().int().min(1).max(25).optional(),
+	            }),
+	            execute: async (input) => {
+	              const query = sanitizeToolQuery(input.query);
+	              const parsedLimit = parseFiniteInt(input.limit);
+	              const limit = parsedLimit == null ? undefined : clamp(parsedLimit, 1, 25);
+	              return mapSearchToolResult(await searchProducts(sb, { query, limit }));
+	            },
+	          }),
+	        },
+	        stopWhen: stepCountIs(4),
+	        maxOutputTokens: 512,
+	        temperature: 0.2,
+	      });
+	      return result.text ?? '';
+	    },
+	  });
+	}
 
 export async function buildAnthropicSimulatorReply(
   phone: string,
@@ -395,23 +605,13 @@ export async function buildAnthropicSimulatorReply(
     includeDebug: true,
     generateLlmReply: async ({ system, messages }) => {
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-      const typedMessages: Anthropic.MessageParam[] = messages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      }));
-
-      try {
-        const response = await createAnthropicMessageWithRetry(anthropic, {
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 512,
-          system,
-          messages: typedMessages,
-        });
-        return response.content[0].type === 'text' ? response.content[0].text : '';
-      } catch (err) {
-        if (isAnthropicOverloaded(err)) return buildOverloadedReply(text);
-        throw err;
-      }
+      return generateAnthropicReplyWithTools({
+        anthropic,
+        system,
+        messages,
+        sb,
+        userTextForOverload: text,
+      });
     },
   });
 }
