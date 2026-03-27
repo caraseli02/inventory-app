@@ -20,6 +20,10 @@ Open each HTML file in your browser and take screenshots:
    - Tests: Mixed barcode scenario, VAT handling
    - Expected: 9 products, some with barcodes, some without
 
+4. **invoice-import-ready.pdf** - Browser-friendly happy-path invoice for end-to-end import
+   - Tests: Preview -> Import -> Complete without manual row edits
+   - Expected: 1 product extracted, import button enabled immediately
+
 ### Step 2: Screenshot Instructions
 
 **macOS:**
@@ -79,6 +83,15 @@ Open each HTML file in your browser and take screenshots:
 - Invoice #: KF-RO-2025-456123
 - VAT line should be excluded from products
 - Total: €1,174.53
+
+### Scenario 4: Import-Ready Fixture
+**File:** invoice-import-ready.pdf
+**Expected Results:**
+- 1 product extracted
+- Supplier: Import Ready Supplies SRL
+- Invoice #: INV-IMPORT-READY-001
+- Import button enabled without editing weight in preview
+- Import reaches completion successfully
 
 ## Error Cases to Test
 

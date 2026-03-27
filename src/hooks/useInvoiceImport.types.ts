@@ -4,7 +4,7 @@ import type { Product } from '@/types';
 import type { InvoiceImportAction } from '@/lib/invoiceImportDiffs';
 import type { ImportedProduct } from '@/lib/xlsx/index';
 
-export type InvoiceStep = 'upload' | 'preview' | 'importing' | 'complete';
+export type InvoiceStep = 'upload' | 'processing' | 'preview' | 'importing' | 'complete';
 type MatchType = 'barcode' | 'name';
 
 export const CATEGORIES = [

@@ -37,6 +37,7 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
             {h.t(`invoiceUpload.stepDescriptions.${h.step}` as const, {
               defaultValue: {
                 upload: 'Upload an invoice to automatically extract product data',
+                processing: 'We are processing your invoice in the background',
                 preview: 'Review extracted products before importing',
                 importing: 'Creating products in your inventory...',
                 complete: 'Invoice products have been imported successfully',
@@ -82,6 +83,19 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
             />
           )}
 
+          {h.step === 'processing' && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-[var(--color-forest)] mb-4" />
+              <p className="text-lg font-medium text-stone-700">{h.t('invoiceUpload.status.processing', 'Processing invoice...')}</p>
+              <p className="text-sm text-stone-500 mt-2 text-center max-w-md">
+                {h.t('invoiceUpload.status.processingHelp', 'Your invoice upload finished. We are waiting for extraction to complete.')}
+              </p>
+              {h.fileName && (
+                <p className="text-xs text-stone-400 mt-3 font-mono">{h.fileName}</p>
+              )}
+            </div>
+          )}
+
           {h.step === 'importing' && (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="h-12 w-12 animate-spin text-[var(--color-forest)] mb-4" />
@@ -107,6 +121,11 @@ export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: 
           {h.step === 'upload' && (
             <Button variant="outline" onClick={h.handleClose} disabled={h.isProcessing}>
               {h.t('invoiceUpload.actions.cancel', 'Cancel')}
+            </Button>
+          )}
+          {h.step === 'processing' && (
+            <Button variant="outline" onClick={h.handleClose}>
+              {h.t('invoiceUpload.actions.close', 'Close')}
             </Button>
           )}
           {h.step === 'preview' && (

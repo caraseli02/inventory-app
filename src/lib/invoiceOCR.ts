@@ -1,26 +1,30 @@
 import { logger } from './logger';
 import { resolveSupabaseAccessToken } from './invoiceAuth';
 import {
+  getInvoiceExtractionStatus as getAsyncInvoiceExtractionStatus,
+  handleClientError,
+  parseAcceptedResponse,
+} from './invoiceOCR.async';
+import {
   type InvoiceOCRFailure,
   type InvoiceOCRResult,
   VALID_INVOICE_TYPES,
   VALID_INVOICE_EXTENSIONS,
 } from './invoiceOCR.types';
-import { getApiErrorMessage, validateExtractResponse, mapResponseToInvoiceData } from './invoiceOCR.parse';
+import { validateExtractResponse, mapResponseToInvoiceData } from './invoiceOCR.parse';
 import type { FastAPIExtractResponse } from './invoiceOCR.parse';
 
 // Re-export all public types so consumers keep importing from '@/lib/invoiceOCR'
-export type { InvoiceProduct, InvoiceData, InvoiceOCRSuccess, InvoiceOCRFailure, InvoiceOCRResult } from './invoiceOCR.types';
+export type {
+  InvoiceProduct,
+  InvoiceData,
+  InvoiceOCRSuccess,
+  InvoiceOCRPending,
+  InvoiceOCRFailure,
+  InvoiceOCRResult,
+  InvoiceExtractionJobStatus,
+} from './invoiceOCR.types';
 export { VALID_INVOICE_TYPES, VALID_INVOICE_EXTENSIONS } from './invoiceOCR.types';
-
-function isLocalhostApiUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
-  } catch {
-    return false;
-  }
-}
 
 async function getInvoiceRequestHeaders(): Promise<Record<string, string> | null> {
   // Do not set Content-Type for FormData uploads.
@@ -131,7 +135,10 @@ function validateInvoiceFile(file: File): InvoiceOCRFailure | null {
 function resolveExtractUrl(): string {
   const apiUrl = import.meta.env.VITE_INVOICE_API_URL as string | undefined;
   const normalizedApiUrl = apiUrl?.replace(/\/$/, '');
-  const useDevProxy = import.meta.env.DEV && (!normalizedApiUrl || isLocalhostApiUrl(normalizedApiUrl));
+  const useLocalhostTarget = normalizedApiUrl
+    ? ['localhost', '127.0.0.1'].includes(new URL(normalizedApiUrl).hostname)
+    : false;
+  const useDevProxy = import.meta.env.DEV && (!normalizedApiUrl || useLocalhostTarget);
   return useDevProxy ? '/extract' : normalizedApiUrl ? `${normalizedApiUrl}/extract` : '/api/extract-invoice';
 }
 
@@ -180,22 +187,6 @@ function logObservabilityHeaders(response: Response, extractUrl: string): void {
   }
 }
 
-async function handleClientError(response: Response, extractUrl: string, fileName: string): Promise<InvoiceOCRFailure | null> {
-  if (response.status !== 400 && response.status !== 422) return null;
-
-  const responseText = await response.text();
-  let backendMessage: string | null = null;
-  try {
-    const errorPayload = responseText ? JSON.parse(responseText) : null;
-    backendMessage = getApiErrorMessage(errorPayload);
-  } catch {
-    backendMessage = responseText?.trim() || null;
-  }
-
-  logger.error('Invalid PDF or request error', { url: extractUrl, fileName, status: response.status, backendMessage });
-  return { success: false, error: backendMessage || 'Invalid PDF file. Please ensure the file is a valid PDF document.' };
-}
-
 async function parseJsonResponse(
   response: Response,
   extractUrl: string,
@@ -211,6 +202,8 @@ async function parseJsonResponse(
     return { success: false, error: 'Invalid response from invoice service. Please try again.' };
   }
 }
+
+export const getInvoiceExtractionStatus = getAsyncInvoiceExtractionStatus;
 
 /**
  * Main function: Extract invoice data from uploaded PDF
@@ -273,6 +266,11 @@ export async function extractInvoiceData(
 
     const clientError = await handleClientError(response, extractUrl, file.name);
     if (clientError) return clientError;
+
+    if (response.status === 202) {
+      safeProgress(90);
+      return parseAcceptedResponse(response, extractUrl, file.name);
+    }
 
     if (!response.ok) {
       logger.error('HTTP error from FastAPI', { url: extractUrl, fileName: file.name, status: response.status, statusText: response.statusText });
