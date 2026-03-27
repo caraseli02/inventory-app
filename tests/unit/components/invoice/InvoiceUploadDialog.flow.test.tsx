@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
 
 import { InvoiceUploadDialog } from '@/components/invoice/InvoiceUploadDialog';
 import i18n from '@/i18n';
@@ -11,6 +12,7 @@ vi.mock('@/lib/invoiceOCR', async () => {
   return {
     ...actual,
     extractInvoiceData: vi.fn(),
+    getInvoiceExtractionStatus: vi.fn(),
   };
 });
 
@@ -22,12 +24,13 @@ vi.mock('@/lib/ai', () => ({
   suggestProductDetails: vi.fn().mockResolvedValue(null),
 }));
 
-import { extractInvoiceData } from '@/lib/invoiceOCR';
+import { extractInvoiceData, getInvoiceExtractionStatus } from '@/lib/invoiceOCR';
 import { previewInvoicePricing } from '@/lib/invoiceImportApi';
 
 describe('InvoiceUploadDialog flow', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en');
+    vi.clearAllMocks();
   });
 
   it('runs upload -> preview -> import -> complete and calls onImport', async () => {
@@ -265,5 +268,126 @@ describe('InvoiceUploadDialog flow', () => {
       expect(screen.queryByText('Invoice Duplicate A')).not.toBeInTheDocument();
       expect(screen.getByText('Invoice Duplicate B')).toBeInTheDocument();
     });
+  });
+
+  it('polls accepted extraction jobs and opens preview on terminal success', async () => {
+    vi.mocked(extractInvoiceData).mockResolvedValue({
+      success: false,
+      pending: true,
+      jobId: 'ext-123',
+      jobStatus: 'queued',
+      statusUrl: '/invoice/extraction-jobs/ext-123',
+      retryAfterSeconds: 0,
+    });
+
+    vi.mocked(getInvoiceExtractionStatus).mockResolvedValue({
+      success: true,
+      data: {
+        products: [
+          {
+            rowId: 'row-1',
+            name: 'Async Invoice Product',
+            quantity: 1,
+            unitPrice: 10,
+            totalPrice: 10,
+            barcode: '1234567890999',
+            weightKgCandidate: 0.5,
+          },
+        ],
+        supplier: 'Async Supplier',
+        invoiceNumber: 'INV-ASYNC-1',
+        invoiceDate: '2026-03-27',
+        totalAmount: 10,
+      },
+    });
+
+    render(
+      <InvoiceUploadDialog
+        open
+        onOpenChange={vi.fn()}
+        onImport={vi.fn()}
+        products={[] as Product[]}
+      />
+    );
+
+    const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
+    const file = new File([new Blob(['%PDF-1.4'])], 'invoice.pdf', { type: 'application/pdf' });
+    fireEvent.change(fileInput, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(vi.mocked(getInvoiceExtractionStatus)).toHaveBeenCalledWith('/invoice/extraction-jobs/ext-123');
+      expect(screen.getByText(/Successfully extracted 1 products/i)).toBeInTheDocument();
+      expect(screen.getByText('Async Invoice Product')).toBeInTheDocument();
+    });
+  });
+
+  it('ignores stale async completions after the dialog closes', async () => {
+    let resolveOldJob: ((value: Awaited<ReturnType<typeof getInvoiceExtractionStatus>>) => void) | undefined;
+
+    vi.mocked(extractInvoiceData).mockResolvedValueOnce({
+      success: false,
+      pending: true,
+      jobId: 'ext-old',
+      jobStatus: 'queued',
+      statusUrl: '/invoice/extraction-jobs/ext-old',
+      retryAfterSeconds: 0,
+    });
+
+    vi.mocked(getInvoiceExtractionStatus).mockImplementation(() => new Promise((resolve) => {
+      resolveOldJob = resolve as typeof resolveOldJob;
+    }));
+
+    function Wrapper() {
+      const [open, setOpen] = useState(true);
+      return (
+        <InvoiceUploadDialog
+          open={open}
+          onOpenChange={setOpen}
+          onImport={vi.fn()}
+          products={[] as Product[]}
+        />
+      );
+    }
+
+    render(
+      <Wrapper />
+    );
+
+    const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
+    const oldFile = new File([new Blob(['%PDF-1.4 old'])], 'invoice-old.pdf', { type: 'application/pdf' });
+    fireEvent.change(fileInput, { target: { files: [oldFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/Processing invoice/i)).toBeInTheDocument();
+    });
+
+    const closeButtons = screen.getAllByRole('button', { name: /Close/i });
+    fireEvent.click(closeButtons[closeButtons.length - 1]!);
+
+    resolveOldJob?.({
+      success: true,
+      data: {
+        products: [
+          {
+            rowId: 'row-old',
+            name: 'Old Invoice Product',
+            quantity: 1,
+            unitPrice: 8,
+            totalPrice: 8,
+            barcode: '1234567890222',
+            weightKgCandidate: 0.5,
+          },
+        ],
+        supplier: 'Old Supplier',
+        invoiceNumber: 'INV-OLD',
+        invoiceDate: '2026-03-27',
+        totalAmount: 8,
+      },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(screen.queryByText(/Import from Invoice/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Old Invoice Product')).not.toBeInTheDocument();
   });
 });

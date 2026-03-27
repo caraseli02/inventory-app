@@ -65,6 +65,104 @@ function useProductState() {
   return { editableProducts, setEditableProducts, editingIndex, setEditingIndex, importActions, setImportActions, manualActionPreviewIds, setManualActionPreviewIds, removedPreviewIds, setRemovedPreviewIds, alreadyImportedRowIds, setAlreadyImportedRowIds, pricingComputedByRowId, setPricingComputedByRowId, autoCategoryRef };
 }
 
+function resetInvoiceImportState(
+  cancelActiveAttempt: () => void,
+  setStep: React.Dispatch<React.SetStateAction<InvoiceStep>>,
+  setInvoiceData: React.Dispatch<React.SetStateAction<ReturnType<typeof useInvoiceFileState>['invoiceData']>>,
+  setRawProducts: React.Dispatch<React.SetStateAction<InvoiceProduct[]>>,
+  setFileName: React.Dispatch<React.SetStateAction<string>>,
+  setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>,
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  setFxRate: React.Dispatch<React.SetStateAction<number | null>>,
+  setIsFxManual: React.Dispatch<React.SetStateAction<boolean>>,
+  setFxRateError: React.Dispatch<React.SetStateAction<string | null>>,
+  setIsDragging: React.Dispatch<React.SetStateAction<boolean>>,
+  setEditableProducts: React.Dispatch<React.SetStateAction<InvoicePreviewProduct[]>>,
+  setEditingIndex: React.Dispatch<React.SetStateAction<number | null>>,
+  setImportActions: React.Dispatch<React.SetStateAction<Record<string, InvoiceImportAction>>>,
+  setManualActionPreviewIds: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setRemovedPreviewIds: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setAlreadyImportedRowIds: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setPricingComputedByRowId: React.Dispatch<React.SetStateAction<PricingByRowId>>,
+  autoCategoryRef: React.MutableRefObject<Set<string>>,
+  setImportProgress: React.Dispatch<React.SetStateAction<{ current: number; total: number }>>,
+  setImportErrors: React.Dispatch<React.SetStateAction<string[]>>,
+): void {
+  cancelActiveAttempt();
+  setStep('upload'); setInvoiceData(null); setRawProducts([]); setFileName(''); setIsProcessing(false);
+  setError(null); setFxRate(19.5); setIsFxManual(false); setFxRateError(null); setIsDragging(false);
+  setEditableProducts([]); setEditingIndex(null); setImportActions({}); setManualActionPreviewIds(new Set());
+  setRemovedPreviewIds(new Set()); setAlreadyImportedRowIds(new Set()); setPricingComputedByRowId({});
+  autoCategoryRef.current = new Set<string>(); setImportProgress({ current: 0, total: 0 }); setImportErrors([]);
+}
+
+function createFileSelectHandler(
+  handleFileSelectCore: ReturnType<typeof useInvoiceFileState>['handleFileSelectCore'],
+  fxRate: number | null,
+  setInvoiceData: React.Dispatch<React.SetStateAction<ReturnType<typeof useInvoiceFileState>['invoiceData']>>,
+  setRawProducts: React.Dispatch<React.SetStateAction<InvoiceProduct[]>>,
+  setRemovedPreviewIds: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setEditableProducts: React.Dispatch<React.SetStateAction<InvoicePreviewProduct[]>>,
+  setImportActions: React.Dispatch<React.SetStateAction<Record<string, InvoiceImportAction>>>,
+  setStep: React.Dispatch<React.SetStateAction<InvoiceStep>>,
+): (file: File) => Promise<void> {
+  return async (file) => {
+    await handleFileSelectCore(file, (data, raw) => {
+      setInvoiceData(data);
+      setRawProducts(raw);
+      setRemovedPreviewIds(new Set());
+      setEditableProducts(raw.map((p, i) => mapToEditableProduct(p, i, fxRate)));
+      setImportActions({});
+      setStep('preview');
+    });
+  };
+}
+
+function updateEditableProduct(
+  field: keyof InvoicePreviewProduct,
+  value: string | number,
+  product: InvoicePreviewProduct,
+  fxRate: number | null,
+  isFxReady: boolean,
+): InvoicePreviewProduct {
+  if (!NUMERIC_EDITABLE_FIELDS.has(field)) {
+    return { ...product, [field]: typeof value === 'string' ? value : String(value) };
+  }
+  if (typeof value === 'string' && value.trim() === '') return product;
+  const num = typeof value === 'number' ? value : Number(value);
+  if (!isValidNumber(num)) return product;
+  const next = { ...product, [field]: num } as InvoicePreviewProduct;
+  if (field === 'quantity' || field === 'unitPrice') next.totalPrice = roundCurrency(next.quantity * next.unitPrice);
+  if ((field === 'quantity' || field === 'unitPrice' || field === 'totalPrice') && isFxReady) next.lineTotalLei = roundCurrency(next.totalPrice * fxRate!);
+  return next;
+}
+
+function removeEditableProduct(
+  index: number,
+  editableProducts: InvoicePreviewProduct[],
+  setRemovedPreviewIds: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setImportActions: React.Dispatch<React.SetStateAction<Record<string, InvoiceImportAction>>>,
+  setManualActionPreviewIds: React.Dispatch<React.SetStateAction<Set<string>>>,
+  setEditableProducts: React.Dispatch<React.SetStateAction<InvoicePreviewProduct[]>>,
+  setEditingIndex: React.Dispatch<React.SetStateAction<number | null>>,
+): void {
+  const toRemove = editableProducts[index];
+  if (!toRemove) return;
+  setRemovedPreviewIds((r) => new Set(r).add(toRemove.previewId));
+  setImportActions((a) => {
+    const n = { ...a };
+    delete n[toRemove.previewId];
+    return n;
+  });
+  setManualActionPreviewIds((m) => {
+    const n = new Set(m);
+    n.delete(toRemove.previewId);
+    return n;
+  });
+  setEditableProducts((prev) => prev.filter((_, i) => i !== index));
+  setEditingIndex(null);
+}
+
 // ── FX + raw product effects ──────────────────────────────────────────────────
 
 function useFxRecomputeEffect(
@@ -147,7 +245,7 @@ export function useInvoiceImport({ onOpenChange, onImport, products }: UseInvoic
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importErrors, setImportErrors] = useState<string[]>([]);
 
-  const { step, setStep, isDragging, setIsDragging, invoiceData, setInvoiceData, rawProducts, setRawProducts, fileName, ocrProgress, isProcessing, setIsProcessing, error, setError, fxRate, setFxRate, isFxManual, fxRateError, setFxRateError, setIsFxManual, setFileName, handleFileSelectCore, handleFxRateChange } = fs;
+  const { step, setStep, isDragging, setIsDragging, invoiceData, setInvoiceData, rawProducts, setRawProducts, fileName, ocrProgress, isProcessing, setIsProcessing, error, setError, fxRate, setFxRate, isFxManual, fxRateError, setFxRateError, setIsFxManual, setFileName, handleFileSelectCore, handleFxRateChange, cancelActiveAttempt } = fs;
   const { editableProducts, setEditableProducts, editingIndex, setEditingIndex, importActions, setImportActions, manualActionPreviewIds, setManualActionPreviewIds, removedPreviewIds, setRemovedPreviewIds, alreadyImportedRowIds, setAlreadyImportedRowIds, pricingComputedByRowId, setPricingComputedByRowId, autoCategoryRef } = ps;
 
   const isFxReady = fxRate != null && Number.isFinite(fxRate) && fxRate > 0;
@@ -165,52 +263,55 @@ export function useInvoiceImport({ onOpenChange, onImport, products }: UseInvoic
   useSyncImportActions(editableProducts, manualActionPreviewIds, getResolvedDefaultAction, setImportActions);
 
   const resetState = useCallback(() => {
-    setStep('upload'); setInvoiceData(null); setRawProducts([]); setFileName(''); setIsProcessing(false);
-    setError(null); setFxRate(19.5); setIsFxManual(false); setFxRateError(null); setIsDragging(false);
-    setEditableProducts([]); setEditingIndex(null); setImportActions({}); setManualActionPreviewIds(new Set());
-    setRemovedPreviewIds(new Set()); setAlreadyImportedRowIds(new Set()); setPricingComputedByRowId({});
-    autoCategoryRef.current = new Set<string>(); setImportProgress({ current: 0, total: 0 }); setImportErrors([]);
-  }, [setStep, setInvoiceData, setRawProducts, setFileName, setIsProcessing, setError, setFxRate, setIsFxManual, setFxRateError, setIsDragging, setEditableProducts, setEditingIndex, setImportActions, setManualActionPreviewIds, setRemovedPreviewIds, setAlreadyImportedRowIds, setPricingComputedByRowId, autoCategoryRef]);
+    resetInvoiceImportState(
+      cancelActiveAttempt,
+      setStep,
+      setInvoiceData,
+      setRawProducts,
+      setFileName,
+      setIsProcessing,
+      setError,
+      setFxRate,
+      setIsFxManual,
+      setFxRateError,
+      setIsDragging,
+      setEditableProducts,
+      setEditingIndex,
+      setImportActions,
+      setManualActionPreviewIds,
+      setRemovedPreviewIds,
+      setAlreadyImportedRowIds,
+      setPricingComputedByRowId,
+      autoCategoryRef,
+      setImportProgress,
+      setImportErrors,
+    );
+  }, [cancelActiveAttempt, setStep, setInvoiceData, setRawProducts, setFileName, setIsProcessing, setError, setFxRate, setIsFxManual, setFxRateError, setIsDragging, setEditableProducts, setEditingIndex, setImportActions, setManualActionPreviewIds, setRemovedPreviewIds, setAlreadyImportedRowIds, setPricingComputedByRowId, autoCategoryRef, setImportProgress, setImportErrors]);
 
-  const handleFileSelect = useCallback(async (file: File) => {
-    await handleFileSelectCore(file, (data, raw) => {
-      setInvoiceData(data); setRawProducts(raw); setRemovedPreviewIds(new Set());
-      setEditableProducts(raw.map((p, i) => mapToEditableProduct(p, i, fxRate)));
-      setImportActions({}); setStep('preview');
-    });
-  }, [handleFileSelectCore, fxRate, setInvoiceData, setRawProducts, setRemovedPreviewIds, setEditableProducts, setImportActions, setStep]);
+  const handleFileSelect = useCallback(async (file: File) => (
+    createFileSelectHandler(handleFileSelectCore, fxRate, setInvoiceData, setRawProducts, setRemovedPreviewIds, setEditableProducts, setImportActions, setStep)(file)
+  ), [handleFileSelectCore, fxRate, setInvoiceData, setRawProducts, setRemovedPreviewIds, setEditableProducts, setImportActions, setStep]);
 
-  const handleClose = useCallback(() => { if (!isProcessing) { resetState(); onOpenChange(false); } }, [isProcessing, onOpenChange, resetState]);
+  const handleClose = useCallback(() => {
+    if (step === 'importing') return;
+    resetState();
+    onOpenChange(false);
+  }, [onOpenChange, resetState, step]);
   const handleDrop = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file) void handleFileSelect(file); }, [setIsDragging, handleFileSelect]);
   const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); }, [setIsDragging]);
   const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); }, [setIsDragging]);
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) void handleFileSelect(file); }, [handleFileSelect]);
   const handleEditProduct = useCallback((index: number) => { setEditingIndex(index); }, [setEditingIndex]);
-  const handleSaveEdit = useCallback(() => { setEditingIndex(null); }, [setEditingIndex]);
-  const handleCancelEdit = useCallback(() => { setEditingIndex(null); }, [setEditingIndex]);
+  const handleSaveEdit = useCallback(() => { setEditingIndex(null); }, [setEditingIndex]); const handleCancelEdit = handleSaveEdit;
 
-  const handleRemoveProduct = useCallback((index: number) => {
-    const toRemove = editableProducts[index]; if (!toRemove) return;
-    setRemovedPreviewIds((r) => new Set(r).add(toRemove.previewId));
-    setImportActions((a) => { const n = { ...a }; delete n[toRemove.previewId]; return n; });
-    setManualActionPreviewIds((m) => { const n = new Set(m); n.delete(toRemove.previewId); return n; });
-    setEditableProducts((prev) => prev.filter((_, i) => i !== index)); setEditingIndex(null);
+  const handleRemoveProductAtIndex = useCallback((index: number) => {
+    removeEditableProduct(index, editableProducts, setRemovedPreviewIds, setImportActions, setManualActionPreviewIds, setEditableProducts, setEditingIndex);
   }, [editableProducts, setRemovedPreviewIds, setImportActions, setManualActionPreviewIds, setEditableProducts, setEditingIndex]);
 
   const handleProductFieldChange = useCallback((index: number, field: keyof InvoicePreviewProduct, value: string | number) => {
-    setEditableProducts((prev) => prev.map((p, i) => {
-      if (i !== index) return p;
-      if (NUMERIC_EDITABLE_FIELDS.has(field)) {
-        if (typeof value === 'string' && value.trim() === '') return p;
-        const num = typeof value === 'number' ? value : Number(value);
-        if (!isValidNumber(num)) return p;
-        const next = { ...p, [field]: num } as InvoicePreviewProduct;
-        if (field === 'quantity' || field === 'unitPrice') next.totalPrice = roundCurrency(next.quantity * next.unitPrice);
-        if ((field === 'quantity' || field === 'unitPrice' || field === 'totalPrice') && isFxReady) next.lineTotalLei = roundCurrency(next.totalPrice * fxRate!);
-        return next;
-      }
-      return { ...p, [field]: typeof value === 'string' ? value : String(value) };
-    }));
+    setEditableProducts((prev) => prev.map((p, i) => (
+      i !== index ? p : updateEditableProduct(field, value, p, fxRate, isFxReady)
+    )));
   }, [setEditableProducts, fxRate, isFxReady]);
 
   const handleConfirmImport = useInvoiceConfirmImport({ editableProducts, invoiceData, isFxReady, matchResults, importActions, getResolvedDefaultAction, onImport, setStep, setImportErrors, setImportProgress, t });
@@ -221,7 +322,7 @@ export function useInvoiceImport({ onOpenChange, onImport, products }: UseInvoic
     editableProducts, editingIndex, importActions, matchResults, rowFlags,
     pricingComputedByRowId, invoiceData, importableRowCount, importProgress, importErrors,
     handleClose, handleFileSelect, handleDrop, handleDragOver, handleDragLeave,
-    handleFileInput, handleFxRateChange, handleRemoveProduct, handleEditProduct,
+    handleFileInput, handleFxRateChange, handleRemoveProduct: handleRemoveProductAtIndex, handleEditProduct,
     handleSaveEdit, handleCancelEdit, handleProductFieldChange, handleConfirmImport,
     getResolvedDefaultAction, setManualActionPreviewIds, setImportActions, resetState, t,
   };

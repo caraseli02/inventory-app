@@ -20,18 +20,30 @@ export interface InvoiceData {
   totalAmount?: number;
 }
 
-// Discriminated union for type-safe results
+export type InvoiceExtractionJobStatus = 'queued' | 'processing' | 'succeeded' | 'failed';
+
 export interface InvoiceOCRSuccess {
   readonly success: true;
   readonly data: InvoiceData;
 }
 
-export interface InvoiceOCRFailure {
+export interface InvoiceOCRPending {
   readonly success: false;
-  readonly error: string;
+  readonly pending: true;
+  readonly jobId: string;
+  readonly jobStatus: Extract<InvoiceExtractionJobStatus, 'queued' | 'processing'>;
+  readonly statusUrl: string;
+  readonly retryAfterSeconds: number | null;
 }
 
-export type InvoiceOCRResult = InvoiceOCRSuccess | InvoiceOCRFailure;
+export interface InvoiceOCRFailure {
+  readonly success: false;
+  readonly pending?: false;
+  readonly error: string;
+  readonly errorCode?: string;
+}
+
+export type InvoiceOCRResult = InvoiceOCRSuccess | InvoiceOCRPending | InvoiceOCRFailure;
 
 // Valid file types for invoice upload (PDF only)
 export const VALID_INVOICE_TYPES = ['application/pdf'] as const;
