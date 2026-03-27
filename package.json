@@ -44,6 +44,9 @@
   "pnpm": {
     "overrides": {
       "tar": ">=7.5.11",
+      "picomatch": "4.0.4",
+      "micromatch>picomatch": "2.3.2",
+      "router>path-to-regexp": "8.4.0",
       "@isaacs/brace-expansion": ">=5.0.1",
       "flatted": ">=3.4.0",
       "serialize-javascript": ">=7.0.3",
