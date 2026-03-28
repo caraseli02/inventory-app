@@ -5,9 +5,11 @@ import { RefreshCw } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 import OfflineIndicator from '@/components/OfflineIndicator';
+import { InvoiceJobsTray } from '@/components/invoice/InvoiceJobsTray';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { InvoiceBackgroundJobsProvider } from '@/hooks/useInvoiceBackgroundJobs';
 import {
   Dialog,
   DialogContent,
@@ -99,77 +101,80 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   return (
-    <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
-      <OfflineIndicator />
+    <InvoiceBackgroundJobsProvider>
+      <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
+        <OfflineIndicator />
 
-      <header className="mb-6 lg:mb-8 max-w-5xl mx-auto">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <Badge
-              variant="outline"
-              className="text-xs tracking-widest text-stone-400 uppercase font-bold bg-stone-50 border-stone-200 mb-2"
-            >
-              {t('app.subtitle')}
-            </Badge>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">
-              {t('app.title')}
-            </h1>
+        <header className="mb-6 lg:mb-8 max-w-5xl mx-auto">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Badge
+                variant="outline"
+                className="text-xs tracking-widest text-stone-400 uppercase font-bold bg-stone-50 border-stone-200 mb-2"
+              >
+                {t('app.subtitle')}
+              </Badge>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-stone-900">
+                {t('app.title')}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <InvoiceJobsTray />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 border-2 border-stone-200 bg-white/80 backdrop-blur-sm hover:border-stone-300"
+                onClick={handleResetCache}
+                disabled={isResettingCache}
+              >
+                <RefreshCw className={`h-4 w-4 ${isResettingCache ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">
+                  {isResettingCache ? t('pwa.resetting') : t('pwa.resetAction')}
+                </span>
+              </Button>
+              <LanguageSelector />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 border-2 border-stone-200 bg-white/80 backdrop-blur-sm hover:border-stone-300"
-              onClick={handleResetCache}
-              disabled={isResettingCache}
-            >
-              <RefreshCw className={`h-4 w-4 ${isResettingCache ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">
-                {isResettingCache ? t('pwa.resetting') : t('pwa.resetAction')}
-              </span>
-            </Button>
-            <LanguageSelector />
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="w-full flex-1 flex flex-col items-center">
-        {children}
-      </main>
+        <main className="w-full flex-1 flex flex-col items-center">
+          {children}
+        </main>
 
-      <Dialog open={isUpdateModalOpen} onOpenChange={() => undefined}>
-        <DialogContent
-          className="sm:max-w-md [&>button]:hidden"
-          onEscapeKeyDown={(event) => event.preventDefault()}
-          onPointerDownOutside={(event) => event.preventDefault()}
-        >
-          <DialogHeader>
-            <DialogTitle>{t('pwa.updateTitle')}</DialogTitle>
-            <DialogDescription className="text-stone-600">
-              {t('pwa.updateDescription')}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-3 sm:gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleLater}
-              disabled={isUpdating}
-            >
-              {t('pwa.updateLater')}
-            </Button>
-            <Button
-              type="button"
-              onClick={handleUpdateNow}
-              disabled={isUpdating}
-              className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
-            >
-              {isUpdating ? t('pwa.updating') : t('pwa.updateNow')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        <Dialog open={isUpdateModalOpen} onOpenChange={() => undefined}>
+          <DialogContent
+            className="sm:max-w-md [&>button]:hidden"
+            onEscapeKeyDown={(event) => event.preventDefault()}
+            onPointerDownOutside={(event) => event.preventDefault()}
+          >
+            <DialogHeader>
+              <DialogTitle>{t('pwa.updateTitle')}</DialogTitle>
+              <DialogDescription className="text-stone-600">
+                {t('pwa.updateDescription')}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-3 sm:gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleLater}
+                disabled={isUpdating}
+              >
+                {t('pwa.updateLater')}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleUpdateNow}
+                disabled={isUpdating}
+                className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
+              >
+                {isUpdating ? t('pwa.updating') : t('pwa.updateNow')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </InvoiceBackgroundJobsProvider>
   );
 }

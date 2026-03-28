@@ -2,9 +2,9 @@ import { useState, useCallback, useRef } from 'react';
 import type { TFunction } from 'i18next';
 import {
   extractInvoiceData,
-  getInvoiceExtractionStatus,
   VALID_INVOICE_EXTENSIONS,
   type InvoiceData,
+  type InvoiceOCRResult,
   type InvoiceProduct,
 } from '@/lib/invoiceOCR';
 import { logger } from '@/lib/logger';
@@ -33,63 +33,13 @@ export interface InvoiceFileStateReturn {
   setIsFxManual: React.Dispatch<React.SetStateAction<boolean>>;
   fxRateError: string | null;
   setFxRateError: React.Dispatch<React.SetStateAction<string | null>>;
-  handleFileSelectCore: (
-    file: File,
-    onSuccess: (invoiceData: InvoiceData, raw: InvoiceProduct[]) => void,
-  ) => Promise<void>;
+  submitInvoiceFile: (file: File) => Promise<InvoiceOCRResult | null>;
   handleFxRateChange: (value: string) => void;
   cancelActiveAttempt: () => void;
 }
 
-function isActiveAttempt(activeAttemptIdRef: React.MutableRefObject<number>, attemptId: number): boolean {
-  return activeAttemptIdRef.current === attemptId;
-}
-
 function getFileExtension(fileName: string): string {
   return `.${fileName.split('.').pop()?.toLowerCase()}`;
-}
-
-async function waitForRetry(retryAfterSeconds: number | null): Promise<void> {
-  const retryAfterMs = Math.max(0, (retryAfterSeconds ?? 2) * 1000);
-  if (retryAfterMs > 0) {
-    await new Promise((resolve) => window.setTimeout(resolve, retryAfterMs));
-  }
-}
-
-async function pollPendingExtraction(
-  activeAttemptIdRef: React.MutableRefObject<number>,
-  attemptId: number,
-  statusUrl: string,
-  retryAfterSeconds: number | null,
-  setStep: React.Dispatch<React.SetStateAction<InvoiceStep>>,
-  setError: React.Dispatch<React.SetStateAction<string | null>>,
-  onSuccess: (invoiceData: InvoiceData, raw: InvoiceProduct[]) => void,
-): Promise<void> {
-  setStep('processing');
-  let currentStatusUrl = statusUrl;
-  let nextRetryAfterSeconds = retryAfterSeconds;
-
-  while (isActiveAttempt(activeAttemptIdRef, attemptId)) {
-    await waitForRetry(nextRetryAfterSeconds);
-    if (!isActiveAttempt(activeAttemptIdRef, attemptId)) return;
-
-    const pollResult = await getInvoiceExtractionStatus(currentStatusUrl);
-    if (!isActiveAttempt(activeAttemptIdRef, attemptId)) return;
-
-    if (pollResult.success) {
-      onSuccess(pollResult.data, pollResult.data.products);
-      return;
-    }
-
-    if (!pollResult.pending) {
-      setError(pollResult.error);
-      setStep('upload');
-      return;
-    }
-
-    currentStatusUrl = pollResult.statusUrl;
-    nextRetryAfterSeconds = pollResult.retryAfterSeconds;
-  }
 }
 
 function createFxRateChangeHandler(
@@ -111,23 +61,19 @@ function createFxRateChangeHandler(
   };
 }
 
-function createFileSelectHandler(
+function createFileSubmitHandler(
   t: TFunction,
   activeAttemptIdRef: React.MutableRefObject<number>,
   setFileName: React.Dispatch<React.SetStateAction<string>>,
   setError: React.Dispatch<React.SetStateAction<string | null>>,
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>,
   setOcrProgress: React.Dispatch<React.SetStateAction<number>>,
-  setStep: React.Dispatch<React.SetStateAction<InvoiceStep>>,
-): (
-  file: File,
-  onSuccess: (invoiceData: InvoiceData, raw: InvoiceProduct[]) => void,
-) => Promise<void> {
-  return async (file, onSuccess) => {
+): (file: File) => Promise<InvoiceOCRResult | null> {
+  return async (file) => {
     const validExtensions = VALID_INVOICE_EXTENSIONS as readonly string[];
     if (!validExtensions.includes(getFileExtension(file.name))) {
       setError(t('invoiceUpload.errors.invalidFile', 'Please select a PDF file.'));
-      return;
+      return null;
     }
     const attemptId = activeAttemptIdRef.current + 1;
     activeAttemptIdRef.current = attemptId;
@@ -136,26 +82,21 @@ function createFileSelectHandler(
     setIsProcessing(true);
     setOcrProgress(0);
     try {
-      const result = await extractInvoiceData(file, (progress) => { setOcrProgress(progress); });
-      if (!isActiveAttempt(activeAttemptIdRef, attemptId)) return;
-      if (result.success) {
-        onSuccess(result.data, result.data.products);
-      } else if (result.pending) {
-        await pollPendingExtraction(activeAttemptIdRef, attemptId, result.statusUrl, result.retryAfterSeconds, setStep, setError, onSuccess);
-      } else {
-        setError(result.error);
-      }
+      return await extractInvoiceData(file, (progress) => {
+        if (activeAttemptIdRef.current === attemptId) setOcrProgress(progress);
+      });
     } catch (err) {
-      if (!isActiveAttempt(activeAttemptIdRef, attemptId)) return;
+      if (activeAttemptIdRef.current !== attemptId) return null;
       logger.error('Invoice upload failed in UI', {
         fileName: file.name, fileSize: file.size, fileType: file.type,
         errorMessage: err instanceof Error ? err.message : String(err),
         errorStack: err instanceof Error ? err.stack : undefined,
       });
-      setError(buildProcessErrorMessage(err, t));
-      setStep('upload');
+      const message = buildProcessErrorMessage(err, t);
+      setError(message);
+      return { success: false, error: message };
     } finally {
-      if (isActiveAttempt(activeAttemptIdRef, attemptId)) setIsProcessing(false);
+      if (activeAttemptIdRef.current === attemptId) setIsProcessing(false);
     }
   };
 }
@@ -178,11 +119,11 @@ export function useInvoiceFileState(t: TFunction): InvoiceFileStateReturn {
     activeAttemptIdRef.current += 1;
   }, []);
 
-  const handleFileSelectCore = useCallback(
-    async (file: File, onSuccess: (invoiceData: InvoiceData, raw: InvoiceProduct[]) => void) => (
-      createFileSelectHandler(t, activeAttemptIdRef, setFileName, setError, setIsProcessing, setOcrProgress, setStep)(file, onSuccess)
+  const submitInvoiceFile = useCallback(
+    async (file: File) => (
+      createFileSubmitHandler(t, activeAttemptIdRef, setFileName, setError, setIsProcessing, setOcrProgress)(file)
     ),
-    [t, setFileName, setError, setIsProcessing, setOcrProgress, setStep],
+    [t, setFileName, setError, setIsProcessing, setOcrProgress],
   );
 
   const handleFxRateChange = useCallback((value: string) => (
@@ -194,6 +135,6 @@ export function useInvoiceFileState(t: TFunction): InvoiceFileStateReturn {
     invoiceData, setInvoiceData, rawProducts, setRawProducts,
     fileName, setFileName, ocrProgress, isProcessing, setIsProcessing,
     error, setError, fxRate, setFxRate, isFxManual, setIsFxManual,
-    fxRateError, setFxRateError, handleFileSelectCore, handleFxRateChange, cancelActiveAttempt,
+    fxRateError, setFxRateError, submitInvoiceFile, handleFxRateChange, cancelActiveAttempt,
   };
 }

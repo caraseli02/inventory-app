@@ -19,6 +19,7 @@ import BatchDeleteConfirmDialog from '../components/product/BatchDeleteConfirmDi
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
 import { useToast } from '../hooks/useToast';
+import { useInvoiceBackgroundJobs } from '../hooks/useInvoiceBackgroundJobs';
 import type { Product } from '../types';
 
 interface InventoryListPageProps {
@@ -38,6 +39,7 @@ const InvoiceUploadDialog = lazy(async () => {
 const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const { registerPendingJob, reviewSession, clearReviewSession } = useInvoiceBackgroundJobs();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -174,6 +176,35 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       );
     }
   }, [products, showToast, t]);
+
+  const handleInvoiceDialogOpenChange = useCallback((open: boolean) => {
+    setInvoiceDialogOpen(open);
+    if (!open) clearReviewSession();
+  }, [clearReviewSession]);
+
+  const handlePendingInvoiceJob = useCallback((result: {
+    jobId: string;
+    statusUrl: string;
+    retryAfterSeconds: number | null;
+    jobStatus: 'queued' | 'processing';
+  }, file: File) => {
+    registerPendingJob({
+      jobId: result.jobId,
+      fileName: file.name,
+      statusUrl: result.statusUrl,
+      retryAfterSeconds: result.retryAfterSeconds,
+      backendStatus: result.jobStatus,
+    });
+    setInvoiceDialogOpen(false);
+    showToast(
+      'info',
+      t('invoiceUpload.tray.backgroundTitle', 'Invoice processing in background'),
+      t('invoiceUpload.tray.backgroundDescription', { fileName: file.name, defaultValue: '{{fileName}} will appear in the background jobs tray when review is ready.' }),
+      5000,
+    );
+  }, [registerPendingJob, showToast, t]);
+
+  const isInvoiceDialogOpen = invoiceDialogOpen || !!reviewSession;
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
@@ -336,14 +367,16 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       )}
 
       {/* Invoice Upload Dialog */}
-      {invoiceDialogOpen && (
+      {isInvoiceDialogOpen && (
         <ErrorBoundary>
           <Suspense fallback={<Spinner size="sm" label="Loading invoice dialog..." />}>
             <InvoiceUploadDialog
-              open={invoiceDialogOpen}
-              onOpenChange={setInvoiceDialogOpen}
+              open={isInvoiceDialogOpen}
+              onOpenChange={handleInvoiceDialogOpenChange}
               onImport={handleImport}
               products={allProducts}
+              initialSession={reviewSession}
+              onPendingJob={handlePendingInvoiceJob}
             />
           </Suspense>
         </ErrorBoundary>

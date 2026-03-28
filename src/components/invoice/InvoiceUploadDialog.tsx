@@ -6,6 +6,7 @@ import { Loader2, Receipt, CheckCircle2 } from 'lucide-react';
 import type { ImportedProduct } from '@/lib/xlsx/index';
 import type { Product } from '@/types';
 import type { InvoiceImportAction } from '@/lib/invoiceImportDiffs';
+import type { InvoiceData, InvoiceOCRResult } from '@/lib/invoiceOCR';
 import { isValidNumber, useInvoiceImport } from '@/hooks/useInvoiceImport';
 import { InvoiceUploadStep } from './InvoiceUploadStep';
 import { InvoicePreviewTable } from './InvoicePreviewTable';
@@ -15,10 +16,16 @@ interface InvoiceUploadDialogProps {
   onOpenChange: (open: boolean) => void;
   onImport: (products: ImportedProduct[], onProgress?: (current: number, total: number) => void) => Promise<void>;
   products: Product[];
+  initialSession?: {
+    jobId?: string;
+    fileName: string;
+    invoiceData: InvoiceData;
+  } | null;
+  onPendingJob?: (result: Extract<InvoiceOCRResult, { success: false; pending: true }>, file: File) => void;
 }
 
-export function InvoiceUploadDialog({ open, onOpenChange, onImport, products }: InvoiceUploadDialogProps) {
-  const h = useInvoiceImport({ open, onOpenChange, onImport, products });
+export function InvoiceUploadDialog({ open, onOpenChange, onImport, products, initialSession, onPendingJob }: InvoiceUploadDialogProps) {
+  const h = useInvoiceImport({ open, onOpenChange, onImport, products, initialSession, onPendingJob });
 
   const handleActionChange = (previewId: string, action: InvoiceImportAction) => {
     h.setManualActionPreviewIds((prev) => new Set(prev).add(previewId));
