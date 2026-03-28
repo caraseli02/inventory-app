@@ -19,6 +19,8 @@ import BatchDeleteConfirmDialog from '../components/product/BatchDeleteConfirmDi
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
 import { useToast } from '../hooks/useToast';
+import { useInvoiceBackgroundJobs } from '../hooks/useInvoiceBackgroundJobs';
+import { InvoiceJobsPanel } from '../components/invoice/InvoiceJobsPanel';
 import type { Product } from '../types';
 
 interface InventoryListPageProps {
@@ -38,6 +40,14 @@ const InvoiceUploadDialog = lazy(async () => {
 const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const {
+    jobs: invoiceJobs,
+    registerPendingJob,
+    reviewSession,
+    dismissJob,
+    openReviewSession,
+    clearReviewSession,
+  } = useInvoiceBackgroundJobs();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -175,6 +185,29 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
     }
   }, [products, showToast, t]);
 
+  const handleInvoiceDialogOpenChange = useCallback((open: boolean) => {
+    setInvoiceDialogOpen(open);
+    if (!open) clearReviewSession();
+  }, [clearReviewSession]);
+
+  const handlePendingInvoiceJob = useCallback((result: {
+    jobId: string;
+    statusUrl: string;
+    retryAfterSeconds: number | null;
+    jobStatus: 'queued' | 'processing';
+  }, file: File) => {
+    registerPendingJob({
+      jobId: result.jobId,
+      fileName: file.name,
+      statusUrl: result.statusUrl,
+      retryAfterSeconds: result.retryAfterSeconds,
+      backendStatus: result.jobStatus,
+    });
+    setInvoiceDialogOpen(false);
+  }, [registerPendingJob]);
+
+  const isInvoiceDialogOpen = invoiceDialogOpen || !!reviewSession;
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-100 to-stone-200 overflow-hidden">
       <PageHeader title={t('inventory.title')} onBack={onBack} />
@@ -215,6 +248,12 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
               onExport={handleExport}
             />
           </div>
+
+          <InvoiceJobsPanel
+            jobs={invoiceJobs}
+            onReview={openReviewSession}
+            onDismiss={dismissJob}
+          />
 
           {/* Loading State */}
           {isLoading && (
@@ -336,14 +375,16 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       )}
 
       {/* Invoice Upload Dialog */}
-      {invoiceDialogOpen && (
+      {isInvoiceDialogOpen && (
         <ErrorBoundary>
           <Suspense fallback={<Spinner size="sm" label="Loading invoice dialog..." />}>
             <InvoiceUploadDialog
-              open={invoiceDialogOpen}
-              onOpenChange={setInvoiceDialogOpen}
+              open={isInvoiceDialogOpen}
+              onOpenChange={handleInvoiceDialogOpenChange}
               onImport={handleImport}
               products={allProducts}
+              initialSession={reviewSession}
+              onPendingJob={handlePendingInvoiceJob}
             />
           </Suspense>
         </ErrorBoundary>

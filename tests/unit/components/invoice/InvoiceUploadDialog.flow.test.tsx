@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 
 import { InvoiceUploadDialog } from '@/components/invoice/InvoiceUploadDialog';
+import { InvoiceBackgroundJobsProvider, useInvoiceBackgroundJobs } from '@/hooks/useInvoiceBackgroundJobs';
 import i18n from '@/i18n';
 import type { ImportedProduct } from '@/lib/xlsx';
 import type { Product } from '@/types';
@@ -26,6 +27,35 @@ vi.mock('@/lib/ai', () => ({
 
 import { extractInvoiceData, getInvoiceExtractionStatus } from '@/lib/invoiceOCR';
 import { previewInvoicePricing } from '@/lib/invoiceImportApi';
+
+function BackgroundJobsHarness({ closeOnPending = false }: { closeOnPending?: boolean }) {
+  const [open, setOpen] = useState(true);
+  const { jobs, reviewSession, registerPendingJob } = useInvoiceBackgroundJobs();
+
+  return (
+    <>
+      <InvoiceUploadDialog
+        open={open}
+        onOpenChange={setOpen}
+        onImport={vi.fn()}
+        products={[] as Product[]}
+        initialSession={reviewSession}
+        onPendingJob={(result, file) => {
+          registerPendingJob({
+            jobId: result.jobId,
+            fileName: file.name,
+            statusUrl: result.statusUrl,
+            retryAfterSeconds: result.retryAfterSeconds,
+            backendStatus: result.jobStatus,
+          });
+          if (closeOnPending) setOpen(false);
+        }}
+      />
+      <div data-testid="job-statuses">{jobs.map((job) => `${job.jobId}:${job.status}`).join(',')}</div>
+      <div data-testid="dialog-open">{open ? 'open' : 'closed'}</div>
+    </>
+  );
+}
 
 describe('InvoiceUploadDialog flow', () => {
   beforeEach(async () => {
@@ -270,7 +300,7 @@ describe('InvoiceUploadDialog flow', () => {
     });
   });
 
-  it('polls accepted extraction jobs and opens preview on terminal success', async () => {
+  it('registers accepted extraction jobs in the shared background tracker', async () => {
     vi.mocked(extractInvoiceData).mockResolvedValue({
       success: false,
       pending: true,
@@ -302,12 +332,9 @@ describe('InvoiceUploadDialog flow', () => {
     });
 
     render(
-      <InvoiceUploadDialog
-        open
-        onOpenChange={vi.fn()}
-        onImport={vi.fn()}
-        products={[] as Product[]}
-      />
+      <InvoiceBackgroundJobsProvider>
+        <BackgroundJobsHarness />
+      </InvoiceBackgroundJobsProvider>
     );
 
     const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
@@ -316,14 +343,11 @@ describe('InvoiceUploadDialog flow', () => {
 
     await waitFor(() => {
       expect(vi.mocked(getInvoiceExtractionStatus)).toHaveBeenCalledWith('/invoice/extraction-jobs/ext-123');
-      expect(screen.getByText(/Successfully extracted 1 products/i)).toBeInTheDocument();
-      expect(screen.getByText('Async Invoice Product')).toBeInTheDocument();
+      expect(screen.getByTestId('job-statuses').textContent).toContain('ext-123:ready');
     });
   });
 
-  it('ignores stale async completions after the dialog closes', async () => {
-    let resolveOldJob: ((value: Awaited<ReturnType<typeof getInvoiceExtractionStatus>>) => void) | undefined;
-
+  it('keeps background jobs progressing after the dialog closes', async () => {
     vi.mocked(extractInvoiceData).mockResolvedValueOnce({
       success: false,
       pending: true,
@@ -333,38 +357,7 @@ describe('InvoiceUploadDialog flow', () => {
       retryAfterSeconds: 0,
     });
 
-    vi.mocked(getInvoiceExtractionStatus).mockImplementation(() => new Promise((resolve) => {
-      resolveOldJob = resolve as typeof resolveOldJob;
-    }));
-
-    function Wrapper() {
-      const [open, setOpen] = useState(true);
-      return (
-        <InvoiceUploadDialog
-          open={open}
-          onOpenChange={setOpen}
-          onImport={vi.fn()}
-          products={[] as Product[]}
-        />
-      );
-    }
-
-    render(
-      <Wrapper />
-    );
-
-    const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
-    const oldFile = new File([new Blob(['%PDF-1.4 old'])], 'invoice-old.pdf', { type: 'application/pdf' });
-    fireEvent.change(fileInput, { target: { files: [oldFile] } });
-
-    await waitFor(() => {
-      expect(screen.getByText(/Processing invoice/i)).toBeInTheDocument();
-    });
-
-    const closeButtons = screen.getAllByRole('button', { name: /Close/i });
-    fireEvent.click(closeButtons[closeButtons.length - 1]!);
-
-    resolveOldJob?.({
+    vi.mocked(getInvoiceExtractionStatus).mockResolvedValue({
       success: true,
       data: {
         products: [
@@ -385,9 +378,20 @@ describe('InvoiceUploadDialog flow', () => {
       },
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    render(
+      <InvoiceBackgroundJobsProvider>
+        <BackgroundJobsHarness closeOnPending />
+      </InvoiceBackgroundJobsProvider>
+    );
 
-    expect(screen.queryByText(/Import from Invoice/i)).not.toBeInTheDocument();
-    expect(screen.queryByText('Old Invoice Product')).not.toBeInTheDocument();
+    const fileInput = document.getElementById('invoice-upload') as HTMLInputElement;
+    const oldFile = new File([new Blob(['%PDF-1.4 old'])], 'invoice-old.pdf', { type: 'application/pdf' });
+    fireEvent.change(fileInput, { target: { files: [oldFile] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dialog-open').textContent).toBe('closed');
+      expect(vi.mocked(getInvoiceExtractionStatus)).toHaveBeenCalledWith('/invoice/extraction-jobs/ext-old');
+      expect(screen.getByTestId('job-statuses').textContent).toContain('ext-old:ready');
+    });
   });
 });
