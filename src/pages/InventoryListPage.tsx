@@ -20,6 +20,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
 import { useToast } from '../hooks/useToast';
 import { useInvoiceBackgroundJobs } from '../hooks/useInvoiceBackgroundJobs';
+import { InvoiceJobsPanel } from '../components/invoice/InvoiceJobsPanel';
 import type { Product } from '../types';
 
 interface InventoryListPageProps {
@@ -39,7 +40,14 @@ const InvoiceUploadDialog = lazy(async () => {
 const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
-  const { registerPendingJob, reviewSession, clearReviewSession } = useInvoiceBackgroundJobs();
+  const {
+    jobs: invoiceJobs,
+    registerPendingJob,
+    reviewSession,
+    dismissJob,
+    openReviewSession,
+    clearReviewSession,
+  } = useInvoiceBackgroundJobs();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
@@ -196,13 +204,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
       backendStatus: result.jobStatus,
     });
     setInvoiceDialogOpen(false);
-    showToast(
-      'info',
-      t('invoiceUpload.tray.backgroundTitle', 'Invoice processing in background'),
-      t('invoiceUpload.tray.backgroundDescription', { fileName: file.name, defaultValue: '{{fileName}} will appear in the background jobs tray when review is ready.' }),
-      5000,
-    );
-  }, [registerPendingJob, showToast, t]);
+  }, [registerPendingJob]);
 
   const isInvoiceDialogOpen = invoiceDialogOpen || !!reviewSession;
 
@@ -246,6 +248,12 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
               onExport={handleExport}
             />
           </div>
+
+          <InvoiceJobsPanel
+            jobs={invoiceJobs}
+            onReview={openReviewSession}
+            onDismiss={dismissJob}
+          />
 
           {/* Loading State */}
           {isLoading && (
