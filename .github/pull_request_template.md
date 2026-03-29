@@ -19,6 +19,10 @@
 - [ ] Relevant unit/integration tests
 - [ ] Relevant e2e tests (if applicable)
 
+## Project Status
+- [ ] Updated `docs/project-status.md` to reflect the post-merge handoff state
+- Active work / recently completed / next up changes summarized here
+
 ## Security Review (required for api/, lib/whatsapp/, mcp/ changes)
 If this PR touches any of the following, check the relevant boxes:
 - [ ] Twilio signature validation unchanged or intentionally modified (with justification)

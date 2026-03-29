@@ -1,9 +1,10 @@
 # Documentation Home
 
-Central index for the Grocery Inventory App documentation. Start here to find authoritative specs, onboarding instructions, and historical references. Specs under `docs/specs/` are the single source of truth; archival planning notes live in `docs/archive/`. Last validated: 2026-03-17.
+Central index for the Grocery Inventory App documentation. Start here to find authoritative specs, onboarding instructions, current project status, and historical references. `docs/project-status.md` is the canonical handoff/control document, `docs/plans/` holds implementation records, and `docs/solutions/` holds resolved learnings. Last validated: 2026-03-29.
 
 ## Quick Start
 - [Project README](../README.md) — onboarding, setup, and run commands.
+- [Project Status](project-status.md) — canonical current priorities, active work, and next steps.
 - [Launch Checklist](../LAUNCH_CHECKLIST.md) — **ship to production this week** (step-by-step guide).
 - [Lean MVP Scope](specs/mvp_scope_lean.md) — **ACTIVE** - what ships this week.
 - [Environment Configuration](../.env.example) — required variables and safety reminders.
@@ -12,7 +13,8 @@ Central index for the Grocery Inventory App documentation. Start here to find au
 | Document | Purpose | Status | Owner | Last Reviewed | Authority |
 | --- | --- | --- | --- | --- | --- |
 | [Project README](../README.md) | Setup, scripts, environment basics | ACTIVE | TBD | 2025-12-05 | Authoritative |
-| [Docs Home](README.md) | Central navigation and tracking | ACTIVE | TBD | 2025-12-05 | Authoritative |
+| [Project Status](project-status.md) | Current priorities, active work, handoff layer | ACTIVE | TBD | 2026-03-29 | Canonical control doc |
+| [Docs Home](README.md) | Central navigation and documentation entrypoint | ACTIVE | TBD | 2026-03-29 | Authoritative |
 | [Project Architecture & Structure](project_architecture_structure.md) | Reference architecture and code layout | ACTIVE | TBD | 2025-12-05 | Authoritative |
 | [Project Review](project_review.md) | Findings from comprehensive review | ACTIVE | TBD | 2025-12-05 | Reference |
 | [Walkthrough](walkthrough.md) | Implementation notes and flows | DRAFT | TBD | 2025-12-05 | Reference |
@@ -61,11 +63,13 @@ Versioning uses semantic versions for specs: `0.x` indicates drafts or partial i
 ## Planning & Historical References
 | Document | Status | Notes |
 | --- | --- | --- |
+| [project-status.md](project-status.md) | ACTIVE | Canonical control tower above plans and solutions |
 | [grocery_inventory_mvp_plan.md](archive/grocery_inventory_mvp_plan.md) | HISTORICAL | Checklist format; superseded by specs and tracking here |
 | [full_tailwind_shadcn_plan.md](archive/full_tailwind_shadcn_plan.md) | HISTORICAL | Original design exploration |
 | [tailwind_shadcn_setup.md](archive/tailwind_shadcn_setup.md) | HISTORICAL | Setup notes; retained for reference |
 
 ## How to Use This Index
 - Prefer documents marked **Authoritative** when guidance conflicts with drafts or historical notes.
+- Use `project-status.md` to answer "what is active now?" before drilling into `docs/plans/` or `docs/solutions/`.
 - Update the Status and Last Reviewed fields when modifying documents to keep onboarding accurate.
 - Cross-link new specs or guides here to maintain a single navigation entry point.
