@@ -40,9 +40,8 @@ export const APP_TO_XLSX_MAPPING: Record<string, string> = {
   'expiryDate': 'Data expirare',
 };
 
-// Required fields for import validation
-// Only Name is truly required - Barcode can be added later via edit dialog
-export const REQUIRED_FIELDS = ['Name'] as const;
+// Required fields for the canonical Excel intake path.
+export const REQUIRED_FIELDS = ['Barcode', 'Name'] as const;
 
 // Export column order (matches APP_TO_XLSX_MAPPING order)
 export const EXPORT_COLUMN_ORDER = [

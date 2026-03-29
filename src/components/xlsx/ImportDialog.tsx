@@ -9,29 +9,46 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { parseXlsxFile, type ImportedProduct, type ImportResult } from '@/lib/xlsx';
+import type { Product } from '@/types';
+import { parseXlsxFile, type ImportedProduct, type ImportResult as ParseImportResult } from '@/lib/xlsx';
+import type { ImportResult as RunnerImportResult } from '@/lib/importRunnerTypes';
+import { getAlreadyImportedExcelRowIds } from '@/lib/excelImportIdempotency';
+import {
+  applyExcelImportAction,
+  buildXlsxPreviewRows,
+  type XlsxImportAction,
+  type XlsxPreviewRow,
+} from '@/lib/xlsx/preview';
+import { ImportPreviewTable } from '@/components/xlsx/ImportPreviewTable';
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface ImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (products: ImportedProduct[]) => Promise<void>;
+  onImport: (
+    products: ImportedProduct[],
+    onProgress?: (current: number, total: number) => void
+  ) => Promise<RunnerImportResult>;
+  products: Product[];
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
 
-export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps) {
+export function ImportDialog({ open, onOpenChange, onImport, products }: ImportDialogProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState<ImportStep>('upload');
   const [isDragging, setIsDragging] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [importResult, setImportResult] = useState<ParseImportResult | null>(null);
+  const [completedImportResult, setCompletedImportResult] = useState<RunnerImportResult | null>(null);
+  const [previewRows, setPreviewRows] = useState<XlsxPreviewRow[]>([]);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importErrors, setImportErrors] = useState<string[]>([]);
 
   const resetState = useCallback(() => {
     setStep('upload');
     setImportResult(null);
+    setCompletedImportResult(null);
+    setPreviewRows([]);
     setImportProgress({ current: 0, total: 0 });
     setImportErrors([]);
   }, []);
@@ -42,6 +59,9 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
   }, [onOpenChange, resetState]);
 
   const handleFileSelect = useCallback(async (file: File) => {
+    setImportErrors([]);
+    setCompletedImportResult(null);
+
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
       setImportResult({
         success: false,
@@ -56,11 +76,28 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
 
     const result = await parseXlsxFile(file);
     setImportResult(result);
+    setPreviewRows([]);
 
     if (result.success) {
+      let alreadyImportedRowIds = new Set<string>();
+      const batchId = result.products[0]?.excelBatchId;
+
+      if (batchId) {
+        try {
+          alreadyImportedRowIds = await getAlreadyImportedExcelRowIds({ batchId });
+        } catch (error) {
+          setImportErrors([
+            error instanceof Error
+              ? error.message
+              : 'Could not load previous Excel batch history. Import-time duplicate safety is still active.',
+          ]);
+        }
+      }
+
+      setPreviewRows(buildXlsxPreviewRows(result.products, products, alreadyImportedRowIds));
       setStep('preview');
     }
-  }, []);
+  }, [products]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -90,20 +127,59 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
   }, [handleFileSelect]);
 
   const handleConfirmImport = useCallback(async () => {
-    if (!importResult?.products.length) return;
+    const importableRows = previewRows.filter((row) => row.importAction !== 'skip' && !row.blockingError);
+    if (!importableRows.length) return;
 
     setStep('importing');
-    setImportProgress({ current: 0, total: importResult.products.length });
+    setImportProgress({ current: 0, total: importableRows.length });
     setImportErrors([]);
 
     try {
-      await onImport(importResult.products);
+      const result = await onImport(
+        previewRows.map((row) => row.product),
+        (current, total) => setImportProgress({ current, total })
+      );
+      setCompletedImportResult(result);
+
+      if (result.fatalError) {
+        setImportErrors([result.fatalError]);
+        setStep('preview');
+        return;
+      }
+
+      if (result.errorCount > 0 || result.partialProducts.length > 0) {
+        const nextErrors: string[] = [];
+        if (result.failedProducts.length > 0) {
+          nextErrors.push(
+            ...result.failedProducts.slice(0, 3).map((entry) => `${entry.name}: ${entry.error}`)
+          );
+        }
+        if (result.partialProducts.length > 0) {
+          nextErrors.push(
+            ...result.partialProducts.slice(0, 3).map((entry) => `${entry.name}: ${entry.message}`)
+          );
+        }
+        if (nextErrors.length === 0) nextErrors.push(t('import.failed'));
+        setImportErrors(nextErrors);
+        setStep('preview');
+        return;
+      }
+
       setStep('complete');
     } catch (error) {
       setImportErrors([error instanceof Error ? error.message : 'Import failed']);
       setStep('preview');
     }
-  }, [importResult, onImport]);
+  }, [onImport, previewRows, t]);
+
+  const handleActionChange = useCallback((previewId: string, nextAction: XlsxImportAction) => {
+    setPreviewRows((currentRows) => currentRows.map((row) => (
+      row.previewId === previewId ? applyExcelImportAction(row, nextAction) : row
+    )));
+  }, []);
+
+  const actionableRows = previewRows.filter((row) => row.importAction !== 'skip' && !row.blockingError);
+  const blockingRows = previewRows.filter((row) => row.blockingError);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -201,13 +277,28 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                 <CheckCircle2 className="h-8 w-8 text-[var(--color-forest)]" />
                 <div>
                   <p className="font-semibold text-stone-900">
-                    {t('import.productsReady', { count: importResult.validRows })}
+                    {t('import.productsReady', { count: actionableRows.length || importResult.validRows })}
                   </p>
                   <p className="text-sm text-stone-500">
                     {t('import.totalRowsFound', { count: importResult.totalRows })}
                   </p>
                 </div>
               </div>
+
+              {blockingRows.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="font-medium text-red-700 mb-2">
+                    {t('import.blockingRows', { count: blockingRows.length, defaultValue: '{{count}} rows must be fixed before import' })}
+                  </p>
+                  <div className="max-h-40 overflow-auto space-y-1">
+                    {blockingRows.slice(0, 10).map((row) => (
+                      <p key={row.previewId} className="text-sm text-red-600">
+                        {row.product.Name}: {row.blockingError}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Warnings */}
               {importResult.warnings.length > 0 && (
@@ -240,50 +331,11 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                 </div>
               )}
 
-              {/* Product Preview Table */}
-              <div className="border rounded-lg overflow-hidden">
-                <div className="overflow-x-auto max-h-64">
-                  <table className="w-full text-sm">
-                    <thead className="bg-stone-100 sticky top-0">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-medium text-stone-700">{t('import.tableBarcode')}</th>
-                        <th className="px-3 py-2 text-left font-medium text-stone-700">{t('import.tableName')}</th>
-                        <th className="px-3 py-2 text-left font-medium text-stone-700">{t('import.tableCategory')}</th>
-                        <th className="px-3 py-2 text-right font-medium text-stone-700">{t('import.tablePrice')}</th>
-                        <th className="px-3 py-2 text-right font-medium text-stone-700">{t('import.tableStock')}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-200">
-                      {importResult.products.slice(0, 10).map((product, i) => (
-                        <tr key={i} className="hover:bg-stone-50">
-                          <td className="px-3 py-2 font-mono text-xs">{product.Barcode}</td>
-                          <td className="px-3 py-2">{product.Name}</td>
-                          <td className="px-3 py-2">
-                            {product.Category && (
-                              <Badge variant="secondary" className="text-xs">
-                                {product.Category}
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            {(product.price70 ?? product.Price) !== undefined
-                              ? `€${(product.price70 ?? product.Price)!.toFixed(2)}`
-                              : '-'}
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            {product.currentStock ?? '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {importResult.products.length > 10 && (
-                  <div className="px-3 py-2 bg-stone-50 text-sm text-stone-500 text-center">
-                    {t('import.showingProducts', { showing: 10, total: importResult.products.length })}
-                  </div>
-                )}
-              </div>
+              <ImportPreviewTable
+                rows={previewRows}
+                t={t}
+                onActionChange={handleActionChange}
+              />
 
               {/* Import Errors */}
               {importErrors.length > 0 && (
@@ -316,7 +368,7 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
                 {t('import.importComplete')}
               </p>
               <p className="text-stone-600">
-                {t('import.successfullyImported', { count: importResult?.validRows ?? 0 })}
+                {t('import.successfullyImported', { count: completedImportResult?.successCount ?? 0 })}
               </p>
             </div>
           )}
@@ -337,9 +389,9 @@ export function ImportDialog({ open, onOpenChange, onImport }: ImportDialogProps
               <Button
                 onClick={handleConfirmImport}
                 className="bg-[var(--color-forest)] hover:bg-[var(--color-forest-dark)] text-white"
-                disabled={!importResult?.products.length}
+                disabled={actionableRows.length === 0 || blockingRows.length > 0}
               >
-                {t('import.importCount', { count: importResult?.validRows ?? 0 })}
+                {t('import.importCount', { count: actionableRows.length })}
               </Button>
             </>
           )}

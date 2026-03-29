@@ -502,12 +502,26 @@
     "failedMessage": "{{count}} products failed to import",
     "failedProducts": "Failed Products",
     "invoiceAlreadyImportedSkipped": "{{count}} rows were skipped because they were already imported from this invoice.",
+    "xlsxAlreadyImportedSkipped": "{{count}} rows were skipped because they were already imported from this Excel batch.",
     "invoiceReceiveStockMatchMissing": "Matched product no longer exists. Refresh inventory and try again.",
+    "blockingRows": "{{count}} rows must be fixed before import",
     "tableBarcode": "Barcode",
     "tableName": "Name",
     "tableCategory": "Category",
+    "tableMatch": "Match",
+    "tableAction": "Action",
     "tablePrice": "Price",
-    "tableStock": "Stock"
+    "tableStock": "Stock",
+    "matchExisting": "Existing product",
+    "matchHasDiffs": "Catalog changes",
+    "matchAlreadyImported": "Batch already imported",
+    "matchNewProduct": "New product",
+    "action": {
+      "create": "Create",
+      "update": "Update + stock",
+      "receive_stock": "Receive stock",
+      "skip": "Skip"
+    }
   },
   "invoiceUpload": {
     "title": "Import from Invoice",

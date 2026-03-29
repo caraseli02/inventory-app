@@ -34,6 +34,8 @@ export interface ImportedProduct {
   invoiceNumber?: string;
   weightKg?: number;
   invoiceLineTotal?: number;
+  excelBatchId?: string;
+  excelRowId?: string;
 }
 
 export interface ImportResult {
@@ -43,6 +45,26 @@ export interface ImportResult {
   warnings: string[];
   totalRows: number;
   validRows: number;
+}
+
+function normalizeArrayBuffer(buffer: ArrayBuffer): ArrayBuffer {
+  const bytes = new Uint8Array(buffer);
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
+async function hashArrayBuffer(buffer: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new DataView(normalizeArrayBuffer(buffer)));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function readFileBuffer(file: File): Promise<ArrayBuffer> {
+  if (typeof file.arrayBuffer === 'function') {
+    return normalizeArrayBuffer(await file.arrayBuffer());
+  }
+
+  return normalizeArrayBuffer(await new Response(file).arrayBuffer());
 }
 
 export interface ImportError {
@@ -74,7 +96,8 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
   const products: ImportedProduct[] = [];
 
   try {
-    const arrayBuffer = await file.arrayBuffer();
+    const arrayBuffer = await readFileBuffer(file);
+    const batchId = await hashArrayBuffer(arrayBuffer);
     const workbook = XLSX.read(arrayBuffer, { type: 'array' });
 
     // Get the first sheet
@@ -151,8 +174,7 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       }
     });
 
-    // Check for required fields - only warn if Name column is missing
-    // Barcode is required per-row but column can be optional if provided elsewhere
+    // Canonical Excel fallback requires both Name and Barcode columns.
     const mappedFields = Object.values(columnMapping);
     for (const required of REQUIRED_FIELDS) {
       if (!mappedFields.includes(required)) {
@@ -160,21 +182,15 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       }
     }
 
-    // Only fail if Name column is completely missing
-    if (!mappedFields.includes('Name')) {
+    if (missingRequired.length > 0) {
       return {
         success: false,
         products: [],
-        errors: [{ row: 0, message: 'Missing required column: Name (Denumirea produsului). This column is required for import.' }],
+        errors: [{ row: 0, message: `Missing required column(s): ${missingRequired.join(', ')}. Use the canonical Excel template to import products.` }],
         warnings: [],
         totalRows: 0,
         validRows: 0,
       };
-    }
-
-    // Info about optional columns not found
-    if (!mappedFields.includes('Barcode')) {
-      warnings.push('Barcode column not found. Products will be imported without barcodes - you can add them later via the edit dialog.');
     }
 
     // Process data rows
@@ -221,7 +237,13 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       }
 
       if (hasRequiredFields) {
-        products.push(product as ImportedProduct);
+        const imported = product as ImportedProduct;
+        products.push({
+          ...imported,
+          Barcode: imported.Barcode?.trim(),
+          excelBatchId: batchId,
+          excelRowId: `${sheetName}:${rowNum}:${imported.Barcode?.trim()}`,
+        });
       }
     }
 

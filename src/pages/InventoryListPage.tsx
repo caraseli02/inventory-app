@@ -370,6 +370,7 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
             open={importDialogOpen}
             onOpenChange={setImportDialogOpen}
             onImport={handleImport}
+            products={allProducts}
           />
         </Suspense>
       )}

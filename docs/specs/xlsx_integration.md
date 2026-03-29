@@ -3,7 +3,7 @@
 **Version**: 1.0.0
 **Status**: IN_PROGRESS
 **Owner**: TBD
-**Last Updated**: 2025-12-12
+**Last Updated**: 2026-03-29
 **Dependencies**: [product_management.md], [stock_management.md]
 
 ## Overview
@@ -23,6 +23,16 @@ This feature integrates the xlsx workflow with the inventory app, allowing:
 - Import products from xlsx (with pricing tiers)
 - Export current inventory to xlsx
 - Support multiple price tiers in the app
+
+## Canonical Delivery Import Contract
+
+The Excel import path is now treated as a deterministic delivery-intake fallback when invoice import is unavailable or not desirable.
+
+- The main Excel import UI supports one canonical workbook shape.
+- Files outside that shape are rejected instead of being treated as an equally supported fallback mode.
+- Barcode is required for each imported row in the canonical path.
+- Matching uses barcode only for the canonical path.
+- Re-importing the same canonical Excel batch must not duplicate stock receipt.
 
 ## xlsx Schema
 
@@ -90,12 +100,40 @@ And I can cancel the import
 Given I am importing products from xlsx
 And a product with barcode "5901234567890" already exists in the database
 When the import processes that product
-Then I should see a warning about duplicate barcodes
-And I can choose to:
+Then I should see how the row will be handled before confirming import
+And the default action should be chosen from:
   | Option | Action |
-  | Skip | Don't import duplicates |
-  | Update | Update existing product data |
-  | Replace | Delete and recreate product |
+  | Receive stock | Add stock to the matched product when no meaningful catalog diffs exist |
+  | Update | Update meaningful product fields and receive stock |
+  | Skip | Do not process the row |
+```
+
+### Scenario: Reject non-canonical files from the safe fallback path
+
+```gherkin
+Given I select an Excel file that does not match the canonical delivery template
+When the file is parsed
+Then I should see a validation error explaining that the canonical template is required
+And I should not be allowed to continue to import preview
+```
+
+### Scenario: Reject rows without barcode in the canonical path
+
+```gherkin
+Given I am importing a canonical Excel delivery file
+And a row is missing a barcode
+When the file is parsed
+Then that row should be blocked from import
+And the UI should explain that barcode is required for the canonical path
+```
+
+### Scenario: Prevent duplicate stock when the same Excel batch is imported twice
+
+```gherkin
+Given I already imported a canonical Excel delivery batch
+When I upload the same Excel file again
+Then rows already stocked from that batch should default to Skip
+And confirming the import should not add duplicate stock movements
 ```
 
 ### Scenario: Map xlsx columns to product fields correctly
@@ -123,11 +161,12 @@ Then the following column mappings should be applied:
 - [ ] File upload component with drag & drop support
 - [ ] xlsx parsing using SheetJS library
 - [ ] Preview table showing parsed products
-- [ ] Column mapping configuration (auto-detect + manual override)
-- [ ] Duplicate handling (skip/update/replace options)
+- [ ] Canonical template validation
+- [ ] Duplicate handling with batch idempotency
+- [ ] Default action resolution for create / receive_stock / update / skip
 - [ ] Progress indicator during import
 - [ ] Success/error toast notifications
-- [ ] Import creates products in Airtable
+- [ ] Import creates or updates products and stock safely in the supported backend
 
 ---
 

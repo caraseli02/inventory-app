@@ -502,12 +502,26 @@
     "failedMessage": "Importul a eșuat pentru {{count}} produse",
     "failedProducts": "Produse eșuate",
     "invoiceAlreadyImportedSkipped": "{{count}} rânduri au fost omise deoarece au fost deja importate din această factură.",
+    "xlsxAlreadyImportedSkipped": "{{count}} rânduri au fost omise deoarece au fost deja importate din acest lot Excel.",
     "invoiceReceiveStockMatchMissing": "Produsul potrivit nu mai există. Reîmprospătează inventarul și încearcă din nou.",
+    "blockingRows": "{{count}} rânduri trebuie corectate înainte de import",
     "tableBarcode": "Cod de bare",
     "tableName": "Nume",
     "tableCategory": "Categorie",
+    "tableMatch": "Potrivire",
+    "tableAction": "Acțiune",
     "tablePrice": "Preț",
-    "tableStock": "Stoc"
+    "tableStock": "Stoc",
+    "matchExisting": "Produs existent",
+    "matchHasDiffs": "Schimbări catalog",
+    "matchAlreadyImported": "Lot deja importat",
+    "matchNewProduct": "Produs nou",
+    "action": {
+      "create": "Creează",
+      "update": "Actualizează + stoc",
+      "receive_stock": "Primește stoc",
+      "skip": "Omite"
+    }
   },
   "invoiceUpload": {
     "title": "Importă din factură",
