@@ -26,6 +26,7 @@ CI baseline checks (all PRs/pushes):
 - TypeScript project build check (`pnpm typecheck` equivalent)
 - ESLint (`pnpm lint`)
 - Production build (`pnpm build`)
+- PR-only canonical status check (`docs/project-status.md` must be updated)
 
 ## Risk-Tiered Policy
 
@@ -53,6 +54,13 @@ For high-risk PRs, PR body should include checked items from `.github/pull_reque
 - `High-Risk Deploy Checklist Completed`
 - `Rollback Plan Included`
 - `Refactor Regression Proof Added`
+
+## Project Status Requirement
+
+For pull requests:
+- `docs/project-status.md` is the canonical handoff doc
+- every PR that merges must update it to reflect the post-merge state
+- CI enforces that the file is part of the PR diff
 
 ## Troubleshooting
 

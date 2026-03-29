@@ -14,7 +14,8 @@ This repository uses CI risk tiers to scale checks for features, deploys, and re
 
 Release truth policy:
 - **CI green = releasable**. Required GitHub checks are the canonical release gate.
-- Planning docs (`claude-progress.md`, `feature_list.json`) are informational and do not override CI outcomes.
+- `docs/project-status.md` is the canonical handoff doc for current state, but it does not override CI outcomes.
+- `feature_list.json` remains informational tracking, not release authority.
 
 - `low`: docs/non-critical edits, selective tests.
 - `medium`: broader unit/integration/e2e checks.

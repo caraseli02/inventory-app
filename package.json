@@ -27,6 +27,7 @@
     "audit:check": "node scripts/audit-check.js",
     "validate-docs": "node scripts/validate-docs.js",
     "check-root-files": "node scripts/check-root-files.js",
+    "check-project-status": "node scripts/check-project-status.js",
     "pr:sync-body": "node scripts/sync-pr-body.js",
     "pr:check-body": "node scripts/sync-pr-body.js --check",
     "prepare": "simple-git-hooks",

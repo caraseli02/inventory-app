@@ -93,6 +93,7 @@ If both backends are configured, **Supabase takes priority**. To switch backends
 
 ## Documentation
 
+- **[Project Status](docs/project-status.md)** - Canonical current priorities, active work, and next steps
 - **[Launch Checklist](LAUNCH_CHECKLIST.md)** - Deploy to Vercel in 30 minutes
 - **[Lean MVP Scope](docs/specs/mvp_scope_lean.md)** - What ships this week
 - **[Full Docs](docs/README.md)** - Architecture, specs, guides
