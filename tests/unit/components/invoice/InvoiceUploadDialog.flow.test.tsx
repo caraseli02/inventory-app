@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { InvoiceUploadDialog } from '@/components/invoice/InvoiceUploadDialog';
 import { InvoiceBackgroundJobsProvider, useInvoiceBackgroundJobs } from '@/hooks/useInvoiceBackgroundJobs';
 import i18n from '@/i18n';
+import type { ImportResult } from '@/lib/importRunnerTypes';
 import type { ImportedProduct } from '@/lib/xlsx';
 import type { Product } from '@/types';
 
@@ -108,8 +109,17 @@ describe('InvoiceUploadDialog flow', () => {
     const onImport = vi.fn<(
       products: ImportedProduct[],
       onProgress?: (current: number, total: number) => void
-    ) => Promise<void>>().mockImplementation(async (products, onProgress) => {
+    ) => Promise<ImportResult>>().mockImplementation(async (products, onProgress) => {
       onProgress?.(1, products.length);
+      return {
+        successCount: products.length,
+        skipCount: 0,
+        errorCount: 0,
+        invoiceDuplicateSkipCount: 0,
+        xlsxDuplicateSkipCount: 0,
+        failedProducts: [],
+        partialProducts: [],
+      };
     });
 
     render(
