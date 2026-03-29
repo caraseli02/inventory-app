@@ -47,8 +47,13 @@ export interface ImportResult {
   validRows: number;
 }
 
+function normalizeArrayBuffer(buffer: ArrayBuffer): ArrayBuffer {
+  const bytes = new Uint8Array(buffer);
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
 async function hashArrayBuffer(buffer: ArrayBuffer): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  const digest = await crypto.subtle.digest('SHA-256', new DataView(normalizeArrayBuffer(buffer)));
   return Array.from(new Uint8Array(digest))
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
@@ -56,10 +61,10 @@ async function hashArrayBuffer(buffer: ArrayBuffer): Promise<string> {
 
 async function readFileBuffer(file: File): Promise<ArrayBuffer> {
   if (typeof file.arrayBuffer === 'function') {
-    return file.arrayBuffer();
+    return normalizeArrayBuffer(await file.arrayBuffer());
   }
 
-  return new Response(file).arrayBuffer();
+  return normalizeArrayBuffer(await new Response(file).arrayBuffer());
 }
 
 export interface ImportError {
