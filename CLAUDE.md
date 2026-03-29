@@ -501,13 +501,15 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxxxx
 ## Documentation
 
 - All specs are authoritative sources of truth: `docs/specs/`
+- Canonical current status / handoff doc: `docs/project-status.md`
 - Architecture reference: `docs/project_architecture_structure.md`
 - Documentation index: `docs/README.md`
 - ADRs (Architecture Decision Records): `docs/adrs/`
 - **Solutions Knowledge Base**: `docs/solutions/` (Searchable history of resolved issues)
-- **Project management files** (root directory):
+- **Project management files**:
   - `feature_list.json` - Complete feature tracking with testing status
-  - `docs/project/claude-progress.md` - Project completeness and sprint tracking
+  - `docs/project-status.md` - Canonical current priorities, active work, next steps, and handoff layer
+  - `docs/project/claude-progress.md` - Deprecated redirect kept for compatibility
   - `scripts/init.sh` - Initialization script for server startup and testing
 
 ### MVP Scope (from `docs/specs/mvp_scope_lean.md`)
@@ -759,26 +761,23 @@ This project uses three critical files to track progress and ensure quality:
 }
 ```
 
-#### 2. claude-progress.md
-**Location**: `/docs/project/claude-progress.md`
-**Purpose**: High-level project completeness and sprint tracking
+#### 2. project-status.md
+**Location**: `/docs/project-status.md`
+**Purpose**: Canonical current status, handoff layer, and "what's next?" control doc
 
 **Contains**:
-- Overall progress percentage (currently 75%)
-- Feature completion by category
-- Testing status (0 of 53 scenarios tested)
-- Launch readiness checklist
-- Sprint tracking (Week 1-4+)
-- Known issues & bugs section
-- Recent activity log
-- Success metrics and validation goals
+- Current priorities
+- Active work
+- Recently completed
+- Next up
+- Decision notes
+- Links to canonical plans
 
 **When to update**:
-- After completing a feature implementation
-- After testing a feature with Playwright MCP
-- When discovering bugs
-- At the end of each work session
-- Before creating a commit
+- In every PR that changes shipped behavior, priorities, roadmap order, or the meaning of "what's next"
+- When a plan becomes active
+- When work moves from active to recently completed
+- Before merging if the current handoff view changed
 
 #### 3. init.sh
 **Location**: `/init.sh` (executable)
@@ -865,16 +864,15 @@ After each test scenario passes:
    ]
    ```
 
-2. Update `docs/project/claude-progress.md`:
-   - Check off the test scenario in "Testing Status" section
-   - Update "Recent Activity Log" with test results
-   - Note any bugs in "Known Issues & Bugs" section
+2. Update `docs/project-status.md`:
+   - refresh `Active Work`, `Recently Completed`, or `Next Up` if the PR changes current execution reality
+   - add links to any newly active plan or newly created solution doc
 
 **5. Commit Your Changes**
 
 After testing is complete:
 ```bash
-git add feature_list.json docs/project/claude-progress.md
+git add feature_list.json docs/project-status.md
 git commit -m "test: Complete testing for [feature name]"
 ```
 
@@ -892,7 +890,7 @@ After each testing session, ensure:
 **IMPORTANT**: After implementing any feature, you MUST:
 1. Test it immediately with Playwright MCP
 2. Mark it as tested in `feature_list.json`
-3. Update `docs/project/claude-progress.md` with results
+3. Update `docs/project-status.md` when the PR changes the current handoff view
 4. Commit changes to git
 5. Ensure project is in merge-ready state
 
@@ -946,6 +944,7 @@ The repository uses risk-tiered CI checks in `.github/workflows/ci.yml`.
 
 These fields are validated by the `High-Risk PR Checklist` CI job and are defined in `.github/pull_request_template.md`.
 Before or immediately after `gh pr create`, run `pnpm pr:sync-body` to append any missing required template sections to the current PR body.
+This includes the `Project Status` section used by the repo's yeet/publish PR flow, so do not open or merge a PR without updating `docs/project-status.md`.
 
 **Push-event diff safety**:
 - Detection scripts accept push SHA ranges (`before`, `after`) from CI to avoid empty-diff misclassification.
@@ -958,7 +957,8 @@ Before or immediately after `gh pr create`, run `pnpm pr:sync-body` to append an
 ### Delivery Policy (IMPORTANT)
 
 - **Releasable source of truth**: a change is releasable only when required CI checks are green.
-- `docs/project/claude-progress.md` and `feature_list.json` are planning/tracking artifacts, not release gates.
+- `docs/project-status.md` is the canonical handoff doc, but CI remains the release gate.
+- `feature_list.json` is a tracking artifact, not release authority.
 - Local hooks are split for feedback speed:
   - `pre-commit`: root-file checks, docs validation, typecheck, lint
   - `pre-push`: unit + integration tests
@@ -980,6 +980,6 @@ Before or immediately after `gh pr create`, run `pnpm pr:sync-body` to append an
 9. **Modifying feature_list.json**: ONLY change `implemented` and `tested` boolean fields - NEVER remove or modify features, steps, or scenarios
 10. **Skipping testing**: ALWAYS test features with Playwright MCP after implementation - do not skip this step
 11. **Uncommitted changes**: ALWAYS commit changes after testing - leaving uncommitted work is not acceptable
-12. **Not updating progress**: ALWAYS update both `feature_list.json` and `docs/project/claude-progress.md` after testing
+12. **Not updating handoff status**: ALWAYS update `docs/project-status.md` in any PR that changes current priorities, active work, recently completed work, or next steps
 13. **Missing high-risk PR checklist items**: High-risk PRs fail CI unless all 3 required checkbox lines are checked in PR body
 14. **Assuming push and PR diff behavior is identical**: Use SHA-aware detection logic for push events to avoid empty-diff test/risk skips

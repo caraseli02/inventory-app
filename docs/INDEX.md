@@ -2,7 +2,7 @@
 
 Complete documentation for the Inventory App project.
 
-**Last Updated**: 2025-12-18
+**Last Updated**: 2026-03-29
 
 ---
 
@@ -10,8 +10,9 @@ Complete documentation for the Inventory App project.
 
 ### New Users
 1. **[README.md](../README.md)** - Project overview and quick start guide
-2. **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** - Set up your Supabase backend (15-20 min)
-3. **[LAUNCH_CHECKLIST.md](../LAUNCH_CHECKLIST.md)** - Deploy to production
+2. **[project-status.md](./project-status.md)** - Canonical current priorities, active work, and next steps
+3. **[SUPABASE_SETUP.md](./SUPABASE_SETUP.md)** - Set up your Supabase backend (15-20 min)
+4. **[LAUNCH_CHECKLIST.md](../LAUNCH_CHECKLIST.md)** - Deploy to production
 
 ### Existing Airtable Users
 1. **[MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md)** - Migrate from Airtable to Supabase (30-45 min)
@@ -40,7 +41,8 @@ Complete documentation for the Inventory App project.
 
 ### Architecture & Specifications
 - **[project_architecture_structure.md](./project_architecture_structure.md)** - Overall architecture
-- **[README.md](./README.md)** - Documentation home (this may be outdated, use INDEX.md)
+- **[project-status.md](./project-status.md)** - Canonical control tower for current work
+- **[README.md](./README.md)** - Documentation home and navigation
 - **[specs/](./specs/)** - Feature specifications (BDD scenarios)
   - `mvp_scope_lean.md` - Lean MVP scope
   - `scanner.md` - Barcode scanning
@@ -60,12 +62,12 @@ Complete documentation for the Inventory App project.
   - `ADR-0001-airtable-backend-proxy.md` - Backend proxy decision
 
 ### Project Management
-- **[project/claude-progress.md](./project/claude-progress.md)** - Project tracking
-  - Sprint progress, feature completion, testing status
-  - Known issues, recent activity log
+- **[project-status.md](./project-status.md)** - Canonical project status and handoff layer
+  - Current priorities, active work, recently completed, next up
+  - Links to canonical plans and decision notes
 
 - **[../feature_list.json](../feature_list.json)** - Feature tracking database
-  - 28 features with implementation and testing status
+  - 30 features with implementation and testing status
   - BDD scenarios, test files
 
 ### Reports
@@ -119,7 +121,7 @@ Complete documentation for the Inventory App project.
 **Features:**
 - Specifications → `specs/` directory
 - Testing → `test-reports/` directory
-- Progress tracking → `project/claude-progress.md`
+- Current status / handoff → `project-status.md`
 
 **Deployment:**
 - Production launch → `LAUNCH_CHECKLIST.md`
@@ -140,7 +142,7 @@ Complete documentation for the Inventory App project.
 
 **Product Managers:**
 1. `../README.md` - Project overview
-2. `project/claude-progress.md` - Progress tracking
+2. `project-status.md` - Current priorities and handoff context
 3. `../feature_list.json` - Feature status
 4. `specs/mvp_scope_lean.md` - MVP scope
 
@@ -174,7 +176,7 @@ Complete documentation for the Inventory App project.
 
 ### When to Update
 - **Specs**: When requirements change or features are implemented
-- **Progress**: After completing features or fixing bugs
+- **Project status**: In every PR that changes shipped behavior, priorities, roadmap order, or "what's next"
 - **Reports**: After audits, tests, or analysis
 - **Architecture**: When making significant design decisions
 
@@ -192,7 +194,7 @@ Complete documentation for the Inventory App project.
 ## 📞 Support
 
 - **Technical Issues**: Check `TROUBLESHOOTING.md` first
-- **Feature Requests**: See `../feature_list.json` for current roadmap
+- **Feature Requests / current priority order**: Start with `project-status.md`, then inspect `../feature_list.json` and `docs/plans/`
 - **Questions**: Open an issue or discussion on GitHub
 
 ---

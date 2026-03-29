@@ -189,6 +189,21 @@ jobs:
               );
             }
 
+  project-status-check:
+    name: Project Status Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: git fetch origin ${{ github.base_ref }}
+
+      - name: Require canonical status doc update
+        run: node scripts/check-project-status.js ${{ github.base_ref }}
+
   unit-tests:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
