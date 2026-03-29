@@ -502,12 +502,26 @@
     "failedMessage": "{{count}} productos no se pudieron importar",
     "failedProducts": "Productos Fallidos",
     "invoiceAlreadyImportedSkipped": "Se omitieron {{count}} filas porque ya fueron importadas de esta factura.",
+    "xlsxAlreadyImportedSkipped": "Se omitieron {{count}} filas porque ya fueron importadas de este lote de Excel.",
     "invoiceReceiveStockMatchMissing": "El producto coincidente ya no existe. Actualiza el inventario e inténtalo de nuevo.",
+    "blockingRows": "{{count}} filas deben corregirse antes de importar",
     "tableBarcode": "Código de barras",
     "tableName": "Nombre",
     "tableCategory": "Categoría",
+    "tableMatch": "Coincidencia",
+    "tableAction": "Acción",
     "tablePrice": "Precio",
-    "tableStock": "Stock"
+    "tableStock": "Stock",
+    "matchExisting": "Producto existente",
+    "matchHasDiffs": "Cambios de catálogo",
+    "matchAlreadyImported": "Lote ya importado",
+    "matchNewProduct": "Producto nuevo",
+    "action": {
+      "create": "Crear",
+      "update": "Actualizar + stock",
+      "receive_stock": "Recibir stock",
+      "skip": "Omitir"
+    }
   },
   "invoiceUpload": {
     "title": "Importar desde factura",

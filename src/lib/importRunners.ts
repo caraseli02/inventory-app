@@ -2,7 +2,6 @@ import type { TFunction } from 'i18next';
 import type { Product } from '../types';
 import type { ImportedProduct } from './xlsx';
 import { logger } from './logger';
-import { AuthorizationError, NetworkError } from './errors';
 import {
   addStockMovement,
   createProduct,
@@ -11,18 +10,8 @@ import {
 } from './api-provider';
 import { buildInvoiceRowNote, getAlreadyImportedRowIds } from './invoiceIdempotency';
 import { buildInvoiceProductUpdatePayload } from './invoiceImportDiffs';
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-export interface ImportResult {
-  successCount: number;
-  skipCount: number;
-  errorCount: number;
-  invoiceDuplicateSkipCount: number;
-  failedProducts: Array<{ name: string; error: string }>;
-  partialProducts: Array<{ name: string; message: string }>;
-  fatalError?: string;
-}
+import type { ImportResult } from './importRunnerTypes';
+export { runXlsxImport, buildXlsxImportToast } from './xlsxImportRunner';
 
 interface InvoiceImportState {
   normalizedNameMap: Map<string, Product>;
@@ -71,15 +60,10 @@ function buildStockNote(
   );
 }
 
-function isFatalImportError(err: unknown, successCount: number): boolean {
-  return err instanceof AuthorizationError || (err instanceof NetworkError && successCount === 0);
-}
-
 function accumulateRowResult(result: ImportResult, rowResult: RowResult): void {
   if (rowResult.type === 'success') { result.successCount += 1; return; }
   if (rowResult.type === 'skip') {
     result.skipCount += 1;
-    if (rowResult.isDuplicate) result.invoiceDuplicateSkipCount += 1;
     return;
   }
   result.partialProducts.push({ name: rowResult.name, message: rowResult.message });
@@ -210,7 +194,7 @@ export async function runInvoiceImport(
 ): Promise<ImportResult> {
   const result: ImportResult = {
     successCount: 0, skipCount: 0, errorCount: 0,
-    invoiceDuplicateSkipCount: 0, failedProducts: [], partialProducts: [],
+    invoiceDuplicateSkipCount: 0, xlsxDuplicateSkipCount: 0, failedProducts: [], partialProducts: [],
   };
   const state: InvoiceImportState = {
     ...buildProductIndices(allProducts),
@@ -235,81 +219,11 @@ export async function runInvoiceImport(
         : await processNewProduct(imported, importedBarcode, importedRowId, isAlreadyImportedRow, importAction, stockNote, state, t);
 
       accumulateRowResult(result, rowResult);
+      if (rowResult.type === 'skip' && rowResult.isDuplicate) result.invoiceDuplicateSkipCount += 1;
     } catch (err) {
       logger.error('Invoice import row failed', { productName: imported.Name, barcode: imported.Barcode, errorMessage: toErrorMessage(err), timestamp: new Date().toISOString() });
       result.errorCount += 1;
       result.failedProducts.push(toErrorEntry(imported.Name, err, t));
-    } finally {
-      processedCount += 1;
-      onProgress?.(processedCount, totalCount);
-    }
-  }
-
-  return result;
-}
-
-// ── Xlsx import helpers ──────────────────────────────────────────────────────
-
-async function processXlsxUpdateRow(imported: ImportedProduct): Promise<void> {
-  await updateProduct(imported.existingProductId!, {
-    Name: imported.Name, Category: imported.Category, Price: imported.Price,
-    'Price 70%': imported.price70, Markup: 70, Supplier: imported.Supplier, Image: imported.imageUrl,
-  });
-  if (imported.currentStock && imported.currentStock > 0) {
-    await addStockMovement(imported.existingProductId!, imported.currentStock, 'IN');
-  }
-}
-
-async function processXlsxCreateRow(imported: ImportedProduct): Promise<boolean> {
-  const importedBarcode = normalizeBarcode(imported.Barcode);
-  if (importedBarcode) {
-    const existing = await getProductByBarcode(importedBarcode);
-    if (existing) return false;
-  }
-  const newProduct = await createProduct({
-    Name: imported.Name, Barcode: importedBarcode, Category: imported.Category,
-    Price: imported.Price, 'Price 50%': imported.price50, 'Price 70%': imported.price70,
-    'Price 100%': imported.price100, Markup: 70, 'Expiry Date': imported.expiryDate, Image: imported.imageUrl,
-  });
-  if (imported.currentStock && imported.currentStock > 0 && newProduct) {
-    await addStockMovement(newProduct.id, imported.currentStock, 'IN');
-  }
-  return true;
-}
-
-export async function runXlsxImport(
-  importedProducts: ImportedProduct[],
-  t: TFunction,
-  onProgress?: (current: number, total: number) => void
-): Promise<ImportResult> {
-  const result: ImportResult = {
-    successCount: 0, skipCount: 0, errorCount: 0,
-    invoiceDuplicateSkipCount: 0, failedProducts: [], partialProducts: [],
-  };
-  const totalCount = importedProducts.length;
-  let processedCount = 0;
-
-  for (const imported of importedProducts) {
-    try {
-      const importAction = imported.importAction ?? 'create';
-      if (importAction === 'skip') { result.skipCount++; continue; }
-
-      if (importAction === 'update' && imported.existingProductId) {
-        await processXlsxUpdateRow(imported);
-        result.successCount++;
-        continue;
-      }
-
-      const created = await processXlsxCreateRow(imported);
-      if (created) result.successCount++; else result.skipCount++;
-    } catch (err) {
-      if (isFatalImportError(err, result.successCount)) {
-        result.fatalError = toErrorMessage(err);
-        return result;
-      }
-      logger.error('Product import failed', { productName: imported.Name, barcode: imported.Barcode, errorMessage: toErrorMessage(err), timestamp: new Date().toISOString() });
-      result.failedProducts.push(toErrorEntry(imported.Name, err, t));
-      result.errorCount++;
     } finally {
       processedCount += 1;
       onProgress?.(processedCount, totalCount);
@@ -348,24 +262,4 @@ export function buildInvoiceImportToast(
     ? formatFailedList(failedProducts)
     : t('import.failedMessage', { count: errorCount });
   return { toastType: invoiceDuplicateSkipCount > 0 ? 'info' : 'error', title: t('import.failed'), message };
-}
-
-export function buildXlsxImportToast(
-  result: ImportResult,
-  t: TFunction
-): { toastType: 'success' | 'warning' | 'error' | 'info'; title: string; message: string } {
-  const { successCount, skipCount, errorCount, failedProducts } = result;
-  if (successCount > 0) {
-    let message = t('import.successMessage', { count: successCount, skipped: skipCount, errors: errorCount });
-    if (failedProducts.length > 0) {
-      message += `\n\n${t('import.failedProducts', 'Failed products')}:\n${formatFailedList(failedProducts)}`;
-    }
-    return { toastType: errorCount > 0 ? 'warning' : 'success', title: t('import.success'), message };
-  }
-  if (skipCount > 0) {
-    return { toastType: 'info', title: t('import.allSkipped'), message: t('import.allSkippedMessage', { count: skipCount }) };
-  }
-  let message = t('import.failedMessage', { count: errorCount });
-  if (failedProducts.length > 0) message += `\n\n${formatFailedList(failedProducts)}`;
-  return { toastType: 'error', title: t('import.failed'), message };
 }

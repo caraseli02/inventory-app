@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import type { TFunction } from 'i18next';
 import { previewInvoicePricing } from '@/lib/invoiceImportApi';
 import type { InvoiceImportAction } from '@/lib/invoiceImportDiffs';
+import type { ImportResult } from '@/lib/importRunnerTypes';
 import { logger } from '@/lib/logger';
 import type { ImportedProduct } from '@/lib/xlsx/index';
 import type { InvoiceData } from '@/lib/invoiceOCR';
@@ -42,7 +43,7 @@ interface UseConfirmImportArgs {
   matchResults: (InvoiceMatchResult | null)[];
   importActions: Record<string, InvoiceImportAction>;
   getResolvedDefaultAction: (index: number) => InvoiceImportAction;
-  onImport: (products: ImportedProduct[], onProgress?: (current: number, total: number) => void) => Promise<void>;
+  onImport: (products: ImportedProduct[], onProgress?: (current: number, total: number) => void) => Promise<ImportResult>;
   setStep: React.Dispatch<React.SetStateAction<InvoiceStep>>;
   setImportErrors: React.Dispatch<React.SetStateAction<string[]>>;
   setImportProgress: React.Dispatch<React.SetStateAction<{ current: number; total: number }>>;
@@ -76,7 +77,21 @@ export function useInvoiceConfirmImport({
       const computedById = new Map(preview.rows.map((r) => [r.row_id, r.computed ?? null]));
       const missingMsg = t('invoiceUpload.errors.previewMissingComputed', { defaultValue: 'Preview pricing returned incomplete data. Please try again.' });
       const imported = buildImportedProducts(editableProducts, matchResults, importActions, computedById, invoiceData, getResolvedDefaultAction, missingMsg);
-      await onImport(imported, (current, total) => { setImportProgress({ current, total }); });
+      const result = await onImport(imported, (current, total) => { setImportProgress({ current, total }); });
+      if (result.fatalError) {
+        setImportErrors([result.fatalError]);
+        setStep('preview');
+        return;
+      }
+      if (result.errorCount > 0 || result.partialProducts.length > 0) {
+        const nextErrors = [
+          ...result.failedProducts.slice(0, 3).map((entry) => `${entry.name}: ${entry.error}`),
+          ...result.partialProducts.slice(0, 3).map((entry) => `${entry.name}: ${entry.message}`),
+        ];
+        setImportErrors(nextErrors.length > 0 ? nextErrors : [t('import.failed')]);
+        setStep('preview');
+        return;
+      }
       logger.info('Invoice import completed successfully', { productCount: imported.length, supplier: invoiceData.supplier, invoiceNumber: invoiceData.invoiceNumber });
       setStep('complete');
     } catch (error) {

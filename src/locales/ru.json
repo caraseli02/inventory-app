@@ -502,12 +502,26 @@
     "failedMessage": "{{count}} товаров не удалось импортировать",
     "failedProducts": "Товары с ошибками",
     "invoiceAlreadyImportedSkipped": "{{count}} строк пропущено, потому что они уже были импортированы из этого счета.",
+    "xlsxAlreadyImportedSkipped": "{{count}} строк пропущено, потому что они уже были импортированы из этой Excel-партии.",
     "invoiceReceiveStockMatchMissing": "Найденный товар больше не существует. Обновите список и попробуйте снова.",
+    "blockingRows": "{{count}} строк нужно исправить перед импортом",
     "tableBarcode": "Штрих-код",
     "tableName": "Название",
     "tableCategory": "Категория",
+    "tableMatch": "Совпадение",
+    "tableAction": "Действие",
     "tablePrice": "Цена",
-    "tableStock": "Запас"
+    "tableStock": "Запас",
+    "matchExisting": "Существующий товар",
+    "matchHasDiffs": "Изменения каталога",
+    "matchAlreadyImported": "Партия уже импортирована",
+    "matchNewProduct": "Новый товар",
+    "action": {
+      "create": "Создать",
+      "update": "Обновить + запас",
+      "receive_stock": "Принять запас",
+      "skip": "Пропустить"
+    }
   },
   "invoiceUpload": {
     "title": "Импорт из счета",

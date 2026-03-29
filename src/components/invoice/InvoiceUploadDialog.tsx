@@ -4,6 +4,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Receipt, CheckCircle2 } from 'lucide-react';
 import type { ImportedProduct } from '@/lib/xlsx/index';
+import type { ImportResult } from '@/lib/importRunnerTypes';
 import type { Product } from '@/types';
 import type { InvoiceImportAction } from '@/lib/invoiceImportDiffs';
 import type { InvoiceData, InvoiceOCRResult } from '@/lib/invoiceOCR';
@@ -14,7 +15,7 @@ import { InvoicePreviewTable } from './InvoicePreviewTable';
 interface InvoiceUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (products: ImportedProduct[], onProgress?: (current: number, total: number) => void) => Promise<void>;
+  onImport: (products: ImportedProduct[], onProgress?: (current: number, total: number) => void) => Promise<ImportResult>;
   products: Product[];
   initialSession?: {
     jobId?: string;

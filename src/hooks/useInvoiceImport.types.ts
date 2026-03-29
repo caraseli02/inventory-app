@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next';
 import type { InvoiceData, InvoiceOCRResult, InvoiceProduct } from '@/lib/invoiceOCR';
+import type { ImportResult } from '@/lib/importRunnerTypes';
 import type { Product } from '@/types';
 import type { InvoiceImportAction } from '@/lib/invoiceImportDiffs';
 import type { ImportedProduct } from '@/lib/xlsx/index';
@@ -83,7 +84,7 @@ export interface UseInvoiceImportReturn {
 export interface UseInvoiceImportProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImport: (products: ImportedProduct[], onProgress?: (current: number, total: number) => void) => Promise<void>;
+  onImport: (products: ImportedProduct[], onProgress?: (current: number, total: number) => void) => Promise<ImportResult>;
   products: Product[];
   initialSession?: {
     jobId?: string;
