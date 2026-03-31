@@ -24,6 +24,7 @@ function getDefaultExcelImportAction(input: {
   isAlreadyImported: boolean;
   hasDiffs: boolean;
 }): XlsxImportAction {
+  if (input.isAlreadyImported && !input.hasMatch) return 'skip';
   if (!input.hasMatch) return 'create';
   if (input.isAlreadyImported) return input.hasDiffs ? 'update' : 'skip';
   return input.hasDiffs ? 'update' : 'receive_stock';
