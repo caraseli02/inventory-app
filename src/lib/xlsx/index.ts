@@ -174,7 +174,7 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       }
     });
 
-    // Canonical Excel fallback requires both Name and Barcode columns.
+    // Excel import requires Name column; Barcode is optional (can be added later via edit).
     const mappedFields = Object.values(columnMapping);
     for (const required of REQUIRED_FIELDS) {
       if (!mappedFields.includes(required)) {

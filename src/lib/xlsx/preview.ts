@@ -24,6 +24,7 @@ function getDefaultExcelImportAction(input: {
   isAlreadyImported: boolean;
   hasDiffs: boolean;
 }): XlsxImportAction {
+  if (input.isAlreadyImported && !input.hasMatch) return 'skip';
   if (!input.hasMatch) return 'create';
   if (input.isAlreadyImported) return input.hasDiffs ? 'update' : 'skip';
   return input.hasDiffs ? 'update' : 'receive_stock';
@@ -35,9 +36,6 @@ function getBlockingError(input: {
   isAlreadyImported: boolean;
   importAction: XlsxImportAction;
 }): string | undefined {
-  const barcode = normalizeBarcode(input.product.Barcode);
-  if (!barcode) return 'Barcode is required for canonical Excel import.';
-
   const requiresExisting = input.importAction === 'receive_stock' || input.importAction === 'update';
   if (requiresExisting && !input.matchedProduct) {
     return 'Matched product no longer exists. Refresh inventory and try again.';
@@ -89,14 +87,23 @@ export function buildXlsxPreviewRows(
   alreadyImportedRowIds: Set<string>
 ): XlsxPreviewRow[] {
   const productByBarcode = new Map<string, Product>();
+  // Fallback index for barcode-less imports: match by trimmed lowercase Name
+  const productByName = new Map<string, Product>();
   allProducts.forEach((product) => {
     const barcode = normalizeBarcode(product.fields.Barcode);
     if (barcode) productByBarcode.set(barcode, product);
+    const nameKey = product.fields.Name?.trim().toLowerCase();
+    if (nameKey) productByName.set(nameKey, product);
   });
 
   return importedProducts.map((product, index) => {
     const barcode = normalizeBarcode(product.Barcode);
-    const matchedProduct = barcode ? productByBarcode.get(barcode) ?? null : null;
+    // Match by barcode first; fall back to name match for barcode-less rows
+    let matchedProduct = barcode ? productByBarcode.get(barcode) ?? null : null;
+    if (!matchedProduct) {
+      const nameKey = product.Name?.trim().toLowerCase();
+      if (nameKey) matchedProduct = productByName.get(nameKey) ?? null;
+    }
     const payload = matchedProduct ? buildInvoiceProductUpdatePayload(matchedProduct, product) : {};
     const hasDiffs = Object.keys(payload).length > 0;
     const previewId = product.excelRowId?.trim() || `xlsx:${index}`;
