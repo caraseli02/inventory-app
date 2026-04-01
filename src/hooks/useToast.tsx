@@ -1,11 +1,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { Toast, ToastType } from '../components/ui/toast';
+import type { Toast, ToastType, ToastAction } from '../components/ui/toast';
 import { ToastContainer } from '../components/ui/toast';
 
 interface ToastContextType {
   toasts: Toast[];
-  showToast: (type: ToastType, title: string, description?: string, duration?: number) => void;
+  showToast: (type: ToastType, title: string, description?: string, duration?: number, action?: ToastAction) => void;
   dismissToast: (id: string) => void;
 }
 
@@ -17,9 +17,9 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const showToast = useCallback((type: ToastType, title: string, description?: string, duration?: number) => {
+  const showToast = useCallback((type: ToastType, title: string, description?: string, duration?: number, action?: ToastAction) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
-    const newToast: Toast = { id, type, title, description, duration };
+    const newToast: Toast = { id, type, title, description, duration, action };
     setToasts((prev) => [...prev, newToast]);
   }, []);
 

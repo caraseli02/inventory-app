@@ -115,13 +115,13 @@ export default function HomePage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-lavender)]/10 text-[var(--color-lavender)] group-hover:bg-[var(--color-lavender)]/20 group-hover:scale-110 transition-all">
                   <Bot className="h-6 w-6" />
                 </div>
-                <Badge variant="secondary" className="bg-[var(--color-lavender)]/10 border-[var(--color-lavender)]/30 text-[var(--color-lavender)] px-2.5 py-1 text-xs font-semibold tracking-wide uppercase">
-                  Internal
+                <Badge variant="secondary" className="bg-amber-100 border-amber-300 text-amber-700 px-2.5 py-1 text-xs font-semibold tracking-wide uppercase">
+                  Dev: Simulator
                 </Badge>
               </div>
               <div className="space-y-1">
                 <h2 className="text-lg sm:text-xl font-bold text-stone-900">WhatsApp Simulator</h2>
-                <p className="text-sm text-[var(--color-lavender)] leading-snug">Convenience-only chat sandbox. Use webhook replay for real parity.</p>
+                <p className="text-sm text-stone-500 leading-snug">Dev-only chat sandbox. Use webhook replay for production parity.</p>
               </div>
             </div>
           </Card>

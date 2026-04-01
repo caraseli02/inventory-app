@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle } from 'lucide-react';
 import { getStockMovements, getAllProducts } from '../../lib/api-provider';
@@ -11,9 +11,11 @@ import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { ProductImage } from '../ui/product-image';
 import { ProductSkeleton } from './ProductSkeleton';
-import EditProductDialog from './EditProductDialog';
-import DeleteConfirmDialog from './DeleteConfirmDialog';
+import { Spinner } from '../ui/spinner';
 import type { Product } from '../../types';
+
+const EditProductDialog = lazy(() => import('./EditProductDialog').then(m => ({ default: m.default })));
+const DeleteConfirmDialog = lazy(() => import('./DeleteConfirmDialog').then(m => ({ default: m.default })));
 
 interface ProductDetailProps {
   /** Barcode to look up product (used for scanner flow) */
@@ -296,19 +298,23 @@ const ProductDetail = ({ barcode, productId, onScanNew }: ProductDetailProps) =>
       </CardFooter>
 
       {/* Edit Product Dialog */}
-      <EditProductDialog
-        product={product}
-        open={showEditDialog}
-        onOpenChange={setShowEditDialog}
-      />
+      <Suspense fallback={<Spinner size="sm" label="Loading editor..." />}>
+        <EditProductDialog
+          product={product}
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+        />
+      </Suspense>
 
       {/* Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        product={product}
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        onDeleteSuccess={onScanNew}
-      />
+      <Suspense fallback={<Spinner size="sm" label="Loading..." />}>
+        <DeleteConfirmDialog
+          product={product}
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          onDeleteSuccess={onScanNew}
+        />
+      </Suspense>
     </Card>
   );
 };
