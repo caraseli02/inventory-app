@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { Settings, RefreshCw, Check, ChevronRight } from 'lucide-react';
+import { Settings, RefreshCw, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { logger } from '@/lib/logger';
 
 interface SettingsMenuProps {
   onResetCache: () => Promise<void>;

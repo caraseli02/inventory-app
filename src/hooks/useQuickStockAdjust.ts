@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+
+/* eslint-disable max-lines-per-function -- TODO: extract undo logic to separate hook */
 import { useQueryClient } from '@tanstack/react-query';
 import type { Product } from '../types';
 import { useToast } from './useToast';
@@ -51,7 +53,7 @@ export function useQuickStockAdjust(products: Product[]) {
         });
       });
       showToast('success', t('toast.undoSuccess', 'Undone'), t('toast.stockReverted', '{name} stock reverted', { name: productName }), 3000);
-    } catch (err) {
+    } catch {
       logger.error('Stock undo failed', { productId, productName, reverseDelta });
       showToast('error', t('toast.undoFailed', 'Undo Failed'), t('toast.undoFailedMessage', 'Could not revert stock change'), 5000);
     } finally {

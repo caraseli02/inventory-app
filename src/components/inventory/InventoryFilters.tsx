@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -132,7 +132,7 @@ export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
           {/* Row 2: Category chips - always visible for quick filtering */}
           <CategoryChips
             selectedCategory={filters.category}
-            onCategorySelect={(cat) => onFilterChange('category', cat)}
+            onCategorySelect={(cat) => cat !== null && onFilterChange('category', cat)}
           />
 
           {/* Row 3: Active filter chips (only show if filters active) */}

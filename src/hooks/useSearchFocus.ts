@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 /**
  * Hook to focus a search input when the global Cmd+K shortcut is pressed
  * @param inputRef - Ref to the search input element
  */
-export function useSearchFocus(inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement>) {
+export function useSearchFocus(inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>) {
   useEffect(() => {
     const handleFocusSearch = () => {
       if (inputRef.current) {

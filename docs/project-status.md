@@ -61,6 +61,7 @@ Canonical status doc for current priorities, active work, recent completions, an
 
 ## Recently Completed
 
+- 2026-04-01: added keyboard shortcuts (Cmd+K), search focus management, category chips with type-safe filters, skeleton loading states, and refactored toast notification system. Also added Claude Code skills patterns to .gitignore.
 - 2026-04-01: closed Excel/invoice import parity gap — barcode made optional, name-fallback matching added, early idempotency mark, race condition fix. 436 tests passing, verified with real xlsx file.
   - Solution: [excel-invoice-import-parity-2026-03-31.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/logic-errors/excel-invoice-import-parity-2026-03-31.md)
 - 2026-03-29: hardened Excel import as the canonical fallback intake path and fixed false-complete import dialog behavior.

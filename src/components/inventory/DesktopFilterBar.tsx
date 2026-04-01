@@ -20,7 +20,7 @@ interface DesktopFilterBarProps {
   onImport: () => void;
   onImportInvoice?: () => void;
   onExport: () => void;
-  searchInputRef?: React.RefObject<HTMLInputElement>;
+  searchInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export const DesktopFilterBar = ({

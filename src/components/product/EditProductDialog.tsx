@@ -1,4 +1,4 @@
-import { type ChangeEvent, useCallback, memo } from 'react';
+import { type ChangeEvent, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';

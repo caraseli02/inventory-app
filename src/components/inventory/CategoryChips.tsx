@@ -6,8 +6,8 @@ const COMMON_CATEGORIES = ['General', 'Produce', 'Dairy', 'Meat', 'Pantry', 'Sna
 export type Category = typeof COMMON_CATEGORIES[number];
 
 interface CategoryChipsProps {
-  selectedCategory: Category | null;
-  onCategorySelect: (category: Category | null) => void;
+  selectedCategory: string | null;
+  onCategorySelect: (category: string | null) => void;
 }
 
 export function CategoryChips({ selectedCategory, onCategorySelect }: CategoryChipsProps) {
