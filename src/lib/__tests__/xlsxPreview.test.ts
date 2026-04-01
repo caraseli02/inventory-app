@@ -68,12 +68,14 @@ describe('buildXlsxPreviewRows', () => {
     expect(rows[0]?.importAction).toBe('skip');
   });
 
-  it('blocks rows without barcode for the canonical path', () => {
+  it('allows rows without barcode to create new products', () => {
     const rows = buildXlsxPreviewRows([
       makeImported({ Barcode: undefined, excelRowId: 'Sheet1:2:' }),
     ], [makeProduct()], new Set());
 
-    expect(rows[0]?.blockingError).toContain('Barcode is required');
+    expect(rows[0]?.matchedProduct).toBeNull();
+    expect(rows[0]?.importAction).toBe('create');
+    expect(rows[0]?.blockingError).toBeUndefined();
   });
 
   describe('no match scenarios', () => {
@@ -178,7 +180,9 @@ describe('buildXlsxPreviewRows', () => {
         new Set()
       );
 
-      expect(rows[0]?.blockingError).toContain('Barcode is required');
+      expect(rows[0]?.matchedProduct).toBeNull();
+      expect(rows[0]?.importAction).toBe('create');
+      expect(rows[0]?.blockingError).toBeUndefined();
     });
 
     it('handles missing excelRowId gracefully', () => {

@@ -36,9 +36,6 @@ function getBlockingError(input: {
   isAlreadyImported: boolean;
   importAction: XlsxImportAction;
 }): string | undefined {
-  const barcode = normalizeBarcode(input.product.Barcode);
-  if (!barcode) return 'Barcode is required for canonical Excel import.';
-
   const requiresExisting = input.importAction === 'receive_stock' || input.importAction === 'update';
   if (requiresExisting && !input.matchedProduct) {
     return 'Matched product no longer exists. Refresh inventory and try again.';
