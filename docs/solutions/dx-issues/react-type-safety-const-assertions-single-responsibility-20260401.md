@@ -1,15 +1,21 @@
 ---
 title: React Type Safety Patterns - const Assertions and Single Responsibility
 date: 2026-04-01
-category: best-practices
+category: dx-issues
 module: frontend
-problem_type: best_practice
-component: frontend_stimulus
+problem_type: developer_experience
+component: react_component
 severity: medium
+symptoms:
+  - CategoryChips component accepted any string instead of valid categories
+  - Toast action handler combined execution and dismiss responsibilities
+  - Nullable stock checks were implicit rather than explicit
 applies_when:
   - Creating category or enum-like types in TypeScript
   - Working with React component click handlers
   - Handling nullable values from external APIs
+root_cause: type_error
+resolution_type: refactor
 tags:
   - typescript
   - react
