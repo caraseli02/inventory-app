@@ -13,9 +13,10 @@ import { ProductListItem } from '../components/inventory/ProductListItem';
 import { InventoryTable } from '../components/inventory/InventoryTable';
 import { ProductDetailDialog } from '../components/inventory/ProductDetailDialog';
 import { LowStockAlertsPanel } from '../components/inventory/LowStockAlertsPanel';
-import EditProductDialog from '../components/product/EditProductDialog';
-import DeleteConfirmDialog from '../components/product/DeleteConfirmDialog';
-import BatchDeleteConfirmDialog from '../components/product/BatchDeleteConfirmDialog';
+import { ProductListSkeleton, TableSkeleton } from '../components/inventory/ProductListSkeleton';
+const EditProductDialog = lazy(() => import('../components/product/EditProductDialog').then(m => ({ default: m.default })));
+const DeleteConfirmDialog = lazy(() => import('../components/product/DeleteConfirmDialog').then(m => ({ default: m.default })));
+const BatchDeleteConfirmDialog = lazy(() => import('../components/product/BatchDeleteConfirmDialog').then(m => ({ default: m.default })));
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { exportToXlsx, type ExportProduct } from '../lib/xlsx';
 import { useToast } from '../hooks/useToast';
@@ -257,9 +258,14 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="flex justify-center py-12">
-              <Spinner size="lg" label={t('inventory.loading')} />
-            </div>
+            <>
+              <div className="md:hidden">
+                <ProductListSkeleton />
+              </div>
+              <div className="hidden md:block">
+                <TableSkeleton />
+              </div>
+            </>
           )}
 
           {/* Error State */}
@@ -338,30 +344,36 @@ const InventoryListPage = ({ onBack }: InventoryListPageProps) => {
 
       {/* Edit Product Dialog */}
       {editProduct && (
-        <EditProductDialog
-          product={editProduct}
-          open={!!editProduct}
-          onOpenChange={(open) => !open && setEditProduct(null)}
-        />
+        <Suspense fallback={<Spinner size="sm" label="Loading editor..." />}>
+          <EditProductDialog
+            product={editProduct}
+            open={!!editProduct}
+            onOpenChange={(open) => !open && setEditProduct(null)}
+          />
+        </Suspense>
       )}
 
       {/* Delete Confirmation Dialog */}
       {deleteProduct && (
-        <DeleteConfirmDialog
-          product={deleteProduct}
-          open={!!deleteProduct}
-          onOpenChange={(open) => !open && setDeleteProduct(null)}
-          onDeleteSuccess={handleDeleteSuccess}
-        />
+        <Suspense fallback={<Spinner size="sm" label="Loading..." />}>
+          <DeleteConfirmDialog
+            product={deleteProduct}
+            open={!!deleteProduct}
+            onOpenChange={(open) => !open && setDeleteProduct(null)}
+            onDeleteSuccess={handleDeleteSuccess}
+          />
+        </Suspense>
       )}
 
       {/* Batch Delete Dialog */}
-      <BatchDeleteConfirmDialog
-        products={products.filter((product) => selectedProductIds.has(product.id))}
-        open={batchDeleteOpen}
-        onOpenChange={setBatchDeleteOpen}
-        onDeleteSuccess={handleBatchDeleteSuccess}
-      />
+      <Suspense fallback={<Spinner size="sm" label="Loading..." />}>
+        <BatchDeleteConfirmDialog
+          products={products.filter((product) => selectedProductIds.has(product.id))}
+          open={batchDeleteOpen}
+          onOpenChange={setBatchDeleteOpen}
+          onDeleteSuccess={handleBatchDeleteSuccess}
+        />
+      </Suspense>
 
       {/* Import Dialog */}
       {importDialogOpen && (

@@ -16,6 +16,33 @@
   --color-stone: #78716C;
   --color-stone-dark: #57534E;
 
+  /* Semantic Status Colors (using Tailwind palette values) */
+  --color-success: #059669;           /* emerald-600 (same as forest) */
+  --color-success-bg: #ECFDF5;        /* emerald-50 */
+  --color-success-bg-strong: #D1FAE5; /* emerald-100 */
+  --color-success-text: #047857;      /* emerald-700 */
+  --color-warning: #D97706;           /* amber-600 */
+  --color-warning-bg: #FFFBEB;        /* amber-50 */
+  --color-warning-bg-strong: #FEF3C7; /* amber-100 */
+  --color-warning-text: #B45309;      /* amber-700 */
+  --color-error: #DC2626;             /* red-600 (same as terracotta hue) */
+  --color-error-bg: #FEF2F2;          /* red-50 */
+  --color-error-bg-strong: #FEE2E2;   /* red-100 */
+  --color-error-text: #B91C1C;        /* red-700 */
+  --color-info: #0284C7;              /* sky-600 */
+  --color-info-bg: #F0F9FF;           /* sky-50 */
+  --color-info-text: #0369A1;         /* sky-700 */
+
+  /* Icon Background Tokens (for section headers and icon containers) */
+  --icon-info-bg: #DBEAFE;            /* blue-100 */
+  --icon-info-text: #2563EB;          /* blue-600 */
+  --icon-warning-bg: #FEF3C7;         /* amber-100 */
+  --icon-warning-text: #D97706;       /* amber-600 */
+  --icon-success-bg: #D1FAE5;         /* emerald-100 */
+  --icon-success-text: #059669;       /* emerald-600 */
+  --icon-error-bg: #FEE2E2;           /* red-100 */
+  --icon-error-text: #DC2626;         /* red-600 */
+
   /* Layout constraints */
   --max-width-desktop: 1280px;
   --max-width-tablet: 900px;
@@ -441,5 +468,19 @@ div[id*="qr-shaded-region"] {
 /* Hide canvas overlay if present */
 [id*="reader"] canvas {
   display: none !important;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
 }
 
