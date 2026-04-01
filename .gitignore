@@ -201,3 +201,5 @@ debug-*.log
 # Visual test artifacts
 visual-test-results/
 *.mjs
+# Node compile cache
+node-compile-cache/
