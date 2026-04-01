@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-03-29
+Last updated: 2026-04-01
 
 Canonical status doc for current priorities, active work, recent completions, and handoff context. Use this as the control layer above `docs/plans/` and `docs/solutions/`.
 
@@ -35,12 +35,12 @@ Canonical status doc for current priorities, active work, recent completions, an
 - Canonical plan:
   - [2026-03-29-001-feat-canonical-excel-delivery-import-plan.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/plans/2026-03-29-001-feat-canonical-excel-delivery-import-plan.md)
 - What is in progress:
-  - canonical template path only
-  - required `Barcode` + `Name` columns
-  - barcode-only matching
+  - barcode is now optional (removed from REQUIRED_FIELDS)
+  - name-fallback matching when barcode is absent
+  - early idempotency mark before DB writes (race condition fix)
+  - name-based note fallback for barcode-less idempotency tracking
   - explicit preview actions: `create`, `update`, `receive_stock`, `skip`
   - batch-level Excel idempotency for stock receipts
-  - dialogs only mark complete on a clean runner result
 - How to continue:
   - keep Excel aligned with invoice write semantics, not invoice UI complexity
   - treat parser/idempotency/test parity as the main regression boundary
@@ -61,6 +61,8 @@ Canonical status doc for current priorities, active work, recent completions, an
 
 ## Recently Completed
 
+- 2026-04-01: closed Excel/invoice import parity gap — barcode made optional, name-fallback matching added, early idempotency mark, race condition fix. 436 tests passing, verified with real xlsx file.
+  - Solution: [excel-invoice-import-parity-2026-03-31.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/logic-errors/excel-invoice-import-parity-2026-03-31.md)
 - 2026-03-29: hardened Excel import as the canonical fallback intake path and fixed false-complete import dialog behavior.
   - Plan: [2026-03-29-001-feat-canonical-excel-delivery-import-plan.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/plans/2026-03-29-001-feat-canonical-excel-delivery-import-plan.md)
   - Solution: [false-complete-after-partial-or-fatal-import-ProductImportUI-20260329.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/state-issues/false-complete-after-partial-or-fatal-import-ProductImportUI-20260329.md)
