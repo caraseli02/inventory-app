@@ -17,7 +17,7 @@ function makeWorkbookFile(rows: unknown[][], name = 'delivery.xlsx'): File {
 }
 
 describe('parseXlsxFile', () => {
-  it('rejects files that do not include the canonical barcode column', async () => {
+  it('accepts files without barcode column (barcode is optional)', async () => {
     const file = makeWorkbookFile([
       ['Denumirea produsului', 'Stock curent'],
       ['Milk', 4],
@@ -25,8 +25,21 @@ describe('parseXlsxFile', () => {
 
     const result = await parseXlsxFile(file);
 
+    expect(result.success).toBe(true);
+    expect(result.products[0]?.Name).toBe('Milk');
+    expect(result.products[0]?.Barcode).toBeUndefined();
+  });
+
+  it('rejects files that do not include the Name column', async () => {
+    const file = makeWorkbookFile([
+      ['Cod de bare (Barcode)', 'Stock curent'],
+      ['5901234567890', 4],
+    ]);
+
+    const result = await parseXlsxFile(file);
+
     expect(result.success).toBe(false);
-    expect(result.errors[0]?.message).toContain('Missing required column(s): Barcode');
+    expect(result.errors[0]?.message).toContain('Missing required column(s): Name');
   });
 
   it('adds deterministic batch and row metadata to imported rows', async () => {

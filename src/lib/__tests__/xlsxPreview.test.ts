@@ -68,9 +68,9 @@ describe('buildXlsxPreviewRows', () => {
     expect(rows[0]?.importAction).toBe('skip');
   });
 
-  it('allows rows without barcode to create new products', () => {
+  it('allows rows without barcode to create new products when no name match', () => {
     const rows = buildXlsxPreviewRows([
-      makeImported({ Barcode: undefined, excelRowId: 'Sheet1:2:' }),
+      makeImported({ Name: 'New Product', Barcode: undefined, excelRowId: 'Sheet1:2:' }),
     ], [makeProduct()], new Set());
 
     expect(rows[0]?.matchedProduct).toBeNull();
@@ -81,7 +81,7 @@ describe('buildXlsxPreviewRows', () => {
   describe('no match scenarios', () => {
     it('defaults unmatched rows to create', () => {
       const rows = buildXlsxPreviewRows(
-        [makeImported({ Barcode: '9999999999999' })],
+        [makeImported({ Name: 'Bread', Barcode: '9999999999999' })],
         [makeProduct()],
         new Set()
       );
@@ -92,7 +92,7 @@ describe('buildXlsxPreviewRows', () => {
 
     it('defaults already-imported unmatched rows to skip', () => {
       const rows = buildXlsxPreviewRows(
-        [makeImported({ Barcode: '9999999999999', excelRowId: 'Sheet1:5:9999999999999' })],
+        [makeImported({ Name: 'Bread', Barcode: '9999999999999', excelRowId: 'Sheet1:5:9999999999999' })],
         [makeProduct()],
         new Set(['Sheet1:5:9999999999999'])
       );
@@ -173,15 +173,16 @@ describe('buildXlsxPreviewRows', () => {
       expect(rows[0]?.product.Barcode).toBe('5901234567890');
     });
 
-    it('treats empty string barcode as missing', () => {
+    it('falls back to name matching when barcode is empty', () => {
       const rows = buildXlsxPreviewRows(
         [makeImported({ Barcode: '', excelRowId: 'Sheet1:2:' })],
         [makeProduct()],
         new Set()
       );
 
-      expect(rows[0]?.matchedProduct).toBeNull();
-      expect(rows[0]?.importAction).toBe('create');
+      // Name-based fallback match prevents duplicate product creation
+      expect(rows[0]?.matchedProduct?.id).toBe('p1');
+      expect(rows[0]?.importAction).toBe('receive_stock');
       expect(rows[0]?.blockingError).toBeUndefined();
     });
 

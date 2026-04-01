@@ -43,9 +43,11 @@ function buildExcelStockNote(imported: ImportedProduct): string | undefined {
   const rowId = imported.excelRowId?.trim();
   const batchId = imported.excelBatchId?.trim();
   const barcode = imported.Barcode?.trim();
+  const name = imported.Name?.trim();
 
-  if (!rowId || !batchId || !barcode) return undefined;
-  return buildExcelRowNote({ batchId, rowId, barcode }) ?? undefined;
+  if (!rowId || !batchId) return undefined;
+  // Barcode is optional; use Name as fallback identity for idempotency tracking
+  return buildExcelRowNote({ batchId, rowId, barcode: barcode || name || '' }) ?? undefined;
 }
 
 async function loadAlreadyImportedExcelIds(firstRow: ImportedProduct | undefined): Promise<Set<string>> {
@@ -96,7 +98,8 @@ async function addExcelStockMovement(input: {
   context: 'create' | 'update';
 }): Promise<string | null> {
   const quantity = input.imported.currentStock;
-  if (!quantity || quantity <= 0) return null;
+  // Guard: skip stock movement for non-positive, missing, or non-finite quantities
+  if (quantity == null || !Number.isFinite(quantity) || quantity <= 0) return null;
 
   try {
     await addStockMovement(
@@ -105,7 +108,7 @@ async function addExcelStockMovement(input: {
       'IN',
       buildExcelStockNote(input.imported),
     );
-    if (input.rowId) input.state.alreadyImportedRowIds.add(input.rowId);
+    // Row idempotency is now marked before DB writes in runXlsxImport loop
     return null;
   } catch (stockErr) {
     const message = toErrorMessage(stockErr);
@@ -266,6 +269,8 @@ export async function runXlsxImport(
 
       const rowId = imported.excelRowId?.trim();
       const isAlreadyImportedRow = Boolean(rowId && state.alreadyImportedRowIds.has(rowId));
+      // Mark row as in-progress immediately to prevent concurrent duplicate processing
+      if (rowId && !isAlreadyImportedRow) state.alreadyImportedRowIds.add(rowId);
       const existing = await resolveExistingProduct(imported, state);
 
       if (existing) {

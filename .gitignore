@@ -83,6 +83,7 @@ tmp/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.playwright-mcp/
 /tests/fixtures/.auth/
 /tests/visual/screenshots/
 /tests-examples/
