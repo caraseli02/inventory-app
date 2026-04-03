@@ -8,6 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { extractInvoiceData, getInvoiceExtractionStatus } from '@/lib/invoiceOCR';
 import { resolveSupabaseAccessToken } from '@/lib/invoiceAuth';
+import { createInvoiceResponse, createInvoiceJobResponse } from '@/test/factories';
 
 // Mock the logger
 vi.mock('@/lib/logger', () => ({
@@ -56,18 +57,7 @@ class MockXMLHttpRequest {
   send = vi.fn(() => {
     this.status = 200;
     this.statusText = 'OK';
-    this.responseText = JSON.stringify({
-      products: [
-        {
-          name: 'Test Product',
-          quantity: 1,
-          unit_price: 1.25,
-          total_price: 1.25,
-          raw_code: '1234567890123',
-        }
-      ],
-      total_amount: 1.25,
-    });
+    this.responseText = JSON.stringify(createInvoiceResponse());
     this.onload?.();
   });
 }
@@ -125,11 +115,7 @@ describe('Invoice OCR (FastAPI Integration)', () => {
         send = vi.fn(() => {
           this.status = 202;
           this.statusText = 'Accepted';
-          this.responseText = JSON.stringify({
-            job_id: 'ext-123',
-            status: 'queued',
-            status_url: '/invoice/extraction-jobs/ext-123',
-          });
+          this.responseText = JSON.stringify(createInvoiceJobResponse('ext-123', 'queued'));
           this.getAllResponseHeaders = vi.fn(() => 'Retry-After: 2\r\nLocation: /invoice/extraction-jobs/ext-123\r\n');
           this.onload?.();
         });
@@ -154,10 +140,7 @@ describe('Invoice OCR (FastAPI Integration)', () => {
       const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
         job_id: 'ext-123',
         status: 'succeeded',
-        result: {
-          products: [{ name: 'Test', quantity: 1, unit_price: 1.25, total_price: 1.25 }],
-          total_amount: 1.25,
-        },
+        result: createInvoiceResponse(),
       }), { status: 200 }));
       vi.stubGlobal('fetch', fetchMock);
 
@@ -184,10 +167,10 @@ describe('Invoice OCR (FastAPI Integration)', () => {
       if (result.success) {
         expect(result.data.products).toHaveLength(1);
         const product = result.data.products[0];
-        expect(product.name).toBe('Test Product');
+        expect(product.name).toBe('Test Invoice Product');
         expect(product.barcode).toBe('1234567890123');
         expect(product.quantity).toBe(1);
-        expect(result.data.totalAmount).toBe(1.25);
+        expect(result.data.totalAmount).toBe(10.00);
       }
     });
   });
