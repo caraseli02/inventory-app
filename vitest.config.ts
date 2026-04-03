@@ -32,13 +32,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
-      // Only measure coverage for files we have tests for
+      // Only measure coverage for files we have good test coverage for
       include: [
         'src/lib/errors.ts',
         'src/lib/logger.ts',
         'src/lib/filters.ts',
         'src/lib/ai/index.ts', // Category mapping - has tests
         'src/hooks/useLowStockAlerts.ts',
+        'src/lib/checkoutCartStorage.ts', // Has good coverage
+        'src/lib/twilioSignature.ts', // Simple function, well tested
       ],
       exclude: [
         'src/lib/ai/openFoodFacts.ts', // External API - would need fetch mocking
