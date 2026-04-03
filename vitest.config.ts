@@ -42,6 +42,7 @@ export default defineConfig({
         'src/lib/checkoutCartStorage.ts', // Has good coverage
         'src/lib/twilioSignature.ts', // Simple function, well tested
       'src/lib/invoicePricing.ts', // Weight parsing utility, comprehensively tested
+      'src/lib/exchangeRates.ts', // BNM exchange rate fetching, well tested
       ],
       exclude: [
         'src/lib/ai/openFoodFacts.ts', // External API - would need fetch mocking
