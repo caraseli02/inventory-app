@@ -244,6 +244,19 @@ describe('AI Product Suggestions', () => {
       expect(result?.category).toBe('Produce')
     })
 
+    it('should handle partial match for meat', async () => {
+      mockFetchFromOFF.mockResolvedValue(
+        createOFFResponse({
+          categories_tags: ['en:processed-meat-products'],
+        })
+      )
+
+      const { suggestProductDetails } = await import('@/lib/ai')
+      const result = await suggestProductDetails('1234567890123')
+
+      expect(result?.category).toBe('Meat')
+    })
+
     it('should prioritize exact matches over partial matches', async () => {
       // en:beverages should match before partial 'snack' check
       mockFetchFromOFF.mockResolvedValue(
