@@ -146,7 +146,9 @@ beforeAll(() => {
     // Suppress certain warnings that are expected in test environment
     if (
       typeof args[0] === 'string' &&
-      args[0].includes('React does not recognize')
+      (args[0].includes('React does not recognize') ||
+        args[0].includes('Missing Supabase credentials') ||
+        args[0].includes('APP WILL NOT FUNCTION CORRECTLY'))
     ) {
       return
     }
