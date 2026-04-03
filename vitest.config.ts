@@ -41,6 +41,7 @@ export default defineConfig({
         'src/hooks/useLowStockAlerts.ts',
         'src/lib/checkoutCartStorage.ts', // Has good coverage
         'src/lib/twilioSignature.ts', // Simple function, well tested
+      'src/lib/invoicePricing.ts', // Weight parsing utility, comprehensively tested
       ],
       exclude: [
         'src/lib/ai/openFoodFacts.ts', // External API - would need fetch mocking
