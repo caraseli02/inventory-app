@@ -486,6 +486,10 @@
     "rowsSkipped": "{{count}} rânduri omise din cauza erorilor",
     "andMoreErrors": "...și încă {{count}} erori",
     "showingProducts": "Se afișează {{showing}} din {{total}} produse",
+    "showingRange": "Se afișează rândurile {{from}}-{{to}} din {{total}}",
+    "pageIndicator": "Pagina {{current}} din {{total}}",
+    "previousPage": "Pagina anterioară",
+    "nextPage": "Pagina următoare",
     "importingProducts": "Se importă produsele...",
     "productProgress": "{{current}} din {{total}} produse",
     "importComplete": "Import finalizat!",
@@ -505,6 +509,23 @@
     "xlsxAlreadyImportedSkipped": "{{count}} rânduri au fost omise deoarece au fost deja importate din acest lot Excel.",
     "invoiceReceiveStockMatchMissing": "Produsul potrivit nu mai există. Reîmprospătează inventarul și încearcă din nou.",
     "blockingRows": "{{count}} rânduri trebuie corectate înainte de import",
+    "blocking": {
+      "barcodeRequired": "Codul de bare este obligatoriu pentru importul Excel canonic.",
+      "matchMissing": "Produsul potrivit nu mai există. Reîmprospătează inventarul și încearcă din nou.",
+      "quantityRequired": "Cantitatea este obligatorie pentru rândurile care vor primi stoc."
+    },
+    "errors": {
+      "invalidFileType": "Selectează un fișier Excel (.xlsx sau .xls)",
+      "noSheetsFound": "Nu au fost găsite foi în registrul de lucru",
+      "fileTooShort": "Fișierul trebuie să aibă cel puțin un rând de antet și un rând cu date",
+      "missingHeaders": "Nu s-au găsit antete de coloană recunoscute. Sunt așteptate coloane precum \"Cod de bare (Barcode)\" și \"Denumirea produsului\"",
+      "missingColumns": "Lipsesc coloanele obligatorii: {{columns}}. Folosește șablonul Excel canonic pentru a importa produse.",
+      "missingField": "Lipsește câmpul obligatoriu: {{field}}",
+      "parseFailed": "Analizarea fișierului a eșuat: {{message}}"
+    },
+    "warningMessages": {
+      "unrecognizedColumn": "Coloana \"{{column}}\" nu a fost recunoscută și va fi omisă"
+    },
     "tableBarcode": "Cod de bare",
     "tableName": "Nume",
     "tableCategory": "Categorie",

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select';
 import {
   getAvailableExcelActions,
+  getXlsxBlockingErrorMessage,
   type XlsxImportAction,
   type XlsxPreviewRow,
 } from '@/lib/xlsx/preview';
@@ -37,13 +38,13 @@ export function ImportPreviewTable({ rows, t, onActionChange }: ImportPreviewTab
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-200">
-            {rows.slice(0, 10).map((row) => (
+            {rows.map((row) => (
               <tr key={row.previewId} className="hover:bg-stone-50">
                 <td className="px-3 py-2 font-mono text-xs">{row.product.Barcode}</td>
                 <td className="px-3 py-2">
                   <div className="font-medium text-stone-900">{row.product.Name}</div>
-                  {row.blockingError && (
-                    <div className="text-xs text-red-600 mt-1">{row.blockingError}</div>
+                  {getXlsxBlockingErrorMessage(row, t) && (
+                    <div className="text-xs text-red-600 mt-1">{getXlsxBlockingErrorMessage(row, t)}</div>
                   )}
                 </td>
                 <td className="px-3 py-2">
@@ -106,11 +107,6 @@ export function ImportPreviewTable({ rows, t, onActionChange }: ImportPreviewTab
           </tbody>
         </table>
       </div>
-      {rows.length > 10 && (
-        <div className="px-3 py-2 bg-stone-50 text-sm text-stone-500 text-center">
-          {t('import.showingProducts', { showing: 10, total: rows.length })}
-        </div>
-      )}
     </div>
   );
 }

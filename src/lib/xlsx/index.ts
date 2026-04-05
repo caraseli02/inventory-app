@@ -42,10 +42,12 @@ export interface ImportResult {
   success: boolean;
   products: ImportedProduct[];
   errors: ImportError[];
-  warnings: string[];
+  warnings: ImportWarning[];
   totalRows: number;
   validRows: number;
 }
+
+type ImportMessageValues = Record<string, string | number>;
 
 function normalizeArrayBuffer(buffer: ArrayBuffer): ArrayBuffer {
   const bytes = new Uint8Array(buffer);
@@ -71,6 +73,14 @@ export interface ImportError {
   row: number;
   field?: string;
   message: string;
+  messageKey?: string;
+  messageValues?: ImportMessageValues;
+}
+
+export interface ImportWarning {
+  message: string;
+  messageKey?: string;
+  messageValues?: ImportMessageValues;
 }
 
 export interface ExportProduct {
@@ -87,12 +97,40 @@ export interface ExportProduct {
   expiryDate?: string;
 }
 
+function createImportError(input: {
+  row: number;
+  message: string;
+  messageKey: string;
+  field?: string;
+  messageValues?: ImportMessageValues;
+}): ImportError {
+  return {
+    row: input.row,
+    field: input.field,
+    message: input.message,
+    messageKey: input.messageKey,
+    messageValues: input.messageValues,
+  };
+}
+
+function createImportWarning(input: {
+  message: string;
+  messageKey: string;
+  messageValues?: ImportMessageValues;
+}): ImportWarning {
+  return {
+    message: input.message,
+    messageKey: input.messageKey,
+    messageValues: input.messageValues,
+  };
+}
+
 /**
  * Parse an xlsx file and extract product data
  */
 export async function parseXlsxFile(file: File): Promise<ImportResult> {
   const errors: ImportError[] = [];
-  const warnings: string[] = [];
+  const warnings: ImportWarning[] = [];
   const products: ImportedProduct[] = [];
 
   try {
@@ -106,7 +144,13 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       return {
         success: false,
         products: [],
-        errors: [{ row: 0, message: 'No sheets found in the workbook' }],
+        errors: [
+          createImportError({
+            row: 0,
+            message: 'No sheets found in the workbook',
+            messageKey: 'import.errors.noSheetsFound',
+          }),
+        ],
         warnings: [],
         totalRows: 0,
         validRows: 0,
@@ -125,7 +169,13 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       return {
         success: false,
         products: [],
-        errors: [{ row: 0, message: 'File must have at least a header row and one data row' }],
+        errors: [
+          createImportError({
+            row: 0,
+            message: 'File must have at least a header row and one data row',
+            messageKey: 'import.errors.fileTooShort',
+          }),
+        ],
         warnings: [],
         totalRows: 0,
         validRows: 0,
@@ -156,7 +206,13 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       return {
         success: false,
         products: [],
-        errors: [{ row: 0, message: 'Could not find recognizable column headers. Expected columns like "Cod de bare (Barcode)" and "Denumirea produsului"' }],
+        errors: [
+          createImportError({
+            row: 0,
+            message: 'Could not find recognizable column headers. Expected columns like "Cod de bare (Barcode)" and "Denumirea produsului"',
+            messageKey: 'import.errors.missingHeaders',
+          }),
+        ],
         warnings: [],
         totalRows: 0,
         validRows: 0,
@@ -186,7 +242,14 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       return {
         success: false,
         products: [],
-        errors: [{ row: 0, message: `Missing required column(s): ${missingRequired.join(', ')}. Use the canonical Excel template to import products.` }],
+        errors: [
+          createImportError({
+            row: 0,
+            message: `Missing required column(s): ${missingRequired.join(', ')}. Use the canonical Excel template to import products.`,
+            messageKey: 'import.errors.missingColumns',
+            messageValues: { columns: missingRequired.join(', ') },
+          }),
+        ],
         warnings: [],
         totalRows: 0,
         validRows: 0,
@@ -223,9 +286,13 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
       for (const required of REQUIRED_FIELDS) {
         if (!product[required as keyof ImportedProduct]) {
           errors.push({
-            row: rowNum,
-            field: required,
-            message: `Missing required field: ${required}`,
+            ...createImportError({
+              row: rowNum,
+              field: required,
+              message: `Missing required field: ${required}`,
+              messageKey: 'import.errors.missingField',
+              messageValues: { field: required },
+            }),
           });
           hasRequiredFields = false;
         }
@@ -250,7 +317,11 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
     // Add warnings for unmapped columns
     headers.forEach((header, index) => {
       if (header && !columnMapping[index] && header.trim()) {
-        warnings.push(`Column "${header}" was not recognized and will be skipped`);
+        warnings.push(createImportWarning({
+          message: `Column "${header}" was not recognized and will be skipped`,
+          messageKey: 'import.warningMessages.unrecognizedColumn',
+          messageValues: { column: header },
+        }));
       }
     });
 
@@ -266,7 +337,14 @@ export async function parseXlsxFile(file: File): Promise<ImportResult> {
     return {
       success: false,
       products: [],
-      errors: [{ row: 0, message: `Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+      errors: [
+        createImportError({
+          row: 0,
+          message: `Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          messageKey: 'import.errors.parseFailed',
+          messageValues: { message: error instanceof Error ? error.message : 'Unknown error' },
+        }),
+      ],
       warnings: [],
       totalRows: 0,
       validRows: 0,

@@ -486,6 +486,10 @@
     "rowsSkipped": "{{count}} строк пропущено из-за ошибок",
     "andMoreErrors": "...и ещё {{count}} ошибок",
     "showingProducts": "Показано {{showing}} из {{total}} товаров",
+    "showingRange": "Показаны строки {{from}}-{{to}} из {{total}}",
+    "pageIndicator": "Страница {{current}} из {{total}}",
+    "previousPage": "Предыдущая страница",
+    "nextPage": "Следующая страница",
     "importingProducts": "Импорт товаров...",
     "productProgress": "{{current}} из {{total}} товаров",
     "importComplete": "Импорт завершён!",
@@ -505,6 +509,23 @@
     "xlsxAlreadyImportedSkipped": "{{count}} строк пропущено, потому что они уже были импортированы из этой Excel-партии.",
     "invoiceReceiveStockMatchMissing": "Найденный товар больше не существует. Обновите список и попробуйте снова.",
     "blockingRows": "{{count}} строк нужно исправить перед импортом",
+    "blocking": {
+      "barcodeRequired": "Штрих-код обязателен для канонического импорта Excel.",
+      "matchMissing": "Найденный товар больше не существует. Обновите список и попробуйте снова.",
+      "quantityRequired": "Количество обязательно для строк, которые будут пополнять запас."
+    },
+    "errors": {
+      "invalidFileType": "Выберите файл Excel (.xlsx или .xls)",
+      "noSheetsFound": "В книге не найдено листов",
+      "fileTooShort": "Файл должен содержать хотя бы строку заголовка и одну строку данных",
+      "missingHeaders": "Не удалось найти распознаваемые заголовки столбцов. Ожидаются столбцы вроде \"Cod de bare (Barcode)\" и \"Denumirea produsului\"",
+      "missingColumns": "Отсутствуют обязательные столбцы: {{columns}}. Используйте канонический шаблон Excel для импорта товаров.",
+      "missingField": "Отсутствует обязательное поле: {{field}}",
+      "parseFailed": "Не удалось разобрать файл: {{message}}"
+    },
+    "warningMessages": {
+      "unrecognizedColumn": "Столбец \"{{column}}\" не распознан и будет пропущен"
+    },
     "tableBarcode": "Штрих-код",
     "tableName": "Название",
     "tableCategory": "Категория",

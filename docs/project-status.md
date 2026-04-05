@@ -41,6 +41,10 @@ Canonical status doc for current priorities, active work, recent completions, an
   - name-based note fallback for barcode-less idempotency tracking
   - explicit preview actions: `create`, `update`, `receive_stock`, `skip`
   - batch-level Excel idempotency for stock receipts
+  - dialogs only mark complete on a clean runner result
+  - preview keeps every XLSX row reachable/editable before confirm while paginating large batches
+  - upload/parser/preview validation is localized for supported inventory locales
+  - idempotency history lookups are batch-scoped instead of scanning all Excel notes
 - How to continue:
   - keep Excel aligned with invoice write semantics, not invoice UI complexity
   - treat parser/idempotency/test parity as the main regression boundary
@@ -61,6 +65,8 @@ Canonical status doc for current priorities, active work, recent completions, an
 
 ## Recently Completed
 
+- 2026-04-05: fixed XLSX import readiness gaps by keeping every preview row reachable before confirm, localizing upload/parser/blocking validation, and scoping idempotency lookups to the current batch.
+  - Verification: `pnpm vitest run src/lib/__tests__/xlsxParser.test.ts src/lib/__tests__/xlsxPreview.test.ts src/lib/__tests__/importRunners.xlsx.test.ts src/lib/__tests__/excelImportIdempotency.test.ts src/components/xlsx/__tests__/ImportPreviewTable.test.tsx src/components/xlsx/__tests__/ImportDialog.test.tsx`
 - 2026-04-05: expanded test coverage - added invoice authentication, BNM exchange rate fetching, and invoice pricing weight parsing tests. Consolidated invoiceOCR tests (enabled 5 previously skipped tests). 439 tests passing.
 - 2026-04-01: added keyboard shortcuts (Cmd+K), search focus management, category chips with type-safe filters, skeleton loading states, and refactored toast notification system. Also added Claude Code skills patterns to .gitignore.
 - 2026-04-01: closed Excel/invoice import parity gap — barcode made optional, name-fallback matching added, early idempotency mark, race condition fix. 436 tests passing, verified with real xlsx file.

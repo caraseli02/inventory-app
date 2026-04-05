@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildExcelBatchKey,
+  buildExcelBatchNotePattern,
   buildExcelRowNote,
   parseExcelRowNote,
 } from '@/lib/excelImportIdempotency';
@@ -10,6 +11,11 @@ describe('excelImportIdempotency', () => {
   it('builds a batch key only when the batch id exists', () => {
     expect(buildExcelBatchKey({ batchId: 'batch-1' })).toBe('batch-1');
     expect(buildExcelBatchKey({ batchId: '' })).toBeNull();
+  });
+
+  it('builds a batch-scoped note pattern for idempotency lookups', () => {
+    expect(buildExcelBatchNotePattern({ batchId: 'batch|1' })).toBe('excel_import|batch=batch%7C1|%');
+    expect(buildExcelBatchNotePattern({ batchId: '' })).toBeNull();
   });
 
   it('builds and parses row note with escaped delimiters/newlines', () => {

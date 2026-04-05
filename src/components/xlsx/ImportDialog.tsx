@@ -16,9 +16,11 @@ import { getAlreadyImportedExcelRowIds } from '@/lib/excelImportIdempotency';
 import {
   applyExcelImportAction,
   buildXlsxPreviewRows,
+  getXlsxBlockingErrorMessage,
   type XlsxImportAction,
   type XlsxPreviewRow,
 } from '@/lib/xlsx/preview';
+import { ImportPreviewPagination } from '@/components/xlsx/ImportPreviewPagination';
 import { ImportPreviewTable } from '@/components/xlsx/ImportPreviewTable';
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -33,6 +35,7 @@ interface ImportDialogProps {
 }
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete';
+const XLSX_PREVIEW_PAGE_SIZE = 50;
 
 export function ImportDialog({ open, onOpenChange, onImport, products }: ImportDialogProps) {
   const { t } = useTranslation();
@@ -41,14 +44,24 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
   const [importResult, setImportResult] = useState<ParseImportResult | null>(null);
   const [completedImportResult, setCompletedImportResult] = useState<RunnerImportResult | null>(null);
   const [previewRows, setPreviewRows] = useState<XlsxPreviewRow[]>([]);
+  const [previewPage, setPreviewPage] = useState(0);
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [importErrors, setImportErrors] = useState<string[]>([]);
+
+  const formatImportMessage = useCallback((message: { message: string; messageKey?: string; messageValues?: Record<string, string | number> }) => {
+    if (!message.messageKey) return message.message;
+    return t(message.messageKey, {
+      ...message.messageValues,
+      defaultValue: message.message,
+    });
+  }, [t]);
 
   const resetState = useCallback(() => {
     setStep('upload');
     setImportResult(null);
     setCompletedImportResult(null);
     setPreviewRows([]);
+    setPreviewPage(0);
     setImportProgress({ current: 0, total: 0 });
     setImportErrors([]);
   }, []);
@@ -66,7 +79,11 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
       setImportResult({
         success: false,
         products: [],
-        errors: [{ row: 0, message: 'Please select an Excel file (.xlsx or .xls)' }],
+        errors: [{
+          row: 0,
+          message: 'Please select an Excel file (.xlsx or .xls)',
+          messageKey: 'import.errors.invalidFileType',
+        }],
         warnings: [],
         totalRows: 0,
         validRows: 0,
@@ -95,6 +112,7 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
       }
 
       setPreviewRows(buildXlsxPreviewRows(result.products, products, alreadyImportedRowIds));
+      setPreviewPage(0);
       setStep('preview');
     }
   }, [products]);
@@ -180,6 +198,12 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
 
   const actionableRows = previewRows.filter((row) => row.importAction !== 'skip' && !row.blockingError);
   const blockingRows = previewRows.filter((row) => row.blockingError);
+  const totalPreviewPages = Math.max(1, Math.ceil(previewRows.length / XLSX_PREVIEW_PAGE_SIZE));
+  const safePreviewPage = Math.min(previewPage, totalPreviewPages - 1);
+  const visiblePreviewRows = previewRows.slice(
+    safePreviewPage * XLSX_PREVIEW_PAGE_SIZE,
+    (safePreviewPage + 1) * XLSX_PREVIEW_PAGE_SIZE,
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -200,7 +224,6 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
         <div className="flex-1 overflow-auto py-4">
           {step === 'upload' && (
             <div className="space-y-4">
-              {/* Drag & Drop Zone */}
               <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
@@ -238,7 +261,6 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
                 </label>
               </div>
 
-              {/* Sample File Link */}
               <p className="text-sm text-stone-500 text-center">
                 {t('import.needTemplate')}{' '}
                 <a
@@ -250,7 +272,6 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
                 </a>
               </p>
 
-              {/* Parse Errors */}
               {importResult && !importResult.success && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <div className="flex items-start gap-2">
@@ -259,8 +280,8 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
                       <p className="font-medium text-red-700">{t('import.errorParsing')}</p>
                       {importResult.errors.map((error, i) => (
                         <p key={i} className="text-sm text-red-600 mt-1">
-                          {error.row > 0 && t('import.rowError', { row: error.row, message: error.message })}
-                          {error.row === 0 && error.message}
+                          {error.row > 0 && t('import.rowError', { row: error.row, message: formatImportMessage(error) })}
+                          {error.row === 0 && formatImportMessage(error)}
                         </p>
                       ))}
                     </div>
@@ -272,7 +293,6 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
 
           {step === 'preview' && importResult && (
             <div className="space-y-4">
-              {/* Summary */}
               <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-lg">
                 <CheckCircle2 className="h-8 w-8 text-[var(--color-forest)]" />
                 <div>
@@ -293,24 +313,22 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
                   <div className="max-h-40 overflow-auto space-y-1">
                     {blockingRows.slice(0, 10).map((row) => (
                       <p key={row.previewId} className="text-sm text-red-600">
-                        {row.product.Name}: {row.blockingError}
+                        {row.product.Name}: {getXlsxBlockingErrorMessage(row, t)}
                       </p>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Warnings */}
               {importResult.warnings.length > 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="font-medium text-amber-700 mb-2">{t('import.warnings')}</p>
                   {importResult.warnings.map((warning, i) => (
-                    <p key={i} className="text-sm text-amber-600">{warning}</p>
+                    <p key={i} className="text-sm text-amber-600">{formatImportMessage(warning)}</p>
                   ))}
                 </div>
               )}
 
-              {/* Errors */}
               {importResult.errors.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="font-medium text-red-700 mb-2">
@@ -319,7 +337,7 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
                   <div className="max-h-32 overflow-auto">
                     {importResult.errors.slice(0, 10).map((error, i) => (
                       <p key={i} className="text-sm text-red-600">
-                        {t('import.rowError', { row: error.row, message: error.message })}
+                        {t('import.rowError', { row: error.row, message: formatImportMessage(error) })}
                       </p>
                     ))}
                     {importResult.errors.length > 10 && (
@@ -332,12 +350,23 @@ export function ImportDialog({ open, onOpenChange, onImport, products }: ImportD
               )}
 
               <ImportPreviewTable
-                rows={previewRows}
+                rows={visiblePreviewRows}
                 t={t}
                 onActionChange={handleActionChange}
               />
 
-              {/* Import Errors */}
+              {previewRows.length > XLSX_PREVIEW_PAGE_SIZE && (
+                <ImportPreviewPagination
+                  currentPage={safePreviewPage}
+                  pageSize={XLSX_PREVIEW_PAGE_SIZE}
+                  t={t}
+                  totalPages={totalPreviewPages}
+                  totalRows={previewRows.length}
+                  onPrevious={() => setPreviewPage((current) => Math.max(0, current - 1))}
+                  onNext={() => setPreviewPage((current) => Math.min(totalPreviewPages - 1, current + 1))}
+                />
+              )}
+
               {importErrors.length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="font-medium text-red-700">{t('import.failed')}</p>

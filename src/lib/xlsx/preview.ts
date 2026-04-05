@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 import type { Product } from '@/types';
 import { buildInvoiceProductUpdatePayload } from '@/lib/invoiceImportDiffs';
 import type { ImportedProduct } from './index';
@@ -12,6 +14,14 @@ export interface XlsxPreviewRow {
   isAlreadyImported: boolean;
   importAction: XlsxImportAction;
   blockingError?: string;
+  blockingErrorKey?: string;
+  blockingErrorValues?: Record<string, string | number>;
+}
+
+interface XlsxBlockingIssue {
+  message: string;
+  messageKey: string;
+  messageValues?: Record<string, string | number>;
 }
 
 function normalizeBarcode(value: string | undefined): string | undefined {
@@ -35,21 +45,39 @@ function getBlockingError(input: {
   matchedProduct: Product | null;
   isAlreadyImported: boolean;
   importAction: XlsxImportAction;
-}): string | undefined {
+}): XlsxBlockingIssue | undefined {
   const requiresExisting = input.importAction === 'receive_stock' || input.importAction === 'update';
   if (requiresExisting && !input.matchedProduct) {
-    return 'Matched product no longer exists. Refresh inventory and try again.';
+    return {
+      message: 'Matched product no longer exists. Refresh inventory and try again.',
+      messageKey: 'import.blocking.matchMissing',
+    };
   }
 
   const requiresStock = input.importAction === 'receive_stock' || (input.importAction === 'update' && !input.isAlreadyImported);
   if (requiresStock) {
     const quantity = input.product.currentStock;
     if (quantity == null || !Number.isFinite(quantity) || quantity <= 0) {
-      return 'Quantity is required for rows that will receive stock.';
+      return {
+        message: 'Quantity is required for rows that will receive stock.',
+        messageKey: 'import.blocking.quantityRequired',
+      };
     }
   }
 
   return undefined;
+}
+
+export function getXlsxBlockingErrorMessage(
+  row: Pick<XlsxPreviewRow, 'blockingError' | 'blockingErrorKey' | 'blockingErrorValues'>,
+  t: TFunction
+): string | undefined {
+  if (!row.blockingError) return undefined;
+  if (!row.blockingErrorKey) return row.blockingError;
+  return t(row.blockingErrorKey, {
+    ...row.blockingErrorValues,
+    defaultValue: row.blockingError,
+  });
 }
 
 export function getAvailableExcelActions(row: XlsxPreviewRow): XlsxImportAction[] {
@@ -62,6 +90,16 @@ export function applyExcelImportAction(
   row: XlsxPreviewRow,
   importAction: XlsxImportAction
 ): XlsxPreviewRow {
+  const blockingIssue = getBlockingError({
+    product: {
+      ...row.product,
+      importAction,
+      existingProductId: row.matchedProduct?.id,
+    },
+    matchedProduct: row.matchedProduct,
+    isAlreadyImported: row.isAlreadyImported,
+    importAction,
+  });
   const nextProduct: ImportedProduct = {
     ...row.product,
     importAction,
@@ -72,12 +110,9 @@ export function applyExcelImportAction(
     ...row,
     product: nextProduct,
     importAction,
-    blockingError: getBlockingError({
-      product: nextProduct,
-      matchedProduct: row.matchedProduct,
-      isAlreadyImported: row.isAlreadyImported,
-      importAction,
-    }),
+    blockingError: blockingIssue?.message,
+    blockingErrorKey: blockingIssue?.messageKey,
+    blockingErrorValues: blockingIssue?.messageValues,
   };
 }
 
@@ -113,6 +148,12 @@ export function buildXlsxPreviewRows(
       isAlreadyImported,
       hasDiffs,
     });
+    const blockingIssue = getBlockingError({
+      product,
+      matchedProduct,
+      isAlreadyImported,
+      importAction,
+    });
 
     return {
       previewId,
@@ -126,12 +167,9 @@ export function buildXlsxPreviewRows(
       hasDiffs,
       isAlreadyImported,
       importAction,
-      blockingError: getBlockingError({
-        product,
-        matchedProduct,
-        isAlreadyImported,
-        importAction,
-      }),
+      blockingError: blockingIssue?.message,
+      blockingErrorKey: blockingIssue?.messageKey,
+      blockingErrorValues: blockingIssue?.messageValues,
     };
   });
 }
