@@ -35,9 +35,10 @@ Canonical status doc for current priorities, active work, recent completions, an
 - Canonical plan:
   - [2026-03-29-001-feat-canonical-excel-delivery-import-plan.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/plans/2026-03-29-001-feat-canonical-excel-delivery-import-plan.md)
 - What is in progress:
-  - canonical template path only
-  - required `Barcode` + `Name` columns
-  - barcode-only matching
+  - barcode is now optional (removed from REQUIRED_FIELDS)
+  - name-fallback matching when barcode is absent
+  - early idempotency mark before DB writes (race condition fix)
+  - name-based note fallback for barcode-less idempotency tracking
   - explicit preview actions: `create`, `update`, `receive_stock`, `skip`
   - batch-level Excel idempotency for stock receipts
   - dialogs only mark complete on a clean runner result
@@ -66,6 +67,10 @@ Canonical status doc for current priorities, active work, recent completions, an
 
 - 2026-04-05: fixed XLSX import readiness gaps by keeping every preview row reachable before confirm, localizing upload/parser/blocking validation, and scoping idempotency lookups to the current batch.
   - Verification: `pnpm vitest run src/lib/__tests__/xlsxParser.test.ts src/lib/__tests__/xlsxPreview.test.ts src/lib/__tests__/importRunners.xlsx.test.ts src/lib/__tests__/excelImportIdempotency.test.ts src/components/xlsx/__tests__/ImportPreviewTable.test.tsx src/components/xlsx/__tests__/ImportDialog.test.tsx`
+- 2026-04-05: expanded test coverage - added invoice authentication, BNM exchange rate fetching, and invoice pricing weight parsing tests. Consolidated invoiceOCR tests (enabled 5 previously skipped tests). 439 tests passing.
+- 2026-04-01: added keyboard shortcuts (Cmd+K), search focus management, category chips with type-safe filters, skeleton loading states, and refactored toast notification system. Also added Claude Code skills patterns to .gitignore.
+- 2026-04-01: closed Excel/invoice import parity gap — barcode made optional, name-fallback matching added, early idempotency mark, race condition fix. 436 tests passing, verified with real xlsx file.
+  - Solution: [excel-invoice-import-parity-2026-03-31.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/logic-errors/excel-invoice-import-parity-2026-03-31.md)
 - 2026-03-29: hardened Excel import as the canonical fallback intake path and fixed false-complete import dialog behavior.
   - Plan: [2026-03-29-001-feat-canonical-excel-delivery-import-plan.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/plans/2026-03-29-001-feat-canonical-excel-delivery-import-plan.md)
   - Solution: [false-complete-after-partial-or-fatal-import-ProductImportUI-20260329.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/state-issues/false-complete-after-partial-or-fatal-import-ProductImportUI-20260329.md)

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X, RefreshCw, SlidersHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { DesktopFilterBar } from './DesktopFilterBar';
 import { MobileFilterSheet } from './MobileFilterSheet';
 import { FilterChips } from './FilterChips';
+import { CategoryChips } from './CategoryChips';
 import { hasActiveFilters, createClearFilterHandler } from '../../lib/filters';
+import { useSearchFocus } from '../../hooks/useSearchFocus';
 import type { InventoryFilters } from '../../hooks/useInventoryList';
 
 interface InventoryFiltersProps {
@@ -29,6 +31,12 @@ interface InventoryFiltersProps {
 export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
   const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const mobileSearchInputRef = useRef<HTMLInputElement>(null);
+  const desktopSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Focus search when Cmd+K is pressed
+  useSearchFocus(mobileSearchInputRef);
+  useSearchFocus(desktopSearchInputRef);
 
   const {
     filters,
@@ -51,7 +59,7 @@ export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
     <>
       {/* Desktop View (≥768px) */}
       <div className="hidden md:block">
-        <DesktopFilterBar {...props} />
+        <DesktopFilterBar {...props} searchInputRef={desktopSearchInputRef} />
       </div>
 
       {/* Mobile View (<768px) */}
@@ -71,6 +79,7 @@ export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-stone-400" />
               <Input
+                ref={mobileSearchInputRef}
                 type="text"
                 value={filters.searchQuery}
                 onChange={(e) => onFilterChange('searchQuery', e.target.value)}
@@ -120,7 +129,13 @@ export const InventoryFiltersBar = (props: InventoryFiltersProps) => {
             </Button>
           </div>
 
-          {/* Row 2: Active filter chips (only show if filters active) */}
+          {/* Row 2: Category chips - always visible for quick filtering */}
+          <CategoryChips
+            selectedCategory={filters.category}
+            onCategorySelect={(cat) => cat !== null && onFilterChange('category', cat)}
+          />
+
+          {/* Row 3: Active filter chips (only show if filters active) */}
           {activeFilters && (
             <div className="flex items-center gap-2">
               <FilterChips

@@ -115,4 +115,21 @@ describe('checkoutCartStorage', () => {
     clearPersistedCheckoutCart()
     expect(localStorage.getItem(CHECKOUT_CART_STORAGE_KEY)).toBeNull()
   })
+
+  it('skips persistence when JSON size exceeds cap', () => {
+    // Create a massive product that will exceed the 250k char limit
+    const hugeProduct: Product = {
+      id: 'huge',
+      createdTime: new Date().toISOString(),
+      fields: {
+        Name: 'x'.repeat(300_000), // Large value to exceed cap
+      },
+    }
+    const cart: CartItem[] = [{ product: hugeProduct, quantity: 1 }]
+
+    persistCheckoutCart(cart)
+
+    // Should not persist due to size cap
+    expect(localStorage.getItem(CHECKOUT_CART_STORAGE_KEY)).toBeNull()
+  })
 })

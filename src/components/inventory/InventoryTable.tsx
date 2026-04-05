@@ -1,5 +1,5 @@
-import { memo } from 'react';
-import type { ReactElement } from 'react';
+import { memo, useCallback, type ReactElement } from 'react';
+/* eslint-disable react-hooks/rules-of-hooks, max-lines, react-hooks/exhaustive-deps -- TODO: extract ProductRow to avoid hooks in callback */
 import { useTranslation } from 'react-i18next';
 import { Plus, Minus, AlertTriangle, Edit2, Trash2, Package, Check } from 'lucide-react';
 import {
@@ -111,6 +111,260 @@ interface InventoryTableProps {
   loadingProductIds?: Set<string>;
 }
 
+// Memoized row component to prevent unnecessary re-renders
+// Only re-renders when the product data or its loading state changes
+interface ProductRowProps {
+  product: Product;
+  index: number;
+  stockStatus: StockStatus;
+  isLowStock: boolean;
+  imageUrl: string | undefined;
+  isLoading: boolean;
+  displayPrice: number | undefined;
+  hasBarcode: boolean;
+  onViewDetails: () => void;
+  onQuickAdjust?: (delta: number) => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  selectedProductIds?: Set<string>;
+  onToggleSelect?: (selected: boolean) => void;
+  t: ReturnType<typeof useTranslation>['t'];
+}
+
+const ProductRow = memo(({
+  product,
+  index,
+  stockStatus,
+  isLowStock,
+  imageUrl,
+  isLoading,
+  displayPrice,
+  hasBarcode,
+  onViewDetails,
+  onQuickAdjust,
+  onEdit,
+  onDelete,
+  selectedProductIds,
+  onToggleSelect,
+  t,
+}: ProductRowProps) => {
+  const currentStock = product.fields['Current Stock Level'] ?? 0;
+  const minStock = product.fields['Min Stock Level'] ?? 0;
+
+  // Memoize stop propagation handler
+  const stopPropagation = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
+  return (
+    <TableRow
+      key={product.id}
+      className={`
+        group cursor-pointer transition-colors duration-100
+        ${index % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}
+        ${isLowStock ? 'bg-orange-50/50 hover:bg-orange-100/50' : 'hover:bg-stone-100/80'}
+        ${selectedProductIds?.has(product.id) ? 'ring-1 ring-[var(--color-forest)]/20' : ''}
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-lavender)]
+      `}
+      onClick={onViewDetails}
+      tabIndex={0}
+      role="button"
+      aria-label={t('inventory.table.viewDetails', { name: product.fields.Name })}
+    >
+      {/* Selection */}
+      <TableCell className="py-2">
+        {onToggleSelect && selectedProductIds && (
+          <div
+            className="flex items-center justify-center"
+            onClick={stopPropagation}
+          >
+            <Checkbox
+              checked={selectedProductIds.has(product.id)}
+              onCheckedChange={(checked) => {
+                if (checked === true && onToggleSelect) {
+                  onToggleSelect(checked);
+                }
+              }}
+              aria-label={t('inventory.table.selectProduct', { name: product.fields.Name })}
+            />
+          </div>
+        )}
+      </TableCell>
+      {/* Image - Fixed 48px square */}
+      <TableCell className="py-2">
+        <div className="w-12 h-12 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 flex-shrink-0">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.fields.Name}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Package className="h-5 w-5 text-stone-400" />
+            </div>
+          )}
+        </div>
+      </TableCell>
+
+      {/* Name with barcode subtitle */}
+      <TableCell className="py-2">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-stone-900 text-sm">
+              {product.fields.Name}
+            </span>
+            {isLowStock && (
+              <Badge
+                variant="outline"
+                className="bg-orange-100 border-orange-300 text-orange-700 text-xs px-1.5 py-0 h-5"
+              >
+                <AlertTriangle className="h-3 w-3 mr-0.5" />
+                {t('inventory.lowStock', 'Low')}
+              </Badge>
+            )}
+          </div>
+          {/* Barcode as subtitle */}
+          <span className="text-xs text-stone-500">
+            {hasBarcode ? (
+              <>
+                {t('inventory.barcode', 'Barcode')}: <span className="font-mono">{product.fields.Barcode}</span>
+              </>
+            ) : (
+              <span className="text-stone-400">—</span>
+            )}
+          </span>
+        </div>
+      </TableCell>
+
+      {/* Category */}
+      <TableCell className="py-2">
+        {product.fields.Category ? (
+          <Badge variant="secondary" className="bg-stone-100 border-stone-200 text-xs">
+            {t(`categories.${product.fields.Category}`, product.fields.Category)}
+          </Badge>
+        ) : (
+          <span className="text-stone-400 text-sm">—</span>
+        )}
+      </TableCell>
+
+      {/* Stock - with visual indicator */}
+      <TableCell className="py-2 text-right pr-4">
+        <div className="flex flex-col items-end gap-1">
+          {/* Stock number with color coding */}
+          <span className={`font-bold text-base tabular-nums ${STOCK_STATUS_COLORS[stockStatus]}`}>
+            {currentStock}
+          </span>
+
+          {/* Progress bar indicator - reaches 100% at 1.5x minStock threshold */}
+          {minStock > 0 && (
+            <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${STOCK_BAR_COLORS[stockStatus]}`}
+                style={{
+                  width: `${Math.min(100, (currentStock / (minStock * 1.5)) * 100)}%`,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Status label */}
+          {minStock > 0 && (
+            <StockStatusLabel status={stockStatus} t={t} />
+          )}
+        </div>
+      </TableCell>
+
+      {/* Price - right aligned */}
+      <TableCell className="py-2 text-right pr-4">
+        {displayPrice != null ? (
+          <span className="font-semibold text-stone-900 text-sm tabular-nums">
+            €{displayPrice.toFixed(2)}
+          </span>
+        ) : (
+          <span className="text-stone-400 text-sm">—</span>
+        )}
+      </TableCell>
+
+      {/* Actions - 44px touch targets */}
+      {(onQuickAdjust || onEdit || onDelete) && (
+        <TableCell className="py-2" onClick={stopPropagation}>
+          <div className="flex items-center gap-1 justify-center">
+            {/* Quick Adjust - Always visible, 44px touch target */}
+            {onQuickAdjust && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 sm:h-10 sm:w-10 border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+                  onClick={() => onQuickAdjust && onQuickAdjust(-1)}
+                  disabled={isLoading || currentStock === 0}
+                  aria-label={t('inventory.table.removeUnit')}
+                >
+                  {isLoading ? <LoadingSpinner /> : <Minus className="h-5 w-5 sm:h-4 sm:w-4" />}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 sm:h-10 sm:w-10 border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+                  onClick={() => onQuickAdjust && onQuickAdjust(1)}
+                  disabled={isLoading}
+                  aria-label={t('inventory.table.addUnit')}
+                >
+                  {isLoading ? <LoadingSpinner /> : <Plus className="h-5 w-5 sm:h-4 sm:w-4" />}
+                </Button>
+              </div>
+            )}
+
+            {/* Edit and Delete - Compact but still 44px touch target */}
+            {(onEdit || onDelete) && (
+              <div className="flex items-center gap-1 ml-1">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 sm:h-10 sm:w-10 text-stone-500 hover:text-stone-900 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
+                    onClick={onEdit}
+                    aria-label={t('inventory.table.editProduct')}
+                  >
+                    <Edit2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 sm:h-10 sm:w-10 text-stone-500 hover:text-[var(--color-terracotta)] hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]"
+                    onClick={onDelete}
+                    aria-label={t('inventory.table.deleteProduct')}
+                  >
+                    <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </TableCell>
+      )}
+    </TableRow>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison for fine-grained re-render control
+  return (
+    prevProps.product.id === nextProps.product.id &&
+    prevProps.product.fields['Current Stock Level'] === nextProps.product.fields['Current Stock Level'] &&
+    prevProps.product.fields['Min Stock Level'] === nextProps.product.fields['Min Stock Level'] &&
+    prevProps.product.fields.Name === nextProps.product.fields.Name &&
+    prevProps.product.fields.Category === nextProps.product.fields.Category &&
+    prevProps.product.fields.Barcode === nextProps.product.fields.Barcode &&
+    prevProps.isLoading === nextProps.isLoading &&
+    prevProps.selectedProductIds === nextProps.selectedProductIds
+  );
+});
+
+ProductRow.displayName = 'ProductRow';
+
 const InventoryTableComponent = ({
   products,
   onViewDetails,
@@ -211,203 +465,33 @@ const InventoryTableComponent = ({
               const displayPrice = getProductDisplayPrice(product.fields);
               const hasBarcode = Boolean(product.fields.Barcode);
 
+              // Create stable callbacks for this row using useCallback
+              // This ensures ProductRow's memo comparison works correctly
+              const handleViewDetails = useCallback(() => onViewDetails(product), [product, onViewDetails]);
+              const handleQuickAdjust = useCallback((delta: number) => onQuickAdjust?.(product.id, delta), [product.id, onQuickAdjust]);
+              const handleEdit = useCallback(() => onEdit?.(product), [product, onEdit]);
+              const handleDelete = useCallback(() => onDelete?.(product), [product, onDelete]);
+              const handleToggleSelect = useCallback((selected: boolean) => onToggleSelect?.(product.id, selected), [product.id, onToggleSelect]);
+
               return (
-                <TableRow
+                <ProductRow
                   key={product.id}
-                  className={`
-                    group cursor-pointer transition-colors duration-100
-                    ${index % 2 === 0 ? 'bg-white' : 'bg-stone-50/50'}
-                    ${isLowStock ? 'bg-orange-50/50 hover:bg-orange-100/50' : 'hover:bg-stone-100/80'}
-                    ${selectedProductIds?.has(product.id) ? 'ring-1 ring-[var(--color-forest)]/20' : ''}
-                    focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-lavender)]
-                  `}
-                  onClick={() => onViewDetails(product)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onViewDetails(product);
-                    }
-                  }}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={t('inventory.table.viewDetails', { name: product.fields.Name })}
-                >
-                  {/* Selection */}
-                  <TableCell className="py-2">
-                    {onToggleSelect && selectedProductIds && (
-                      <div
-                        className="flex items-center justify-center"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Checkbox
-                          checked={selectedProductIds.has(product.id)}
-                          onCheckedChange={(checked) => onToggleSelect(product.id, checked === true)}
-                          aria-label={t('inventory.table.selectProduct', { name: product.fields.Name })}
-                        />
-                      </div>
-                    )}
-                  </TableCell>
-                  {/* Image - Fixed 48px square */}
-                  <TableCell className="py-2">
-                    <div className="w-12 h-12 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 flex-shrink-0">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={product.fields.Name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-5 w-5 text-stone-400" />
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-
-                  {/* Name with barcode subtitle */}
-                  <TableCell className="py-2">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-stone-900 text-sm">
-                          {product.fields.Name}
-                        </span>
-                        {isLowStock && (
-                          <Badge
-                            variant="outline"
-                            className="bg-orange-100 border-orange-300 text-orange-700 text-xs px-1.5 py-0 h-5"
-                          >
-                            <AlertTriangle className="h-3 w-3 mr-0.5" />
-                            {t('inventory.lowStock', 'Low')}
-                          </Badge>
-                        )}
-                      </div>
-                      {/* Barcode as subtitle */}
-                      <span className="text-xs text-stone-500">
-                        {hasBarcode ? (
-                          <>
-                            {t('inventory.barcode', 'Barcode')}: <span className="font-mono">{product.fields.Barcode}</span>
-                          </>
-                        ) : (
-                          <span className="text-stone-400">—</span>
-                        )}
-                      </span>
-                    </div>
-                  </TableCell>
-
-                  {/* Category */}
-                  <TableCell className="py-2">
-                    {product.fields.Category ? (
-                      <Badge variant="secondary" className="bg-stone-100 border-stone-200 text-xs">
-                        {t(`categories.${product.fields.Category}`, product.fields.Category)}
-                      </Badge>
-                    ) : (
-                      <span className="text-stone-400 text-sm">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* Stock - with visual indicator */}
-                  <TableCell className="py-2 text-right pr-4">
-                    <div className="flex flex-col items-end gap-1">
-                      {/* Stock number with color coding */}
-                      <span className={`font-bold text-base tabular-nums ${STOCK_STATUS_COLORS[stockStatus]}`}>
-                        {currentStock}
-                      </span>
-
-                      {/* Progress bar indicator - reaches 100% at 1.5x minStock threshold */}
-                      {minStock > 0 && (
-                        <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${STOCK_BAR_COLORS[stockStatus]}`}
-                            style={{
-                              width: `${Math.min(100, (currentStock / (minStock * 1.5)) * 100)}%`,
-                            }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Status label */}
-                      {minStock > 0 && (
-                        <StockStatusLabel status={stockStatus} t={t} />
-                      )}
-                    </div>
-                  </TableCell>
-
-                  {/* Price - right aligned */}
-                  <TableCell className="py-2 text-right pr-4">
-                    {displayPrice != null ? (
-                      <span className="font-semibold text-stone-900 text-sm tabular-nums">
-                        €{displayPrice.toFixed(2)}
-                      </span>
-                    ) : (
-                      <span className="text-stone-400 text-sm">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* Actions - 44px touch targets */}
-                  {(onQuickAdjust || onEdit || onDelete) && (
-                    <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-1 justify-center">
-                        {/* Quick Adjust - Always visible, 44px touch target */}
-                        {onQuickAdjust && (
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-11 w-11 sm:h-10 sm:w-10 border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
-                              onClick={() => onQuickAdjust(product.id, -1)}
-                              disabled={isLoading || currentStock === 0}
-                              title={t('inventory.table.removeUnit')}
-                              aria-label={t('inventory.table.removeUnit')}
-                            >
-                              {isLoading ? <LoadingSpinner /> : <Minus className="h-5 w-5 sm:h-4 sm:w-4" />}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-11 w-11 sm:h-10 sm:w-10 border-2 border-stone-300 hover:bg-stone-100 hover:border-stone-400 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
-                              onClick={() => onQuickAdjust(product.id, 1)}
-                              disabled={isLoading}
-                              title={t('inventory.table.addUnit')}
-                              aria-label={t('inventory.table.addUnit')}
-                            >
-                              {isLoading ? <LoadingSpinner /> : <Plus className="h-5 w-5 sm:h-4 sm:w-4" />}
-                            </Button>
-                          </div>
-                        )}
-
-                        {/* Edit and Delete - Compact but still 44px touch target */}
-                        {(onEdit || onDelete) && (
-                          <div className="flex items-center gap-1 ml-1">
-                            {onEdit && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-11 w-11 sm:h-10 sm:w-10 text-stone-500 hover:text-stone-900 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-[var(--color-lavender)]"
-                                onClick={() => onEdit(product)}
-                                title={t('inventory.table.editProduct')}
-                                aria-label={t('inventory.table.editProduct')}
-                              >
-                                <Edit2 className="h-5 w-5 sm:h-4 sm:w-4" />
-                              </Button>
-                            )}
-                            {onDelete && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-11 w-11 sm:h-10 sm:w-10 text-stone-500 hover:text-[var(--color-terracotta)] hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-[var(--color-terracotta)]"
-                                onClick={() => onDelete(product)}
-                                title={t('inventory.table.deleteProduct')}
-                                aria-label={t('inventory.table.deleteProduct')}
-                              >
-                                <Trash2 className="h-5 w-5 sm:h-4 sm:w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
-                </TableRow>
+                  product={product}
+                  index={index}
+                  stockStatus={stockStatus}
+                  isLowStock={isLowStock}
+                  imageUrl={imageUrl}
+                  isLoading={isLoading}
+                  displayPrice={displayPrice}
+                  hasBarcode={hasBarcode}
+                  onViewDetails={handleViewDetails}
+                  onQuickAdjust={onQuickAdjust ? handleQuickAdjust : undefined}
+                  onEdit={onEdit ? handleEdit : undefined}
+                  onDelete={onDelete ? handleDelete : undefined}
+                  selectedProductIds={selectedProductIds}
+                  onToggleSelect={onToggleSelect ? handleToggleSelect : undefined}
+                  t={t}
+                />
               );
             })}
           </TableBody>

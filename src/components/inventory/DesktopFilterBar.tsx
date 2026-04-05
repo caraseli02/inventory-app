@@ -20,6 +20,7 @@ interface DesktopFilterBarProps {
   onImport: () => void;
   onImportInvoice?: () => void;
   onExport: () => void;
+  searchInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export const DesktopFilterBar = ({
@@ -34,6 +35,7 @@ export const DesktopFilterBar = ({
   onImport,
   onImportInvoice,
   onExport,
+  searchInputRef,
 }: DesktopFilterBarProps) => {
   const { t } = useTranslation();
 
@@ -64,6 +66,7 @@ export const DesktopFilterBar = ({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-stone-400" />
             <Input
+              ref={searchInputRef}
               type="text"
               value={filters.searchQuery}
               onChange={(e) => onFilterChange('searchQuery', e.target.value)}

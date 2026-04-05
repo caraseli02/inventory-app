@@ -83,6 +83,7 @@ tmp/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.playwright-mcp/
 /tests/fixtures/.auth/
 /tests/visual/screenshots/
 /tests-examples/
@@ -175,6 +176,12 @@ visual-regression-*.mjs
 # Codex / local agent scratch
 .context/
 
+# Claude Code skills (local workspace)
+.agents/
+.claude/skills/
+skills/
+skills-lock.json
+
 # Debug files
 debug-*.txt
 debug-*.json
@@ -194,3 +201,5 @@ debug-*.log
 # Visual test artifacts
 visual-test-results/
 *.mjs
+# Node compile cache
+node-compile-cache/

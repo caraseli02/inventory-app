@@ -4,12 +4,18 @@ import { cn } from '@/lib/utils';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
+export interface ToastAction {
+  label: string;
+  action: () => void;
+}
+
 export interface Toast {
   id: string;
   type: ToastType;
   title: string;
   description?: string;
   duration?: number;
+  action?: ToastAction;
 }
 
 interface ToastProps {
@@ -59,6 +65,16 @@ export const ToastItem = ({ toast, onDismiss }: ToastProps) => {
         <p className="font-semibold text-sm">{toast.title}</p>
         {toast.description && (
           <p className="text-xs mt-1 opacity-90">{toast.description}</p>
+        )}
+        {toast.action && (
+          <button
+            onClick={() => {
+              toast.action!.action();
+            }}
+            className="mt-2 text-xs font-semibold underline opacity-90 hover:opacity-100 transition-opacity"
+          >
+            {toast.action.label}
+          </button>
         )}
       </div>
       <button

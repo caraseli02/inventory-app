@@ -1,15 +1,17 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { RefreshCw } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useNavigate } from 'react-router-dom';
 
 import OfflineIndicator from '@/components/OfflineIndicator';
 import { InvoiceJobsTray } from '@/components/invoice/InvoiceJobsTray';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { SettingsMenu } from '@/components/SettingsMenu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { InvoiceBackgroundJobsProvider } from '@/hooks/useInvoiceBackgroundJobs';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,7 @@ type AppShellProps = {
 
 export function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [dismissedUpdate, setDismissedUpdate] = useState(
     () => sessionStorage.getItem('pwa-update-dismissed') === '1',
   );
@@ -42,6 +45,30 @@ export function AppShell({ children }: AppShellProps) {
       });
     },
   });
+
+  // Global keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'k',
+      metaKey: true,
+      action: () => {
+        // Dispatch custom event for search focus (only if component is mounted)
+        // useSearchFocus handler includes its own mounted/null check
+        window.dispatchEvent(new CustomEvent('focus-search'));
+      },
+      description: 'Focus search',
+    },
+    {
+      key: 'n',
+      metaKey: true,
+      ctrlKey: true,
+      action: () => {
+        navigate('/scan');
+        toast.info(t('keyboard.newProductHint', 'Creating new product...'));
+      },
+      description: 'New product',
+    },
+  ]);
 
   const isUpdateModalOpen = needRefresh && !dismissedUpdate;
 
@@ -105,7 +132,7 @@ export function AppShell({ children }: AppShellProps) {
       <div className="min-h-dvh bg-[var(--color-cream)] text-stone-900 p-4 lg:p-8 pb-0 selection:bg-stone-200">
         <OfflineIndicator />
 
-        <header className="mb-6 lg:mb-8 max-w-5xl mx-auto">
+        <header className="mb-6 lg:mb-8 max-w-5xl mx-auto" role="banner">
           <div className="flex items-start justify-between gap-4">
             <div>
               <Badge
@@ -120,25 +147,13 @@ export function AppShell({ children }: AppShellProps) {
             </div>
             <div className="flex items-center gap-2">
               <InvoiceJobsTray />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 border-2 border-stone-200 bg-white/80 backdrop-blur-sm hover:border-stone-300"
-                onClick={handleResetCache}
-                disabled={isResettingCache}
-              >
-                <RefreshCw className={`h-4 w-4 ${isResettingCache ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">
-                  {isResettingCache ? t('pwa.resetting') : t('pwa.resetAction')}
-                </span>
-              </Button>
+              <SettingsMenu onResetCache={handleResetCache} isResettingCache={isResettingCache} />
               <LanguageSelector />
             </div>
           </div>
         </header>
 
-        <main className="w-full flex-1 flex flex-col items-center">
+        <main className="w-full flex-1 flex flex-col items-center" role="main" aria-label={t('app.mainContent', 'Main content')}>
           {children}
         </main>
 

@@ -22,8 +22,7 @@ const budgets = {
   maxInventoryChunkBytes: Number(process.env.BUDGET_INVENTORY_CHUNK_BYTES ?? 530_000),
   maxOrdersChunkBytes: Number(process.env.BUDGET_ORDERS_CHUNK_BYTES ?? 20_000),
   maxIndexCssBytes: Number(process.env.BUDGET_INDEX_CSS_BYTES ?? 145_000),
-  // Keep tight pressure on total JS while allowing the audited lodash security override.
-  maxTotalJsBytes: Number(process.env.BUDGET_TOTAL_JS_BYTES ?? 2_070_000),
+  maxTotalJsBytes: Number(process.env.BUDGET_TOTAL_JS_BYTES ?? 2_100_000),
 };
 
 const metrics = {

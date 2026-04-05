@@ -230,3 +230,38 @@ export function createEmptyOFFResponse() {
     product: null,
   }
 }
+
+/**
+ * Create a mock invoice extraction response
+ */
+export function createInvoiceResponse(overrides: Record<string, unknown> = {}) {
+  return {
+    products: [
+      {
+        name: 'Test Invoice Product',
+        quantity: 1,
+        unit_price: 10.00,
+        total_price: 10.00,
+        raw_code: '1234567890123',
+      },
+    ],
+    total_amount: 10.00,
+    supplier: 'Test Supplier',
+    invoice_number: 'INV-001',
+    date: '2026-01-01',
+    currency: 'EUR',
+    confidence_score: 0.95,
+    ...overrides,
+  }
+}
+
+/**
+ * Create a mock invoice extraction job response
+ */
+export function createInvoiceJobResponse(jobId: string, status: string = 'queued') {
+  return {
+    job_id: jobId,
+    status,
+    status_url: `/invoice/extraction-jobs/${jobId}`,
+  }
+}

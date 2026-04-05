@@ -170,7 +170,7 @@ describe('Error Classes', () => {
       expect(handleError(new Error('test'))).toBe('unknown')
     })
 
-    it('should work with Promise rejections', async () => {
+    it('preserves custom error types through Promise rejections', async () => {
       const rejectWithValidation = () =>
         Promise.reject(new ValidationError('Invalid'))
 

@@ -1,4 +1,4 @@
-import { type ChangeEvent } from 'react';
+import { type ChangeEvent, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
@@ -35,13 +35,24 @@ interface BasicInfoProps {
 
 function BasicInfoSection({ formData, setFormData, handleChange, product, isBarcodeEditable, setScannerOpen, basicOpen, setBasicOpen }: BasicInfoProps) {
   const { t } = useTranslation();
+
+  // Memoize category change handler to avoid creating new function on every render
+  const handleCategoryChange = useCallback((cat: string) => {
+    setFormData({ ...formData, category: cat });
+  }, [formData, setFormData]);
+
+  // Memoize scanner open handler
+  const handleOpenScanner = useCallback(() => {
+    setScannerOpen(true);
+  }, [setScannerOpen]);
+
   return (
     <Collapsible open={basicOpen} onOpenChange={setBasicOpen}>
       <div className="bg-white rounded-xl border-2 border-stone-200 overflow-hidden">
         <CollapsibleTrigger className="w-full flex items-center justify-between px-4 sm:px-5 py-4 hover:bg-stone-50 transition-colors">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Package className="w-4 h-4 text-blue-600" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--icon-info-bg)' }}>
+              <Package className="w-4 h-4" style={{ color: 'var(--icon-info-text)' }} />
             </div>
             <span className="font-semibold text-stone-900">{t('dialogs.editProduct.sectionBasic', 'Basic Information')}</span>
           </div>
@@ -59,7 +70,7 @@ function BasicInfoSection({ formData, setFormData, handleChange, product, isBarc
                 <div className="flex gap-2 mt-2">
                   <Input id="barcode" type="text" name="barcode" value={isBarcodeEditable ? formData.barcode : (product.fields.Barcode || '')} onChange={isBarcodeEditable ? handleChange : undefined} disabled={!isBarcodeEditable} placeholder={isBarcodeEditable ? '1234567890123' : ''} className={`flex-1 h-11 border-2 ${isBarcodeEditable ? 'border-stone-300 focus-visible:ring-[var(--color-lavender)] focus-visible:border-[var(--color-lavender)]' : 'bg-stone-50 border-stone-200 text-stone-500 cursor-not-allowed'}`} />
                   {isBarcodeEditable && (
-                    <Button type="button" variant="outline" onClick={() => setScannerOpen(true)} className="h-11 w-11 p-0 border-2 border-stone-300 hover:bg-stone-100">
+                    <Button type="button" variant="outline" onClick={handleOpenScanner} className="h-11 w-11 p-0 border-2 border-stone-300 hover:bg-stone-100">
                       <ScanBarcode className="w-5 h-5 text-stone-600" />
                     </Button>
                   )}
@@ -72,7 +83,7 @@ function BasicInfoSection({ formData, setFormData, handleChange, product, isBarc
               <div className="flex flex-wrap gap-2 mt-2">
                 {CATEGORIES.map((cat) => (
                   <Button key={cat} type="button" variant={formData.category === cat ? 'default' : 'outline'} size="sm"
-                    onClick={() => setFormData({ ...formData, category: cat })}
+                    onClick={handleCategoryChange.bind(null, cat)}
                     className={`px-3 py-1.5 h-8 rounded-full font-medium transition-all ${formData.category === cat ? 'bg-[var(--color-forest)] text-white hover:bg-[var(--color-forest-dark)] border-transparent' : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50'}`}
                   >
                     {t(`categories.${cat}`, cat)}
@@ -103,11 +114,11 @@ function StockSupplySection({ formData, handleChange, currentStock, setCameraOpe
       <div className="bg-white rounded-xl border-2 border-stone-200 overflow-hidden">
         <CollapsibleTrigger className="w-full flex items-center justify-between px-4 sm:px-5 py-4 hover:bg-stone-50 transition-colors">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-              <Truck className="w-4 h-4 text-amber-600" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--icon-warning-bg)' }}>
+              <Truck className="w-4 h-4" style={{ color: 'var(--icon-warning-text)' }} />
             </div>
             <span className="font-semibold text-stone-900">{t('dialogs.editProduct.sectionStock', 'Stock & Supply')}</span>
-            <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 text-xs ml-2">{currentStock} {t('product.inStock')}</Badge>
+            <Badge variant="secondary" className="text-xs ml-2" style={{ backgroundColor: 'var(--icon-success-bg)', color: 'var(--icon-success-text)' }}>{currentStock} {t('product.inStock')}</Badge>
           </div>
           <ChevronDown className={`w-5 h-5 text-stone-400 transition-transform duration-200 ${stockOpen ? 'rotate-180' : ''}`} />
         </CollapsibleTrigger>
@@ -245,7 +256,7 @@ function EditProductDialog({ product, open, onOpenChange }: EditProductDialogPro
             {hasChanges ? (
               <>
                 <span className="text-sm text-stone-600 flex items-center gap-2">
-                  <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--color-warning)' }}></span>
                   {t('product.unsavedChanges', 'Unsaved changes')}
                 </span>
                 <div className="flex items-center gap-3">
