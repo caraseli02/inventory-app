@@ -16,11 +16,16 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 // Support both VITE_SUPABASE_ANON_KEY and VITE_SUPABASE_PUBLISHABLE_KEY (same key, different naming conventions)
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+// Only warn in non-test environments (tests are expected to run without full env setup)
+const isTestEnvironment = import.meta.env.VITEST === 'true' || import.meta.env.NODE_ENV === 'test';
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    'Missing Supabase credentials. Using placeholder values. APP WILL NOT FUNCTION CORRECTLY. ' +
-    'Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env'
-  );
+  if (!isTestEnvironment) {
+    console.warn(
+      'Missing Supabase credentials. Using placeholder values. APP WILL NOT FUNCTION CORRECTLY. ' +
+      'Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env'
+    );
+  }
 }
 
 // Fallback to dummy values to prevent app crash (e.g. during tests or initial setup)

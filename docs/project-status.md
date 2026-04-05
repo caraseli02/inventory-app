@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-04-01
+Last updated: 2026-04-05
 
 Canonical status doc for current priorities, active work, recent completions, and handoff context. Use this as the control layer above `docs/plans/` and `docs/solutions/`.
 
@@ -61,6 +61,7 @@ Canonical status doc for current priorities, active work, recent completions, an
 
 ## Recently Completed
 
+- 2026-04-05: expanded test coverage - added invoice authentication, BNM exchange rate fetching, and invoice pricing weight parsing tests. Consolidated invoiceOCR tests (enabled 5 previously skipped tests). 439 tests passing.
 - 2026-04-01: added keyboard shortcuts (Cmd+K), search focus management, category chips with type-safe filters, skeleton loading states, and refactored toast notification system. Also added Claude Code skills patterns to .gitignore.
 - 2026-04-01: closed Excel/invoice import parity gap — barcode made optional, name-fallback matching added, early idempotency mark, race condition fix. 436 tests passing, verified with real xlsx file.
   - Solution: [excel-invoice-import-parity-2026-03-31.md](/Users/vladislavcaraseli/Documents/inventory-app/docs/solutions/logic-errors/excel-invoice-import-parity-2026-03-31.md)
