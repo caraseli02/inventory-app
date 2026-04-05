@@ -486,6 +486,10 @@
     "rowsSkipped": "{{count}} filas omitidas por errores",
     "andMoreErrors": "...y {{count}} errores más",
     "showingProducts": "Mostrando {{showing}} de {{total}} productos",
+    "showingRange": "Mostrando las filas {{from}}-{{to}} de {{total}}",
+    "pageIndicator": "Página {{current}} de {{total}}",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
     "importingProducts": "Importando productos...",
     "productProgress": "{{current}} de {{total}} productos",
     "importComplete": "¡Importación Completa!",
@@ -505,6 +509,23 @@
     "xlsxAlreadyImportedSkipped": "Se omitieron {{count}} filas porque ya fueron importadas de este lote de Excel.",
     "invoiceReceiveStockMatchMissing": "El producto coincidente ya no existe. Actualiza el inventario e inténtalo de nuevo.",
     "blockingRows": "{{count}} filas deben corregirse antes de importar",
+    "blocking": {
+      "barcodeRequired": "El código de barras es obligatorio para la importación canónica de Excel.",
+      "matchMissing": "El producto coincidente ya no existe. Actualiza el inventario e inténtalo de nuevo.",
+      "quantityRequired": "La cantidad es obligatoria para las filas que recibirán stock."
+    },
+    "errors": {
+      "invalidFileType": "Selecciona un archivo de Excel (.xlsx o .xls)",
+      "noSheetsFound": "No se encontraron hojas en el libro",
+      "fileTooShort": "El archivo debe tener al menos una fila de encabezado y una fila de datos",
+      "missingHeaders": "No se pudieron encontrar encabezados de columna reconocibles. Se esperan columnas como \"Cod de bare (Barcode)\" y \"Denumirea produsului\"",
+      "missingColumns": "Faltan columnas obligatorias: {{columns}}. Usa la plantilla canónica de Excel para importar productos.",
+      "missingField": "Falta el campo obligatorio: {{field}}",
+      "parseFailed": "No se pudo analizar el archivo: {{message}}"
+    },
+    "warningMessages": {
+      "unrecognizedColumn": "La columna \"{{column}}\" no fue reconocida y se omitirá"
+    },
     "tableBarcode": "Código de barras",
     "tableName": "Nombre",
     "tableCategory": "Categoría",

@@ -27,6 +27,7 @@ describe('parseXlsxFile', () => {
 
     expect(result.success).toBe(false);
     expect(result.errors[0]?.message).toContain('Missing required column(s): Barcode');
+    expect(result.errors[0]?.messageKey).toBe('import.errors.missingColumns');
   });
 
   it('adds deterministic batch and row metadata to imported rows', async () => {
@@ -40,5 +41,18 @@ describe('parseXlsxFile', () => {
     expect(result.success).toBe(true);
     expect(result.products[0]?.excelBatchId).toMatch(/^[a-f0-9]{64}$/);
     expect(result.products[0]?.excelRowId).toBe('Delivery:2:5901234567890');
+  });
+
+  it('records localized warning metadata for unrecognized columns', async () => {
+    const file = makeWorkbookFile([
+      ['Cod de bare (Barcode)', 'Denumirea produsului', 'Mystery Column'],
+      ['5901234567890', 'Milk', 'value'],
+    ]);
+
+    const result = await parseXlsxFile(file);
+
+    expect(result.success).toBe(true);
+    expect(result.warnings[0]?.messageKey).toBe('import.warningMessages.unrecognizedColumn');
+    expect(result.warnings[0]?.messageValues).toEqual({ column: 'Mystery Column' });
   });
 });

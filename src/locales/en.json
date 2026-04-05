@@ -486,6 +486,10 @@
     "rowsSkipped": "{{count}} rows skipped due to errors",
     "andMoreErrors": "...and {{count}} more errors",
     "showingProducts": "Showing {{showing}} of {{total}} products",
+    "showingRange": "Showing rows {{from}}-{{to}} of {{total}}",
+    "pageIndicator": "Page {{current}} of {{total}}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
     "importingProducts": "Importing products...",
     "productProgress": "{{current}} of {{total}} products",
     "importComplete": "Import Complete!",
@@ -505,6 +509,23 @@
     "xlsxAlreadyImportedSkipped": "{{count}} rows were skipped because they were already imported from this Excel batch.",
     "invoiceReceiveStockMatchMissing": "Matched product no longer exists. Refresh inventory and try again.",
     "blockingRows": "{{count}} rows must be fixed before import",
+    "blocking": {
+      "barcodeRequired": "Barcode is required for canonical Excel import.",
+      "matchMissing": "Matched product no longer exists. Refresh inventory and try again.",
+      "quantityRequired": "Quantity is required for rows that will receive stock."
+    },
+    "errors": {
+      "invalidFileType": "Please select an Excel file (.xlsx or .xls)",
+      "noSheetsFound": "No sheets found in the workbook",
+      "fileTooShort": "File must have at least a header row and one data row",
+      "missingHeaders": "Could not find recognizable column headers. Expected columns like \"Cod de bare (Barcode)\" and \"Denumirea produsului\"",
+      "missingColumns": "Missing required column(s): {{columns}}. Use the canonical Excel template to import products.",
+      "missingField": "Missing required field: {{field}}",
+      "parseFailed": "Failed to parse file: {{message}}"
+    },
+    "warningMessages": {
+      "unrecognizedColumn": "Column \"{{column}}\" was not recognized and will be skipped"
+    },
     "tableBarcode": "Barcode",
     "tableName": "Name",
     "tableCategory": "Category",

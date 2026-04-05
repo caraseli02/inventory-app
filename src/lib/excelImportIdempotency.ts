@@ -39,6 +39,12 @@ export function buildExcelBatchKey(input: ExcelBatchIdentityInput): string | nul
   return batchId || null;
 }
 
+export function buildExcelBatchNotePattern(input: ExcelBatchIdentityInput): string | null {
+  const batchId = normalizeIdentityValue(input.batchId);
+  if (!batchId) return null;
+  return `${EXCEL_IMPORT_NOTE_PREFIX}|batch=${encodeNoteValue(batchId)}|%`;
+}
+
 export function buildExcelRowNote(input: ExcelRowIdentityInput): string | null {
   const batchId = normalizeIdentityValue(input.batchId);
   const rowId = normalizeIdentityValue(input.rowId);
@@ -79,6 +85,7 @@ export async function getAlreadyImportedExcelRowIds(
   input: ExcelBatchIdentityInput
 ): Promise<Set<string>> {
   const batchId = normalizeIdentityValue(input.batchId);
+  const notePattern = buildExcelBatchNotePattern({ batchId });
   if (!batchId) return new Set<string>();
 
   const rowIds = new Set<string>();
@@ -90,7 +97,7 @@ export async function getAlreadyImportedExcelRowIds(
       .from('stock_movements')
       .select('note')
       .eq('type', 'IN')
-      .ilike('note', `${EXCEL_IMPORT_NOTE_PREFIX}|%`)
+      .ilike('note', notePattern ?? `${EXCEL_IMPORT_NOTE_PREFIX}|%`)
       .order('id', { ascending: true })
       .range(from, from + pageSize - 1);
 
